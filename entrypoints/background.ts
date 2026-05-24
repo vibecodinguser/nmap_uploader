@@ -1,3 +1,6 @@
+import { uploadProcessedFilesToYandexDisk } from '../lib/upload_service'
+import { clearAuth, ensureYandexAuth, getStoredAuth } from '../lib/yandex/client'
+
 const PANEL_PAGE = '/panel.html'
 
 type SidePanelApi = {
@@ -9,6 +12,18 @@ const getSidePanelApi = (): SidePanelApi | undefined => {
   const api = (browser as typeof browser & { sidePanel?: SidePanelApi }).sidePanel
   if (!api?.open) return undefined
   return api
+}
+
+/** В Yandex Browser sidePanel API есть, но UI не отображается — используем injected sidebar. */
+const shouldUseNativeSidePanel = (): boolean => {
+  if (navigator.userAgent.includes('YaBrowser')) return false
+  return Boolean(getSidePanelApi())
+}
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
+
+const sendTogglePanel = async (tabId: number): Promise<void> => {
+  await browser.tabs.sendMessage(tabId, { action: 'togglePanel' })
 }
 
 const isRestrictedUrl = (url?: string) =>
@@ -24,28 +39,41 @@ const toggleInjectedSidebar = async (tabId: number, tabUrl?: string) => {
     throw new Error('Панель недоступна на системных страницах браузера')
   }
 
-  try {
-    await browser.tabs.sendMessage(tabId, { action: 'togglePanel' })
-    return
-  } catch {
-    // content script ещё не загружен на вкладке
+  // content script может ещё инициализироваться после загрузки страницы
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      await sendTogglePanel(tabId)
+      return
+    } catch {
+      await sleep(120 * (attempt + 1))
+    }
   }
 
   await browser.scripting.executeScript({
     target: { tabId },
     files: ['/content-scripts/panel-sidebar.js'],
   })
-  await browser.tabs.sendMessage(tabId, { action: 'togglePanel' })
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      await sendTogglePanel(tabId)
+      return
+    } catch {
+      await sleep(120 * (attempt + 1))
+    }
+  }
+
+  throw new Error('Не удалось открыть панель на текущей вкладке')
 }
 
 const openPanel = async (tab: Browser.tabs.Tab) => {
   if (!tab.id) return
 
-  const sidePanel = getSidePanelApi()
-  if (sidePanel && tab.windowId) {
+  if (shouldUseNativeSidePanel() && tab.windowId) {
+    const sidePanel = getSidePanelApi()
     try {
-      await sidePanel.setOptions({ path: PANEL_PAGE, enabled: true })
-      await sidePanel.open({ windowId: tab.windowId })
+      await sidePanel?.setOptions({ path: PANEL_PAGE, enabled: true })
+      await sidePanel?.open({ windowId: tab.windowId })
       return
     } catch (error: unknown) {
       console.warn('[nmap_uploader] native sidePanel.open failed:', error)
@@ -63,18 +91,89 @@ export default defineBackground(() => {
   })
 
   browser.runtime.onInstalled.addListener(() => {
-    const sidePanel = getSidePanelApi()
-    if (!sidePanel?.setOptions) return
+    if (!shouldUseNativeSidePanel()) return
 
-    sidePanel.setOptions({ path: PANEL_PAGE, enabled: true }).catch((error: unknown) => {
+    const sidePanel = getSidePanelApi()
+    sidePanel?.setOptions({ path: PANEL_PAGE, enabled: true }).catch((error: unknown) => {
       console.warn('[nmap_uploader] sidePanel.setOptions failed:', error)
     })
   })
 
-  browser.runtime.onMessage.addListener((message) => {
-    if (message?.action !== 'submit') return
+  browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    const action = message?.action as string | undefined
 
-    console.info('[nmap_uploader] submit:', message.payload)
-    return Promise.resolve({ ok: true })
+    if (action === 'getAuth') {
+      getStoredAuth()
+        .then((auth) => sendResponse({ user: auth?.user ?? null }))
+        .catch(() => sendResponse({ user: null }))
+      return true
+    }
+
+    if (action === 'ensureAuth') {
+      const interactive = Boolean(message.interactive)
+      ensureYandexAuth({ interactive })
+        .then((auth) => sendResponse({ ok: Boolean(auth), user: auth?.user ?? null }))
+        .catch((error: unknown) => {
+          console.error('[nmap_uploader] ensureAuth failed:', error)
+          sendResponse({
+            ok: false,
+            user: null,
+            error: error instanceof Error ? error.message : 'Ошибка авторизации',
+          })
+        })
+      return true
+    }
+
+    if (action === 'login') {
+      ensureYandexAuth({ interactive: true })
+        .then((auth) =>
+          sendResponse({
+            ok: Boolean(auth),
+            user: auth?.user ?? null,
+            error: auth ? undefined : 'Авторизация отменена',
+          }),
+        )
+        .catch((error: unknown) => {
+          console.error('[nmap_uploader] login failed:', error)
+          sendResponse({
+            ok: false,
+            error: error instanceof Error ? error.message : 'Ошибка авторизации',
+          })
+        })
+      return true
+    }
+
+    if (action === 'logout') {
+      clearAuth()
+        .then(() => sendResponse({ ok: true }))
+        .catch((error: unknown) => {
+          console.error('[nmap_uploader] logout failed:', error)
+          sendResponse({ ok: false })
+        })
+      return true
+    }
+
+    if (action === 'uploadProcessedFiles') {
+      uploadProcessedFilesToYandexDisk({ files: message.files ?? [] })
+        .then((result) => sendResponse(result))
+        .catch((error: unknown) => {
+          console.error('[nmap_uploader] upload failed:', error)
+          sendResponse({
+            ok: false,
+            processedCount: 0,
+            skippedCount: 0,
+            logs: [
+              {
+                id: crypto.randomUUID(),
+                level: 'error',
+                message: error instanceof Error ? error.message : 'Ошибка загрузки',
+              },
+            ],
+          })
+        })
+      return true
+    }
+
+    return undefined
   })
 })

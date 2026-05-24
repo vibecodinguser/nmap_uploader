@@ -13,6 +13,9 @@ export default defineContentScript({
 
   async main(ctx) {
     let isOpen = false
+    let isUiReady = false
+    let pendingToggle = false
+    let ui: Awaited<ReturnType<typeof createShadowRootUi>> | undefined
 
     const getInitialTheme = (): 'dark' | '' => {
       const stored = localStorage.getItem('theme')
@@ -21,7 +24,31 @@ export default defineContentScript({
       return ''
     }
 
-    const ui = await createShadowRootUi(ctx, {
+    const togglePanel = () => {
+      if (!ui) return
+
+      if (isOpen) {
+        ui.remove()
+        isOpen = false
+        return
+      }
+
+      ui.mount()
+      isOpen = true
+    }
+
+    browser.runtime.onMessage.addListener((message) => {
+      if (message?.action !== 'togglePanel') return
+
+      if (!isUiReady) {
+        pendingToggle = true
+        return
+      }
+
+      togglePanel()
+    })
+
+    ui = await createShadowRootUi(ctx, {
       name: 'nmap-sidebar',
       position: 'inline',
       anchor: 'body',
@@ -29,6 +56,17 @@ export default defineContentScript({
       css: `
         :host {
           all: initial;
+          --background: #ffffff;
+          --foreground: #020817;
+          --muted: #f1f5f9;
+          --muted-foreground: #64748b;
+          --border: #e2e8f0;
+          --input: #e2e8f0;
+          --primary: #0f172a;
+          --primary-foreground: #ffffff;
+          --ring: #0f172a;
+          --radius: 0.375rem;
+          --font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
           position: fixed !important;
           top: 0 !important;
           right: 0 !important;
@@ -38,6 +76,20 @@ export default defineContentScript({
           display: block !important;
           overflow: hidden !important;
           box-shadow: -4px 0 24px rgba(0, 0, 0, 0.12) !important;
+          font-family: var(--font-family);
+          background-color: var(--background);
+          color: var(--foreground);
+        }
+        :host(.dark) {
+          --background: #020817;
+          --foreground: #f8fafc;
+          --muted: #1e293b;
+          --muted-foreground: #94a3b8;
+          --border: #1e293b;
+          --input: #1e293b;
+          --primary: #f8fafc;
+          --primary-foreground: #020817;
+          --ring: #cbd5e1;
         }
         html, body {
           width: 100%;
@@ -50,7 +102,13 @@ export default defineContentScript({
         container.style.cssText = 'width:100%;height:100%;overflow:hidden;'
 
         const initialTheme = getInitialTheme()
-        if (initialTheme) container.classList.add(initialTheme)
+        if (initialTheme) {
+          container.classList.add(initialTheme)
+          const host = container.getRootNode()
+          if (host instanceof ShadowRoot && host.host instanceof HTMLElement) {
+            host.host.classList.add(initialTheme)
+          }
+        }
 
         const root = ReactDOM.createRoot(container)
         root.render(
@@ -65,19 +123,11 @@ export default defineContentScript({
       },
     })
 
-    const togglePanel = () => {
-      if (isOpen) {
-        ui.remove()
-        isOpen = false
-        return
-      }
-      ui.mount()
-      isOpen = true
-    }
+    isUiReady = true
 
-    browser.runtime.onMessage.addListener((message) => {
-      if (message?.action !== 'togglePanel') return
+    if (pendingToggle) {
+      pendingToggle = false
       togglePanel()
-    })
+    }
   },
 })

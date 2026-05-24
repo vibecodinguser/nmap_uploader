@@ -15,7 +15,14 @@ export const useTheme = (themeTarget?: Element) => {
 
   useEffect(() => {
     const el = themeTarget ?? document.documentElement
-    el.classList.toggle('dark', theme === 'dark')
+    const isDark = theme === 'dark'
+    el.classList.toggle('dark', isDark)
+
+    const root = el.getRootNode()
+    if (root instanceof ShadowRoot && root.host instanceof HTMLElement) {
+      root.host.classList.toggle('dark', isDark)
+    }
+
     localStorage.setItem(STORAGE_KEY, theme)
   }, [theme, themeTarget])
 
