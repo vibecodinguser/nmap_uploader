@@ -1,11 +1,16 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './panel/App'
-import '../assets/styles/globals.css'
+import { browser } from 'wxt/browser'
+import { createShadowRootUi } from 'wxt/utils/content-script-ui/shadow-root'
+import { defineContentScript } from 'wxt/utils/define-content-script'
+import { App } from './panel/App'
+import '@/assets/styles/globals.css'
 
 const PANEL_WIDTH = 400
 const Z_INDEX = 2_147_483_647
 
+// WXT подхватывает default export при сборке; статического import нет
+// noinspection JSUnusedGlobalSymbols
 export default defineContentScript({
   matches: ['<all_urls>'],
   runAt: 'document_idle',
@@ -76,7 +81,7 @@ export default defineContentScript({
           display: block !important;
           overflow: hidden !important;
           box-shadow: -4px 0 24px rgba(0, 0, 0, 0.12) !important;
-          font-family: var(--font-family);
+          font-family: var(--font-family, sans-serif);
           background-color: var(--background);
           color: var(--foreground);
         }

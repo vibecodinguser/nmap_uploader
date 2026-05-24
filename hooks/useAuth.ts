@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import { requestEnsureAuth } from '../lib/yandex/auth_message'
-import type { YandexUser } from '../lib/yandex/client'
+import { browser } from 'wxt/browser'
+import { requestEnsureAuth } from '@/lib/yandex/auth_message'
+import type { YandexUser } from '@/lib/yandex/client'
 
 type AuthState = {
   user: YandexUser | null

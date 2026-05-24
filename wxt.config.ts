@@ -1,6 +1,15 @@
 import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'wxt'
 
+const extensionIcons = {
+  16: '/icon/16.png',
+  32: '/icon/32.png',
+  48: '/icon/48.png',
+  128: '/icon/128.png',
+} as const
+
+// WXT загружает конфиг при сборке; статического import нет
+// noinspection JSUnusedGlobalSymbols
 export default defineConfig({
   modules: ['@wxt-dev/module-react'],
   vite: () => ({
@@ -9,7 +18,7 @@ export default defineConfig({
       modulePreload: { polyfill: false },
     },
   }),
-  runner: {
+  webExt: {
     binaries: {
       chrome: '/Applications/Yandex.app/Contents/MacOS/Yandex',
     },
@@ -32,18 +41,8 @@ export default defineConfig({
     ],
     action: {
       default_title: 'nmap_uploader',
-      default_icon: {
-        16: '/icon/16.png',
-        32: '/icon/32.png',
-        48: '/icon/48.png',
-        128: '/icon/128.png',
-      },
+      default_icon: extensionIcons,
     },
-    icons: {
-      16: '/favicon.svg',
-      32: '/favicon.svg',
-      48: '/favicon.svg',
-      128: '/favicon.svg',
-    },
+    icons: extensionIcons,
   },
 })

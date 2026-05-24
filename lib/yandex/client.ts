@@ -1,5 +1,6 @@
-import { ERR_NETWORK, ProcessingError } from '../errors'
-import type { NmapIndex } from '../nmap_index'
+import { browser } from 'wxt/browser'
+import { ERR_NETWORK, ProcessingError } from '@/lib/errors'
+import type { NmapIndex } from '@/lib/nmap_index'
 
 export const YANDEX_CLIENT_ID = 'ef45c7e176e844c087bc2487985ad275'
 export const YANDEX_DISK_FOLDER = 'Приложения/Блокнот картографа Народной карты'

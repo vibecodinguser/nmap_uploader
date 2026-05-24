@@ -1,3 +1,4 @@
+import { browser } from 'wxt/browser'
 import type { YandexUser } from './client'
 
 export type EnsureAuthResponse = {

@@ -1,7 +1,7 @@
 import type { Feature, FeatureCollection, Geometry } from 'geojson'
-import { addFeatureToOutput, extractPaths } from '../geometry'
-import type { ProcessResult } from '../nmap_index'
-import { createNmapOutputTemplate } from '../nmap_index'
+import { addFeatureToOutput, extractPaths } from '@/lib/geometry'
+import type { ProcessResult } from '@/lib/nmap_index'
+import { createNmapOutputTemplate } from '@/lib/nmap_index'
 
 const getFeatureName = (feature: Feature): string | undefined => {
   const props = feature.properties

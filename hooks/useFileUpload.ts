@@ -1,11 +1,11 @@
 import { useCallback, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
-import { processFile } from '../lib/converters'
-import { ProcessingError } from '../lib/errors'
-import { isAllowedFile } from '../lib/formats'
-import type { ProcessResult } from '../lib/nmap_index'
-import type { UploadLogEntry } from '../lib/upload_service'
-import { requestEnsureAuth } from '../lib/yandex/auth_message'
+import { browser } from 'wxt/browser'
+import { processFile } from '@/lib/converters'
+import { ProcessingError } from '@/lib/errors'
+import { isAllowedFile } from '@/lib/formats'
+import type { UploadLogEntry } from '@/lib/upload_service'
+import { requestEnsureAuth } from '@/lib/yandex/auth_message'
 
 const createLog = (level: UploadLogEntry['level'], message: string): UploadLogEntry => ({
   id: crypto.randomUUID(),
@@ -44,7 +44,6 @@ const waitForNextFrame = () =>
 /** Конвертирует один файл в JSON-результат — без передачи бинарных данных в background. */
 const convertFileLocally = async (file: File, onProgress: (percent: number) => void) => {
   const logs: UploadLogEntry[] = []
-  const conversionStart = 15
   const conversionEnd = 80
 
   if (!isAllowedFile(file.name)) {

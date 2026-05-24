@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Header } from '../../components/Header'
-import { UploadTab } from '../../components/UploadTab'
-import { useAuth } from '../../hooks/useAuth'
-import { useFileUpload } from '../../hooks/useFileUpload'
-import { useTheme } from '../../hooks/useTheme'
+import { Header } from '@/components/Header'
+import { UploadTab } from '@/components/UploadTab'
+import { useAuth } from '@/hooks/useAuth'
+import { useFileUpload } from '@/hooks/useFileUpload'
+import { useTheme } from '@/hooks/useTheme'
 
 type AppProps = {
   themeTarget?: Element
@@ -11,7 +11,7 @@ type AppProps = {
 
 type MainTab = 'upload' | 'manual'
 
-const App = ({ themeTarget }: AppProps) => {
+export const App = ({ themeTarget }: AppProps) => {
   const { theme, toggleTheme } = useTheme(themeTarget)
   const { user, refreshUser, handleLogout } = useAuth()
   const { isUploading, progress, uploadStatus, performUpload } = useFileUpload({
@@ -47,7 +47,6 @@ const App = ({ themeTarget }: AppProps) => {
 
         {activeTab === 'upload' && (
           <UploadTab
-            theme={theme}
             isUploading={isUploading}
             progress={progress}
             uploadStatus={uploadStatus}
@@ -58,5 +57,3 @@ const App = ({ themeTarget }: AppProps) => {
     </div>
   )
 }
-
-export default App

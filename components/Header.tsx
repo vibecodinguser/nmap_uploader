@@ -1,7 +1,7 @@
 import { LogOut, Moon, Sun } from 'lucide-react'
-import logoUrl from '../assets/logo.svg'
-import type { Theme } from '../hooks/useTheme'
-import type { YandexUser } from '../lib/yandex/client'
+import logoUrl from '@/assets/logo.svg'
+import type { Theme } from '@/hooks/useTheme'
+import type { YandexUser } from '@/lib/yandex/client'
 
 type HeaderProps = {
   theme: Theme

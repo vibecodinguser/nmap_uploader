@@ -89,3 +89,12 @@ components/                      # React-компоненты
 
 
 https://oauth.yandex.ru/client/6c57204892c04069a74cd41b1f16fff7
+
+pnpm test:run
+npm test:integration
+
+
+
+npx biome check .
+npx biome check --write .
+npx biome format --write .

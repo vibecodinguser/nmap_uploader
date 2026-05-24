@@ -1,5 +1,7 @@
-import { uploadProcessedFilesToYandexDisk } from '../lib/upload_service'
-import { clearAuth, ensureYandexAuth, getStoredAuth } from '../lib/yandex/client'
+import { browser } from 'wxt/browser'
+import { defineBackground } from 'wxt/utils/define-background'
+import { uploadProcessedFilesToYandexDisk } from '@/lib/upload_service'
+import { clearAuth, ensureYandexAuth, getStoredAuth } from '@/lib/yandex/client'
 
 const PANEL_PAGE = '/panel.html'
 
@@ -83,6 +85,8 @@ const openPanel = async (tab: Browser.tabs.Tab) => {
   await toggleInjectedSidebar(tab.id, tab.url)
 }
 
+// WXT подхватывает default export при сборке; статического import нет
+// noinspection JSUnusedGlobalSymbols
 export default defineBackground(() => {
   browser.action.onClicked.addListener((tab) => {
     openPanel(tab).catch((error: unknown) => {
