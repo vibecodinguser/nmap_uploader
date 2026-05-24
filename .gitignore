@@ -1,0 +1,61 @@
+# Зависимости
+node_modules/
+
+# WXT / Vite
+.output/
+.wxt/
+.wxt-runner/
+dist/
+.cache/
+*.local
+
+# Артефакты сборки расширения
+*.zip
+
+# Профили браузера при локальной разработке (wxt dev)
+chrome-data/
+firefox-data/
+
+# Логи
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Переменные окружения и секреты
+.env
+.env.*
+!.env.example
+
+# web-ext (локальная конфигурация, не коммитить)
+.webextrc
+web-ext.config.ts
+
+# Редактор и IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ОС
+.DS_Store
+Thumbs.db
+
+# Тесты и покрытие
+coverage/
+
+# TypeScript
+*.tsbuildinfo
+
+# Biome
+.biome-cache/
+
+# Аналитика сборки (Vite bundle analyzer)
+stats.html
+stats-*.json
