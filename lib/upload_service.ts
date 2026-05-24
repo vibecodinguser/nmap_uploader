@@ -1,4 +1,4 @@
-import { ProcessingError } from './errors'
+import { getErrorMessage, ProcessingError } from './errors'
 import { createNmapOutputTemplate, mergeNmapOutputTemplate, type ProcessResult } from './nmap_index'
 import {
   downloadIndexJson,
@@ -63,7 +63,7 @@ export const uploadProcessedFilesToYandexDisk = async ({
     await ensureStorageFolders({ token })
     pushLog('success', 'Папки готовы')
   } catch (error: unknown) {
-    const message = error instanceof ProcessingError ? error.message : 'Ошибка доступа к Диску'
+    const message = getErrorMessage(error, 'Ошибка доступа к Диску')
     pushLog('error', message)
     return { ok: false, logs, processedCount: 0, skippedCount: 0 }
   }
@@ -75,8 +75,7 @@ export const uploadProcessedFilesToYandexDisk = async ({
     currentIndex = existing ?? createNmapOutputTemplate()
     pushLog('success', existing ? 'Текущий index.json загружен' : 'Создан новый index.json')
   } catch (error: unknown) {
-    const message =
-      error instanceof ProcessingError ? error.message : 'Не удалось загрузить index.json'
+    const message = getErrorMessage(error, 'Не удалось загрузить index.json')
     pushLog('error', message)
     return { ok: false, logs, processedCount: 0, skippedCount: 0 }
   }
@@ -92,7 +91,7 @@ export const uploadProcessedFilesToYandexDisk = async ({
     await uploadIndexJson({ data: finalIndex, token })
     pushLog('success', 'index.json загружен на Яндекс.Диск')
   } catch (error: unknown) {
-    const message = error instanceof ProcessingError ? error.message : 'Ошибка сохранения'
+    const message = getErrorMessage(error, 'Ошибка сохранения')
     pushLog('error', message)
     return { ok: false, logs, processedCount: files.length, skippedCount: 0 }
   }

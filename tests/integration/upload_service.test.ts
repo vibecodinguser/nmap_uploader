@@ -44,7 +44,7 @@ describe('uploadProcessedFilesToYandexDisk', () => {
     expect(result.logs.at(-1)?.message).toBe('Необходима авторизация. Войдите через Яндекс ID')
   })
 
-  it('при недействительном токене возвращает ошибку доступа', async () => {
+  it('при недействительном токене возвращает конкретную ошибку доступа', async () => {
     await saveAuth({
       token: 'expired-token',
       user: { id: '1', login: 'expired' },
@@ -55,6 +55,7 @@ describe('uploadProcessedFilesToYandexDisk', () => {
     })
 
     expect(result.ok).toBe(false)
-    expect(result.logs.some((log) => log.level === 'error')).toBe(true)
+    expect(result.logs.some((log) => log.message.includes('Выйдите и войдите'))).toBe(true)
+    expect(result.logs.some((log) => log.message === 'Ошибка доступа к Диску')).toBe(false)
   })
 })

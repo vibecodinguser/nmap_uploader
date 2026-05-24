@@ -27,7 +27,7 @@ const getHeaders = (token: string): Record<string, string> => ({
 
 /** Проверяет, что токен действителен для REST API Яндекс.Диска. */
 export const verifyDiskAccess = async ({ token }: { token: string }): Promise<void> => {
-  const response = await fetch('https://cloud-api.yandex.net/v1/disk/?fields=total_space', {
+  const response = await safeFetch('https://cloud-api.yandex.net/v1/disk/?fields=total_space', {
     headers: getHeaders(token),
   })
 
@@ -65,10 +65,229 @@ const throwIfUnauthorized = (status: number, context: string): void => {
   )
 }
 
-const getParentPath = (path: string): string => {
-  const normalized = path.replace(/\/+$/, '')
+const DISK_ROOT_PREFIX = '/'
+const DISK_SCHEME_PREFIX = 'disk:/'
+const APPLICATIONS_FOLDER = 'Приложения'
+
+type DiskApiError = {
+  error?: string
+  message?: string
+  description?: string
+}
+
+const safeFetch = async (url: string, init?: RequestInit): Promise<Response> => {
+  try {
+    return await fetch(url, init)
+  } catch (error: unknown) {
+    const detail = error instanceof Error ? error.message : 'сеть недоступна'
+    throw new ProcessingError(ERR_NETWORK, `Запрос к Яндекс.Диску не выполнен: ${detail}`)
+  }
+}
+
+/** Преобразует логический путь в формат REST API Яндекс.Диска. */
+const toDiskApiPath = (logicalPath: string): string => {
+  if (!logicalPath) return DISK_ROOT_PREFIX
+  if (logicalPath.startsWith('disk:/') || logicalPath.startsWith('app:/')) return logicalPath
+  const normalized = logicalPath.replace(/^\/+/, '').replace(/\/+$/, '')
+  return `${DISK_ROOT_PREFIX}${normalized}`
+}
+
+/** Варианты path для одного логического пути — API принимает и `/`, и `disk:/`. */
+const getDiskApiPathVariants = (logicalPath: string): string[] => {
+  const normalized = fromDiskApiPath(logicalPath).replace(/\/+$/, '')
+  if (!normalized) return [DISK_ROOT_PREFIX, DISK_SCHEME_PREFIX.slice(0, -1)]
+
+  const slashPath = `${DISK_ROOT_PREFIX}${normalized}`
+  const schemePath = `${DISK_SCHEME_PREFIX}${normalized}`
+  return slashPath === schemePath ? [slashPath] : [slashPath, schemePath]
+}
+
+const fromDiskApiPath = (path: string): string =>
+  path.replace(/^disk:\//, '').replace(/^\/+/, '')
+
+const getParentLogicalPath = (logicalPath: string): string => {
+  const normalized = fromDiskApiPath(logicalPath).replace(/\/+$/, '')
   const lastSlash = normalized.lastIndexOf('/')
   return lastSlash === -1 ? '' : normalized.slice(0, lastSlash)
+}
+
+const isApplicationsFolder = (logicalPath: string): boolean =>
+  fromDiskApiPath(logicalPath) === APPLICATIONS_FOLDER
+
+const parseDiskApiError = (body: string): DiskApiError => {
+  try {
+    return JSON.parse(body) as DiskApiError
+  } catch {
+    return {}
+  }
+}
+
+const readDiskResponseError = async (
+  response: Response,
+): Promise<{ text: string; parsed: DiskApiError }> => {
+  const text = await response.text()
+  return { text, parsed: parseDiskApiError(text) }
+}
+
+const formatDiskResponseError = (response: Response, body: string): string =>
+  `${response.status} ${response.statusText}${body ? ` — ${body}` : ''}`
+
+const isParentNotFound = (status: number, parsed: DiskApiError): boolean =>
+  status === 404 || (status === 409 && parsed.error === 'DiskPathDoesntExistsError')
+
+const isFolderAlreadyExists = (status: number, parsed: DiskApiError): boolean =>
+  status === 409 &&
+  (parsed.error === 'DiskPathPointsToExistentDirectoryError' ||
+    parsed.error === 'DiskResourceAlreadyExistsError')
+
+const checkDirectoryExists = async ({
+  apiPath,
+  headers,
+}: {
+  apiPath: string
+  headers: Record<string, string>
+}): Promise<boolean> => {
+  const params = new URLSearchParams({ path: apiPath })
+  const response = await safeFetch(`${API_BASE_URL}?${params}`, { headers })
+  throwIfUnauthorized(response.status, 'Проверка папки на Диске')
+  if (!response.ok) return false
+
+  let data: { type?: string }
+  try {
+    data = (await response.json()) as { type?: string }
+  } catch {
+    throw new ProcessingError(
+      ERR_NETWORK,
+      `Некорректный ответ Яндекс.Диска для ${fromDiskApiPath(apiPath)}`,
+    )
+  }
+
+  if (data.type === 'file') {
+    throw new ProcessingError(
+      ERR_NETWORK,
+      `Конфликт: по пути ${fromDiskApiPath(apiPath)} уже существует файл`,
+    )
+  }
+  return data.type === 'dir'
+}
+
+const directoryExistsOnDisk = async ({
+  logicalPath,
+  headers,
+}: {
+  logicalPath: string
+  headers: Record<string, string>
+}): Promise<boolean> => {
+  for (const apiPath of getDiskApiPathVariants(logicalPath)) {
+    if (await checkDirectoryExists({ apiPath, headers })) return true
+  }
+  return false
+}
+
+const createDirectoryAtPath = async ({
+  apiPath,
+  headers,
+}: {
+  apiPath: string
+  headers: Record<string, string>
+}): Promise<Response> => {
+  const params = new URLSearchParams({ path: apiPath })
+  return safeFetch(`${API_BASE_URL}?${params}`, { method: 'PUT', headers })
+}
+
+const ensureApplicationsFolder = async ({
+  token,
+}: {
+  token: string
+}): Promise<void> => {
+  const headers = getHeaders(token)
+
+  if (await directoryExistsOnDisk({ logicalPath: APPLICATIONS_FOLDER, headers })) return
+
+  let lastError = ''
+
+  for (const apiPath of getDiskApiPathVariants(APPLICATIONS_FOLDER)) {
+    const createResponse = await createDirectoryAtPath({ apiPath, headers })
+    if (createResponse.status === 201) return
+
+    throwIfUnauthorized(createResponse.status, 'Создание папки на Диске')
+
+    const { text: errorText, parsed } = await readDiskResponseError(createResponse)
+    lastError = formatDiskResponseError(createResponse, errorText)
+
+    if (isFolderAlreadyExists(createResponse.status, parsed)) {
+      if (await checkDirectoryExists({ apiPath, headers })) return
+    }
+  }
+
+  if (await directoryExistsOnDisk({ logicalPath: APPLICATIONS_FOLDER, headers })) return
+
+  throw new ProcessingError(
+    ERR_NETWORK,
+    `Не удалось создать папку «${APPLICATIONS_FOLDER}»: ${lastError || 'неизвестная ошибка'}`,
+  )
+}
+
+const createDirectorySegment = async ({
+  logicalPath,
+  token,
+}: {
+  logicalPath: string
+  token: string
+}): Promise<void> => {
+  const displayPath = logicalPath
+  const apiPath = toDiskApiPath(logicalPath)
+  const headers = getHeaders(token)
+
+  if (await directoryExistsOnDisk({ logicalPath, headers })) return
+
+  if (isApplicationsFolder(logicalPath)) {
+    await ensureApplicationsFolder({ token })
+    return
+  }
+
+  const createDirectory = async (): Promise<Response> =>
+    createDirectoryAtPath({ apiPath, headers })
+
+  let createResponse = await createDirectory()
+  if (createResponse.status === 201) return
+
+  throwIfUnauthorized(createResponse.status, 'Создание папки на Диске')
+
+  let { text: errorText, parsed } = await readDiskResponseError(createResponse)
+
+  if (isFolderAlreadyExists(createResponse.status, parsed)) {
+    if (await checkDirectoryExists({ apiPath, headers })) return
+  }
+
+  if (isParentNotFound(createResponse.status, parsed)) {
+    const parentPath = getParentLogicalPath(logicalPath)
+    if (parentPath) {
+      await createDirectorySegment({ logicalPath: parentPath, token })
+    }
+
+    for (const variantPath of getDiskApiPathVariants(logicalPath)) {
+      createResponse = await createDirectoryAtPath({ apiPath: variantPath, headers })
+      if (createResponse.status === 201) return
+      ;({ text: errorText, parsed } = await readDiskResponseError(createResponse))
+      if (isFolderAlreadyExists(createResponse.status, parsed)) {
+        if (await checkDirectoryExists({ apiPath: variantPath, headers })) return
+      }
+      if (!isParentNotFound(createResponse.status, parsed)) break
+    }
+  }
+
+  if (createResponse.status === 403) {
+    throw new ProcessingError(
+      ERR_NETWORK,
+      `Нет доступа к Яндекс.Диску (${displayPath}). Проверьте права cloud_api:disk.write в OAuth-приложении и войдите заново`,
+    )
+  }
+
+  throw new ProcessingError(
+    ERR_NETWORK,
+    `Не удалось создать папку ${displayPath}: ${formatDiskResponseError(createResponse, errorText)}`,
+  )
 }
 
 const ensureFolderExists = async ({
@@ -78,59 +297,16 @@ const ensureFolderExists = async ({
   path: string
   token: string
 }): Promise<void> => {
-  if (!path || path === '/') return
+  const logicalPath = fromDiskApiPath(path).replace(/\/+$/, '')
+  if (!logicalPath) return
 
-  const headers = getHeaders(token)
-  const params = new URLSearchParams({ path })
+  const segments = logicalPath.split('/').filter(Boolean)
+  let currentPath = ''
 
-  const checkResponse = await fetch(`${API_BASE_URL}?${params}`, { headers })
-  throwIfUnauthorized(checkResponse.status, 'Проверка папки на Диске')
-  if (checkResponse.ok) {
-    const data = (await checkResponse.json()) as { type?: string }
-    if (data.type === 'dir') return
-    throw new ProcessingError(ERR_NETWORK, `Конфликт: по пути ${path} уже существует файл`)
+  for (const segment of segments) {
+    currentPath = currentPath ? `${currentPath}/${segment}` : segment
+    await createDirectorySegment({ logicalPath: currentPath, token })
   }
-
-  const createResponse = await fetch(`${API_BASE_URL}?${params}`, {
-    method: 'PUT',
-    headers,
-  })
-
-  if (createResponse.status === 201) return
-
-  throwIfUnauthorized(createResponse.status, 'Создание папки на Диске')
-
-  if (createResponse.status === 409) {
-    const retryCheck = await fetch(`${API_BASE_URL}?${params}`, { headers })
-    if (retryCheck.ok) {
-      const data = (await retryCheck.json()) as { type?: string }
-      if (data.type === 'dir') return
-    }
-    throw new ProcessingError(ERR_NETWORK, `Не удалось создать папку ${path}`)
-  }
-
-  if (createResponse.status === 404) {
-    await ensureFolderExists({ path: getParentPath(path), token })
-    const retryResponse = await fetch(`${API_BASE_URL}?${params}`, {
-      method: 'PUT',
-      headers,
-    })
-    if (retryResponse.status === 201 || retryResponse.status === 409) return
-    throw new ProcessingError(ERR_NETWORK, `Не удалось создать папку ${path}`)
-  }
-
-  const errorDetail = await createResponse.text()
-  if (createResponse.status === 403) {
-    throw new ProcessingError(
-      ERR_NETWORK,
-      `Нет доступа к Яндекс.Диску (${path}). Проверьте права cloud_api:disk.write в OAuth-приложении и войдите заново`,
-    )
-  }
-
-  throw new ProcessingError(
-    ERR_NETWORK,
-    `Не удалось создать папку ${path}: ${createResponse.statusText}${errorDetail ? ` — ${errorDetail}` : ''}`,
-  )
 }
 
 export const resolveFolderPath = ({
@@ -167,8 +343,8 @@ export const downloadIndexJson = async ({
   const filePath = `${folderPath}/index.json`
   const headers = getHeaders(token)
 
-  const downloadMeta = await fetch(
-    `${API_BASE_URL}/download?${new URLSearchParams({ path: filePath })}`,
+  const downloadMeta = await safeFetch(
+    `${API_BASE_URL}/download?${new URLSearchParams({ path: toDiskApiPath(filePath) })}`,
     { headers },
   )
 
@@ -185,7 +361,7 @@ export const downloadIndexJson = async ({
     throw new ProcessingError(ERR_NETWORK, 'Не удалось получить ссылку на скачивание index.json')
   }
 
-  const fileResponse = await fetch(href)
+  const fileResponse = await safeFetch(href)
   if (!fileResponse.ok) {
     throw new ProcessingError(ERR_NETWORK, 'Не удалось скачать index.json')
   }
@@ -212,9 +388,10 @@ export const uploadIndexJson = async ({
   const filePath = `${folderPath}/index.json`
   const headers = getHeaders(token)
 
-  const checkRes = await fetch(`${API_BASE_URL}?${new URLSearchParams({ path: filePath })}`, {
-    headers,
-  })
+  const checkRes = await safeFetch(
+    `${API_BASE_URL}?${new URLSearchParams({ path: toDiskApiPath(filePath) })}`,
+    { headers },
+  )
   if (checkRes.ok) {
     const checkData = (await checkRes.json()) as { type?: string }
     if (checkData.type === 'dir') {
@@ -222,8 +399,8 @@ export const uploadIndexJson = async ({
     }
   }
 
-  const uploadMeta = await fetch(
-    `${API_BASE_URL}/upload?${new URLSearchParams({ path: filePath, overwrite: 'true' })}`,
+  const uploadMeta = await safeFetch(
+    `${API_BASE_URL}/upload?${new URLSearchParams({ path: toDiskApiPath(filePath), overwrite: 'true' })}`,
     { headers },
   )
   if (!uploadMeta.ok) {
@@ -239,7 +416,7 @@ export const uploadIndexJson = async ({
   }
 
   const jsonData = JSON.stringify(data, null, 2)
-  const uploadResponse = await fetch(href, {
+  const uploadResponse = await safeFetch(href, {
     method: 'PUT',
     body: new TextEncoder().encode(jsonData),
   })
@@ -253,7 +430,7 @@ export const uploadIndexJson = async ({
 }
 
 export const fetchYandexUser = async ({ token }: { token: string }): Promise<YandexUser> => {
-  const response = await fetch('https://login.yandex.ru/info?format=json', {
+  const response = await safeFetch('https://login.yandex.ru/info?format=json', {
     headers: { Authorization: `OAuth ${token}` },
   })
 

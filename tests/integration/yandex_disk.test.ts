@@ -8,10 +8,15 @@ import {
   verifyDiskAccess,
   YANDEX_DISK_FOLDER,
 } from '@/lib/yandex/client'
-import { seedIndexJson } from '@/tests/setup/yandex_handlers'
+import {
+  getCreatedPaths,
+  seedIndexJson,
+  simulateParentNotFoundOnPut,
+} from '@/tests/setup/yandex_handlers'
 
 describe('Yandex Disk', () => {
   const token = 'test-token'
+  const baseFolderPath = `/${YANDEX_DISK_FOLDER}`
 
   it('verifyDiskAccess: успешная проверка токена', async () => {
     await expect(verifyDiskAccess({ token })).resolves.toBeUndefined()
@@ -23,8 +28,30 @@ describe('Yandex Disk', () => {
     })
   })
 
-  it('ensureStorageFolders: создаёт базовую и дневную папки', async () => {
+  it('ensureStorageFolders: создаёт «Приложения», базовую и дневную папки', async () => {
     await expect(ensureStorageFolders({ token })).resolves.toBeUndefined()
+
+    const createdPaths = getCreatedPaths()
+    expect(createdPaths).toContain('/Приложения')
+    expect(createdPaths).toContain(baseFolderPath)
+    expect(createdPaths.some((path) => path.startsWith(`${baseFolderPath}/`))).toBe(true)
+  })
+
+  it('ensureStorageFolders: идемпотентен при повторном вызове', async () => {
+    await ensureStorageFolders({ token })
+    const pathsAfterFirstCall = getCreatedPaths()
+
+    await ensureStorageFolders({ token })
+
+    expect(getCreatedPaths()).toEqual(pathsAfterFirstCall)
+  })
+
+  it('ensureStorageFolders: при 409 DiskPathDoesntExistsError создаёт родителя и повторяет', async () => {
+    simulateParentNotFoundOnPut(baseFolderPath)
+
+    await expect(ensureStorageFolders({ token })).resolves.toBeUndefined()
+    expect(getCreatedPaths()).toContain('/Приложения')
+    expect(getCreatedPaths()).toContain(baseFolderPath)
   })
 
   it('resolveFolderPath: добавляет дату в путь', () => {
