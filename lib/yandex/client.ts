@@ -102,8 +102,7 @@ const getDiskApiPathVariants = (logicalPath: string): string[] => {
   return slashPath === schemePath ? [slashPath] : [slashPath, schemePath]
 }
 
-const fromDiskApiPath = (path: string): string =>
-  path.replace(/^disk:\//, '').replace(/^\/+/, '')
+const fromDiskApiPath = (path: string): string => path.replace(/^disk:\//, '').replace(/^\/+/, '')
 
 const getParentLogicalPath = (logicalPath: string): string => {
   const normalized = fromDiskApiPath(logicalPath).replace(/\/+$/, '')
@@ -195,11 +194,7 @@ const createDirectoryAtPath = async ({
   return safeFetch(`${API_BASE_URL}?${params}`, { method: 'PUT', headers })
 }
 
-const ensureApplicationsFolder = async ({
-  token,
-}: {
-  token: string
-}): Promise<void> => {
+const ensureApplicationsFolder = async ({ token }: { token: string }): Promise<void> => {
   const headers = getHeaders(token)
 
   if (await directoryExistsOnDisk({ logicalPath: APPLICATIONS_FOLDER, headers })) return
@@ -246,8 +241,7 @@ const createDirectorySegment = async ({
     return
   }
 
-  const createDirectory = async (): Promise<Response> =>
-    createDirectoryAtPath({ apiPath, headers })
+  const createDirectory = async (): Promise<Response> => createDirectoryAtPath({ apiPath, headers })
 
   let createResponse = await createDirectory()
   if (createResponse.status === 201) return
@@ -330,6 +324,22 @@ export const resolveFolderPath = ({
 export const ensureStorageFolders = async ({ token }: { token: string }): Promise<void> => {
   await ensureFolderExists({ path: resolveFolderPath({ includeToday: false }), token })
   await ensureFolderExists({ path: resolveFolderPath({ includeToday: true }), token })
+}
+
+/** Готовит папку загрузки: базовую, сегодняшнюю или указанную дату. */
+export const ensureUploadFolder = async ({
+  token,
+  targetDate,
+}: {
+  token: string
+  targetDate?: string
+}): Promise<void> => {
+  if (targetDate) {
+    await ensureFolderExists({ path: resolveFolderPath({ targetDate }), token })
+    return
+  }
+
+  await ensureStorageFolders({ token })
 }
 
 export const downloadIndexJson = async ({

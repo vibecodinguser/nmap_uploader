@@ -19,19 +19,20 @@
 }
 
 .dark {
-  --background: #020817;
-  --foreground: #f8fafc;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --card: #020817;
-  --card-foreground: #f8fafc;
-  --border: #1e293b;
-  --input: #1e293b;
-  --primary: #f8fafc;
-  --primary-foreground: #020817;
-  --ring: #cbd5e1;
-  --header-bg: rgba(2, 8, 23, 0.95);
-  --header-bg-blur: rgba(2, 8, 23, 0.6);
+  /* Палитра тёмной темы Яндекс.Браузера */
+  --background: #292927;
+  --foreground: #ededed;
+  --muted: #3b3b3b;
+  --muted-foreground: #999999;
+  --card: #292927;
+  --card-foreground: #ededed;
+  --border: #525252;
+  --input: #525252;
+  --primary: #505050;
+  --primary-foreground: #ffffff;
+  --ring: #6d6d6d;
+  --header-bg: rgba(41, 41, 39, 0.97);
+  --header-bg-blur: rgba(41, 41, 39, 0.88);
   color-scheme: dark;
 }
 
@@ -292,11 +293,11 @@ body {
 }
 
 .dark .upload-progress-status--success {
-  color: #4ade80;
+  color: #6abf69;
 }
 
 .dark .upload-progress-status--error {
-  color: #f87171;
+  color: #e57373;
 }
 
 .sidepanel-main {
@@ -345,6 +346,22 @@ body {
   background-color: var(--background);
   color: var(--foreground);
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.dark .tab-btn.active {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+.dark .upload-dropzone:hover,
+.dark .upload-dropzone.is-dragover {
+  background-color: #454545;
+  border-color: #6d6d6d;
+}
+
+.dark .btn-auth:hover:not(:disabled),
+.dark .btn-icon:hover,
+.dark .btn-theme-toggle:hover {
+  background-color: #454545;
 }
 
 .upload-form {
@@ -519,4 +536,200 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
+}
+
+.points-tab {
+  gap: 1rem;
+}
+
+.point-tabs {
+  margin-bottom: 0.25rem;
+}
+
+.points-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+}
+
+.points-section-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: var(--foreground);
+  text-align: left;
+}
+
+.points-section-subtitle {
+  margin: 0.75rem 0 0;
+  padding: 0.625rem 0.75rem;
+  border-left: 3px solid var(--border);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background-color: var(--muted);
+  font-size: 0.8125rem;
+  font-style: italic;
+  color: var(--muted-foreground);
+  text-align: left;
+  line-height: 1.5;
+  quotes: none;
+}
+
+.points-section-title + .points-section-subtitle {
+  margin-top: 0.375rem;
+  margin-bottom: 1rem;
+}
+
+.points-form {
+  width: 100%;
+}
+
+.manual-upload-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  width: 100%;
+}
+
+.coords-row {
+  width: 100%;
+}
+
+.coords-row--manual {
+  display: grid;
+  grid-template-columns: minmax(0, 30fr) minmax(0, 30fr) minmax(0, 40fr);
+  gap: 0.625rem;
+  align-items: start;
+}
+
+.coords-row--manual .coords-field {
+  align-items: center;
+}
+
+.coords-row--manual .coords-field label {
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+
+.coords-row--manual #point_latitude,
+.coords-row--manual #point_longitude,
+.coords-row--manual #point_date,
+.coords-row--list #multipoint_date {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.coords-row--list {
+  display: grid;
+  grid-template-columns: minmax(0, 60fr) minmax(0, 40fr);
+  align-items: end;
+  gap: 0.625rem;
+}
+
+.coords-row--list .coords-field {
+  align-items: center;
+}
+
+.coords-row--list .coords-field label {
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+
+.coords-row--list #multipoint_date {
+  text-align: center;
+}
+
+.coords-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.coords-field label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+.coords-field input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--input);
+  background-color: transparent;
+  border-radius: var(--radius);
+  padding: 0.75rem 0.75rem;
+  font-family: var(--font-family, sans-serif);
+  font-size: 0.875rem;
+  color: var(--foreground);
+  transition:
+    box-shadow 0.15s,
+    border-color 0.15s;
+  outline: none;
+}
+
+.coords-field input:focus {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 1px var(--ring);
+}
+
+.manual-upload-container > textarea,
+.manual-upload-container > .point-description-input {
+  width: 100%;
+  border: 1px solid var(--input);
+  background-color: transparent;
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  font-family: var(--font-family, sans-serif);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--foreground);
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-height: calc(0.875rem * 1.5 + 1.5rem);
+  resize: none;
+  overflow: hidden;
+  transition:
+    box-shadow 0.15s,
+    border-color 0.15s;
+  outline: none;
+}
+
+.manual-upload-container > textarea:focus,
+.manual-upload-container > .point-description-input:focus {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 1px var(--ring);
+}
+
+.manual-upload-container > textarea::placeholder,
+.manual-upload-container > .point-description-input::placeholder,
+.coords-field input::placeholder {
+  color: var(--muted-foreground);
+  opacity: 0.7;
+}
+
+.submit-btn--outline {
+  background-color: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--input);
+  box-shadow: none;
+  min-height: unset;
+  padding: 0.75rem 1rem;
+  line-height: 1.5;
+}
+
+.submit-btn--outline:hover:not(:disabled) {
+  background-color: var(--muted);
+  transform: none;
+}
+
+@media (max-width: 360px) {
+  .coords-row--list {
+    grid-template-columns: 1fr;
+  }
 }

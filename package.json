@@ -1,6 +1,6 @@
 {
   "name": "nmap-uploader",
-  "description": "Chrome side panel extension for uploading geodata to Народная карта",
+  "description": "Chrome side panel extension for uploading geodata to Yandex Map Editor",
   "private": true,
   "version": "0.1.0",
   "type": "module",

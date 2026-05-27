@@ -8,8 +8,6 @@ const extensionIcons = {
   128: '/icon/128.png',
 } as const
 
-// WXT загружает конфиг при сборке; статического import нет
-// noinspection JSUnusedGlobalSymbols
 export default defineConfig({
   modules: ['@wxt-dev/module-react'],
   vite: () => ({

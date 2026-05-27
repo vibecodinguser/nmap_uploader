@@ -5,6 +5,7 @@ import { createShadowRootUi } from 'wxt/utils/content-script-ui/shadow-root'
 import { defineContentScript } from 'wxt/utils/define-content-script'
 import { App } from './panel/App'
 import '@/assets/styles/globals.css'
+import '@/assets/styles/uploader.css'
 
 const PANEL_WIDTH = 400
 const Z_INDEX = 2_147_483_647
@@ -86,15 +87,18 @@ export default defineContentScript({
           color: var(--foreground);
         }
         :host(.dark) {
-          --background: #020817;
-          --foreground: #f8fafc;
-          --muted: #1e293b;
-          --muted-foreground: #94a3b8;
-          --border: #1e293b;
-          --input: #1e293b;
-          --primary: #f8fafc;
-          --primary-foreground: #020817;
-          --ring: #cbd5e1;
+          --background: #292927;
+          --foreground: #ededed;
+          --muted: #3b3b3b;
+          --muted-foreground: #999999;
+          --border: #525252;
+          --input: #525252;
+          --primary: #505050;
+          --primary-foreground: #ffffff;
+          --ring: #6d6d6d;
+          --header-bg: rgba(41, 41, 39, 0.97);
+          --header-bg-blur: rgba(41, 41, 39, 0.88);
+          box-shadow: -4px 0 24px rgba(0, 0, 0, 0.45) !important;
         }
         html, body {
           width: 100%;

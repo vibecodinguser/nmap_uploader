@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Header } from '@/components/Header'
+import { PointsTab } from '@/components/PointsTab'
 import { UploadTab } from '@/components/UploadTab'
 import { useAuth } from '@/hooks/useAuth'
 import { useFileUpload } from '@/hooks/useFileUpload'
+import { usePointUpload } from '@/hooks/usePointUpload'
 import { useTheme } from '@/hooks/useTheme'
 
 type AppProps = {
@@ -17,6 +19,12 @@ export const App = ({ themeTarget }: AppProps) => {
   const { isUploading, progress, uploadStatus, performUpload } = useFileUpload({
     onAuthenticated: refreshUser,
   })
+  const {
+    isUploading: isPointUploading,
+    uploadStatus: pointUploadStatus,
+    performManualUpload,
+    performMultipointUpload,
+  } = usePointUpload({ onAuthenticated: refreshUser })
   const [activeTab, setActiveTab] = useState<MainTab>('upload')
 
   return (
@@ -51,6 +59,15 @@ export const App = ({ themeTarget }: AppProps) => {
             progress={progress}
             uploadStatus={uploadStatus}
             onUpload={performUpload}
+          />
+        )}
+
+        {activeTab === 'manual' && (
+          <PointsTab
+            isUploading={isPointUploading}
+            uploadStatus={pointUploadStatus}
+            onManualUpload={performManualUpload}
+            onMultipointUpload={performMultipointUpload}
           />
         )}
       </main>

@@ -158,7 +158,10 @@ export default defineBackground(() => {
     }
 
     if (action === 'uploadProcessedFiles') {
-      uploadProcessedFilesToYandexDisk({ files: message.files ?? [] })
+      uploadProcessedFilesToYandexDisk({
+        files: message.files ?? [],
+        targetDate: message.targetDate,
+      })
         .then((result) => sendResponse(result))
         .catch((error: unknown) => {
           console.error('[nmap_uploader] upload failed:', error)

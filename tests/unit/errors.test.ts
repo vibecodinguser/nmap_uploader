@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  ERR_NETWORK,
-  getErrorMessage,
-  isProcessingError,
-  ProcessingError,
-} from '@/lib/errors'
+import { ERR_NETWORK, getErrorMessage, isProcessingError, ProcessingError } from '@/lib/errors'
 
 describe('errors', () => {
   it('getErrorMessage: возвращает message из ProcessingError', () => {

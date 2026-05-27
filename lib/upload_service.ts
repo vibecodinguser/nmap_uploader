@@ -1,8 +1,8 @@
-import { getErrorMessage, ProcessingError } from './errors'
+import { getErrorMessage } from './errors'
 import { createNmapOutputTemplate, mergeNmapOutputTemplate, type ProcessResult } from './nmap_index'
 import {
   downloadIndexJson,
-  ensureStorageFolders,
+  ensureUploadFolder,
   getStoredAuth,
   uploadIndexJson,
   verifyDiskAccess,
@@ -35,8 +35,10 @@ const createLog = (level: UploadLogEntry['level'], message: string): UploadLogEn
 /** Загружает уже сконвертированные данные на Яндекс.Диск. */
 export const uploadProcessedFilesToYandexDisk = async ({
   files,
+  targetDate,
 }: {
   files: ProcessedFileInput[]
+  targetDate?: string
 }): Promise<UploadFilesResult> => {
   const logs: UploadLogEntry[] = []
   const pushLog = (level: UploadLogEntry['level'], message: string) => {
@@ -60,7 +62,7 @@ export const uploadProcessedFilesToYandexDisk = async ({
     pushLog('info', 'Проверка доступа к Яндекс.Диску')
     await verifyDiskAccess({ token })
     pushLog('info', 'Проверка папок на Яндекс.Диске')
-    await ensureStorageFolders({ token })
+    await ensureUploadFolder({ token, targetDate })
     pushLog('success', 'Папки готовы')
   } catch (error: unknown) {
     const message = getErrorMessage(error, 'Ошибка доступа к Диску')
@@ -71,7 +73,7 @@ export const uploadProcessedFilesToYandexDisk = async ({
   let currentIndex = createNmapOutputTemplate()
   try {
     pushLog('info', 'Загрузка текущего index.json')
-    const existing = await downloadIndexJson({ token })
+    const existing = await downloadIndexJson({ token, targetDate })
     currentIndex = existing ?? createNmapOutputTemplate()
     pushLog('success', existing ? 'Текущий index.json загружен' : 'Создан новый index.json')
   } catch (error: unknown) {
@@ -88,7 +90,7 @@ export const uploadProcessedFilesToYandexDisk = async ({
   try {
     pushLog('info', 'Загрузка результатов в Блокнот картографа')
     const finalIndex = mergeNmapOutputTemplate(currentIndex, newData)
-    await uploadIndexJson({ data: finalIndex, token })
+    await uploadIndexJson({ data: finalIndex, token, targetDate })
     pushLog('success', 'index.json загружен на Яндекс.Диск')
   } catch (error: unknown) {
     const message = getErrorMessage(error, 'Ошибка сохранения')
