@@ -1,3 +1,4 @@
+/* noinspection CssUnusedSymbol — классы используются в components/*.tsx и entrypoints/panel/App.tsx */
 :root {
   --background: #ffffff;
   --foreground: #020817;
@@ -15,11 +16,17 @@
     "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --header-bg: rgba(255, 255, 255, 0.95);
   --header-bg-blur: rgba(255, 255, 255, 0.6);
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 0.8125rem;
+  --text-title: 0.9375rem;
+  --text-lg: 1.125rem;
+  --success: #16a34a;
+  --error: #dc2626;
   color-scheme: light;
 }
 
 .dark {
-  /* Палитра тёмной темы Яндекс.Браузера */
   --background: #292927;
   --foreground: #ededed;
   --muted: #3b3b3b;
@@ -33,6 +40,10 @@
   --ring: #6d6d6d;
   --header-bg: rgba(41, 41, 39, 0.97);
   --header-bg-blur: rgba(41, 41, 39, 0.88);
+  --surface-hover: #454545;
+  --surface-hover-border: #6d6d6d;
+  --success: #6abf69;
+  --error: #e57373;
   color-scheme: dark;
 }
 
@@ -50,15 +61,121 @@ body,
 }
 
 body {
-  font-family: var(--font-family, sans-serif);
+  font-family: var(--font-family);
   background-color: var(--background);
   color: var(--foreground);
   -webkit-font-smoothing: antialiased;
 }
 
-.sidepanel-app {
+.manual-form label,
+.coords-field label {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+.sidepanel-app,
+.header-container,
+.logo,
+.header-actions,
+.user-info,
+.upload-progress,
+.upload-progress-percent,
+.manual-form,
+.coords-field,
+.manual-upload-container,
+.upload-form,
+.upload-dropzone,
+.sidepanel-main,
+.points-section,
+.btn-icon,
+.btn-theme-toggle,
+.tab-btn,
+.submit-btn,
+.tab-panel {
   display: flex;
+}
+
+.sidepanel-app,
+.upload-progress,
+.sidepanel-main,
+.upload-form,
+.upload-dropzone,
+.manual-form,
+.manual-upload-container,
+.coords-field,
+.tab-panel,
+.points-section {
   flex-direction: column;
+}
+
+.header-container,
+.logo,
+.header-actions,
+.user-info,
+.upload-progress,
+.upload-progress-percent,
+.btn-icon,
+.btn-theme-toggle,
+.tab-btn,
+.upload-form,
+.upload-dropzone,
+.submit-btn,
+.coords-row--manual .coords-field,
+.coords-row--list .coords-field {
+  align-items: center;
+}
+
+.btn-icon,
+.btn-theme-toggle,
+.upload-progress,
+.upload-progress-percent,
+.tab-btn,
+.upload-dropzone,
+.submit-btn {
+  justify-content: center;
+}
+
+.sidepanel-header,
+.upload-progress,
+.upload-progress-svg,
+.tabs,
+.upload-form,
+.upload-dropzone,
+.submit-btn,
+.manual-form,
+.manual-form input,
+.manual-upload-container,
+.coords-row,
+.coords-row--manual .coords-field label,
+.coords-row--manual #point_latitude,
+.coords-row--manual #point_longitude,
+.coords-row--manual #point_date,
+.coords-row--list #multipoint_date,
+.coords-row--list .coords-field label,
+.coords-field input,
+.manual-upload-container > textarea,
+.manual-upload-container > .point-description-input,
+.points-section,
+.points-form {
+  width: 100%;
+}
+
+.upload-progress-status,
+.tab-btn,
+.upload-dropzone,
+.submit-btn,
+.coords-row--list #multipoint_date {
+  text-align: center;
+}
+
+.coords-row--manual .coords-field label,
+.coords-row--list .coords-field label {
+  display: block;
+  text-align: center;
+}
+
+.sidepanel-app {
   min-height: 100%;
   background-color: var(--background);
 }
@@ -67,7 +184,6 @@ body {
   position: sticky;
   top: 0;
   z-index: 50;
-  width: 100%;
   border-bottom: 1px solid var(--border);
   background-color: var(--header-bg);
   backdrop-filter: blur(8px);
@@ -81,16 +197,12 @@ body {
 }
 
 .header-container {
-  display: flex;
   height: 3.5rem;
-  align-items: center;
   justify-content: space-between;
   padding: 0 1rem;
 }
 
 .logo {
-  display: flex;
-  align-items: center;
   gap: 0.5rem;
 }
 
@@ -104,85 +216,55 @@ body {
 }
 
 .logo-text {
-  font-size: 1.125rem;
+  font-size: var(--text-lg);
   font-weight: 600;
   line-height: 1.75rem;
   color: var(--foreground);
 }
 
 .header-actions {
-  display: flex;
-  align-items: center;
   gap: 0.5rem;
 }
 
 .user-info {
-  display: flex;
-  align-items: center;
   gap: 0.375rem;
   max-width: 140px;
 }
 
 .user-info-name {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   color: var(--muted-foreground);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.btn-auth {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.375rem 0.625rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+.btn-icon,
+.btn-theme-toggle {
+  border-radius: var(--radius);
   background-color: var(--background);
   color: var(--foreground);
-  cursor: pointer;
+  border: 1px solid var(--border);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.btn-auth:hover:not(:disabled) {
+.btn-icon:hover:not(:disabled),
+.btn-theme-toggle:hover:not(:disabled) {
   background-color: var(--muted);
 }
 
-.btn-auth:disabled {
+.dark .btn-icon:hover:not(:disabled),
+.dark .btn-theme-toggle:hover:not(:disabled) {
+  background-color: var(--surface-hover);
+}
+
+.btn-icon:disabled,
+.btn-theme-toggle:disabled {
   opacity: 0.6;
   cursor: wait;
 }
 
-.btn-icon,
-.btn-theme-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background-color: var(--background);
-  color: var(--foreground);
-  cursor: pointer;
-}
-
-.btn-icon {
-  width: 1.75rem;
-  height: 1.75rem;
-}
-
-.btn-icon:hover,
-.btn-theme-toggle:hover {
-  background-color: var(--muted);
-}
-
-.btn-theme-toggle {
-  width: 2.25rem;
-  height: 2.25rem;
-  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
+.btn-icon:focus-visible,
 .btn-theme-toggle:focus-visible {
   outline: none;
   box-shadow:
@@ -190,34 +272,15 @@ body {
     0 0 0 4px var(--ring);
 }
 
-.auth-prompt {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  margin-bottom: 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background-color: var(--muted);
-}
-
-.auth-prompt p {
-  margin: 0 0 0.75rem;
-  font-size: 0.8125rem;
-}
-
-.auth-prompt-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.btn-link {
+.btn-icon {
   padding: 0;
-  border: none;
-  background: none;
-  color: var(--muted-foreground);
-  font-size: 0.8125rem;
-  cursor: pointer;
-  text-decoration: underline;
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.btn-theme-toggle {
+  width: 2.25rem;
+  height: 2.25rem;
 }
 
 .upload-dropzone.is-uploading {
@@ -227,12 +290,7 @@ body {
 }
 
 .upload-progress {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   gap: 0.875rem;
-  width: 100%;
   padding: 0.5rem 0;
 }
 
@@ -245,7 +303,6 @@ body {
 
 .upload-progress-svg {
   display: block;
-  width: 100%;
   height: 100%;
   transform: rotate(-90deg);
 }
@@ -264,12 +321,7 @@ body {
 }
 
 .upload-progress-percent {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.125rem;
+  font-size: var(--text-lg);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--foreground);
@@ -278,61 +330,43 @@ body {
 .upload-progress-status {
   margin: 0;
   max-width: 100%;
-  font-size: 0.8125rem;
+  font-size: var(--text-md);
   line-height: 1.4;
-  text-align: center;
   color: var(--muted-foreground);
 }
 
 .upload-progress-status--success {
-  color: #16a34a;
+  color: var(--success);
 }
 
 .upload-progress-status--error {
-  color: #dc2626;
-}
-
-.dark .upload-progress-status--success {
-  color: #6abf69;
-}
-
-.dark .upload-progress-status--error {
-  color: #e57373;
+  color: var(--error);
 }
 
 .sidepanel-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
   padding: 1rem;
   gap: 1rem;
   overflow-y: auto;
+  flex: 1;
 }
 
 .tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  align-items: center;
   padding: 4px;
   background-color: var(--muted);
   color: var(--muted-foreground);
   border-radius: 9999px;
-  width: 100%;
 }
 
 .tab-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
   border-radius: 9999px;
   padding: 6px 8px;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   font-weight: 500;
   color: var(--muted-foreground);
   background: transparent;
   border: none;
-  cursor: pointer;
   transition: all 0.2s;
   min-height: 44px;
   line-height: 1.2;
@@ -352,40 +386,18 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
 }
 
-.dark .upload-dropzone:hover,
-.dark .upload-dropzone.is-dragover {
-  background-color: #454545;
-  border-color: #6d6d6d;
-}
-
-.dark .btn-auth:hover:not(:disabled),
-.dark .btn-icon:hover,
-.dark .btn-theme-toggle:hover {
-  background-color: #454545;
-}
-
 .upload-form {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   gap: 1.5rem;
   flex: 1;
 }
 
 .upload-dropzone {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   gap: 0.5rem;
-  width: 100%;
   padding: 2rem 1rem;
   background-color: var(--background);
   border: 2px dashed var(--input);
   border-radius: 0.5rem;
   color: var(--foreground);
-  text-align: center;
-  cursor: pointer;
   transition:
     background-color 0.2s,
     border-color 0.2s;
@@ -395,6 +407,12 @@ body {
 .upload-dropzone.is-dragover {
   background-color: var(--muted);
   border-color: var(--ring);
+}
+
+.dark .upload-dropzone:hover,
+.dark .upload-dropzone.is-dragover {
+  background-color: var(--surface-hover);
+  border-color: var(--surface-hover-border);
 }
 
 .upload-dropzone:focus-visible {
@@ -414,40 +432,28 @@ body {
 
 .upload-dropzone-title {
   margin: 0;
-  font-size: 0.9375rem;
+  font-size: var(--text-title);
   font-weight: 600;
   line-height: 1.35;
 }
 
 .upload-dropzone-subtitle {
   margin: 0;
-  font-size: 0.875rem;
-  color: var(--muted-foreground);
-}
-
-.upload-dropzone-formats {
-  margin: 0.25rem 0 0.75rem;
-  font-size: 0.75rem;
+  font-size: var(--text-sm);
   color: var(--muted-foreground);
 }
 
 .submit-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   border-radius: var(--radius);
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   font-weight: 500;
   min-height: 2.5rem;
   padding: 0.5rem 1rem;
   background-color: var(--primary);
   color: var(--primary-foreground);
   border: 1px solid transparent;
-  cursor: pointer;
   transition: all 0.2s;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  width: 100%;
-  text-align: center;
   line-height: 1.25;
 }
 
@@ -470,32 +476,19 @@ body {
   min-width: 180px;
 }
 
-.sidepanel-footer {
-  padding: 0 1rem 1rem;
-  margin-top: auto;
-}
-
 .manual-form {
-  display: flex;
-  flex-direction: column;
   gap: 0.75rem;
-  width: 100%;
 }
 
-.manual-form label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--foreground);
-}
-
-.manual-form input {
-  width: 100%;
+.manual-form input,
+.coords-field input,
+.manual-upload-container > textarea,
+.manual-upload-container > .point-description-input {
   border: 1px solid var(--input);
   background-color: transparent;
   border-radius: var(--radius);
-  padding: 0.75rem 1rem;
-  font-family: var(--font-family, sans-serif);
-  font-size: 0.875rem;
+  font-family: var(--font-family);
+  font-size: var(--text-sm);
   color: var(--foreground);
   transition:
     box-shadow 0.15s,
@@ -503,21 +496,24 @@ body {
   outline: none;
 }
 
-.manual-form input:focus {
+.manual-form input:focus,
+.coords-field input:focus,
+.manual-upload-container > textarea:focus,
+.manual-upload-container > .point-description-input:focus {
   border-color: var(--ring);
   box-shadow: 0 0 0 1px var(--ring);
 }
 
-.manual-form input::placeholder {
+.manual-form input::placeholder,
+.coords-field input::placeholder,
+.manual-upload-container > textarea::placeholder,
+.manual-upload-container > .point-description-input::placeholder {
   color: var(--muted-foreground);
   opacity: 0.7;
 }
 
-.manual-hint {
-  font-size: 0.8125rem;
-  color: var(--muted-foreground);
-  line-height: 1.5;
-  margin: 0;
+.manual-form input {
+  padding: 0.75rem 1rem;
 }
 
 @keyframes fadeIn {
@@ -534,8 +530,6 @@ body {
 .tab-panel {
   animation: fadeIn 0.3s ease-in-out;
   flex: 1;
-  display: flex;
-  flex-direction: column;
 }
 
 .points-tab {
@@ -547,19 +541,7 @@ body {
 }
 
 .points-section {
-  display: flex;
-  flex-direction: column;
   gap: 0;
-  width: 100%;
-}
-
-.points-section-title {
-  margin: 0;
-  font-size: 1.125rem;
-  font-weight: 600;
-  letter-spacing: -0.025em;
-  color: var(--foreground);
-  text-align: left;
 }
 
 .points-section-subtitle {
@@ -568,59 +550,30 @@ body {
   border-left: 3px solid var(--border);
   border-radius: 0 var(--radius) var(--radius) 0;
   background-color: var(--muted);
-  font-size: 0.8125rem;
+  font-size: var(--text-md);
   font-style: italic;
   color: var(--muted-foreground);
   text-align: left;
   line-height: 1.5;
-  quotes: none;
-}
-
-.points-section-title + .points-section-subtitle {
-  margin-top: 0.375rem;
-  margin-bottom: 1rem;
-}
-
-.points-form {
-  width: 100%;
 }
 
 .manual-upload-container {
-  display: flex;
-  flex-direction: column;
   gap: 0.625rem;
-  width: 100%;
-}
-
-.coords-row {
-  width: 100%;
 }
 
 .coords-row--manual {
   display: grid;
   grid-template-columns: minmax(0, 30fr) minmax(0, 30fr) minmax(0, 40fr);
-  gap: 0.625rem;
   align-items: start;
-}
-
-.coords-row--manual .coords-field {
-  align-items: center;
-}
-
-.coords-row--manual .coords-field label {
-  display: block;
-  width: 100%;
-  text-align: center;
+  gap: 0.625rem;
 }
 
 .coords-row--manual #point_latitude,
 .coords-row--manual #point_longitude,
 .coords-row--manual #point_date,
 .coords-row--list #multipoint_date {
-  width: 100%;
   min-width: 0;
   max-width: 100%;
-  box-sizing: border-box;
 }
 
 .coords-row--list {
@@ -630,87 +583,25 @@ body {
   gap: 0.625rem;
 }
 
-.coords-row--list .coords-field {
-  align-items: center;
-}
-
-.coords-row--list .coords-field label {
-  display: block;
-  width: 100%;
-  text-align: center;
-}
-
-.coords-row--list #multipoint_date {
-  text-align: center;
-}
-
 .coords-field {
-  display: flex;
-  flex-direction: column;
   gap: 0.375rem;
   min-width: 0;
 }
 
-.coords-field label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--foreground);
-}
-
 .coords-field input {
-  width: 100%;
   min-width: 0;
-  border: 1px solid var(--input);
-  background-color: transparent;
-  border-radius: var(--radius);
-  padding: 0.75rem 0.75rem;
-  font-family: var(--font-family, sans-serif);
-  font-size: 0.875rem;
-  color: var(--foreground);
-  transition:
-    box-shadow 0.15s,
-    border-color 0.15s;
-  outline: none;
-}
-
-.coords-field input:focus {
-  border-color: var(--ring);
-  box-shadow: 0 0 0 1px var(--ring);
+  padding: 0.75rem;
 }
 
 .manual-upload-container > textarea,
 .manual-upload-container > .point-description-input {
-  width: 100%;
-  border: 1px solid var(--input);
-  background-color: transparent;
-  border-radius: var(--radius);
   padding: 0.75rem 1rem;
-  font-family: var(--font-family, sans-serif);
-  font-size: 0.875rem;
   line-height: 1.5;
-  color: var(--foreground);
   white-space: pre-wrap;
   word-break: break-word;
-  min-height: calc(0.875rem * 1.5 + 1.5rem);
+  min-height: calc(var(--text-sm) * 1.5 + 1.5rem);
   resize: none;
   overflow: hidden;
-  transition:
-    box-shadow 0.15s,
-    border-color 0.15s;
-  outline: none;
-}
-
-.manual-upload-container > textarea:focus,
-.manual-upload-container > .point-description-input:focus {
-  border-color: var(--ring);
-  box-shadow: 0 0 0 1px var(--ring);
-}
-
-.manual-upload-container > textarea::placeholder,
-.manual-upload-container > .point-description-input::placeholder,
-.coords-field input::placeholder {
-  color: var(--muted-foreground);
-  opacity: 0.7;
 }
 
 .submit-btn--outline {
@@ -728,7 +619,7 @@ body {
   transform: none;
 }
 
-@media (max-width: 360px) {
+@media (width <= 360px) {
   .coords-row--list {
     grid-template-columns: 1fr;
   }

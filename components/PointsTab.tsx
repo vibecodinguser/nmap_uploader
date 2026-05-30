@@ -90,7 +90,7 @@ export const PointsTab = ({
         <button
           type="button"
           role="tab"
-          className={`tab-btn${activeSubTab === 'manual' ? ' active' : ''}`}
+          className={activeSubTab === 'manual' ? 'tab-btn active' : 'tab-btn'}
           aria-selected={activeSubTab === 'manual'}
           onClick={() => setActiveSubTab('manual')}
         >
@@ -99,7 +99,7 @@ export const PointsTab = ({
         <button
           type="button"
           role="tab"
-          className={`tab-btn${activeSubTab === 'list' ? ' active' : ''}`}
+          className={activeSubTab === 'list' ? 'tab-btn active' : 'tab-btn'}
           aria-selected={activeSubTab === 'list'}
           onClick={() => setActiveSubTab('list')}
         >

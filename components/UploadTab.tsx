@@ -39,7 +39,7 @@ function UploadProgressRing({ progress, isActive }: UploadProgressRingProps) {
 
   return (
     <div
-      className={`upload-progress-ring${isActive ? ' is-active' : ''}`}
+      className={isActive ? 'upload-progress-ring is-active' : 'upload-progress-ring'}
       role="progressbar"
       aria-valuemin={0}
       aria-valuemax={100}
@@ -120,6 +120,13 @@ export const UploadTab = ({ isUploading, progress, uploadStatus, onUpload }: Upl
     handleFile(event.dataTransfer.files)
   }
 
+  const dropzoneClassName = (() => {
+    if (isDragOver && isUploading) return 'upload-dropzone is-dragover is-uploading'
+    if (isDragOver) return 'upload-dropzone is-dragover'
+    if (isUploading) return 'upload-dropzone is-uploading'
+    return 'upload-dropzone'
+  })()
+
   const handleKeyDown = (event: KeyboardEvent) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
@@ -134,7 +141,7 @@ export const UploadTab = ({ isUploading, progress, uploadStatus, onUpload }: Upl
         <div
           role="button"
           tabIndex={0}
-          className={`upload-dropzone${isDragOver ? ' is-dragover' : ''}${isUploading ? ' is-uploading' : ''}`}
+          className={dropzoneClassName}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}

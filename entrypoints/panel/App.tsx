@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import '@/assets/styles/uploader.css'
 import { Header } from '@/components/Header'
 import { PointsTab } from '@/components/PointsTab'
 import { UploadTab } from '@/components/UploadTab'
@@ -36,7 +37,7 @@ export const App = ({ themeTarget }: AppProps) => {
           <button
             type="button"
             role="tab"
-            className={`tab-btn${activeTab === 'upload' ? ' active' : ''}`}
+            className={activeTab === 'upload' ? 'tab-btn active' : 'tab-btn'}
             aria-selected={activeTab === 'upload'}
             onClick={() => setActiveTab('upload')}
           >
@@ -45,7 +46,7 @@ export const App = ({ themeTarget }: AppProps) => {
           <button
             type="button"
             role="tab"
-            className={`tab-btn${activeTab === 'manual' ? ' active' : ''}`}
+            className={activeTab === 'manual' ? 'tab-btn active' : 'tab-btn'}
             aria-selected={activeTab === 'manual'}
             onClick={() => setActiveTab('manual')}
           >

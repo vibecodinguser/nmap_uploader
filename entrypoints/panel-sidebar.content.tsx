@@ -5,7 +5,6 @@ import { createShadowRootUi } from 'wxt/utils/content-script-ui/shadow-root'
 import { defineContentScript } from 'wxt/utils/define-content-script'
 import { App } from './panel/App'
 import '@/assets/styles/globals.css'
-import '@/assets/styles/uploader.css'
 
 const PANEL_WIDTH = 425
 const Z_INDEX = 2_147_483_647

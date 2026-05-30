@@ -62,18 +62,18 @@ pnpm build     # production-сборка
 
 ## Скрипты
 
-| Команда | Описание |
-| --------- | ---------- |
-| `pnpm dev` | Dev-сборка Chrome с HMR |
-| `pnpm dev:firefox` | Dev-сборка Firefox |
-| `pnpm build` | Production-сборка Chrome |
-| `pnpm build:firefox` | Production-сборка Firefox |
-| `pnpm zip` | ZIP-архив Chrome для публикации |
-| `pnpm zip:firefox` | ZIP-архив Firefox |
-| `pnpm compile` | Проверка типов (`tsc --noEmit`) |
-| `pnpm lint` | Проверка Biome |
-| `pnpm lint:fix` | Автоисправление Biome |
-| `pnpm format` | Форматирование Biome |
+| Команда              | Описание                        |
+|----------------------|---------------------------------|
+| `pnpm dev`           | Dev-сборка Chrome с HMR         |
+| `pnpm dev:firefox`   | Dev-сборка Firefox              |
+| `pnpm build`         | Production-сборка Chrome        |
+| `pnpm build:firefox` | Production-сборка Firefox       |
+| `pnpm zip`           | ZIP-архив Chrome для публикации |
+| `pnpm zip:firefox`   | ZIP-архив Firefox               |
+| `pnpm compile`       | Проверка типов (`tsc --noEmit`) |
+| `pnpm lint`          | Проверка Biome                  |
+| `pnpm lint:fix`      | Автоисправление Biome           |
+| `pnpm format`        | Форматирование Biome            |
 
 ## Структура
 
