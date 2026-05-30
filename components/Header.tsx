@@ -1,5 +1,5 @@
 import { LogOut, Moon, Sun } from 'lucide-react'
-import logoUrl from '@/assets/logo.svg'
+import logoUrl from '@/assets/logo.png'
 import type { Theme } from '@/hooks/useTheme'
 import type { YandexUser } from '@/lib/yandex/client'
 

@@ -7,13 +7,13 @@ import { App } from './panel/App'
 import '@/assets/styles/globals.css'
 import '@/assets/styles/uploader.css'
 
-const PANEL_WIDTH = 400
+const PANEL_WIDTH = 425
 const Z_INDEX = 2_147_483_647
 
 // WXT подхватывает default export при сборке; статического import нет
 // noinspection JSUnusedGlobalSymbols
 export default defineContentScript({
-  matches: ['<all_urls>'],
+  matches: ['https://n.maps.yandex.ru/*'],
   runAt: 'document_idle',
   cssInjectionMode: 'ui',
 

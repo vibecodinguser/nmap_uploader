@@ -23,18 +23,19 @@ export default defineConfig({
   },
   manifest: {
     name: 'nmap_uploader',
-    description: 'Загрузка геоданных в Блокнот картографа Народной карты',
+    description: 'Загрузчик в Блокнот картографа Народной карты',
     permissions: ['sidePanel', 'storage', 'scripting', 'activeTab', 'identity'],
     host_permissions: [
-      '<all_urls>',
+      'https://n.maps.yandex.ru/*',
       'https://cloud-api.yandex.net/*',
+      'https://*.disk.yandex.ru/*',
       'https://oauth.yandex.ru/*',
       'https://login.yandex.ru/*',
     ],
     web_accessible_resources: [
       {
         resources: ['panel.html', 'chunks/*', 'assets/*'],
-        matches: ['<all_urls>'],
+        matches: ['https://n.maps.yandex.ru/*'],
       },
     ],
     action: {
