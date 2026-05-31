@@ -24,7 +24,7 @@ export default defineConfig({
   manifest: {
     name: 'nmap_uploader',
     description: 'Загрузчик в Блокнот картографа Народной карты',
-    permissions: ['sidePanel', 'storage', 'scripting', 'activeTab', 'identity'],
+    permissions: ['sidePanel', 'storage', 'scripting', 'activeTab', 'identity', 'tabs'],
     host_permissions: [
       'https://n.maps.yandex.ru/*',
       'https://cloud-api.yandex.net/*',

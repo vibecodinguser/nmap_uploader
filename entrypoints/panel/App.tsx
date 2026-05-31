@@ -1,21 +1,26 @@
+import { Settings } from 'lucide-react'
 import { useState } from 'react'
 import '@/assets/styles/uploader.css'
 import { Header } from '@/components/Header'
 import { PointsTab } from '@/components/PointsTab'
+import { SettingsTab } from '@/components/SettingsTab'
 import { UploadTab } from '@/components/UploadTab'
 import { useAuth } from '@/hooks/useAuth'
 import { useFileUpload } from '@/hooks/useFileUpload'
 import { usePointUpload } from '@/hooks/usePointUpload'
 import { useTheme } from '@/hooks/useTheme'
+import { useStrokeColor } from '@/hooks/useStrokeColor'
 
 type AppProps = {
   themeTarget?: Element
 }
 
 type MainTab = 'upload' | 'manual'
+type AppView = 'main' | 'settings'
 
 export const App = ({ themeTarget }: AppProps) => {
   const { theme, toggleTheme } = useTheme(themeTarget)
+  const strokeColor = useStrokeColor()
   const { user, refreshUser, handleLogout } = useAuth()
   const { isUploading, progress, uploadStatus, performUpload } = useFileUpload({
     onAuthenticated: refreshUser,
@@ -27,51 +32,83 @@ export const App = ({ themeTarget }: AppProps) => {
     performMultipointUpload,
   } = usePointUpload({ onAuthenticated: refreshUser })
   const [activeTab, setActiveTab] = useState<MainTab>('upload')
+  const [activeView, setActiveView] = useState<AppView>('main')
+
+  const handleOpenSettings = () => {
+    setActiveView('settings')
+  }
+
+  const handleCloseSettings = () => {
+    setActiveView('main')
+  }
 
   return (
     <div className="sidepanel-app">
       <Header theme={theme} user={user} onToggleTheme={toggleTheme} onLogout={handleLogout} />
 
       <main className="sidepanel-main">
-        <div className="tabs" role="tablist" aria-label="Режим ввода">
-          <button
-            type="button"
-            role="tab"
-            className={activeTab === 'upload' ? 'tab-btn active' : 'tab-btn'}
-            aria-selected={activeTab === 'upload'}
-            onClick={() => setActiveTab('upload')}
-          >
-            Полигоны
-          </button>
-          <button
-            type="button"
-            role="tab"
-            className={activeTab === 'manual' ? 'tab-btn active' : 'tab-btn'}
-            aria-selected={activeTab === 'manual'}
-            onClick={() => setActiveTab('manual')}
-          >
-            Точки
-          </button>
-        </div>
-
-        {activeTab === 'upload' && (
-          <UploadTab
-            isUploading={isUploading}
-            progress={progress}
-            uploadStatus={uploadStatus}
-            onUpload={performUpload}
+        {activeView === 'settings' ? (
+          <SettingsTab
+            theme={theme}
+            onToggleTheme={toggleTheme}
+            onBack={handleCloseSettings}
+            strokeColor={strokeColor}
           />
-        )}
+        ) : (
+          <>
+            <div className="tabs" role="tablist" aria-label="Режим ввода">
+              <button
+                type="button"
+                role="tab"
+                className={activeTab === 'upload' ? 'tab-btn active' : 'tab-btn'}
+                aria-selected={activeTab === 'upload'}
+                onClick={() => setActiveTab('upload')}
+              >
+                Полигоны
+              </button>
+              <button
+                type="button"
+                role="tab"
+                className={activeTab === 'manual' ? 'tab-btn active' : 'tab-btn'}
+                aria-selected={activeTab === 'manual'}
+                onClick={() => setActiveTab('manual')}
+              >
+                Точки
+              </button>
+            </div>
 
-        {activeTab === 'manual' && (
-          <PointsTab
-            isUploading={isPointUploading}
-            uploadStatus={pointUploadStatus}
-            onManualUpload={performManualUpload}
-            onMultipointUpload={performMultipointUpload}
-          />
+            {activeTab === 'upload' && (
+              <UploadTab
+                isUploading={isUploading}
+                progress={progress}
+                uploadStatus={uploadStatus}
+                onUpload={performUpload}
+              />
+            )}
+
+            {activeTab === 'manual' && (
+              <PointsTab
+                isUploading={isPointUploading}
+                uploadStatus={pointUploadStatus}
+                onManualUpload={performManualUpload}
+                onMultipointUpload={performMultipointUpload}
+              />
+            )}
+          </>
         )}
       </main>
+
+      {activeView === 'main' && (
+        <button
+          type="button"
+          className="settings-nav-btn"
+          onClick={handleOpenSettings}
+          aria-label="Открыть настройки"
+        >
+          <Settings size={18} aria-hidden />
+          <span>Настройки</span>
+        </button>
+      )}
     </div>
   )
 }

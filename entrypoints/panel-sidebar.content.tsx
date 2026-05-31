@@ -4,6 +4,7 @@ import { browser } from 'wxt/browser'
 import { createShadowRootUi } from 'wxt/utils/content-script-ui/shadow-root'
 import { defineContentScript } from 'wxt/utils/define-content-script'
 import { App } from './panel/App'
+import { ensureStrokeRecolorEngine } from '@/lib/stroke_recolor_engine'
 import '@/assets/styles/globals.css'
 
 const PANEL_WIDTH = 425
@@ -17,6 +18,8 @@ export default defineContentScript({
   cssInjectionMode: 'ui',
 
   async main(ctx) {
+    ensureStrokeRecolorEngine()
+
     let isOpen = false
     let isUiReady = false
     let pendingToggle = false

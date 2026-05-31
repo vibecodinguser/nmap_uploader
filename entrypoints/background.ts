@@ -181,6 +181,40 @@ export default defineBackground(() => {
       return true
     }
 
+    if (action === 'applyStrokeColor') {
+      const color = typeof message.color === 'string' ? message.color : ''
+      if (!color) {
+        sendResponse({ ok: false })
+        return true
+      }
+
+      const relayStrokeColor = async (): Promise<void> => {
+        const senderTabId = _sender.tab?.id
+        const senderIsMapTab = _sender.tab?.url?.startsWith('https://n.maps.yandex.ru/')
+
+        if (senderTabId && senderIsMapTab) {
+          await browser.tabs.sendMessage(senderTabId, { action: 'applyStrokeColor', color })
+          return
+        }
+
+        const tabs = await browser.tabs.query({ url: 'https://n.maps.yandex.ru/*' })
+        await Promise.allSettled(
+          tabs.map((tab) => {
+            if (!tab.id) return Promise.resolve()
+            return browser.tabs.sendMessage(tab.id, { action: 'applyStrokeColor', color })
+          }),
+        )
+      }
+
+      relayStrokeColor()
+        .then(() => sendResponse({ ok: true }))
+        .catch((error: unknown) => {
+          console.warn('[nmap_uploader] applyStrokeColor relay failed:', error)
+          sendResponse({ ok: false })
+        })
+      return true
+    }
+
     return undefined
   })
 })
