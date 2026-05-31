@@ -60,7 +60,7 @@ export default defineContentScript({
           all: initial;
           --background: #ffffff;
           --foreground: #020817;
-          --muted: #f1f5f9;
+          --muted: #e5e5e5;
           --muted-foreground: #64748b;
           --border: #e2e8f0;
           --input: #e2e8f0;
@@ -83,17 +83,17 @@ export default defineContentScript({
           color: var(--foreground);
         }
         :host(.dark) {
-          --background: #292927;
+          --background: #45464f;
           --foreground: #ededed;
-          --muted: #3b3b3b;
+          --muted: #32333d;
           --muted-foreground: #999999;
           --border: #525252;
           --input: #525252;
-          --primary: #505050;
+          --primary: #32333d;
           --primary-foreground: #ffffff;
           --ring: #6d6d6d;
-          --header-bg: rgba(41, 41, 39, 0.97);
-          --header-bg-blur: rgba(41, 41, 39, 0.88);
+          --header-bg: rgba(69, 70, 79, 0.97);
+          --header-bg-blur: rgba(69, 70, 79, 0.88);
           box-shadow: -4px 0 24px rgba(0, 0, 0, 0.45) !important;
         }
         html, body {

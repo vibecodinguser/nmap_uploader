@@ -2,7 +2,7 @@
 :root {
   --background: #ffffff;
   --foreground: #020817;
-  --muted: #f1f5f9;
+  --muted: #e5e5e5;
   --muted-foreground: #64748b;
   --border: #e2e8f0;
   --input: #e2e8f0;
@@ -25,17 +25,17 @@
 }
 
 .dark {
-  --background: #292927;
+  --background: #45464f;
   --foreground: #ededed;
-  --muted: #3b3b3b;
+  --muted: #32333d;
   --muted-foreground: #999999;
   --border: #525252;
   --input: #525252;
-  --primary: #505050;
+  --primary: #32333d;
   --primary-foreground: #ffffff;
   --ring: #6d6d6d;
-  --header-bg: rgba(41, 41, 39, 0.97);
-  --header-bg-blur: rgba(41, 41, 39, 0.88);
+  --header-bg: rgba(69, 70, 79, 0.97);
+  --header-bg-blur: rgba(69, 70, 79, 0.88);
   --surface-hover: #454545;
   --surface-hover-border: #6d6d6d;
   --success: #6abf69;
@@ -391,12 +391,6 @@ body {
   border-color: var(--ring);
 }
 
-.dark .upload-dropzone:hover,
-.dark .upload-dropzone.is-dragover {
-  background-color: var(--surface-hover);
-  border-color: var(--surface-hover-border);
-}
-
 .upload-dropzone:focus-visible {
   outline: none;
   box-shadow:
@@ -576,6 +570,20 @@ body {
   padding: 0 0.75rem;
 }
 
+.dark .coords-row--manual #point_date,
+.dark .coords-row--list #multipoint_date {
+  background-color: #32333d;
+  accent-color: #32333d;
+}
+
+.dark .coords-row--manual #point_date::picker(select),
+.dark .coords-row--list #multipoint_date::picker(select) {
+  background-color: #32333d;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--foreground);
+}
+
 .manual-upload-container > .point-description-input {
   width: 100%;
   min-height: 40px;
@@ -635,10 +643,6 @@ body {
 
 .dark .settings-nav-btn {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-}
-
-.dark .settings-nav-btn:hover {
-  background-color: var(--surface-hover);
 }
 
 .settings-nav-btn:focus-visible {
