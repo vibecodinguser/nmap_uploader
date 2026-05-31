@@ -5,6 +5,7 @@ import { createShadowRootUi } from 'wxt/utils/content-script-ui/shadow-root'
 import { defineContentScript } from 'wxt/utils/define-content-script'
 import { getStoredThemeMode, resolveTheme } from '@/hooks/useTheme'
 import { applyBrowserDarkThemeVars } from '@/lib/browser_theme'
+import { buildNkUserBarCssVars, readNkUserBarTypography } from '@/lib/nk_user_bar_typography'
 import { ensureStrokeRecolorEngine } from '@/lib/stroke_recolor_engine'
 import { App } from './panel/App'
 import '@/assets/styles/globals.css'
@@ -51,6 +52,8 @@ export default defineContentScript({
       togglePanel()
     })
 
+    const nkUserBarCssVars = buildNkUserBarCssVars(readNkUserBarTypography())
+
     ui = await createShadowRootUi(ctx, {
       name: 'nmap-sidebar',
       position: 'inline',
@@ -59,6 +62,7 @@ export default defineContentScript({
       css: `
         :host {
           all: initial;
+          ${nkUserBarCssVars}
           --background: #ffffff;
           --foreground: #020817;
           --muted: #e5e5e5;

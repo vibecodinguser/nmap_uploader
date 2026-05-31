@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
   clearAuth,
   ensureYandexAuth,
+  fetchYandexAvatarDataUrl,
   getStoredAuth,
   launchYandexAuth,
   saveAuth,
@@ -29,6 +30,24 @@ describe('OAuth', () => {
     expect(authUrl.searchParams.get('scope')).toContain('cloud_api:disk.write')
   })
 
+  it('fetchYandexAvatarDataUrl: возвращает data URL портрета', async () => {
+    const dataUrl = await fetchYandexAvatarDataUrl({ avatarId: '131652443' })
+    expect(dataUrl).toMatch(/^data:image\/png;base64,/)
+  })
+
+  it('ensureYandexAuth: после явного выхода не выполняет silent OAuth', async () => {
+    await saveAuth({
+      token: 'stored-token',
+      user: { id: '1', login: 'cached' },
+    })
+    await clearAuth({ explicit: true })
+
+    const auth = await ensureYandexAuth({ interactive: false })
+
+    expect(auth).toBeNull()
+    expect(launchWebAuthFlow).not.toHaveBeenCalled()
+  })
+
   it('ensureYandexAuth: возвращает сохранённую сессию без launchWebAuthFlow', async () => {
     await saveAuth({
       token: 'stored-token',
@@ -38,7 +57,8 @@ describe('OAuth', () => {
     const auth = await ensureYandexAuth({ interactive: false })
 
     expect(auth?.token).toBe('stored-token')
-    expect(auth?.user.login).toBe('cached')
+    expect(auth?.user.login).toBe('testuser')
+    expect(auth?.user.default_avatar_id).toBe('131652443')
     expect(launchWebAuthFlow).not.toHaveBeenCalled()
   })
 

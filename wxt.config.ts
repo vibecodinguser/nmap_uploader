@@ -31,6 +31,7 @@ export default defineConfig({
       'https://*.disk.yandex.ru/*',
       'https://oauth.yandex.ru/*',
       'https://login.yandex.ru/*',
+      'https://avatars.yandex.net/*',
     ],
     web_accessible_resources: [
       {

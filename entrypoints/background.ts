@@ -2,7 +2,13 @@ import { browser } from 'wxt/browser'
 import { defineBackground } from 'wxt/utils/define-background'
 import { isYandexBrowser } from '@/lib/browser'
 import { uploadProcessedFilesToYandexDisk } from '@/lib/upload_service'
-import { clearAuth, ensureYandexAuth, getStoredAuth } from '@/lib/yandex/client'
+import {
+  buildAuthPayload,
+  clearAuth,
+  ensureYandexAuth,
+  getStoredAuth,
+  loadUserAvatarDataUrl,
+} from '@/lib/yandex/client'
 
 const PANEL_PAGE = '/panel.html'
 
@@ -109,20 +115,29 @@ export default defineBackground(() => {
 
     if (action === 'getAuth') {
       getStoredAuth()
-        .then((auth) => sendResponse({ user: auth?.user ?? null }))
-        .catch(() => sendResponse({ user: null }))
+        .then((auth) => buildAuthPayload(auth))
+        .then((payload) => sendResponse(payload))
+        .catch(() => sendResponse({ user: null, avatarDataUrl: null }))
       return true
     }
 
     if (action === 'ensureAuth') {
       const interactive = Boolean(message.interactive)
       ensureYandexAuth({ interactive })
-        .then((auth) => sendResponse({ ok: Boolean(auth), user: auth?.user ?? null }))
+        .then(async (auth) => {
+          if (!auth) {
+            sendResponse({ ok: false, user: null, avatarDataUrl: null })
+            return
+          }
+          const avatarDataUrl = await loadUserAvatarDataUrl(auth.user)
+          sendResponse({ ok: true, user: auth.user, avatarDataUrl })
+        })
         .catch((error: unknown) => {
           console.error('[nmap_uploader] ensureAuth failed:', error)
           sendResponse({
             ok: false,
             user: null,
+            avatarDataUrl: null,
             error: error instanceof Error ? error.message : 'Ошибка авторизации',
           })
         })
@@ -131,17 +146,29 @@ export default defineBackground(() => {
 
     if (action === 'login') {
       ensureYandexAuth({ interactive: true })
-        .then((auth) =>
+        .then(async (auth) => {
+          if (!auth) {
+            sendResponse({
+              ok: false,
+              user: null,
+              avatarDataUrl: null,
+              error: 'Авторизация отменена',
+            })
+            return
+          }
+          const avatarDataUrl = await loadUserAvatarDataUrl(auth.user)
           sendResponse({
-            ok: Boolean(auth),
-            user: auth?.user ?? null,
-            error: auth ? undefined : 'Авторизация отменена',
-          }),
-        )
+            ok: true,
+            user: auth.user,
+            avatarDataUrl,
+          })
+        })
         .catch((error: unknown) => {
           console.error('[nmap_uploader] login failed:', error)
           sendResponse({
             ok: false,
+            user: null,
+            avatarDataUrl: null,
             error: error instanceof Error ? error.message : 'Ошибка авторизации',
           })
         })
@@ -149,7 +176,7 @@ export default defineBackground(() => {
     }
 
     if (action === 'logout') {
-      clearAuth()
+      clearAuth({ explicit: true })
         .then(() => sendResponse({ ok: true }))
         .catch((error: unknown) => {
           console.error('[nmap_uploader] logout failed:', error)

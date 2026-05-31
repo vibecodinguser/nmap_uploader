@@ -4,6 +4,7 @@ import type { YandexUser } from './client'
 export type EnsureAuthResponse = {
   ok: boolean
   user?: YandexUser | null
+  avatarDataUrl?: string | null
   error?: string
 }
 

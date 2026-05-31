@@ -21,7 +21,7 @@ type AppView = 'main' | 'settings'
 export const App = ({ themeTarget }: AppProps) => {
   const { themeMode, setThemeMode } = useTheme(themeTarget)
   const strokeColor = useStrokeColor()
-  const { user, refreshUser, handleLogout } = useAuth()
+  const { user, avatarDataUrl, isLoggingIn, refreshUser, handleLogin, handleLogout } = useAuth()
   const { isUploading, progress, uploadStatus, performUpload } = useFileUpload({
     onAuthenticated: refreshUser,
   })
@@ -44,7 +44,13 @@ export const App = ({ themeTarget }: AppProps) => {
 
   return (
     <div className="sidepanel-app">
-      <Header user={user} onLogout={handleLogout} />
+      <Header
+        user={user}
+        avatarDataUrl={avatarDataUrl}
+        isLoggingIn={isLoggingIn}
+        onLogin={handleLogin}
+        onLogout={handleLogout}
+      />
 
       <main className="sidepanel-main">
         {activeView === 'settings' ? (

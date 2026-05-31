@@ -2,6 +2,13 @@ import { HttpResponse, http } from 'msw'
 
 const DISK_API = 'https://cloud-api.yandex.net/v1/disk'
 const LOGIN_INFO = 'https://login.yandex.ru/info'
+const AVATAR_PNG = Uint8Array.from([
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+  0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4,
+  0x89, 0x00, 0x00, 0x00, 0x0a, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x63, 0x00, 0x01, 0x00, 0x00,
+  0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae,
+  0x42, 0x60, 0x82,
+])
 const DISK_APPLICATIONS_PATH = 'disk:/Приложения'
 
 const createdPaths = new Set<string>()
@@ -71,6 +78,7 @@ export const yandexHandlers = [
       id: '123',
       login: 'testuser',
       display_name: 'Test User',
+      default_avatar_id: '131652443',
     })
   }),
 
@@ -163,6 +171,12 @@ export const yandexHandlers = [
   http.put('https://uploader.disk.yandex.ru/mock-index', async ({ request }) => {
     indexJsonBody = (await request.json()) as Record<string, unknown>
     return new HttpResponse(null, { status: 201 })
+  }),
+
+  http.get('https://avatars.yandex.net/get-yapic/*', () => {
+    return new HttpResponse(AVATAR_PNG, {
+      headers: { 'Content-Type': 'image/png' },
+    })
   }),
 ]
 

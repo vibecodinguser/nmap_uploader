@@ -20,6 +20,69 @@ export type YandexUser = {
   default_avatar_id?: string
 }
 
+export type YandexAvatarSize =
+  | 'islands-small'
+  | 'islands-34'
+  | 'islands-50'
+  | 'islands-retina-50'
+  | 'islands-75'
+
+/** URL портрета (как `nk-user-bar-view__user-icon` на n.maps.yandex.ru). */
+export const getYandexAvatarUrl = ({
+  avatarId,
+  size = 'islands-small',
+}: {
+  avatarId?: string
+  size?: YandexAvatarSize
+}): string | null => {
+  const id = avatarId?.trim()
+  if (!id) return null
+  if (id.startsWith('https://avatars.yandex.net/')) {
+    return id.replace(/\/islands-[\w-]+$/, `/${size}`)
+  }
+  return `https://avatars.yandex.net/get-yapic/${id}/${size}`
+}
+
+const bytesToDataUrl = (bytes: Uint8Array, mime: string): string => {
+  let binary = ''
+  const chunkSize = 0x8000
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    const chunk = bytes.subarray(offset, offset + chunkSize)
+    binary += String.fromCharCode(...chunk)
+  }
+  return `data:${mime};base64,${btoa(binary)}`
+}
+
+/** Загружает портрет в background (обход CSP n.maps для shadow DOM). */
+export const fetchYandexAvatarDataUrl = async ({
+  avatarId,
+  size = 'islands-small',
+}: {
+  avatarId: string
+  size?: YandexAvatarSize
+}): Promise<string | null> => {
+  const url = getYandexAvatarUrl({ avatarId, size })
+  if (!url) return null
+
+  try {
+    const response = await fetch(url)
+    if (!response.ok) return null
+    const bytes = new Uint8Array(await response.arrayBuffer())
+    if (bytes.length === 0) return null
+    const mime = response.headers.get('content-type')?.split(';')[0]?.trim() || 'image/jpeg'
+    return bytesToDataUrl(bytes, mime)
+  } catch {
+    return null
+  }
+}
+
+export const loadUserAvatarDataUrl = async (user: YandexUser): Promise<string | null> => {
+  const avatarId = user.default_avatar_id?.trim()
+  if (!avatarId) return null
+  // 40×40 CSS px на Retina ≈ 80 device px — islands-retina-50 (100×100) без апскейла
+  return fetchYandexAvatarDataUrl({ avatarId, size: 'islands-retina-50' })
+}
+
 const getHeaders = (token: string): Record<string, string> => ({
   Authorization: `OAuth ${token.trim()}`,
   'Content-Type': 'application/json',
@@ -448,13 +511,15 @@ export const fetchYandexUser = async ({ token }: { token: string }): Promise<Yan
     throw new ProcessingError(ERR_NETWORK, 'Не удалось получить данные пользователя')
   }
 
-  const info = (await response.json()) as Record<string, string>
+  const info = (await response.json()) as Record<string, unknown>
+  const avatarRaw = info.default_avatar_id
   return {
     id: String(info.id ?? ''),
-    login: info.login ?? '',
-    display_name: info.display_name,
-    real_name: info.real_name,
-    default_avatar_id: info.default_avatar_id,
+    login: String(info.login ?? ''),
+    display_name: info.display_name != null ? String(info.display_name) : undefined,
+    real_name: info.real_name != null ? String(info.real_name) : undefined,
+    default_avatar_id:
+      avatarRaw != null && String(avatarRaw).trim() !== '' ? String(avatarRaw) : undefined,
   }
 }
 
@@ -530,6 +595,7 @@ export const launchYandexAuth = async ({
 
 export const STORAGE_TOKEN_KEY = 'yandex_token'
 export const STORAGE_USER_KEY = 'yandex_user'
+export const STORAGE_EXPLICIT_LOGOUT_KEY = 'yandex_explicit_logout'
 
 export const getStoredAuth = async (): Promise<{ token: string; user: YandexUser } | null> => {
   const stored = await browser.storage.local.get([STORAGE_TOKEN_KEY, STORAGE_USER_KEY])
@@ -550,10 +616,21 @@ export const saveAuth = async ({
     [STORAGE_TOKEN_KEY]: token,
     [STORAGE_USER_KEY]: user,
   })
+  await browser.storage.local.remove(STORAGE_EXPLICIT_LOGOUT_KEY)
 }
 
-export const clearAuth = async (): Promise<void> => {
+export const clearAuth = async ({
+  explicit = false,
+}: { explicit?: boolean } = {}): Promise<void> => {
   await browser.storage.local.remove([STORAGE_TOKEN_KEY, STORAGE_USER_KEY])
+  if (explicit) {
+    await browser.storage.local.set({ [STORAGE_EXPLICIT_LOGOUT_KEY]: true })
+  }
+}
+
+const isExplicitLogout = async (): Promise<boolean> => {
+  const stored = await browser.storage.local.get(STORAGE_EXPLICIT_LOGOUT_KEY)
+  return Boolean(stored[STORAGE_EXPLICIT_LOGOUT_KEY])
 }
 
 const isStoredAuthValid = async ({ token }: { token: string }): Promise<boolean> => {
@@ -565,6 +642,40 @@ const isStoredAuthValid = async ({ token }: { token: string }): Promise<boolean>
   }
 }
 
+/** Обновляет профиль из login.yandex.ru (в т.ч. default_avatar_id после login:avatar). */
+export const refreshStoredUserProfile = async ({
+  token,
+  user,
+}: {
+  token: string
+  user: YandexUser
+}): Promise<YandexUser> => {
+  try {
+    const fresh = await fetchYandexUser({ token })
+    await saveAuth({ token, user: fresh })
+    return fresh
+  } catch {
+    return user
+  }
+}
+
+export type AuthPayload = {
+  user: YandexUser | null
+  avatarDataUrl: string | null
+}
+
+export const buildAuthPayload = async (
+  auth: { token: string; user: YandexUser } | null,
+): Promise<AuthPayload> => {
+  if (!auth) {
+    return { user: null, avatarDataUrl: null }
+  }
+
+  const user = await refreshStoredUserProfile({ token: auth.token, user: auth.user })
+  const avatarDataUrl = await loadUserAvatarDataUrl(user)
+  return { user, avatarDataUrl }
+}
+
 /**
  * Восстанавливает сессию: проверяет сохранённый токен, затем silent OAuth.
  * При interactive: true открывает экран согласия, если silent не сработал.
@@ -574,9 +685,17 @@ export const ensureYandexAuth = async ({
 }: {
   interactive?: boolean
 } = {}): Promise<{ token: string; user: YandexUser } | null> => {
+  if (!interactive && (await isExplicitLogout())) {
+    return null
+  }
+
   const stored = await getStoredAuth()
   if (stored && (await isStoredAuthValid({ token: stored.token }))) {
-    return stored
+    const user = await refreshStoredUserProfile({
+      token: stored.token,
+      user: stored.user,
+    })
+    return { token: stored.token, user }
   }
 
   if (stored) {

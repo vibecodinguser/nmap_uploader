@@ -52,27 +52,31 @@ function UploadProgressRing({ progress, isActive }: UploadProgressRingProps) {
         aria-hidden="true"
         focusable="false"
       >
-        <circle
-          className="upload-progress-track"
-          cx={PROGRESS_SIZE / 2}
-          cy={PROGRESS_SIZE / 2}
-          r={PROGRESS_RADIUS}
-          fill="none"
-          strokeWidth={PROGRESS_STROKE}
-        />
-        <circle
-          className="upload-progress-indicator"
-          cx={PROGRESS_SIZE / 2}
-          cy={PROGRESS_SIZE / 2}
-          r={PROGRESS_RADIUS}
-          fill="none"
-          strokeWidth={PROGRESS_STROKE}
-          strokeLinecap="round"
-          strokeDasharray={PROGRESS_CIRCUMFERENCE}
-          strokeDashoffset={strokeOffset}
-        />
+        <g transform={`rotate(-90 ${PROGRESS_SIZE / 2} ${PROGRESS_SIZE / 2})`}>
+          <circle
+            className="upload-progress-track"
+            cx={PROGRESS_SIZE / 2}
+            cy={PROGRESS_SIZE / 2}
+            r={PROGRESS_RADIUS}
+            fill="none"
+            strokeWidth={PROGRESS_STROKE}
+          />
+          <circle
+            className="upload-progress-indicator"
+            cx={PROGRESS_SIZE / 2}
+            cy={PROGRESS_SIZE / 2}
+            r={PROGRESS_RADIUS}
+            fill="none"
+            strokeWidth={PROGRESS_STROKE}
+            strokeLinecap="round"
+            strokeDasharray={PROGRESS_CIRCUMFERENCE}
+            strokeDashoffset={strokeOffset}
+          />
+        </g>
       </svg>
-      <span className="upload-progress-percent">{Math.round(clampedProgress)}%</span>
+      <span className="upload-progress-percent" aria-hidden="true">
+        {Math.round(clampedProgress)}%
+      </span>
     </div>
   )
 }

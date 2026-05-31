@@ -166,7 +166,7 @@ export const SettingsTab = ({
           </div>
           <div className="settings-about-item">
             <dt>Версия</dt>
-            <dd>0.1.0</dd>
+            <dd>1.2.0</dd>
           </div>
           <div className="settings-about-item">
             <dt>Назначение</dt>
