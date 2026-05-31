@@ -6,11 +6,11 @@ export default {
     // Tailwind v4: @import "tailwindcss"
     'import-notation': 'string',
 
-    // BEM: block-name, block-name--modifier
+    // BEM: block-name, block-name__element, block-name--modifier
     'selector-class-pattern': [
-      '^([a-z][a-z0-9]*(-[a-z0-9]+)*)(--([a-z][a-z0-9]*(-[a-z0-9]+)*))?$',
+      '^([a-z][a-z0-9]*(-[a-z0-9]+)*)(__([a-z][a-z0-9]*(-[a-z0-9]+)*))?(--([a-z][a-z0-9]*(-[a-z0-9]+)*))?$',
       {
-        message: 'Ожидается kebab-case или BEM (block--modifier)',
+        message: 'Ожидается kebab-case или BEM (block__element, block--modifier)',
       },
     ],
 

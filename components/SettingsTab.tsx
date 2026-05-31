@@ -161,16 +161,8 @@ export const SettingsTab = ({
         </h3>
         <dl className="settings-about-list">
           <div className="settings-about-item">
-            <dt>Название</dt>
-            <dd>nmap_uploader</dd>
-          </div>
-          <div className="settings-about-item">
             <dt>Версия</dt>
             <dd>1.2.0</dd>
-          </div>
-          <div className="settings-about-item">
-            <dt>Назначение</dt>
-            <dd>Загрузчик в Блокнот картографа Народной карты</dd>
           </div>
         </dl>
       </section>

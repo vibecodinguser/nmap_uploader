@@ -1,5 +1,4 @@
 import { useCallback, useRef, useState } from 'react'
-import { flushSync } from 'react-dom'
 import { browser } from 'wxt/browser'
 import {
   areCoordinatesValid,
@@ -7,42 +6,16 @@ import {
   isValidTargetDate,
   processMultipointContent,
 } from '@/lib/point_uploader'
+import {
+  buildExpiredSessionLogs,
+  ensureUploadAuth,
+  hasUploadAuthError,
+} from '@/lib/upload_auth_flow'
+import { createUploadLog, deriveUploadStatus, type UploadStatus } from '@/lib/upload_logs'
 import type { UploadLogEntry } from '@/lib/upload_service'
-import { requestEnsureAuth } from '@/lib/yandex/auth_message'
+import { beginUploadSession, endUploadSession } from '@/lib/upload_session'
 
-const createLog = (level: UploadLogEntry['level'], message: string): UploadLogEntry => ({
-  id: crypto.randomUUID(),
-  level,
-  message,
-})
-
-export type PointUploadStatus = {
-  level: UploadLogEntry['level']
-  message: string
-}
-
-const deriveUploadStatus = (logs: UploadLogEntry[]): PointUploadStatus => {
-  const errorLog = [...logs].reverse().find((log) => log.level === 'error')
-  if (errorLog) {
-    return { level: 'error', message: errorLog.message }
-  }
-
-  const summaryLog = [...logs].reverse().find((log) => log.message.startsWith('Завершено:'))
-  if (summaryLog) {
-    return { level: 'success', message: summaryLog.message }
-  }
-
-  const successLog = [...logs].reverse().find((log) => log.level === 'success')
-  return {
-    level: 'success',
-    message: successLog?.message ?? 'Загрузка завершена',
-  }
-}
-
-const waitForNextFrame = () =>
-  new Promise<void>((resolve) => {
-    requestAnimationFrame(() => resolve())
-  })
+export type PointUploadStatus = UploadStatus
 
 const normalizeTargetDate = (date: string): string | undefined => {
   const trimmed = date.trim()
@@ -56,18 +29,31 @@ const normalizeTargetDate = (date: string): string | undefined => {
 const uploadPointData = async ({
   files,
   targetDate,
-  onProgress,
 }: {
   files: Array<{ name: string; result: ReturnType<typeof createPointIndex> }>
   targetDate?: string
-  onProgress: (percent: number) => void
-}) => {
-  onProgress(85)
-  return (await browser.runtime.sendMessage({
+}) =>
+  (await browser.runtime.sendMessage({
     action: 'uploadProcessedFiles',
     files,
     targetDate,
   })) as { logs?: UploadLogEntry[]; ok?: boolean }
+
+const applyUploadLogs = async ({
+  priorLogs,
+  uploadLogs,
+  setUploadStatus,
+}: {
+  priorLogs: UploadLogEntry[]
+  uploadLogs: UploadLogEntry[]
+  setUploadStatus: (status: UploadStatus) => void
+}) => {
+  if (hasUploadAuthError(uploadLogs)) {
+    setUploadStatus(deriveUploadStatus(await buildExpiredSessionLogs({ priorLogs, uploadLogs })))
+    return
+  }
+
+  setUploadStatus(deriveUploadStatus([...priorLogs, ...uploadLogs]))
 }
 
 export type ManualPointInput = {
@@ -82,10 +68,52 @@ export const usePointUpload = ({ onAuthenticated }: { onAuthenticated?: () => vo
   const [uploadStatus, setUploadStatus] = useState<PointUploadStatus | null>(null)
   const isUploadingRef = useRef(false)
 
+  const runPointUpload = useCallback(
+    async ({
+      defaultErrorMessage,
+      execute,
+    }: {
+      defaultErrorMessage: string
+      execute: () => Promise<{ priorLogs: UploadLogEntry[]; uploadLogs: UploadLogEntry[] } | null>
+    }) => {
+      const started = await beginUploadSession({
+        isUploadingRef,
+        onBegin: () => {
+          setIsUploading(true)
+          setUploadStatus(null)
+        },
+      })
+      if (!started) return
+
+      try {
+        const auth = await ensureUploadAuth({ onAuthenticated })
+        if (!auth.ok) {
+          setUploadStatus({ level: 'error', message: auth.message })
+          return
+        }
+
+        const result = await execute()
+        if (!result) return
+
+        await applyUploadLogs({
+          priorLogs: result.priorLogs,
+          uploadLogs: result.uploadLogs,
+          setUploadStatus,
+        })
+      } catch (error) {
+        setUploadStatus({
+          level: 'error',
+          message: error instanceof Error ? error.message : defaultErrorMessage,
+        })
+      } finally {
+        endUploadSession({ isUploadingRef, onEnd: () => setIsUploading(false) })
+      }
+    },
+    [onAuthenticated],
+  )
+
   const performManualUpload = useCallback(
     async ({ description, latitude, longitude, date }: ManualPointInput) => {
-      if (isUploadingRef.current) return
-
       const lat = Number.parseFloat(latitude.trim())
       const lon = Number.parseFloat(longitude.trim())
 
@@ -110,77 +138,32 @@ export const usePointUpload = ({ onAuthenticated }: { onAuthenticated?: () => vo
         return
       }
 
-      isUploadingRef.current = true
-      flushSync(() => {
-        setIsUploading(true)
-        setUploadStatus(null)
+      await runPointUpload({
+        defaultErrorMessage: 'Ошибка при загрузке точки',
+        execute: async () => {
+          const priorLogs = [createUploadLog('info', 'Подготовка точки')]
+          const pointData = createPointIndex({
+            latitude: lat,
+            longitude: lon,
+            description: description.trim(),
+          })
+          const response = await uploadPointData({
+            files: [{ name: 'manual-point', result: pointData }],
+            targetDate,
+          })
+
+          return {
+            priorLogs,
+            uploadLogs: response.logs ?? [],
+          }
+        },
       })
-      await waitForNextFrame()
-
-      const logs: UploadLogEntry[] = []
-
-      try {
-        const authResponse = await requestEnsureAuth({ interactive: true })
-        if (!authResponse.ok) {
-          const message =
-            authResponse.error ??
-            'Для загрузки нужен доступ к Яндекс.Диску. Разрешите запись в окне Яндекс ID'
-          setUploadStatus({ level: 'error', message })
-          return
-        }
-
-        onAuthenticated?.()
-        logs.push(createLog('info', 'Подготовка точки'))
-
-        const pointData = createPointIndex({
-          latitude: lat,
-          longitude: lon,
-          description: description.trim(),
-        })
-
-        const response = await uploadPointData({
-          files: [{ name: 'manual-point', result: pointData }],
-          targetDate,
-          onProgress: () => {},
-        })
-
-        const uploadLogs = response.logs ?? []
-        const hasAuthError = uploadLogs.some(
-          (log) =>
-            log.level === 'error' &&
-            (log.message.includes('сессия недействительна') ||
-              log.message.includes('Выйдите и войдите')),
-        )
-
-        if (hasAuthError) {
-          await browser.runtime.sendMessage({ action: 'logout' })
-          setUploadStatus(
-            deriveUploadStatus([
-              ...logs,
-              ...uploadLogs,
-              createLog('error', 'Сессия истекла. Повторите загрузку для повторного входа'),
-            ]),
-          )
-          return
-        }
-
-        setUploadStatus(deriveUploadStatus([...logs, ...uploadLogs]))
-      } catch (error) {
-        setUploadStatus({
-          level: 'error',
-          message: error instanceof Error ? error.message : 'Ошибка при загрузке точки',
-        })
-      } finally {
-        isUploadingRef.current = false
-        setIsUploading(false)
-      }
     },
-    [onAuthenticated],
+    [runPointUpload],
   )
 
   const performMultipointUpload = useCallback(
     async ({ files, date }: { files: File[]; date: string }) => {
-      if (isUploadingRef.current) return
       if (files.length === 0) {
         setUploadStatus({ level: 'error', message: 'Файлы не выбраны' })
         return
@@ -200,91 +183,45 @@ export const usePointUpload = ({ onAuthenticated }: { onAuthenticated?: () => vo
         return
       }
 
-      isUploadingRef.current = true
-      flushSync(() => {
-        setIsUploading(true)
-        setUploadStatus(null)
-      })
-      await waitForNextFrame()
-
-      const logs: UploadLogEntry[] = []
-
-      try {
-        const authResponse = await requestEnsureAuth({ interactive: true })
-        if (!authResponse.ok) {
-          const message =
-            authResponse.error ??
-            'Для загрузки нужен доступ к Яндекс.Диску. Разрешите запись в окне Яндекс ID'
-          setUploadStatus({ level: 'error', message })
-          return
-        }
-
-        onAuthenticated?.()
-
-        const processedFiles = await Promise.all(
-          files.map(async (file) => {
-            logs.push(createLog('info', `Обработка: ${file.name}`))
-            const content = await file.text()
-            const result = processMultipointContent(content)
-            const pointCount = Object.keys(result.points).length
-            if (pointCount === 0) {
-              logs.push(createLog('error', `✗ ${file.name}: точки не найдены`))
-            } else {
-              logs.push(createLog('success', `✓ ${file.name}: ${pointCount} точек`))
-            }
-            return { name: file.name, result }
-          }),
-        )
-
-        const validFiles = processedFiles.filter(
-          (file) => Object.keys(file.result.points).length > 0,
-        )
-        if (validFiles.length === 0) {
-          setUploadStatus({
-            level: 'error',
-            message: 'Не найдено точек в файлах (проверьте формат)',
-          })
-          return
-        }
-
-        const response = await uploadPointData({
-          files: validFiles,
-          targetDate,
-          onProgress: () => {},
-        })
-
-        const uploadLogs = response.logs ?? []
-        const hasAuthError = uploadLogs.some(
-          (log) =>
-            log.level === 'error' &&
-            (log.message.includes('сессия недействительна') ||
-              log.message.includes('Выйдите и войдите')),
-        )
-
-        if (hasAuthError) {
-          await browser.runtime.sendMessage({ action: 'logout' })
-          setUploadStatus(
-            deriveUploadStatus([
-              ...logs,
-              ...uploadLogs,
-              createLog('error', 'Сессия истекла. Повторите загрузку для повторного входа'),
-            ]),
+      await runPointUpload({
+        defaultErrorMessage: 'Ошибка при загрузке точек',
+        execute: async () => {
+          const priorLogs: UploadLogEntry[] = []
+          const processedFiles = await Promise.all(
+            files.map(async (file) => {
+              priorLogs.push(createUploadLog('info', `Обработка: ${file.name}`))
+              const content = await file.text()
+              const result = processMultipointContent(content)
+              const pointCount = Object.keys(result.points).length
+              if (pointCount === 0) {
+                priorLogs.push(createUploadLog('error', `✗ ${file.name}: точки не найдены`))
+              } else {
+                priorLogs.push(createUploadLog('success', `✓ ${file.name}: ${pointCount} точек`))
+              }
+              return { name: file.name, result }
+            }),
           )
-          return
-        }
 
-        setUploadStatus(deriveUploadStatus([...logs, ...uploadLogs]))
-      } catch (error) {
-        setUploadStatus({
-          level: 'error',
-          message: error instanceof Error ? error.message : 'Ошибка при загрузке точек',
-        })
-      } finally {
-        isUploadingRef.current = false
-        setIsUploading(false)
-      }
+          const validFiles = processedFiles.filter(
+            (file) => Object.keys(file.result.points).length > 0,
+          )
+          if (validFiles.length === 0) {
+            setUploadStatus({
+              level: 'error',
+              message: 'Не найдено точек в файлах (проверьте формат)',
+            })
+            return null
+          }
+
+          const response = await uploadPointData({ files: validFiles, targetDate })
+          return {
+            priorLogs,
+            uploadLogs: response.logs ?? [],
+          }
+        },
+      })
     },
-    [onAuthenticated],
+    [runPointUpload],
   )
 
   return {

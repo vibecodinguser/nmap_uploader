@@ -24,7 +24,6 @@ pnpm zip
 
 оно появится в папке `.output/nmap-uploader-X.X.X-chrome.zip` в виде .Zip архива.
 
-
 ## Сборка для релиза
 
 Так же как и для отладочных сборок WXT соберёт релизнубю в папку `.output/`
@@ -32,6 +31,7 @@ pnpm zip
 ```bash
 pnpm zip:firefox
 ```
+
 ```bash
 pnpm build
 ```
@@ -39,6 +39,7 @@ pnpm build
 ```bash
 pnpm zip
 ```
+
 ```bash
 pnpm zip:firefox
 ```
@@ -51,7 +52,6 @@ pnpm zip:firefox
 2. Включите **Режим разработчика**
 3. Нажмите **Загрузить распакованное расширение** и выберите папку `.output/chrome-mv3` или перетащите упакованое в окно **Расширения**
 
-
 ## Проверка перед коммитом
 
 ```bash
@@ -62,18 +62,18 @@ pnpm build     # production-сборка
 
 ## Скрипты
 
-| Команда              | Описание                        |
-|----------------------|---------------------------------|
-| `pnpm dev`           | Dev-сборка Chrome с HMR         |
-| `pnpm dev:firefox`   | Dev-сборка Firefox              |
-| `pnpm build`         | Production-сборка Chrome        |
-| `pnpm build:firefox` | Production-сборка Firefox       |
-| `pnpm zip`           | ZIP-архив Chrome для публикации |
-| `pnpm zip:firefox`   | ZIP-архив Firefox               |
-| `pnpm compile`       | Проверка типов (`tsc --noEmit`) |
-| `pnpm lint`          | Проверка Biome                  |
-| `pnpm lint:fix`      | Автоисправление Biome           |
-| `pnpm format`        | Форматирование Biome            |
+| Команда | Описание |
+|---------|----------|
+| `pnpm dev` | Dev-сборка Chrome с HMR |
+| `pnpm dev:firefox` | Dev-сборка Firefox |
+| `pnpm build` | Production-сборка Chrome |
+| `pnpm build:firefox` | Production-сборка Firefox |
+| `pnpm zip` | ZIP-архив Chrome для публикации |
+| `pnpm zip:firefox` | ZIP-архив Firefox |
+| `pnpm compile` | Проверка типов (`tsc --noEmit`) |
+| `pnpm lint` | Проверка Biome |
+| `pnpm lint:fix` | Автоисправление Biome |
+| `pnpm format` | Форматирование Biome |
 
 ## Структура
 
@@ -111,15 +111,27 @@ tests/
   smoke/                             # smoke-тесты против live API
 ```
 
+## Дополнительные команды
 
+### Тестирование
 
-https://oauth.yandex.ru/client/6c57204892c04069a74cd41b1f16fff7
-
+```bash
 pnpm test:run
 npm test:integration
+```
 
+### Biome
 
-
+```bash
 npx biome check .
 npx biome check --write .
 npx biome format --write .
+```
+
+### Stylelint
+
+```bash
+npx stylelint "**/*.css" # Проверить файлы CSS
+npx stylelint "**/*.scss" # Проверить SCSS
+npx stylelint "**/*.css" --fix # Автоисправление CSS
+```

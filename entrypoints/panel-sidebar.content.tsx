@@ -1,144 +1,137 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
 import { browser } from 'wxt/browser'
-import { createShadowRootUi } from 'wxt/utils/content-script-ui/shadow-root'
+import type { ContentScriptContext } from 'wxt/utils/content-script-context'
 import { defineContentScript } from 'wxt/utils/define-content-script'
-import { getStoredThemeMode, resolveTheme } from '@/hooks/useTheme'
-import { applyBrowserDarkThemeVars } from '@/lib/browser_theme'
 import { buildNkUserBarCssVars, readNkUserBarTypography } from '@/lib/nk_user_bar_typography'
-import { ensureStrokeRecolorEngine } from '@/lib/stroke_recolor_engine'
-import { App } from './panel/App'
-import '@/assets/styles/globals.css'
 
+const PANEL_PAGE = '/panel.html' as const
 const PANEL_WIDTH = 425
 const Z_INDEX = 2_147_483_647
+
+type SidebarUi = {
+  mount: () => void
+  remove: () => void
+}
+
+/** Отдаёт управление main thread между короткими задачами. */
+const yieldToMain = (): Promise<void> =>
+  new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      resolve()
+    })
+  })
+
+const styleSidebarWrapper = (wrapper: HTMLElement): void => {
+  wrapper.style.cssText = `
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: ${PANEL_WIDTH}px !important;
+    z-index: ${Z_INDEX} !important;
+    display: block !important;
+    overflow: hidden !important;
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.12) !important;
+  `
+}
+
+const styleSidebarIframe = (iframe: HTMLIFrameElement): void => {
+  iframe.style.cssText = `
+    width: 100% !important;
+    height: 100% !important;
+    border: none !important;
+    display: block !important;
+  `
+}
+
+/** Подставляет типографику nk-user-bar с host-страницы в документ iframe. */
+const applyTypographyToIframe = (iframe: HTMLIFrameElement): void => {
+  const apply = (): void => {
+    const doc = iframe.contentDocument
+    if (!doc) return
+
+    const cssVars = buildNkUserBarCssVars(readNkUserBarTypography())
+    doc.documentElement.style.cssText += cssVars
+  }
+
+  if (iframe.contentDocument?.readyState === 'complete') {
+    apply()
+    return
+  }
+
+  iframe.addEventListener('load', apply, { once: true })
+}
+
+/** Лёгкая замена createIframeUi без wait-element / MutationObserver. */
+const createSidebarIframeUi = (ctx: ContentScriptContext): SidebarUi => {
+  const wrapper = document.createElement('div')
+  const iframe = document.createElement('iframe')
+  wrapper.appendChild(iframe)
+
+  let isMounted = false
+
+  const mount = (): void => {
+    if (isMounted) return
+
+    if (!iframe.src) {
+      iframe.src = browser.runtime.getURL(PANEL_PAGE)
+    }
+
+    styleSidebarWrapper(wrapper)
+    styleSidebarIframe(iframe)
+    document.body.appendChild(wrapper)
+    applyTypographyToIframe(iframe)
+    isMounted = true
+  }
+
+  const remove = (): void => {
+    wrapper.remove()
+    isMounted = false
+  }
+
+  ctx.onInvalidated(remove)
+
+  return { mount, remove }
+}
 
 // WXT подхватывает default export при сборке; статического import нет
 // noinspection JSUnusedGlobalSymbols
 export default defineContentScript({
   matches: ['https://n.maps.yandex.ru/*'],
   runAt: 'document_idle',
-  cssInjectionMode: 'ui',
+  registration: 'runtime',
 
-  async main(ctx) {
-    ensureStrokeRecolorEngine()
-
+  main(ctx) {
+    let ui: SidebarUi | undefined
     let isOpen = false
-    let isUiReady = false
-    let pendingToggle = false
-    let ui: Awaited<ReturnType<typeof createShadowRootUi>> | undefined
 
-    const togglePanel = () => {
-      if (!ui) return
+    const ensureUi = (): SidebarUi => {
+      ui ??= createSidebarIframeUi(ctx)
+      return ui
+    }
+
+    const togglePanel = async (): Promise<void> => {
+      const panelUi = ensureUi()
 
       if (isOpen) {
-        ui.remove()
+        panelUi.remove()
         isOpen = false
         return
       }
 
-      ui.mount()
+      await yieldToMain()
+      panelUi.mount()
       isOpen = true
     }
 
     browser.runtime.onMessage.addListener((message) => {
       if (message?.action !== 'togglePanel') return
 
-      if (!isUiReady) {
-        pendingToggle = true
-        return
-      }
-
-      togglePanel()
+      void (async () => {
+        await yieldToMain()
+        await togglePanel()
+      })().catch((error: unknown) => {
+        console.error('[nmap_uploader] togglePanel failed:', error)
+      })
     })
-
-    const nkUserBarCssVars = buildNkUserBarCssVars(readNkUserBarTypography())
-
-    ui = await createShadowRootUi(ctx, {
-      name: 'nmap-sidebar',
-      position: 'inline',
-      anchor: 'body',
-      append: 'last',
-      css: `
-        :host {
-          all: initial;
-          ${nkUserBarCssVars}
-          --background: #ffffff;
-          --foreground: #020817;
-          --muted: #e5e5e5;
-          --muted-foreground: #64748b;
-          --border: #e2e8f0;
-          --input: #e2e8f0;
-          --primary: #0f172a;
-          --primary-foreground: #ffffff;
-          --ring: #0f172a;
-          --radius: 0.375rem;
-          --font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-          position: fixed !important;
-          top: 0 !important;
-          right: 0 !important;
-          bottom: 0 !important;
-          width: ${PANEL_WIDTH}px !important;
-          z-index: ${Z_INDEX} !important;
-          display: block !important;
-          overflow: hidden !important;
-          box-shadow: -4px 0 24px rgba(0, 0, 0, 0.12) !important;
-          font-family: var(--font-family, sans-serif);
-          background-color: var(--background);
-          color: var(--foreground);
-        }
-        :host(.dark) {
-          color-scheme: dark;
-          --background: var(--dark-surface, #45464f);
-          --foreground: #ededed;
-          --muted: #32333d;
-          --muted-foreground: #999999;
-          --border: #525252;
-          --input: #525252;
-          --primary: #32333d;
-          --primary-foreground: #ffffff;
-          --ring: #6d6d6d;
-          --header-bg: var(--dark-header-bg, rgba(69, 70, 79, 0.97));
-          --header-bg-blur: var(--dark-header-bg-blur, rgba(69, 70, 79, 0.88));
-          box-shadow: -4px 0 24px rgba(0, 0, 0, 0.45) !important;
-        }
-        html, body {
-          width: 100%;
-          height: 100%;
-          margin: 0;
-          padding: 0;
-        }
-      `,
-      onMount(container) {
-        container.style.cssText = 'width:100%;height:100%;overflow:hidden;'
-
-        if (resolveTheme(getStoredThemeMode()) === 'dark') {
-          container.classList.add('dark')
-          const host = container.getRootNode()
-          if (host instanceof ShadowRoot && host.host instanceof HTMLElement) {
-            host.host.classList.add('dark')
-            applyBrowserDarkThemeVars(host.host, true)
-          }
-        }
-
-        const root = ReactDOM.createRoot(container)
-        root.render(
-          <React.StrictMode>
-            <App themeTarget={container} />
-          </React.StrictMode>,
-        )
-        return root
-      },
-      onRemove(root) {
-        root?.unmount()
-      },
-    })
-
-    isUiReady = true
-
-    if (pendingToggle) {
-      pendingToggle = false
-      togglePanel()
-    }
   },
 })

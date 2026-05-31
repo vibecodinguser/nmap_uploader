@@ -1,45 +1,18 @@
 import { useCallback, useRef, useState } from 'react'
-import { flushSync } from 'react-dom'
 import { browser } from 'wxt/browser'
 import { processFile } from '@/lib/converters'
 import { ProcessingError } from '@/lib/errors'
 import { isAllowedFile } from '@/lib/formats'
+import {
+  buildExpiredSessionLogs,
+  ensureUploadAuth,
+  hasUploadAuthError,
+} from '@/lib/upload_auth_flow'
+import { createUploadLog, deriveUploadStatus, type UploadStatus } from '@/lib/upload_logs'
 import type { UploadLogEntry } from '@/lib/upload_service'
-import { requestEnsureAuth } from '@/lib/yandex/auth_message'
+import { beginUploadSession, endUploadSession } from '@/lib/upload_session'
 
-const createLog = (level: UploadLogEntry['level'], message: string): UploadLogEntry => ({
-  id: crypto.randomUUID(),
-  level,
-  message,
-})
-
-export type UploadStatus = {
-  level: UploadLogEntry['level']
-  message: string
-}
-
-const deriveUploadStatus = (logs: UploadLogEntry[]): UploadStatus => {
-  const errorLog = [...logs].reverse().find((log) => log.level === 'error')
-  if (errorLog) {
-    return { level: 'error', message: errorLog.message }
-  }
-
-  const summaryLog = [...logs].reverse().find((log) => log.message.startsWith('Завершено:'))
-  if (summaryLog) {
-    return { level: 'success', message: summaryLog.message }
-  }
-
-  const successLog = [...logs].reverse().find((log) => log.level === 'success')
-  return {
-    level: 'success',
-    message: successLog?.message ?? 'Загрузка завершена',
-  }
-}
-
-const waitForNextFrame = () =>
-  new Promise<void>((resolve) => {
-    requestAnimationFrame(() => resolve())
-  })
+export type { UploadStatus } from '@/lib/upload_logs'
 
 /** Конвертирует один файл в JSON-результат — без передачи бинарных данных в background. */
 const convertFileLocally = async (file: File, onProgress: (percent: number) => void) => {
@@ -47,20 +20,20 @@ const convertFileLocally = async (file: File, onProgress: (percent: number) => v
   const conversionEnd = 80
 
   if (!isAllowedFile(file.name)) {
-    logs.push(createLog('error', `✗ ${file.name}: неподдерживаемый формат`))
+    logs.push(createUploadLog('error', `✗ ${file.name}: неподдерживаемый формат`))
     onProgress(conversionEnd)
     return { processed: null, logs }
   }
 
-  logs.push(createLog('info', `Обработка: ${file.name}`))
+  logs.push(createUploadLog('info', `Обработка: ${file.name}`))
   try {
     const result = await processFile({ name: file.name, buffer: await file.arrayBuffer() })
-    logs.push(createLog('success', `✓ ${file.name} сконвертирован`))
+    logs.push(createUploadLog('success', `✓ ${file.name} сконвертирован`))
     onProgress(conversionEnd)
     return { processed: { name: file.name, result }, logs }
   } catch (error) {
     const message = error instanceof ProcessingError ? error.message : 'Неизвестная ошибка'
-    logs.push(createLog('error', `✗ ${file.name}: ${message}`))
+    logs.push(createUploadLog('error', `✗ ${file.name}: ${message}`))
     onProgress(conversionEnd)
     return { processed: null, logs }
   }
@@ -74,31 +47,26 @@ export const useFileUpload = ({ onAuthenticated }: { onAuthenticated?: () => voi
 
   const performUpload = useCallback(
     async (file: File) => {
-      if (isUploadingRef.current) return
-
-      isUploadingRef.current = true
-      flushSync(() => {
-        setIsUploading(true)
-        setProgress(0)
-        setUploadStatus(null)
+      const started = await beginUploadSession({
+        isUploadingRef,
+        onBegin: () => {
+          setIsUploading(true)
+          setProgress(0)
+          setUploadStatus(null)
+        },
       })
-      await waitForNextFrame()
+      if (!started) return
 
       try {
         setProgress(5)
-        const authResponse = await requestEnsureAuth({ interactive: true })
-        if (!authResponse.ok) {
-          const message =
-            authResponse.error ??
-            'Для загрузки нужен доступ к Яндекс.Диску. Разрешите запись в окне Яндекс ID'
+        const auth = await ensureUploadAuth({ onAuthenticated })
+        if (!auth.ok) {
           setProgress(100)
-          setUploadStatus({ level: 'error', message })
+          setUploadStatus({ level: 'error', message: auth.message })
           return
         }
 
-        onAuthenticated?.()
         setProgress(15)
-
         const { processed, logs: conversionLogs } = await convertFileLocally(file, setProgress)
 
         if (!processed) {
@@ -114,22 +82,13 @@ export const useFileUpload = ({ onAuthenticated }: { onAuthenticated?: () => voi
         })) as { logs?: UploadLogEntry[]; ok?: boolean }
 
         const uploadLogs = response.logs ?? []
-        const hasAuthError = uploadLogs.some(
-          (log) =>
-            log.level === 'error' &&
-            (log.message.includes('сессия недействительна') ||
-              log.message.includes('Выйдите и войдите')),
-        )
-
-        if (hasAuthError) {
-          await browser.runtime.sendMessage({ action: 'logout' })
-          const finalLogs = [
-            ...conversionLogs,
-            ...uploadLogs,
-            createLog('error', 'Сессия истекла. Повторите загрузку для повторного входа'),
-          ]
+        if (hasUploadAuthError(uploadLogs)) {
           setProgress(100)
-          setUploadStatus(deriveUploadStatus(finalLogs))
+          setUploadStatus(
+            deriveUploadStatus(
+              await buildExpiredSessionLogs({ priorLogs: conversionLogs, uploadLogs }),
+            ),
+          )
           return
         }
 
@@ -142,8 +101,7 @@ export const useFileUpload = ({ onAuthenticated }: { onAuthenticated?: () => voi
           message: error instanceof Error ? error.message : 'Ошибка при загрузке',
         })
       } finally {
-        isUploadingRef.current = false
-        setIsUploading(false)
+        endUploadSession({ isUploadingRef, onEnd: () => setIsUploading(false) })
       }
     },
     [onAuthenticated],

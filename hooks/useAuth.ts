@@ -16,7 +16,9 @@ type AuthMessageResponse = {
   error?: string
 }
 
-const applyAuthResponse = (response: AuthMessageResponse | undefined): Pick<AuthState, 'user' | 'avatarDataUrl'> => ({
+const applyAuthResponse = (
+  response: AuthMessageResponse | undefined,
+): Pick<AuthState, 'user' | 'avatarDataUrl'> => ({
   user: response?.user ?? null,
   avatarDataUrl: response?.avatarDataUrl ?? null,
 })

@@ -1,11 +1,22 @@
 import { type ChangeEvent, type SubmitEvent, useRef, useState } from 'react'
+import { PointDateField } from '@/components/PointDateField'
+import { TabBar } from '@/components/TabBar'
+import { UploadStatusMessage } from '@/components/UploadStatusMessage'
 import type { PointUploadStatus } from '@/hooks/usePointUpload'
+import { requireAuthBeforeAction } from '@/lib/require_auth'
 
 type PointSubTab = 'manual' | 'list'
+
+const POINT_SUB_TABS: { id: PointSubTab; label: string }[] = [
+  { id: 'manual', label: 'Ручное добавление' },
+  { id: 'list', label: 'Загрузка списком' },
+]
 
 type PointsTabProps = {
   isUploading: boolean
   uploadStatus: PointUploadStatus | null
+  isLoggedIn: boolean
+  onRequireAuth: () => void
   onManualUpload: (input: {
     description: string
     latitude: string
@@ -15,15 +26,11 @@ type PointsTabProps = {
   onMultipointUpload: (input: { files: File[]; date: string }) => void
 }
 
-const statusClassName = (level: PointUploadStatus['level']) => {
-  if (level === 'error') return 'upload-progress-status upload-progress-status--error'
-  if (level === 'success') return 'upload-progress-status upload-progress-status--success'
-  return 'upload-progress-status'
-}
-
 export const PointsTab = ({
   isUploading,
   uploadStatus,
+  isLoggedIn,
+  onRequireAuth,
   onManualUpload,
   onMultipointUpload,
 }: PointsTabProps) => {
@@ -37,9 +44,12 @@ export const PointsTab = ({
 
   const isManualSubmitDisabled = isUploading || !latitude.trim() || !longitude.trim()
 
+  const ensureAuthenticated = (): boolean => requireAuthBeforeAction({ isLoggedIn, onRequireAuth })
+
   const handleManualSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (isManualSubmitDisabled) return
+    if (!ensureAuthenticated()) return
 
     onManualUpload({
       description,
@@ -50,6 +60,7 @@ export const PointsTab = ({
   }
 
   const handleMultipointPick = () => {
+    if (!ensureAuthenticated()) return
     multipointInputRef.current?.click()
   }
 
@@ -62,26 +73,13 @@ export const PointsTab = ({
 
   return (
     <div className="tab-panel points-tab">
-      <div className="tabs point-tabs" role="tablist" aria-label="Режим добавления точек">
-        <button
-          type="button"
-          role="tab"
-          className={activeSubTab === 'manual' ? 'tab-btn active' : 'tab-btn'}
-          aria-selected={activeSubTab === 'manual'}
-          onClick={() => setActiveSubTab('manual')}
-        >
-          Ручное добавление
-        </button>
-        <button
-          type="button"
-          role="tab"
-          className={activeSubTab === 'list' ? 'tab-btn active' : 'tab-btn'}
-          aria-selected={activeSubTab === 'list'}
-          onClick={() => setActiveSubTab('list')}
-        >
-          Загрузка списком
-        </button>
-      </div>
+      <TabBar
+        tabs={POINT_SUB_TABS}
+        activeId={activeSubTab}
+        onChange={setActiveSubTab}
+        ariaLabel="Режим добавления точек"
+        className="tabs point-tabs"
+      />
 
       {activeSubTab === 'manual' && (
         <section className="points-section" aria-label="Ручное добавление точки">
@@ -101,17 +99,12 @@ export const PointsTab = ({
               />
 
               <div className="coords-row coords-row--manual">
-                <div className="coords-field coords-field--date">
-                  <label htmlFor="point_date">Дата</label>
-                  <input
-                    type="date"
-                    id="point_date"
-                    name="date"
-                    value={manualDate}
-                    disabled={isUploading}
-                    onChange={(event) => setManualDate(event.target.value)}
-                  />
-                </div>
+                <PointDateField
+                  id="point_date"
+                  value={manualDate}
+                  disabled={isUploading}
+                  onChange={setManualDate}
+                />
                 <div className="coords-field coords-field--latitude">
                   <label htmlFor="point_latitude">Широта</label>
                   <input
@@ -163,17 +156,12 @@ export const PointsTab = ({
         <section className="points-section" aria-label="Загрузка точек списком">
           <div className="manual-upload-container">
             <div className="coords-row coords-row--list">
-              <div className="coords-field coords-field--date">
-                <label htmlFor="multipoint_date">Дата</label>
-                <input
-                  type="date"
-                  id="multipoint_date"
-                  name="date"
-                  value={listDate}
-                  disabled={isUploading}
-                  onChange={(event) => setListDate(event.target.value)}
-                />
-              </div>
+              <PointDateField
+                id="multipoint_date"
+                value={listDate}
+                disabled={isUploading}
+                onChange={setListDate}
+              />
               <button
                 type="button"
                 className="submit-btn submit-btn--outline"
@@ -201,11 +189,7 @@ export const PointsTab = ({
         </section>
       )}
 
-      {uploadStatus && (
-        <p className={statusClassName(uploadStatus.level)} aria-live="polite">
-          {uploadStatus.message}
-        </p>
-      )}
+      {uploadStatus ? <UploadStatusMessage status={uploadStatus} /> : null}
     </div>
   )
 }

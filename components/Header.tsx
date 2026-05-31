@@ -9,13 +9,7 @@ type HeaderProps = {
   onLogout: () => void
 }
 
-export const Header = ({
-  user,
-  avatarDataUrl,
-  isLoggingIn,
-  onLogin,
-  onLogout,
-}: HeaderProps) => {
+export const Header = ({ user, avatarDataUrl, isLoggingIn, onLogin, onLogout }: HeaderProps) => {
   const displayName = user?.display_name || user?.real_name || user?.login
 
   return (
@@ -28,8 +22,8 @@ export const Header = ({
                 src={avatarDataUrl}
                 alt=""
                 className="nk-user-bar-view__user-icon"
-                  width={40}
-                  height={40}
+                width={40}
+                height={40}
                 decoding="async"
               />
             ) : null}

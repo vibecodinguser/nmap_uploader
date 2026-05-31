@@ -30,6 +30,7 @@ export default defineConfig({
       'https://cloud-api.yandex.net/*',
       'https://*.disk.yandex.ru/*',
       'https://oauth.yandex.ru/*',
+      'https://passport.yandex.ru/*',
       'https://login.yandex.ru/*',
       'https://avatars.yandex.net/*',
     ],

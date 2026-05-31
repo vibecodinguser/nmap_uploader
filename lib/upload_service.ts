@@ -1,5 +1,6 @@
 import { getErrorMessage } from './errors'
 import { createNmapOutputTemplate, mergeNmapOutputTemplate, type ProcessResult } from './nmap_index'
+import { createUploadLog } from './upload_logs'
 import {
   downloadIndexJson,
   ensureUploadFolder,
@@ -26,12 +27,6 @@ export type UploadFilesResult = {
   skippedCount: number
 }
 
-const createLog = (level: UploadLogEntry['level'], message: string): UploadLogEntry => ({
-  id: crypto.randomUUID(),
-  level,
-  message,
-})
-
 /** Загружает уже сконвертированные данные на Яндекс.Диск. */
 export const uploadProcessedFilesToYandexDisk = async ({
   files,
@@ -42,7 +37,7 @@ export const uploadProcessedFilesToYandexDisk = async ({
 }): Promise<UploadFilesResult> => {
   const logs: UploadLogEntry[] = []
   const pushLog = (level: UploadLogEntry['level'], message: string) => {
-    logs.push(createLog(level, message))
+    logs.push(createUploadLog(level, message))
   }
 
   if (files.length === 0) {

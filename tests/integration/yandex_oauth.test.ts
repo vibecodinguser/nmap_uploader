@@ -83,15 +83,35 @@ describe('OAuth', () => {
     expect(auth).toBeNull()
   })
 
-  it('ensureYandexAuth: с interactive открывает OAuth после неудачного silent', async () => {
-    launchWebAuthFlow
-      .mockRejectedValueOnce(new Error('did not approve access'))
-      .mockResolvedValueOnce(buildOAuthRedirectUrl())
+  it('ensureYandexAuth: с interactive открывает выбор аккаунта через Passport', async () => {
+    launchWebAuthFlow.mockResolvedValueOnce(buildOAuthRedirectUrl())
 
     const auth = await ensureYandexAuth({ interactive: true })
 
     expect(auth?.token).toBe('test-token')
-    expect(launchWebAuthFlow).toHaveBeenCalledTimes(2)
+    expect(launchWebAuthFlow).toHaveBeenCalledOnce()
+
+    const call = launchWebAuthFlow.mock.calls[0] as unknown as [{ url?: string }]
+    const launchUrl = new URL(call?.[0]?.url ?? '')
+    expect(launchUrl.origin).toBe('https://passport.yandex.ru')
+    expect(launchUrl.pathname).toBe('/auth/list')
+
+    const retpath = launchUrl.searchParams.get('retpath') ?? ''
+    expect(retpath).toContain('https://oauth.yandex.ru/authorize')
+    expect(retpath).toContain('force_confirm=yes')
+  })
+
+  it('ensureYandexAuth: после явного выхода interactive не выполняет silent OAuth', async () => {
+    await clearAuth({ explicit: true })
+
+    const auth = await ensureYandexAuth({ interactive: true })
+
+    expect(auth?.token).toBe('test-token')
+    expect(launchWebAuthFlow).toHaveBeenCalledOnce()
+
+    const call = launchWebAuthFlow.mock.calls[0] as unknown as [{ url?: string }]
+    const launchUrl = new URL(call?.[0]?.url ?? '')
+    expect(launchUrl.origin).toBe('https://passport.yandex.ru')
   })
 
   it('launchYandexAuth: пробрасывает OAuth-ошибку из hash', async () => {

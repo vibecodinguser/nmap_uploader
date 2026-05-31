@@ -7,81 +7,29 @@ import {
   useRef,
   useState,
 } from 'react'
+import { UploadProgressRing } from '@/components/UploadProgressRing'
+import { UploadStatusMessage } from '@/components/UploadStatusMessage'
 import type { UploadStatus } from '@/hooks/useFileUpload'
 import { ACCEPTED_FORMATS } from '@/lib/formats'
+import { requireAuthBeforeAction } from '@/lib/require_auth'
 
 type PoligonTabProps = {
   isUploading: boolean
   progress: number
   uploadStatus: UploadStatus | null
+  isLoggedIn: boolean
+  onRequireAuth: () => void
   onUpload: (file: File) => void
 }
 
-const PROGRESS_RADIUS = 52
-const PROGRESS_SIZE = 120
-const PROGRESS_STROKE = 6
-const PROGRESS_CIRCUMFERENCE = 2 * Math.PI * PROGRESS_RADIUS
-
-const statusClassName = (level: UploadStatus['level']) => {
-  if (level === 'error') return 'upload-progress-status upload-progress-status--error'
-  if (level === 'success') return 'upload-progress-status upload-progress-status--success'
-  return 'upload-progress-status'
-}
-
-type UploadProgressRingProps = {
-  progress: number
-  isActive: boolean
-}
-
-function UploadProgressRing({ progress, isActive }: UploadProgressRingProps) {
-  const clampedProgress = Math.min(100, Math.max(0, progress))
-  const strokeOffset = PROGRESS_CIRCUMFERENCE - (clampedProgress / 100) * PROGRESS_CIRCUMFERENCE
-
-  return (
-    <div
-      className={isActive ? 'upload-progress-ring is-active' : 'upload-progress-ring'}
-      role="progressbar"
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={Math.round(clampedProgress)}
-      aria-label="Прогресс загрузки"
-    >
-      <svg
-        className="upload-progress-svg"
-        viewBox={`0 0 ${PROGRESS_SIZE} ${PROGRESS_SIZE}`}
-        aria-hidden="true"
-        focusable="false"
-      >
-        <g transform={`rotate(-90 ${PROGRESS_SIZE / 2} ${PROGRESS_SIZE / 2})`}>
-          <circle
-            className="upload-progress-track"
-            cx={PROGRESS_SIZE / 2}
-            cy={PROGRESS_SIZE / 2}
-            r={PROGRESS_RADIUS}
-            fill="none"
-            strokeWidth={PROGRESS_STROKE}
-          />
-          <circle
-            className="upload-progress-indicator"
-            cx={PROGRESS_SIZE / 2}
-            cy={PROGRESS_SIZE / 2}
-            r={PROGRESS_RADIUS}
-            fill="none"
-            strokeWidth={PROGRESS_STROKE}
-            strokeLinecap="round"
-            strokeDasharray={PROGRESS_CIRCUMFERENCE}
-            strokeDashoffset={strokeOffset}
-          />
-        </g>
-      </svg>
-      <span className="upload-progress-percent" aria-hidden="true">
-        {Math.round(clampedProgress)}%
-      </span>
-    </div>
-  )
-}
-
-export const PoligonTab = ({ isUploading, progress, uploadStatus, onUpload }: PoligonTabProps) => {
+export const PoligonTab = ({
+  isUploading,
+  progress,
+  uploadStatus,
+  isLoggedIn,
+  onRequireAuth,
+  onUpload,
+}: PoligonTabProps) => {
   const inputRef = useRef<HTMLInputElement>(null)
   const [isDragOver, setIsDragOver] = useState(false)
   const [hasUploadSession, setHasUploadSession] = useState(false)
@@ -93,7 +41,10 @@ export const PoligonTab = ({ isUploading, progress, uploadStatus, onUpload }: Po
     }
   }, [isUploading, uploadStatus])
 
+  const ensureAuthenticated = (): boolean => requireAuthBeforeAction({ isLoggedIn, onRequireAuth })
+
   const handleFile = (fileList: FileList | null) => {
+    if (!ensureAuthenticated()) return
     const file = fileList?.[0]
     if (!file) return
     setHasUploadSession(true)
@@ -102,6 +53,7 @@ export const PoligonTab = ({ isUploading, progress, uploadStatus, onUpload }: Po
 
   const handleDropzoneClick = (event: MouseEvent) => {
     if ((event.target as HTMLElement).closest('button')) return
+    if (!ensureAuthenticated()) return
     inputRef.current?.click()
   }
 
@@ -134,6 +86,7 @@ export const PoligonTab = ({ isUploading, progress, uploadStatus, onUpload }: Po
   const handleKeyDown = (event: KeyboardEvent) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
+      if (!ensureAuthenticated()) return
       inputRef.current?.click()
     }
   }
@@ -167,6 +120,7 @@ export const PoligonTab = ({ isUploading, progress, uploadStatus, onUpload }: Po
             disabled={isUploading}
             onClick={(event) => {
               event.stopPropagation()
+              if (!ensureAuthenticated()) return
               inputRef.current?.click()
             }}
           >
@@ -189,9 +143,7 @@ export const PoligonTab = ({ isUploading, progress, uploadStatus, onUpload }: Po
           <div className="upload-progress" aria-live="polite">
             <UploadProgressRing progress={progress} isActive={isUploading} />
 
-            {!isUploading && uploadStatus && (
-              <p className={statusClassName(uploadStatus.level)}>{uploadStatus.message}</p>
-            )}
+            {!isUploading && uploadStatus ? <UploadStatusMessage status={uploadStatus} /> : null}
           </div>
         )}
       </form>

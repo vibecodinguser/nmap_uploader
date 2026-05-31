@@ -8,6 +8,7 @@ import {
   ensureYandexAuth,
   getStoredAuth,
   loadUserAvatarDataUrl,
+  type YandexUser,
 } from '@/lib/yandex/client'
 
 const PANEL_PAGE = '/panel.html'
@@ -35,6 +36,19 @@ const sendTogglePanel = async (tabId: number): Promise<void> => {
   await browser.tabs.sendMessage(tabId, { action: 'togglePanel' })
 }
 
+const retrySendTogglePanel = async (tabId: number): Promise<boolean> => {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      await sendTogglePanel(tabId)
+      return true
+    } catch {
+      await sleep(120 * (attempt + 1))
+    }
+  }
+
+  return false
+}
+
 const isRestrictedUrl = (url?: string) =>
   !url ||
   url.startsWith('chrome://') ||
@@ -49,30 +63,64 @@ const toggleInjectedSidebar = async (tabId: number, tabUrl?: string) => {
   }
 
   // content script может ещё инициализироваться после загрузки страницы
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    try {
-      await sendTogglePanel(tabId)
-      return
-    } catch {
-      await sleep(120 * (attempt + 1))
-    }
-  }
+  if (await retrySendTogglePanel(tabId)) return
 
   await browser.scripting.executeScript({
     target: { tabId },
     files: ['/content-scripts/panel-sidebar.js'],
   })
 
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    try {
-      await sendTogglePanel(tabId)
-      return
-    } catch {
-      await sleep(120 * (attempt + 1))
-    }
-  }
+  if (await retrySendTogglePanel(tabId)) return
 
   throw new Error('Не удалось открыть панель на текущей вкладке')
+}
+
+type AuthMessageResponse = {
+  ok: boolean
+  user: YandexUser | null
+  avatarDataUrl: string | null
+  error?: string
+}
+
+const handleYandexAuthMessage = ({
+  interactive,
+  sendResponse,
+  logLabel,
+  cancelError,
+}: {
+  interactive: boolean
+  sendResponse: (response: AuthMessageResponse) => void
+  logLabel: string
+  cancelError?: string
+}) => {
+  ensureYandexAuth({ interactive })
+    .then(async (auth) => {
+      if (!auth) {
+        sendResponse({
+          ok: false,
+          user: null,
+          avatarDataUrl: null,
+          ...(cancelError ? { error: cancelError } : {}),
+        })
+        return
+      }
+
+      const avatarDataUrl = await loadUserAvatarDataUrl(auth.user)
+      sendResponse({
+        ok: true,
+        user: auth.user,
+        avatarDataUrl,
+      })
+    })
+    .catch((error: unknown) => {
+      console.error(`[nmap_uploader] ${logLabel} failed:`, error)
+      sendResponse({
+        ok: false,
+        user: null,
+        avatarDataUrl: null,
+        error: error instanceof Error ? error.message : 'Ошибка авторизации',
+      })
+    })
 }
 
 const openPanel = async (tab: Browser.tabs.Tab) => {
@@ -122,56 +170,21 @@ export default defineBackground(() => {
     }
 
     if (action === 'ensureAuth') {
-      const interactive = Boolean(message.interactive)
-      ensureYandexAuth({ interactive })
-        .then(async (auth) => {
-          if (!auth) {
-            sendResponse({ ok: false, user: null, avatarDataUrl: null })
-            return
-          }
-          const avatarDataUrl = await loadUserAvatarDataUrl(auth.user)
-          sendResponse({ ok: true, user: auth.user, avatarDataUrl })
-        })
-        .catch((error: unknown) => {
-          console.error('[nmap_uploader] ensureAuth failed:', error)
-          sendResponse({
-            ok: false,
-            user: null,
-            avatarDataUrl: null,
-            error: error instanceof Error ? error.message : 'Ошибка авторизации',
-          })
-        })
+      handleYandexAuthMessage({
+        interactive: Boolean(message.interactive),
+        sendResponse,
+        logLabel: 'ensureAuth',
+      })
       return true
     }
 
     if (action === 'login') {
-      ensureYandexAuth({ interactive: true })
-        .then(async (auth) => {
-          if (!auth) {
-            sendResponse({
-              ok: false,
-              user: null,
-              avatarDataUrl: null,
-              error: 'Авторизация отменена',
-            })
-            return
-          }
-          const avatarDataUrl = await loadUserAvatarDataUrl(auth.user)
-          sendResponse({
-            ok: true,
-            user: auth.user,
-            avatarDataUrl,
-          })
-        })
-        .catch((error: unknown) => {
-          console.error('[nmap_uploader] login failed:', error)
-          sendResponse({
-            ok: false,
-            user: null,
-            avatarDataUrl: null,
-            error: error instanceof Error ? error.message : 'Ошибка авторизации',
-          })
-        })
+      handleYandexAuthMessage({
+        interactive: true,
+        sendResponse,
+        logLabel: 'login',
+        cancelError: 'Авторизация отменена',
+      })
       return true
     }
 

@@ -523,14 +523,30 @@ export const fetchYandexUser = async ({ token }: { token: string }): Promise<Yan
   }
 }
 
-const buildAuthUrl = (): { authUrl: URL; redirectUri: string } => {
+const buildAuthUrl = ({
+  forceConfirm = false,
+}: {
+  forceConfirm?: boolean
+} = {}): { authUrl: URL; redirectUri: string; launchUrl: string } => {
   const redirectUri = browser.identity.getRedirectURL()
   const authUrl = new URL('https://oauth.yandex.ru/authorize')
   authUrl.searchParams.set('response_type', 'token')
   authUrl.searchParams.set('client_id', YANDEX_CLIENT_ID)
   authUrl.searchParams.set('redirect_uri', redirectUri)
   authUrl.searchParams.set('scope', YANDEX_DISK_SCOPES)
-  return { authUrl, redirectUri }
+  if (forceConfirm) {
+    authUrl.searchParams.set('force_confirm', 'yes')
+  }
+
+  const oauthUrl = authUrl.toString()
+  if (!forceConfirm) {
+    return { authUrl, redirectUri, launchUrl: oauthUrl }
+  }
+
+  // В Yandex Browser force_confirm часто не показывает выбор аккаунта — обходим через Passport.
+  const accountListUrl = new URL('https://passport.yandex.ru/auth/list')
+  accountListUrl.searchParams.set('retpath', oauthUrl)
+  return { authUrl, redirectUri, launchUrl: accountListUrl.toString() }
 }
 
 const parseAuthResponseUrl = async (
@@ -559,15 +575,17 @@ const parseAuthResponseUrl = async (
 /** Запускает OAuth-поток Яндекс ID (silent или с экраном согласия). */
 export const launchYandexAuth = async ({
   interactive = true,
+  forceConfirm = false,
 }: {
   interactive?: boolean
+  forceConfirm?: boolean
 } = {}): Promise<{ token: string; user: YandexUser }> => {
-  const { authUrl, redirectUri } = buildAuthUrl()
+  const { redirectUri, launchUrl } = buildAuthUrl({ forceConfirm })
 
   let responseUrl: string | undefined
   try {
     responseUrl = await browser.identity.launchWebAuthFlow({
-      url: authUrl.toString(),
+      url: launchUrl,
       interactive,
     })
   } catch (error: unknown) {
@@ -621,7 +639,9 @@ export const saveAuth = async ({
 
 export const clearAuth = async ({
   explicit = false,
-}: { explicit?: boolean } = {}): Promise<void> => {
+}: {
+  explicit?: boolean
+} = {}): Promise<void> => {
   await browser.storage.local.remove([STORAGE_TOKEN_KEY, STORAGE_USER_KEY])
   if (explicit) {
     await browser.storage.local.set({ [STORAGE_EXPLICIT_LOGOUT_KEY]: true })
@@ -702,19 +722,18 @@ export const ensureYandexAuth = async ({
     await clearAuth()
   }
 
-  try {
-    const auth = await launchYandexAuth({ interactive: false })
-    await saveAuth(auth)
-    return auth
-  } catch {
-    // silent OAuth недоступен — первый вход или истёкший consent
-  }
-
   if (!interactive) {
+    try {
+      const auth = await launchYandexAuth({ interactive: false })
+      await saveAuth(auth)
+      return auth
+    } catch {
+      // silent OAuth недоступен — первый вход или истёкший consent
+    }
     return null
   }
 
-  const auth = await launchYandexAuth({ interactive: true })
+  const auth = await launchYandexAuth({ interactive: true, forceConfirm: true })
   await saveAuth(auth)
   return auth
 }

@@ -1,5 +1,6 @@
 import { Settings } from 'lucide-react'
 import { useState } from 'react'
+import { TabBar } from '@/components/TabBar'
 import '@/assets/styles/uploader.css'
 import { Header } from '@/components/Header'
 import { PointsTab } from '@/components/PointsTab'
@@ -18,10 +19,16 @@ type AppProps = {
 type MainTab = 'upload' | 'manual'
 type AppView = 'main' | 'settings'
 
+const MAIN_TABS: { id: MainTab; label: string }[] = [
+  { id: 'upload', label: 'Полигоны' },
+  { id: 'manual', label: 'Точки' },
+]
+
 export const App = ({ themeTarget }: AppProps) => {
   const { themeMode, setThemeMode } = useTheme(themeTarget)
   const strokeColor = useStrokeColor()
-  const { user, avatarDataUrl, isLoggingIn, refreshUser, handleLogin, handleLogout } = useAuth()
+  const { user, avatarDataUrl, isLoggingIn, isLoggedIn, refreshUser, handleLogin, handleLogout } =
+    useAuth()
   const { isUploading, progress, uploadStatus, performUpload } = useFileUpload({
     onAuthenticated: refreshUser,
   })
@@ -42,13 +49,22 @@ export const App = ({ themeTarget }: AppProps) => {
     setActiveView('main')
   }
 
+  const handleLoginClick = () => {
+    void handleLogin()
+  }
+
+  const handleRequireAuth = () => {
+    if (isLoggingIn) return
+    handleLoginClick()
+  }
+
   return (
     <div className="sidepanel-app">
       <Header
         user={user}
         avatarDataUrl={avatarDataUrl}
         isLoggingIn={isLoggingIn}
-        onLogin={handleLogin}
+        onLogin={handleLoginClick}
         onLogout={handleLogout}
       />
 
@@ -62,32 +78,20 @@ export const App = ({ themeTarget }: AppProps) => {
           />
         ) : (
           <>
-            <div className="tabs" role="tablist" aria-label="Режим ввода">
-              <button
-                type="button"
-                role="tab"
-                className={activeTab === 'upload' ? 'tab-btn active' : 'tab-btn'}
-                aria-selected={activeTab === 'upload'}
-                onClick={() => setActiveTab('upload')}
-              >
-                Полигоны
-              </button>
-              <button
-                type="button"
-                role="tab"
-                className={activeTab === 'manual' ? 'tab-btn active' : 'tab-btn'}
-                aria-selected={activeTab === 'manual'}
-                onClick={() => setActiveTab('manual')}
-              >
-                Точки
-              </button>
-            </div>
+            <TabBar
+              tabs={MAIN_TABS}
+              activeId={activeTab}
+              onChange={setActiveTab}
+              ariaLabel="Режим ввода"
+            />
 
             {activeTab === 'upload' && (
               <PoligonTab
                 isUploading={isUploading}
                 progress={progress}
                 uploadStatus={uploadStatus}
+                isLoggedIn={isLoggedIn}
+                onRequireAuth={handleRequireAuth}
                 onUpload={performUpload}
               />
             )}
@@ -96,6 +100,8 @@ export const App = ({ themeTarget }: AppProps) => {
               <PointsTab
                 isUploading={isPointUploading}
                 uploadStatus={pointUploadStatus}
+                isLoggedIn={isLoggedIn}
+                onRequireAuth={handleRequireAuth}
                 onManualUpload={performManualUpload}
                 onMultipointUpload={performMultipointUpload}
               />
