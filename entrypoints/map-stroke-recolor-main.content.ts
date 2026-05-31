@@ -1,10 +1,10 @@
 import { defineContentScript } from 'wxt/utils/define-content-script'
+import { installCanvasMagentaRecolor } from '@/lib/recolor_editor_strokes'
 import {
   parseStrokeColorMessage,
   requestStrokeColorFromPage,
   STROKE_COLOR_WINDOW_KEY,
 } from '@/lib/stroke_color'
-import { installCanvasMagentaRecolor } from '@/lib/recolor_editor_strokes'
 
 /** Просит редактор перерисовать слой, чтобы canvas-контур взял новый цвет. */
 const forceCanvasRepaint = (): void => {

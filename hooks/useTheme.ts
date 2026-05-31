@@ -1,34 +1,60 @@
 import { useCallback, useEffect, useState } from 'react'
 
 export type Theme = 'light' | 'dark'
+export type ThemeMode = 'light' | 'dark' | 'system'
 
 const STORAGE_KEY = 'theme'
 
-const getSystemTheme = (): Theme =>
+export const getSystemTheme = (): Theme =>
   window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 
+export const getStoredThemeMode = (): ThemeMode => {
+  const stored = localStorage.getItem(STORAGE_KEY)
+  if (stored === 'light' || stored === 'dark' || stored === 'system') return stored
+  return 'system'
+}
+
+export const resolveTheme = (mode: ThemeMode): Theme =>
+  mode === 'system' ? getSystemTheme() : mode
+
+const applyThemeClass = (themeTarget: Element | undefined, isDark: boolean) => {
+  const el = themeTarget ?? document.documentElement
+  el.classList.toggle('dark', isDark)
+
+  const root = el.getRootNode()
+  if (root instanceof ShadowRoot && root.host instanceof HTMLElement) {
+    root.host.classList.toggle('dark', isDark)
+  }
+}
+
 export const useTheme = (themeTarget?: Element) => {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null
-    return stored ?? getSystemTheme()
-  })
+  const [themeMode, setThemeModeState] = useState<ThemeMode>(() => getStoredThemeMode())
+  const [systemTheme, setSystemTheme] = useState<Theme>(() => getSystemTheme())
+
+  const resolvedTheme: Theme = themeMode === 'system' ? systemTheme : themeMode
 
   useEffect(() => {
-    const el = themeTarget ?? document.documentElement
-    const isDark = theme === 'dark'
-    el.classList.toggle('dark', isDark)
+    if (themeMode !== 'system') return
 
-    const root = el.getRootNode()
-    if (root instanceof ShadowRoot && root.host instanceof HTMLElement) {
-      root.host.classList.toggle('dark', isDark)
+    setSystemTheme(getSystemTheme())
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const handleChange = () => {
+      setSystemTheme(getSystemTheme())
     }
 
-    localStorage.setItem(STORAGE_KEY, theme)
-  }, [theme, themeTarget])
+    mediaQuery.addEventListener('change', handleChange)
+    return () => mediaQuery.removeEventListener('change', handleChange)
+  }, [themeMode])
 
-  const toggleTheme = useCallback(() => {
-    setThemeState((current) => (current === 'dark' ? 'light' : 'dark'))
+  useEffect(() => {
+    applyThemeClass(themeTarget, resolvedTheme === 'dark')
+    localStorage.setItem(STORAGE_KEY, themeMode)
+  }, [themeMode, resolvedTheme, themeTarget])
+
+  const setThemeMode = useCallback((mode: ThemeMode) => {
+    setThemeModeState(mode)
   }, [])
 
-  return { theme, toggleTheme }
+  return { themeMode, setThemeMode }
 }

@@ -3,13 +3,13 @@ import { useState } from 'react'
 import '@/assets/styles/uploader.css'
 import { Header } from '@/components/Header'
 import { PointsTab } from '@/components/PointsTab'
+import { PoligonTab } from '@/components/PoligonTab'
 import { SettingsTab } from '@/components/SettingsTab'
-import { UploadTab } from '@/components/UploadTab'
 import { useAuth } from '@/hooks/useAuth'
 import { useFileUpload } from '@/hooks/useFileUpload'
 import { usePointUpload } from '@/hooks/usePointUpload'
-import { useTheme } from '@/hooks/useTheme'
 import { useStrokeColor } from '@/hooks/useStrokeColor'
+import { useTheme } from '@/hooks/useTheme'
 
 type AppProps = {
   themeTarget?: Element
@@ -19,7 +19,7 @@ type MainTab = 'upload' | 'manual'
 type AppView = 'main' | 'settings'
 
 export const App = ({ themeTarget }: AppProps) => {
-  const { theme, toggleTheme } = useTheme(themeTarget)
+  const { themeMode, setThemeMode } = useTheme(themeTarget)
   const strokeColor = useStrokeColor()
   const { user, refreshUser, handleLogout } = useAuth()
   const { isUploading, progress, uploadStatus, performUpload } = useFileUpload({
@@ -44,13 +44,13 @@ export const App = ({ themeTarget }: AppProps) => {
 
   return (
     <div className="sidepanel-app">
-      <Header theme={theme} user={user} onToggleTheme={toggleTheme} onLogout={handleLogout} />
+      <Header user={user} onLogout={handleLogout} />
 
       <main className="sidepanel-main">
         {activeView === 'settings' ? (
           <SettingsTab
-            theme={theme}
-            onToggleTheme={toggleTheme}
+            themeMode={themeMode}
+            onThemeModeChange={setThemeMode}
             onBack={handleCloseSettings}
             strokeColor={strokeColor}
           />
@@ -78,7 +78,7 @@ export const App = ({ themeTarget }: AppProps) => {
             </div>
 
             {activeTab === 'upload' && (
-              <UploadTab
+              <PoligonTab
                 isUploading={isUploading}
                 progress={progress}
                 uploadStatus={uploadStatus}

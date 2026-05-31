@@ -10,7 +10,7 @@ import {
 import type { UploadStatus } from '@/hooks/useFileUpload'
 import { ACCEPTED_FORMATS } from '@/lib/formats'
 
-type UploadTabProps = {
+type PoligonTabProps = {
   isUploading: boolean
   progress: number
   uploadStatus: UploadStatus | null
@@ -77,7 +77,7 @@ function UploadProgressRing({ progress, isActive }: UploadProgressRingProps) {
   )
 }
 
-export const UploadTab = ({ isUploading, progress, uploadStatus, onUpload }: UploadTabProps) => {
+export const PoligonTab = ({ isUploading, progress, uploadStatus, onUpload }: PoligonTabProps) => {
   const inputRef = useRef<HTMLInputElement>(null)
   const [isDragOver, setIsDragOver] = useState(false)
   const [hasUploadSession, setHasUploadSession] = useState(false)
@@ -153,7 +153,8 @@ export const UploadTab = ({ isUploading, progress, uploadStatus, onUpload }: Upl
           <Upload className="upload-dropzone-icon" aria-hidden />
           <p className="upload-dropzone-title">Перетащите файлы сюда</p>
           <p className="upload-dropzone-subtitle">
-            или нажмите, чтобы выбрать файл на диске SHP, GPX, KML, KMZ, WKT, GeoJSON, TopoJSON
+            или нажмите, чтобы выбрать файл на диске: <br /> SHP, GPX, KML, KMZ, WKT, GeoJSON,
+            TopoJSON
           </p>
           <br />
           <button

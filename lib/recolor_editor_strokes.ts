@@ -91,8 +91,7 @@ export const isMagentaColor = (value: string | null | undefined): boolean => {
   return rgb.r === 255 && rgb.g === 0 && rgb.b === 255
 }
 
-export const getTargetStroke = (): string =>
-  readStrokeColorFromPage() ?? currentTargetStroke
+export const getTargetStroke = (): string => readStrokeColorFromPage() ?? currentTargetStroke
 
 export const setTargetStroke = (color: string): void => {
   rememberStrokeColor(currentTargetStroke)
@@ -276,15 +275,14 @@ const collectRoots = (root: ParentNode): ParentNode[] => {
   return roots
 }
 
-const recolorMagentaStrokesInRoot = (root: ParentNode, targetStroke: string = getTargetStroke()): void => {
+const recolorMagentaStrokesInRoot = (
+  root: ParentNode,
+  targetStroke: string = getTargetStroke(),
+): void => {
   if (root instanceof Element && isExtensionShadowNode(root)) return
 
   const scope =
-    root instanceof Document
-      ? root.documentElement
-      : root instanceof ShadowRoot
-        ? root
-        : root
+    root instanceof Document ? root.documentElement : root instanceof ShadowRoot ? root : root
 
   if (scope instanceof Element) {
     if (scope instanceof SVGElement || scope.tagName.toLowerCase() === 'svg') {
@@ -299,11 +297,7 @@ const recolorMagentaStrokesInRoot = (root: ParentNode, targetStroke: string = ge
 const recolorKnownStrokeElements = (documentRoot: Document, targetStroke: string): void => {
   for (const root of collectRoots(documentRoot)) {
     const scope =
-      root instanceof Document
-        ? root.documentElement
-        : root instanceof ShadowRoot
-          ? root
-          : root
+      root instanceof Document ? root.documentElement : root instanceof ShadowRoot ? root : root
 
     if (!(scope instanceof Element)) continue
 
@@ -316,11 +310,7 @@ const recolorKnownStrokeElements = (documentRoot: Document, targetStroke: string
 const recolorPreviouslyStyledElements = (documentRoot: Document, toColor: string): void => {
   for (const root of collectRoots(documentRoot)) {
     const scope =
-      root instanceof Document
-        ? root.documentElement
-        : root instanceof ShadowRoot
-          ? root
-          : root
+      root instanceof Document ? root.documentElement : root instanceof ShadowRoot ? root : root
 
     if (!(scope instanceof Element)) continue
 
@@ -381,7 +371,10 @@ export const installCanvasMagentaRecolor = (): void => {
   if ((proto as unknown as Record<string, boolean>)[marker]) return
   ;(proto as unknown as Record<string, boolean>)[marker] = true
 
-  const replaceMagentaStyle = (ctx: CanvasRenderingContext2D, prop: 'strokeStyle' | 'fillStyle') => {
+  const replaceMagentaStyle = (
+    ctx: CanvasRenderingContext2D,
+    prop: 'strokeStyle' | 'fillStyle',
+  ) => {
     const value = ctx[prop]
     if (typeof value === 'string' && isMagentaColor(value)) {
       ctx[prop] = getTargetStroke()

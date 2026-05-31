@@ -3,8 +3,9 @@ import ReactDOM from 'react-dom/client'
 import { browser } from 'wxt/browser'
 import { createShadowRootUi } from 'wxt/utils/content-script-ui/shadow-root'
 import { defineContentScript } from 'wxt/utils/define-content-script'
-import { App } from './panel/App'
+import { getStoredThemeMode, resolveTheme } from '@/hooks/useTheme'
 import { ensureStrokeRecolorEngine } from '@/lib/stroke_recolor_engine'
+import { App } from './panel/App'
 import '@/assets/styles/globals.css'
 
 const PANEL_WIDTH = 425
@@ -24,13 +25,6 @@ export default defineContentScript({
     let isUiReady = false
     let pendingToggle = false
     let ui: Awaited<ReturnType<typeof createShadowRootUi>> | undefined
-
-    const getInitialTheme = (): 'dark' | '' => {
-      const stored = localStorage.getItem('theme')
-      if (stored === 'dark') return 'dark'
-      if (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark'
-      return ''
-    }
 
     const togglePanel = () => {
       if (!ui) return
@@ -112,12 +106,11 @@ export default defineContentScript({
       onMount(container) {
         container.style.cssText = 'width:100%;height:100%;overflow:hidden;'
 
-        const initialTheme = getInitialTheme()
-        if (initialTheme) {
-          container.classList.add(initialTheme)
+        if (resolveTheme(getStoredThemeMode()) === 'dark') {
+          container.classList.add('dark')
           const host = container.getRootNode()
           if (host instanceof ShadowRoot && host.host instanceof HTMLElement) {
-            host.host.classList.add(initialTheme)
+            host.host.classList.add('dark')
           }
         }
 

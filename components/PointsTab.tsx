@@ -1,11 +1,4 @@
-import {
-  type ChangeEvent,
-  type InputEvent,
-  type SubmitEvent,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react'
+import { type ChangeEvent, type SubmitEvent, useRef, useState } from 'react'
 import type { PointUploadStatus } from '@/hooks/usePointUpload'
 
 type PointSubTab = 'manual' | 'list'
@@ -28,11 +21,6 @@ const statusClassName = (level: PointUploadStatus['level']) => {
   return 'upload-progress-status'
 }
 
-const adjustPointDescriptionHeight = (textarea: HTMLTextAreaElement) => {
-  textarea.style.height = '1px'
-  textarea.style.height = `${textarea.scrollHeight}px`
-}
-
 export const PointsTab = ({
   isUploading,
   uploadStatus,
@@ -46,18 +34,6 @@ export const PointsTab = ({
   const [manualDate, setManualDate] = useState('')
   const [listDate, setListDate] = useState('')
   const multipointInputRef = useRef<HTMLInputElement>(null)
-  const descriptionRef = useRef<HTMLTextAreaElement>(null)
-
-  useLayoutEffect(() => {
-    if (!descriptionRef.current) return
-    adjustPointDescriptionHeight(descriptionRef.current)
-  }, [description, activeSubTab])
-
-  const handleDescriptionInput = (event: InputEvent<HTMLTextAreaElement>) => {
-    const textarea = event.currentTarget
-    setDescription(textarea.value)
-    adjustPointDescriptionHeight(textarea)
-  }
 
   const isManualSubmitDisabled = isUploading || !latitude.trim() || !longitude.trim()
 
@@ -112,20 +88,30 @@ export const PointsTab = ({
           <form className="manual-form points-form" onSubmit={handleManualSubmit}>
             <div className="manual-upload-container">
               <textarea
-                ref={descriptionRef}
                 id="point_description"
                 className="point-description-input"
                 name="description"
                 rows={1}
                 value={description}
                 maxLength={150}
-                placeholder="Описание (макс. 150 символов)"
+                placeholder="Описание добавляемойточки (макс. 150 символов)"
                 disabled={isUploading}
-                onInput={handleDescriptionInput}
+                onChange={(event) => setDescription(event.currentTarget.value)}
                 aria-label="Описание точки"
               />
 
               <div className="coords-row coords-row--manual">
+                <div className="coords-field coords-field--date">
+                  <label htmlFor="point_date">Дата</label>
+                  <input
+                    type="date"
+                    id="point_date"
+                    name="date"
+                    value={manualDate}
+                    disabled={isUploading}
+                    onChange={(event) => setManualDate(event.target.value)}
+                  />
+                </div>
                 <div className="coords-field coords-field--latitude">
                   <label htmlFor="point_latitude">Широта</label>
                   <input
@@ -154,17 +140,6 @@ export const PointsTab = ({
                     onChange={(event) => setLongitude(event.target.value)}
                   />
                 </div>
-                <div className="coords-field coords-field--date">
-                  <label htmlFor="point_date">Дата</label>
-                  <input
-                    type="date"
-                    id="point_date"
-                    name="date"
-                    value={manualDate}
-                    disabled={isUploading}
-                    onChange={(event) => setManualDate(event.target.value)}
-                  />
-                </div>
               </div>
 
               <button
@@ -188,14 +163,6 @@ export const PointsTab = ({
         <section className="points-section" aria-label="Загрузка точек списком">
           <div className="manual-upload-container">
             <div className="coords-row coords-row--list">
-              <button
-                type="button"
-                className="submit-btn submit-btn--outline"
-                disabled={isUploading}
-                onClick={handleMultipointPick}
-              >
-                {isUploading ? 'Загрузка…' : 'Загрузить'}
-              </button>
               <div className="coords-field coords-field--date">
                 <label htmlFor="multipoint_date">Дата</label>
                 <input
@@ -207,6 +174,14 @@ export const PointsTab = ({
                   onChange={(event) => setListDate(event.target.value)}
                 />
               </div>
+              <button
+                type="button"
+                className="submit-btn submit-btn--outline"
+                disabled={isUploading}
+                onClick={handleMultipointPick}
+              >
+                {isUploading ? 'Загрузка…' : 'Загрузить'}
+              </button>
             </div>
 
             <input

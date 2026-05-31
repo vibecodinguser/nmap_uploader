@@ -1,13 +1,10 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { getStoredThemeMode, resolveTheme } from '@/hooks/useTheme'
 import { App } from './App'
 import '@/assets/styles/globals.css'
 
-const storedTheme = localStorage.getItem('theme')
-if (
-  storedTheme === 'dark' ||
-  (!storedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)
-) {
+if (resolveTheme(getStoredThemeMode()) === 'dark') {
   document.documentElement.classList.add('dark')
 }
 

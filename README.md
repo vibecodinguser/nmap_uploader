@@ -79,11 +79,36 @@ pnpm build     # production-сборка
 
 ```text
 entrypoints/
-  background.ts                  # sidePanel + обработка submit
-  panel/                         # UI панели
-  panel-sidebar.content.ts       # встроенная боковая панель (fallback для Yandex)
-assets/styles/                   # CSS-переменные и компоненты nmaputils.ru
-components/                      # React-компоненты
+  background.ts                      # service worker: side panel, OAuth, загрузка на Диск
+  panel/                             # UI Chrome Side Panel (panel.html)
+    App.tsx                          # корневой компонент, вкладки и настройки
+    main.tsx                         # точка входа Side Panel
+  panel-sidebar.content.tsx          # встроенная боковая панель для Yandex Browser
+  map-stroke-recolor.content.ts      # content script: перекраска контуров на карте
+  map-stroke-recolor-main.content.ts # основной скрипт перекраски (world: MAIN)
+components/                          # React-компоненты UI
+  Header.tsx
+  PoligonTab.tsx                      # загрузка полигонов
+  PointsTab.tsx                      # ручное добавление точек и загрузка списком
+  SettingsTab.tsx                    # настройки: цвет контура, тема, о приложении
+hooks/                               # хуки React
+  useAuth.ts
+  useFileUpload.ts
+  usePointUpload.ts
+  useStrokeColor.ts
+  useTheme.ts
+lib/                                 # бизнес-логика и интеграции
+  upload_service.ts                  # загрузка файлов на Yandex Disk
+  point_uploader.ts                  # формирование точек для Блокнота
+  converters/                        # конвертеры GeoJSON, SHP, KML и др.
+  yandex/                            # OAuth и API Yandex
+  stroke_color*.ts                   # настройка и применение цвета контура
+assets/styles/                       # globals.css, uploader.css
+public/icon/                         # иконки расширения
+tests/
+  unit/                              # unit-тесты (Vitest)
+  integration/                       # интеграционные тесты с MSW
+  smoke/                             # smoke-тесты против live API
 ```
 
 

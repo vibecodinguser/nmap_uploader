@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { browser } from 'wxt/browser'
 import {
   DEFAULT_STROKE_COLOR,
   getEffectiveStrokeColor,
@@ -6,9 +7,8 @@ import {
   STROKE_COLOR_STORAGE_KEY,
   toStrokeColorInputValue,
 } from '@/lib/stroke_color'
-import { getStoredStrokeColorRaw, setStoredStrokeColorRaw } from '@/lib/stroke_color_settings'
 import { notifyMapTabsAboutStrokeColor } from '@/lib/stroke_color_notify'
-import { browser } from 'wxt/browser'
+import { getStoredStrokeColorRaw, setStoredStrokeColorRaw } from '@/lib/stroke_color_settings'
 
 type ApplyStatus = 'idle' | 'success' | 'error'
 

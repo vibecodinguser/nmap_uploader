@@ -1,6 +1,6 @@
-import { ArrowLeft, Moon, Sun } from 'lucide-react'
-import type { Theme } from '@/hooks/useTheme'
+import { ArrowLeft } from 'lucide-react'
 import type { useStrokeColor } from '@/hooks/useStrokeColor'
+import type { ThemeMode } from '@/hooks/useTheme'
 import { DEFAULT_STROKE_COLOR_INPUT } from '@/lib/stroke_color'
 
 type StrokeColorSettings = Pick<
@@ -16,16 +16,22 @@ type StrokeColorSettings = Pick<
   | 'handleApply'
 >
 
+const THEME_MODE_OPTIONS: { value: ThemeMode; label: string }[] = [
+  { value: 'dark', label: 'Тёмная тема' },
+  { value: 'light', label: 'Светлая тема' },
+  { value: 'system', label: 'Авто' },
+]
+
 type SettingsTabProps = {
-  theme: Theme
-  onToggleTheme: () => void
+  themeMode: ThemeMode
+  onThemeModeChange: (mode: ThemeMode) => void
   onBack: () => void
   strokeColor: StrokeColorSettings
 }
 
 export const SettingsTab = ({
-  theme,
-  onToggleTheme,
+  themeMode,
+  onThemeModeChange,
   onBack,
   strokeColor,
 }: SettingsTabProps) => {
@@ -61,9 +67,9 @@ export const SettingsTab = ({
 
       <h2 className="settings-title">Настройки</h2>
 
-      <section className="settings-section" aria-labelledby="settings-map-heading">
-        <h3 id="settings-map-heading" className="settings-section-title">
-        Цвет контура
+      <section className="settings-section" aria-labelledby="settings-path-heading">
+        <h3 id="settings-path-heading" className="settings-section-title">
+          Цвет контура
         </h3>
         <div className="settings-field">
           <div className="settings-color-field">
@@ -109,10 +115,7 @@ export const SettingsTab = ({
               {isApplying ? '…' : 'Применить'}
             </button>
           </div>
-          <p id="stroke-color-hint" className="settings-row-hint">
-            Пустое значение — {DEFAULT_STROKE_COLOR_INPUT} по умолчанию. Контур виден при
-            выделении объекта на карте; после смены цвета выделите объект заново.
-          </p>
+
           {validationError ? (
             <p id="stroke-color-error" className="settings-field-error" role="alert">
               {validationError}
@@ -135,21 +138,20 @@ export const SettingsTab = ({
         <h3 id="settings-appearance-heading" className="settings-section-title">
           Оформление
         </h3>
-        <div className="settings-row">
-          <div className="settings-row-text">
-            <span className="settings-row-label">Тема</span>
-            <span className="settings-row-hint">
-              {theme === 'dark' ? 'Тёмная' : 'Светлая'}
-            </span>
-          </div>
-          <button
-            type="button"
-            className="btn-theme-toggle"
-            onClick={onToggleTheme}
-            aria-label={theme === 'dark' ? 'Переключить на светлую тему' : 'Переключить на тёмную тему'}
-          >
-            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
+        <div className="theme-mode-switch" role="radiogroup" aria-label="Тема оформления">
+          {THEME_MODE_OPTIONS.map((option) => (
+            <label key={option.value} className="theme-mode-switch-option">
+              <input
+                type="radio"
+                name="theme-mode"
+                value={option.value}
+                className="theme-mode-switch-input"
+                checked={themeMode === option.value}
+                onChange={() => onThemeModeChange(option.value)}
+              />
+              <span className="theme-mode-switch-label">{option.label}</span>
+            </label>
+          ))}
         </div>
       </section>
 

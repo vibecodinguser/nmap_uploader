@@ -1,4 +1,5 @@
 import { browser } from 'wxt/browser'
+import { setTargetStroke, startEditorStrokeRecolor } from '@/lib/recolor_editor_strokes'
 import {
   getEffectiveStrokeColor,
   isStrokeColorRequest,
@@ -8,7 +9,6 @@ import {
   STROKE_COLOR_STORAGE_KEY,
 } from '@/lib/stroke_color'
 import { getStoredStrokeColorRaw } from '@/lib/stroke_color_settings'
-import { setTargetStroke, startEditorStrokeRecolor } from '@/lib/recolor_editor_strokes'
 
 const ENGINE_FLAG = '__NMAP_STROKE_RECOLOR_ENGINE__'
 
@@ -50,9 +50,7 @@ const bindStrokeColorListeners = (): (() => void) => {
     if (message?.action !== 'applyStrokeColor') return
 
     const color =
-      typeof message.color === 'string'
-        ? message.color
-        : getEffectiveStrokeColor(message.raw)
+      typeof message.color === 'string' ? message.color : getEffectiveStrokeColor(message.raw)
 
     applyStrokeColorOnPage(color)
   }
