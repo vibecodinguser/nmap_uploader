@@ -1,5 +1,6 @@
 import { browser } from 'wxt/browser'
 import { defineBackground } from 'wxt/utils/define-background'
+import { isYandexBrowser } from '@/lib/browser'
 import { uploadProcessedFilesToYandexDisk } from '@/lib/upload_service'
 import { clearAuth, ensureYandexAuth, getStoredAuth } from '@/lib/yandex/client'
 
@@ -18,7 +19,7 @@ const getSidePanelApi = (): SidePanelApi | undefined => {
 
 /** В Yandex Browser sidePanel API есть, но UI не отображается — используем injected sidebar. */
 const shouldUseNativeSidePanel = (): boolean => {
-  if (navigator.userAgent.includes('YaBrowser')) return false
+  if (isYandexBrowser()) return false
   return Boolean(getSidePanelApi())
 }
 

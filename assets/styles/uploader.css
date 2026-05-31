@@ -25,7 +25,7 @@
 }
 
 .dark {
-  --background: #45464f;
+  --background: var(--dark-surface, #45464f);
   --foreground: #ededed;
   --muted: #32333d;
   --muted-foreground: #999999;
@@ -34,8 +34,8 @@
   --primary: #32333d;
   --primary-foreground: #ffffff;
   --ring: #6d6d6d;
-  --header-bg: rgba(69, 70, 79, 0.97);
-  --header-bg-blur: rgba(69, 70, 79, 0.88);
+  --header-bg: var(--dark-header-bg, rgba(69, 70, 79, 0.97));
+  --header-bg-blur: var(--dark-header-bg-blur, rgba(69, 70, 79, 0.88));
   --surface-hover: #454545;
   --surface-hover-border: #6d6d6d;
   --success: #6abf69;
@@ -391,6 +391,11 @@ body {
   border-color: var(--ring);
 }
 
+.dark .upload-dropzone:hover,
+.dark .upload-dropzone.is-dragover {
+  background-color: #424244;
+}
+
 .upload-dropzone:focus-visible {
   outline: none;
   box-shadow:
@@ -570,18 +575,20 @@ body {
   padding: 0 0.75rem;
 }
 
+:host(.dark) .coords-row--manual #point_date,
+:host(.dark) .coords-row--list #multipoint_date,
 .dark .coords-row--manual #point_date,
 .dark .coords-row--list #multipoint_date {
-  background-color: #32333d;
-  accent-color: #32333d;
+  background-color: var(--muted);
+  accent-color: var(--muted);
+  color-scheme: dark;
 }
 
-.dark .coords-row--manual #point_date::picker(select),
-.dark .coords-row--list #multipoint_date::picker(select) {
-  background-color: #32333d;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--foreground);
+:host(.dark) .coords-row--manual #point_date::-webkit-calendar-picker-indicator,
+:host(.dark) .coords-row--list #multipoint_date::-webkit-calendar-picker-indicator,
+.dark .coords-row--manual #point_date::-webkit-calendar-picker-indicator,
+.dark .coords-row--list #multipoint_date::-webkit-calendar-picker-indicator {
+  color-scheme: dark;
 }
 
 .manual-upload-container > .point-description-input {

@@ -4,6 +4,7 @@ import { browser } from 'wxt/browser'
 import { createShadowRootUi } from 'wxt/utils/content-script-ui/shadow-root'
 import { defineContentScript } from 'wxt/utils/define-content-script'
 import { getStoredThemeMode, resolveTheme } from '@/hooks/useTheme'
+import { applyBrowserDarkThemeVars } from '@/lib/browser_theme'
 import { ensureStrokeRecolorEngine } from '@/lib/stroke_recolor_engine'
 import { App } from './panel/App'
 import '@/assets/styles/globals.css'
@@ -83,7 +84,8 @@ export default defineContentScript({
           color: var(--foreground);
         }
         :host(.dark) {
-          --background: #45464f;
+          color-scheme: dark;
+          --background: var(--dark-surface, #45464f);
           --foreground: #ededed;
           --muted: #32333d;
           --muted-foreground: #999999;
@@ -92,8 +94,8 @@ export default defineContentScript({
           --primary: #32333d;
           --primary-foreground: #ffffff;
           --ring: #6d6d6d;
-          --header-bg: rgba(69, 70, 79, 0.97);
-          --header-bg-blur: rgba(69, 70, 79, 0.88);
+          --header-bg: var(--dark-header-bg, rgba(69, 70, 79, 0.97));
+          --header-bg-blur: var(--dark-header-bg-blur, rgba(69, 70, 79, 0.88));
           box-shadow: -4px 0 24px rgba(0, 0, 0, 0.45) !important;
         }
         html, body {
@@ -111,6 +113,7 @@ export default defineContentScript({
           const host = container.getRootNode()
           if (host instanceof ShadowRoot && host.host instanceof HTMLElement) {
             host.host.classList.add('dark')
+            applyBrowserDarkThemeVars(host.host, true)
           }
         }
 

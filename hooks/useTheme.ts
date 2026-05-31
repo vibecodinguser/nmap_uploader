@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { applyBrowserDarkThemeVars } from '@/lib/browser_theme'
 
 export type Theme = 'light' | 'dark'
 export type ThemeMode = 'light' | 'dark' | 'system'
@@ -21,9 +22,14 @@ const applyThemeClass = (themeTarget: Element | undefined, isDark: boolean) => {
   const el = themeTarget ?? document.documentElement
   el.classList.toggle('dark', isDark)
 
+  if (el instanceof HTMLElement) {
+    applyBrowserDarkThemeVars(el, isDark)
+  }
+
   const root = el.getRootNode()
   if (root instanceof ShadowRoot && root.host instanceof HTMLElement) {
     root.host.classList.toggle('dark', isDark)
+    applyBrowserDarkThemeVars(root.host, isDark)
   }
 }
 
