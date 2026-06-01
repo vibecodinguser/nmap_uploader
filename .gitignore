@@ -42,6 +42,8 @@ web-ext.config.ts
 *.njsproj
 *.sln
 *.sw?
+AGENTS.md
+.cursorignore
 
 # ОС
 .DS_Store

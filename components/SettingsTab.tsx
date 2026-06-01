@@ -162,7 +162,7 @@ export const SettingsTab = ({
         <dl className="settings-about-list">
           <div className="settings-about-item">
             <dt>Версия</dt>
-            <dd>1.2.0</dd>
+            <dd>1.1</dd>
           </div>
         </dl>
       </section>
