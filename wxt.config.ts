@@ -1,5 +1,6 @@
 import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'wxt'
+import packageJson from './package.json'
 
 const extensionIcons = {
   16: '/icon/16.png',
@@ -23,6 +24,7 @@ export default defineConfig({
   },
   manifest: {
     name: 'nmap_uploader',
+    version: packageJson.version,
     description: 'Загрузчик в Блокнот картографа Народной карты',
     permissions: ['sidePanel', 'storage', 'scripting', 'activeTab', 'identity', 'tabs'],
     host_permissions: [
