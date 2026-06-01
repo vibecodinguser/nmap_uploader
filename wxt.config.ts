@@ -1,4 +1,3 @@
-import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'wxt'
 import packageJson from './package.json'
 
@@ -12,7 +11,6 @@ const extensionIcons = {
 export default defineConfig({
   modules: ['@wxt-dev/module-react'],
   vite: () => ({
-    plugins: [tailwindcss()],
     build: {
       modulePreload: { polyfill: false },
     },
@@ -21,6 +19,10 @@ export default defineConfig({
     binaries: {
       chrome: '/Applications/Yandex.app/Contents/MacOS/Yandex',
     },
+  },
+  zip: {
+    artifactTemplate: 'NmapUploader-{{browser}}_{{version}}.zip',
+    sourcesTemplate: 'NmapUploader-{{browser}}_{{version}}-sources.zip',
   },
   manifest: {
     name: 'nmap_uploader',

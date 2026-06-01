@@ -3,7 +3,6 @@ export default {
   extends: ['stylelint-config-standard'],
   ignoreFiles: ['**/.output/**', '**/.wxt/**', '**/node_modules/**'],
   rules: {
-    // Tailwind v4: @import "tailwindcss"
     'import-notation': 'string',
 
     // BEM: block-name, block-name__element, block-name--modifier
