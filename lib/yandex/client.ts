@@ -4,7 +4,6 @@ import type { NmapIndex } from '@/lib/nmap_index'
 
 export const YANDEX_CLIENT_ID = 'ef45c7e176e844c087bc2487985ad275'
 export const YANDEX_DISK_FOLDER = 'Приложения/Блокнот картографа Народной карты'
-/** Scope должны совпадать с «Доступ к данным» в oauth.yandex.ru (см. /client/<id>/info). */
 export const YANDEX_DISK_SCOPES = [
   'login:avatar',
   'cloud_api:disk.read',
@@ -27,7 +26,6 @@ export type YandexAvatarSize =
   | 'islands-retina-50'
   | 'islands-75'
 
-/** URL портрета (как `nk-user-bar-view__user-icon` на n.maps.yandex.ru). */
 export const getYandexAvatarUrl = ({
   avatarId,
   size = 'islands-small',
@@ -79,7 +77,6 @@ export const fetchYandexAvatarDataUrl = async ({
 export const loadUserAvatarDataUrl = async (user: YandexUser): Promise<string | null> => {
   const avatarId = user.default_avatar_id?.trim()
   if (!avatarId) return null
-  // 40×40 CSS px на Retina ≈ 80 device px — islands-retina-50 (100×100) без апскейла
   return fetchYandexAvatarDataUrl({ avatarId, size: 'islands-retina-50' })
 }
 
@@ -728,7 +725,7 @@ export const ensureYandexAuth = async ({
       await saveAuth(auth)
       return auth
     } catch {
-      // silent OAuth недоступен — первый вход или истёкший consent
+
     }
     return null
   }

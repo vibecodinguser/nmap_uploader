@@ -14,8 +14,8 @@
   --font-family:
     "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --dark-surface: #45464f;
-  --dark-header-bg: rgba(69, 70, 79, 0.97);
-  --dark-header-bg-blur: rgba(69, 70, 79, 0.88);
+  --dark-header-bg: var(--dark-surface);
+  --dark-header-bg-blur: var(--dark-surface);
   --focus-ring: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
   color-scheme: light;
 }

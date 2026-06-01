@@ -1,6 +1,5 @@
 import { browser } from 'wxt/browser'
 import { defineBackground } from 'wxt/utils/define-background'
-import { isYandexBrowser } from '@/lib/browser'
 import { uploadProcessedFilesToYandexDisk } from '@/lib/upload_service'
 import {
   buildAuthPayload,
@@ -24,9 +23,63 @@ const getSidePanelApi = (): SidePanelApi | undefined => {
   return api
 }
 
+const PANEL_SIDEBAR_SCRIPT = '/content-scripts/panel-sidebar.js' as const
+const MAP_HOME = 'https://n.maps.yandex.ru/' as const
+const MAP_URL_PATTERN = 'https://n.maps.yandex.ru/*'
+const PANEL_SIDEBAR_REGISTRATION_ID = 'nmap-panel-sidebar' as const
+
+const UA_YANDEX_PATTERN = /YaBrowser|Yowser|YaSearchBrowser/i
+
+/** Локальная копия для SW: при HMR импорт функций из lib/browser может «отвалиться». */
+const detectYandexBrowserInServiceWorker = (): boolean => {
+  if (UA_YANDEX_PATTERN.test(navigator.userAgent)) return true
+
+  const brands = (navigator as Navigator & { userAgentData?: { brands?: { brand: string }[] } })
+    .userAgentData?.brands
+  return Boolean(brands?.some(({ brand }) => /yandex/i.test(brand)))
+}
+
+const persistYandexBrowserFlag = async (): Promise<void> => {
+  if (!detectYandexBrowserInServiceWorker()) return
+  await browser.storage.local.set({ is_yandex_browser: true })
+}
+
+const readYandexUaFromTab = async (tabId: number): Promise<boolean> => {
+  try {
+    const [injection] = await browser.scripting.executeScript({
+      target: { tabId },
+      func: () => /YaBrowser|Yowser|YaSearchBrowser/i.test(navigator.userAgent),
+    })
+    return Boolean(injection?.result)
+  } catch {
+    return false
+  }
+}
+
+const resolveIsYandexBrowser = async (): Promise<boolean> => {
+  if (detectYandexBrowserInServiceWorker()) {
+    await browser.storage.local.set({ is_yandex_browser: true })
+    return true
+  }
+
+  const stored = await browser.storage.local.get('is_yandex_browser')
+  if (stored.is_yandex_browser === true) return true
+
+  const mapTabs = await browser.tabs.query({ url: MAP_URL_PATTERN })
+  for (const mapTab of mapTabs) {
+    if (!mapTab.id) continue
+    if (await readYandexUaFromTab(mapTab.id)) {
+      await browser.storage.local.set({ is_yandex_browser: true })
+      return true
+    }
+  }
+
+  return false
+}
+
 /** В Yandex Browser sidePanel API есть, но UI не отображается — используем injected sidebar. */
-const shouldUseNativeSidePanel = (): boolean => {
-  if (isYandexBrowser()) return false
+const shouldUseNativeSidePanel = async (): Promise<boolean> => {
+  if (await resolveIsYandexBrowser()) return false
   return Boolean(getSidePanelApi())
 }
 
@@ -37,29 +90,94 @@ const sendTogglePanel = async (tabId: number): Promise<void> => {
 }
 
 const retrySendTogglePanel = async (tabId: number): Promise<boolean> => {
-  for (let attempt = 0; attempt < 5; attempt += 1) {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
     try {
       await sendTogglePanel(tabId)
       return true
     } catch {
-      await sleep(120 * (attempt + 1))
+      await sleep(150 * (attempt + 1))
     }
   }
 
   return false
 }
 
-const isRestrictedUrl = (url?: string) =>
-  !url ||
-  url.startsWith('chrome://') ||
-  url.startsWith('chrome-extension://') ||
-  url.startsWith('browser://') ||
-  url.startsWith('about:') ||
-  url.startsWith('edge://')
+/** В dev-сборке WXT не всегда добавляет content_scripts в manifest — регистрируем вручную. */
+const ensurePanelSidebarRegistered = async (): Promise<void> => {
+  try {
+    const registered = await browser.scripting.getRegisteredContentScripts()
+    if (registered.some((script) => script.id === PANEL_SIDEBAR_REGISTRATION_ID)) return
+
+    await browser.scripting.registerContentScripts([
+      {
+        id: PANEL_SIDEBAR_REGISTRATION_ID,
+        matches: ['https://n.maps.yandex.ru/*'],
+        js: [PANEL_SIDEBAR_SCRIPT],
+        runAt: 'document_idle',
+      },
+    ])
+  } catch (error: unknown) {
+    console.warn('[nmap_uploader] ensurePanelSidebarRegistered failed:', error)
+  }
+}
+
+const isMapTabUrl = (url?: string): boolean => url?.startsWith('https://n.maps.yandex.ru/') ?? false
+
+const waitForTabReady = async (tabId: number, maxMs = 15_000): Promise<Browser.tabs.Tab> => {
+  const started = Date.now()
+
+  while (Date.now() - started < maxMs) {
+    const tab = await browser.tabs.get(tabId)
+    if (tab.status === 'complete' && isMapTabUrl(tab.url)) return tab
+    await sleep(150)
+  }
+
+  throw new Error('Страница n.maps.yandex.ru не успела загрузиться')
+}
+
+const focusTab = async (tab: Browser.tabs.Tab): Promise<void> => {
+  if (!tab.id) return
+  await browser.tabs.update(tab.id, { active: true })
+  if (tab.windowId) {
+    await browser.windows.update(tab.windowId, { focused: true })
+  }
+}
+
+/** Вкладка n.maps для injected sidebar: текущая, другая в окне или новая. */
+const resolveMapTargetTab = async (clickedTab: Browser.tabs.Tab): Promise<Browser.tabs.Tab> => {
+  if (clickedTab.id && isMapTabUrl(clickedTab.url)) return clickedTab
+
+  const tabsInWindow = await browser.tabs.query({
+    url: MAP_URL_PATTERN,
+    ...(clickedTab.windowId === undefined ? {} : { windowId: clickedTab.windowId }),
+  })
+  const mapTabInWindow = tabsInWindow.find((tab) => tab.id !== undefined)
+  if (mapTabInWindow) {
+    await focusTab(mapTabInWindow)
+    return mapTabInWindow
+  }
+
+  const tabsAnywhere = await browser.tabs.query({ url: MAP_URL_PATTERN })
+  const mapTabAnywhere = tabsAnywhere.find((tab) => tab.id !== undefined)
+  if (mapTabAnywhere) {
+    await focusTab(mapTabAnywhere)
+    return mapTabAnywhere
+  }
+
+  const created = await browser.tabs.create({ url: MAP_HOME, active: true })
+  if (!created.id) throw new Error('Не удалось открыть n.maps.yandex.ru')
+  return waitForTabReady(created.id)
+}
 
 const toggleInjectedSidebar = async (tabId: number, tabUrl?: string) => {
-  if (isRestrictedUrl(tabUrl)) {
-    throw new Error('Панель недоступна на системных страницах браузера')
+  let url = tabUrl
+  if (!isMapTabUrl(url)) {
+    const tab = await browser.tabs.get(tabId)
+    url = tab.url
+  }
+
+  if (!isMapTabUrl(url)) {
+    throw new Error('Откройте n.maps.yandex.ru и нажмите иконку снова')
   }
 
   // content script может ещё инициализироваться после загрузки страницы
@@ -67,7 +185,7 @@ const toggleInjectedSidebar = async (tabId: number, tabUrl?: string) => {
 
   await browser.scripting.executeScript({
     target: { tabId },
-    files: ['/content-scripts/panel-sidebar.js'],
+    files: [PANEL_SIDEBAR_SCRIPT],
   })
 
   if (await retrySendTogglePanel(tabId)) return
@@ -123,26 +241,54 @@ const handleYandexAuthMessage = ({
     })
 }
 
-const openPanel = async (tab: Browser.tabs.Tab) => {
-  if (!tab.id) return
+const openInjectedPanel = async (tab: Browser.tabs.Tab) => {
+  const targetTab = await resolveMapTargetTab(tab)
+  if (!targetTab.id) throw new Error('Не удалось найти вкладку для панели')
 
-  if (shouldUseNativeSidePanel() && tab.windowId) {
+  if (!isMapTabUrl(targetTab.url) || targetTab.status !== 'complete') {
+    await waitForTabReady(targetTab.id)
+  }
+
+  const readyTab = await browser.tabs.get(targetTab.id)
+  if (!readyTab.id) throw new Error('Не удалось найти вкладку для панели')
+  await toggleInjectedSidebar(readyTab.id, readyTab.url)
+}
+
+const resolveClickedTab = async (tab: Browser.tabs.Tab): Promise<Browser.tabs.Tab | undefined> => {
+  if (tab.id) return tab
+  const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true })
+  return activeTab
+}
+
+const openPanel = async (tab: Browser.tabs.Tab) => {
+  const clickedTab = await resolveClickedTab(tab)
+  if (!clickedTab?.id) return
+
+  if (await resolveIsYandexBrowser()) {
+    await openInjectedPanel(clickedTab)
+    return
+  }
+
+  if ((await shouldUseNativeSidePanel()) && clickedTab.windowId) {
     const sidePanel = getSidePanelApi()
     try {
       await sidePanel?.setOptions({ path: PANEL_PAGE, enabled: true })
-      await sidePanel?.open({ windowId: tab.windowId })
+      await sidePanel?.open({ windowId: clickedTab.windowId })
       return
     } catch (error: unknown) {
       console.warn('[nmap_uploader] native sidePanel.open failed:', error)
     }
   }
 
-  await toggleInjectedSidebar(tab.id, tab.url)
+  await openInjectedPanel(clickedTab)
 }
 
 // WXT подхватывает default export при сборке; статического import нет
 // noinspection JSUnusedGlobalSymbols
 export default defineBackground(() => {
+  void persistYandexBrowserFlag()
+  void ensurePanelSidebarRegistered()
+
   browser.action.onClicked.addListener((tab) => {
     openPanel(tab).catch((error: unknown) => {
       console.error('[nmap_uploader] openPanel failed:', error)
@@ -150,11 +296,16 @@ export default defineBackground(() => {
   })
 
   browser.runtime.onInstalled.addListener(() => {
-    if (!shouldUseNativeSidePanel()) return
+    void persistYandexBrowserFlag()
+    void ensurePanelSidebarRegistered()
 
-    const sidePanel = getSidePanelApi()
-    sidePanel?.setOptions({ path: PANEL_PAGE, enabled: true }).catch((error: unknown) => {
-      console.warn('[nmap_uploader] sidePanel.setOptions failed:', error)
+    void shouldUseNativeSidePanel().then((useNative) => {
+      if (!useNative) return
+
+      const sidePanel = getSidePanelApi()
+      sidePanel?.setOptions({ path: PANEL_PAGE, enabled: true }).catch((error: unknown) => {
+        console.warn('[nmap_uploader] sidePanel.setOptions failed:', error)
+      })
     })
   })
 

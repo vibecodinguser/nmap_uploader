@@ -82,6 +82,7 @@ body {
 .user-info,
 .btn-icon,
 .tab-btn,
+.upload-progress,
 .upload-dropzone,
 .submit-btn,
 .coords-row--manual .coords-field,
@@ -154,6 +155,12 @@ body {
   .sidepanel-header {
     background-color: var(--header-bg-blur);
   }
+}
+
+:is(.dark, :host(.dark)) .sidepanel-header {
+  background-color: var(--background);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .header-container {

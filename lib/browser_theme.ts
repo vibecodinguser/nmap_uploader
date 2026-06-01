@@ -1,9 +1,11 @@
 import { isYandexBrowser } from './browser'
 
+const CHROME_DARK_SURFACE = '#3c3c3c'
+
 const CHROME_DARK_SURFACE_VARS = {
-  '--dark-surface': '#3c3c3c',
-  '--dark-header-bg': 'rgba(60, 60, 60, 0.97)',
-  '--dark-header-bg-blur': 'rgba(60, 60, 60, 0.88)',
+  '--dark-surface': CHROME_DARK_SURFACE,
+  '--dark-header-bg': CHROME_DARK_SURFACE,
+  '--dark-header-bg-blur': CHROME_DARK_SURFACE,
 } as const
 
 const DARK_SURFACE_VAR_KEYS = Object.keys(CHROME_DARK_SURFACE_VARS)

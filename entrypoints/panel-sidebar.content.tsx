@@ -3,6 +3,11 @@ import type { ContentScriptContext } from 'wxt/utils/content-script-context'
 import { defineContentScript } from 'wxt/utils/define-content-script'
 import { buildNkUserBarCssVars, readNkUserBarTypography } from '@/lib/nk_user_bar_typography'
 
+const persistYandexBrowserFlag = async (): Promise<void> => {
+  if (!/YaBrowser|Yowser|YaSearchBrowser/i.test(navigator.userAgent)) return
+  await browser.storage.local.set({ is_yandex_browser: true })
+}
+
 const PANEL_PAGE = '/panel.html' as const
 const PANEL_WIDTH = 425
 const Z_INDEX = 2_147_483_647
@@ -98,9 +103,9 @@ const createSidebarIframeUi = (ctx: ContentScriptContext): SidebarUi => {
 export default defineContentScript({
   matches: ['https://n.maps.yandex.ru/*'],
   runAt: 'document_idle',
-  registration: 'runtime',
 
   main(ctx) {
+    void persistYandexBrowserFlag()
     let ui: SidebarUi | undefined
     let isOpen = false
 
