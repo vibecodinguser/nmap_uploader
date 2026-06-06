@@ -59,7 +59,8 @@ body {
 }
 
 .coords-row--manual .coords-field label,
-.coords-row--list .coords-field label {
+.coords-row--list .coords-field label,
+.coords-row--polygon .coords-field label {
   display: block;
   text-align: center;
 }
@@ -86,7 +87,8 @@ body {
 .upload-dropzone,
 .submit-btn,
 .coords-row--manual .coords-field,
-.coords-row--list .coords-field {
+.coords-row--list .coords-field,
+.coords-row--polygon .coords-field {
   align-items: center;
 }
 
@@ -118,7 +120,9 @@ body {
 .coords-row--manual #point_longitude,
 .coords-row--manual #point_date,
 .coords-row--list #multipoint_date,
+.coords-row--polygon #polygon_date,
 .coords-row--list .coords-field label,
+.coords-row--polygon .coords-field label,
 .coords-field input,
 .manual-upload-container > .point-description-input,
 .points-section,
@@ -130,7 +134,8 @@ body {
 .tab-btn,
 .upload-dropzone,
 .submit-btn,
-.coords-row--list #multipoint_date {
+.coords-row--list #multipoint_date,
+.coords-row--polygon #polygon_date {
   text-align: center;
 }
 
@@ -169,19 +174,15 @@ body {
   padding: 0 1rem;
 }
 
-.header-login-btn,
-.user-info-name {
+.header-login-btn {
   font-family: var(--nk-user-bar-font-family), sans-serif;
   font-size: var(--nk-user-bar-font-size);
   line-height: var(--nk-user-bar-line-height);
   font-weight: var(--nk-user-bar-font-weight);
-}
-
-.header-login-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  height: 1.75rem;
+  height: 40px;
   padding: 0 0.625rem;
   border-radius: var(--radius);
   border: 1px solid var(--border);
@@ -216,10 +217,18 @@ body {
 }
 
 .user-info-name {
+  font-family: var(--nk-user-bar-font-family), sans-serif;
+  font-size: 15px;
+  line-height: var(--nk-user-bar-line-height);
+  font-weight: var(--nk-user-bar-font-weight);
   color: var(--foreground);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.user-info-name::first-letter {
+  color: #e00;
 }
 
 .btn-icon {
@@ -538,7 +547,8 @@ body {
 }
 
 .coords-row--manual,
-.coords-row--list {
+.coords-row--list,
+.coords-row--polygon {
   display: grid;
   gap: 0.625rem;
 }
@@ -556,7 +566,8 @@ body {
 .coords-row--manual #point_latitude,
 .coords-row--manual #point_longitude,
 .coords-row--manual #point_date,
-.coords-row--list #multipoint_date {
+.coords-row--list #multipoint_date,
+.coords-row--polygon #polygon_date {
   min-width: 0;
   max-width: 100%;
 }
@@ -572,14 +583,14 @@ body {
 }
 
 :is(.dark, :host(.dark)) .coords-row--manual #point_date,
-:is(.dark, :host(.dark)) .coords-row--list #multipoint_date {
-  background-color: var(--muted);
-  accent-color: var(--muted);
+:is(.dark, :host(.dark)) .coords-row--list #multipoint_date,
+:is(.dark, :host(.dark)) .coords-row--polygon #polygon_date {
   color-scheme: dark;
 }
 
 :is(.dark, :host(.dark)) .coords-row--manual #point_date::-webkit-calendar-picker-indicator,
-:is(.dark, :host(.dark)) .coords-row--list #multipoint_date::-webkit-calendar-picker-indicator {
+:is(.dark, :host(.dark)) .coords-row--list #multipoint_date::-webkit-calendar-picker-indicator,
+:is(.dark, :host(.dark)) .coords-row--polygon #polygon_date::-webkit-calendar-picker-indicator {
   color-scheme: dark;
 }
 

@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { PointDateField } from '@/components/PointDateField'
 import { UploadProgressRing } from '@/components/UploadProgressRing'
 import { UploadStatusMessage } from '@/components/UploadStatusMessage'
 import type { UploadStatus } from '@/hooks/useFileUpload'
@@ -19,7 +20,7 @@ type PoligonTabProps = {
   uploadStatus: UploadStatus | null
   isLoggedIn: boolean
   onRequireAuth: () => void
-  onUpload: (file: File) => void
+  onUpload: (input: { file: File; date: string }) => void
 }
 
 export const PoligonTab = ({
@@ -31,6 +32,7 @@ export const PoligonTab = ({
   onUpload,
 }: PoligonTabProps) => {
   const inputRef = useRef<HTMLInputElement>(null)
+  const [polygonDate, setPolygonDate] = useState('')
   const [isDragOver, setIsDragOver] = useState(false)
   const [hasUploadSession, setHasUploadSession] = useState(false)
   const showProgressUi = hasUploadSession || isUploading || uploadStatus !== null
@@ -48,7 +50,7 @@ export const PoligonTab = ({
     const file = fileList?.[0]
     if (!file) return
     setHasUploadSession(true)
-    onUpload(file)
+    onUpload({ file, date: polygonDate })
   }
 
   const handleDropzoneClick = (event: MouseEvent) => {
@@ -94,6 +96,15 @@ export const PoligonTab = ({
   return (
     <div className="tab-panel">
       <form className="upload-form" onSubmit={(event) => event.preventDefault()}>
+        <div className="coords-row coords-row--polygon">
+          <PointDateField
+            id="polygon_date"
+            value={polygonDate}
+            disabled={isUploading}
+            onChange={setPolygonDate}
+          />
+        </div>
+
         {/* biome-ignore lint/a11y/useSemanticElements: dropzone contains inner button */}
         <div
           role="button"

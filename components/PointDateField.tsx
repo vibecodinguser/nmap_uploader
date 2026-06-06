@@ -14,7 +14,7 @@ export const PointDateField = ({
   onChange,
 }: PointDateFieldProps) => (
   <div className="coords-field coords-field--date">
-    <label htmlFor={id}>Дата</label>
+    <label htmlFor={id}>Дата заметки</label>
     <input
       type="date"
       id={id}

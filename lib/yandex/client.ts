@@ -724,9 +724,7 @@ export const ensureYandexAuth = async ({
       const auth = await launchYandexAuth({ interactive: false })
       await saveAuth(auth)
       return auth
-    } catch {
-
-    }
+    } catch {}
     return null
   }
 

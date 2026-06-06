@@ -3,6 +3,7 @@ import { browser } from 'wxt/browser'
 import { processFile } from '@/lib/converters'
 import { ProcessingError } from '@/lib/errors'
 import { isAllowedFile } from '@/lib/formats'
+import { isValidTargetDate } from '@/lib/point_uploader'
 import {
   buildExpiredSessionLogs,
   ensureUploadAuth,
@@ -13,6 +14,15 @@ import type { UploadLogEntry } from '@/lib/upload_service'
 import { beginUploadSession, endUploadSession } from '@/lib/upload_session'
 
 export type { UploadStatus } from '@/lib/upload_logs'
+
+const normalizeTargetDate = (date: string): string | undefined => {
+  const trimmed = date.trim()
+  if (!trimmed) return undefined
+  if (!isValidTargetDate(trimmed)) {
+    throw new Error('Неверный формат даты')
+  }
+  return trimmed
+}
 
 /** Конвертирует один файл в JSON-результат — без передачи бинарных данных в background. */
 const convertFileLocally = async (file: File, onProgress: (percent: number) => void) => {
@@ -46,7 +56,15 @@ export const useFileUpload = ({ onAuthenticated }: { onAuthenticated?: () => voi
   const isUploadingRef = useRef(false)
 
   const performUpload = useCallback(
-    async (file: File) => {
+    async ({ file, date }: { file: File; date: string }) => {
+      let targetDate: string | undefined
+      try {
+        targetDate = normalizeTargetDate(date)
+      } catch {
+        setUploadStatus({ level: 'error', message: 'Неверный формат даты' })
+        return
+      }
+
       const started = await beginUploadSession({
         isUploadingRef,
         onBegin: () => {
@@ -79,6 +97,7 @@ export const useFileUpload = ({ onAuthenticated }: { onAuthenticated?: () => voi
         const response = (await browser.runtime.sendMessage({
           action: 'uploadProcessedFiles',
           files: [processed],
+          targetDate,
         })) as { logs?: UploadLogEntry[]; ok?: boolean }
 
         const uploadLogs = response.logs ?? []
