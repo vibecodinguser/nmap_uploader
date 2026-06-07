@@ -2,14 +2,26 @@ import { gpx, kml } from '@tmcw/togeojson'
 import JSZip from 'jszip'
 import shp from 'shpjs'
 import { feature } from 'topojson-client'
-import type { Topology } from 'topojson-specification'
-import { parse as parseWkt } from 'wellknown'
 import { type BinaryPayload, normalizeBinaryBuffer } from '@/lib/binary_buffer'
 import { ERR_SHAPEFILE, ProcessingError } from '@/lib/errors'
 import { getFileExtension } from '@/lib/formats'
+import {
+  parseAndValidateGeoJsonBuffer,
+  parseAndValidateGeoJsonText,
+} from '@/lib/geojson/geojson_spec'
 import { extractPaths, getPointForGeometry } from '@/lib/geometry'
+import { validateGpxDocument } from '@/lib/gpx/gpx_spec'
+import { readValidatedKmlFromBuffer, validateKmlDocument } from '@/lib/kml/kml_spec'
 import type { ProcessResult } from '@/lib/nmap_index'
 import { createNmapOutputTemplate } from '@/lib/nmap_index'
+import { validateEsriShapefileZip } from '@/lib/shapefile/esri_spec'
+import { parseAndValidateTopoJsonBuffer } from '@/lib/topojson/topojson_spec'
+import {
+  decodeUtf8WktText,
+  extractWktGeometryLines,
+  parseAndValidateGeometryWkt,
+} from '@/lib/wkt/wkt_spec'
+import { parseXmlDocument } from '@/lib/xml/parse_xml'
 import { processGeoJsonData } from './geojson'
 
 const findZipEntry = (entries: string[], pattern: RegExp): string | undefined =>
@@ -18,22 +30,7 @@ const findZipEntry = (entries: string[], pattern: RegExp): string | undefined =>
 const listZipEntries = (zip: JSZip): string[] =>
   Object.keys(zip.files).filter((name) => !zip.files[name]?.dir)
 
-const parseXml = (text: string): Document => {
-  const doc = new DOMParser().parseFromString(text, 'text/xml')
-  if (doc.querySelector('parsererror')) {
-    throw new ProcessingError(ERR_SHAPEFILE, 'Ошибка чтения XML')
-  }
-  return doc
-}
-
-const isGeoJsonPayload = (
-  value: unknown,
-): value is Parameters<typeof processGeoJsonData>[0]['data'] => {
-  if (!value || typeof value !== 'object') return false
-  const payload = value as { type?: string; features?: unknown; geometry?: unknown }
-  if (payload.type === 'FeatureCollection' || payload.type === 'Feature') return true
-  return Boolean(payload.geometry && payload.type)
-}
+const parseXml = (text: string): Document => parseXmlDocument(text)
 
 const processGpx = async ({
   buffer,
@@ -43,23 +40,10 @@ const processGpx = async ({
   fileDesc: string
 }): Promise<ProcessResult> => {
   const text = new TextDecoder('utf-8').decode(buffer)
-  const geojson = gpx(parseXml(text))
+  const doc = parseXml(text)
+  validateGpxDocument(doc)
+  const geojson = gpx(doc)
   return processGeoJsonData({ data: geojson, fileDesc })
-}
-
-const readKmlFromBuffer = async (buffer: ArrayBuffer): Promise<string> => {
-  const isZip = buffer.byteLength >= 4 && new DataView(buffer).getUint32(0, false) === 0x504b0304
-
-  if (isZip) {
-    const zip = await JSZip.loadAsync(buffer)
-    const kmlName = Object.keys(zip.files).find((name) => name.toLowerCase().endsWith('.kml'))
-    if (!kmlName) {
-      throw new ProcessingError(ERR_SHAPEFILE, 'В KMZ-архиве отсутствует KML-файл')
-    }
-    return zip.file(kmlName)?.async('text') ?? ''
-  }
-
-  return new TextDecoder('utf-8').decode(buffer)
 }
 
 const processKml = async ({
@@ -69,7 +53,7 @@ const processKml = async ({
   buffer: ArrayBuffer
   fileDesc: string
 }): Promise<ProcessResult> => {
-  const kmlText = await readKmlFromBuffer(buffer)
+  const kmlText = await readValidatedKmlFromBuffer(buffer)
   const geojson = kml(parseXml(kmlText))
   return processGeoJsonData({
     data: geojson as Parameters<typeof processGeoJsonData>[0]['data'],
@@ -84,16 +68,8 @@ const processGeoJsonFile = async ({
   buffer: ArrayBuffer
   fileDesc: string
 }): Promise<ProcessResult> => {
-  try {
-    const text = new TextDecoder('utf-8').decode(buffer)
-    const data = JSON.parse(text) as Parameters<typeof processGeoJsonData>[0]['data']
-    return processGeoJsonData({ data, fileDesc })
-  } catch (error) {
-    throw new ProcessingError(
-      ERR_SHAPEFILE,
-      `Ошибка чтения GeoJSON: ${error instanceof Error ? error.message : String(error)}`,
-    )
-  }
+  const data = parseAndValidateGeoJsonBuffer(buffer)
+  return processGeoJsonData({ data, fileDesc })
 }
 
 const processTopoJson = async ({
@@ -104,12 +80,8 @@ const processTopoJson = async ({
   fileDesc: string
 }): Promise<ProcessResult> => {
   try {
-    const text = new TextDecoder('utf-8').decode(buffer)
-    const topology = JSON.parse(text) as Topology
+    const topology = parseAndValidateTopoJsonBuffer(buffer)
     const objectNames = Object.keys(topology.objects ?? {})
-    if (objectNames.length === 0) {
-      throw new ProcessingError(ERR_SHAPEFILE, 'TopoJSON пуст')
-    }
 
     const merged: ProcessResult = { ...createNmapOutputTemplate(), metadata: [] }
     for (const objectName of objectNames) {
@@ -141,28 +113,25 @@ const processWkt = async ({
   buffer: ArrayBuffer
   fileDesc: string
 }): Promise<ProcessResult> => {
-  const text = new TextDecoder('utf-8-sig').decode(buffer)
-  const lines = text.split(/\r?\n/)
+  const text = decodeUtf8WktText(buffer)
+  const lines = extractWktGeometryLines(text)
+  if (lines.length === 0) {
+    throw new ProcessingError(ERR_SHAPEFILE, 'WKT-файл не содержит строк с геометрией')
+  }
+
   const output: ProcessResult = { ...createNmapOutputTemplate(), metadata: [] }
 
-  for (const rawLine of lines) {
-    const line = rawLine.trim().replace(/^\u200b|\ufeff/, '')
-    if (!line || line.startsWith('#')) continue
-
-    try {
-      const geom = parseWkt(line)
-      if (!geom) continue
-
-      const paths = extractPaths(geom)
-      for (const pathCoords of paths) {
-        const sharedUuid = crypto.randomUUID()
-        output.paths[sharedUuid] = pathCoords
-        const pointCoords = getPointForGeometry(geom.type, pathCoords)
-        if (pointCoords) {
-          output.points[sharedUuid] = { coords: pointCoords, desc: fileDesc }
-        }
+  for (const line of lines) {
+    const geom = parseAndValidateGeometryWkt(line)
+    const paths = extractPaths(geom)
+    for (const pathCoords of paths) {
+      const sharedUuid = crypto.randomUUID()
+      output.paths[sharedUuid] = pathCoords
+      const pointCoords = getPointForGeometry(geom.type, pathCoords)
+      if (pointCoords) {
+        output.points[sharedUuid] = { coords: pointCoords, desc: fileDesc }
       }
-    } catch {}
+    }
   }
 
   if (Object.keys(output.paths).length === 0) {
@@ -191,6 +160,7 @@ const processShapefileZip = async ({
   buffer: ArrayBuffer
   fileDesc: string
 }): Promise<ProcessResult> => {
+  await validateEsriShapefileZip(buffer)
   const geojson = await shp(buffer)
   const collections = Array.isArray(geojson) ? geojson : [geojson]
   const merged = mergeProcessResults(
@@ -246,11 +216,8 @@ const processZip = async ({
   if (geoJsonName) {
     try {
       const text = (await zip.file(geoJsonName)?.async('text')) ?? ''
-      const parsed = JSON.parse(text) as unknown
-      if (!isGeoJsonPayload(parsed)) {
-        throw new ProcessingError(ERR_SHAPEFILE, `${geoJsonName} не является GeoJSON`)
-      }
-      return processGeoJsonData({ data: parsed, fileDesc })
+      const data = parseAndValidateGeoJsonText(text)
+      return processGeoJsonData({ data, fileDesc })
     } catch (error) {
       if (error instanceof ProcessingError) throw error
       throw new ProcessingError(
@@ -263,7 +230,9 @@ const processZip = async ({
   const kmlName = findZipEntry(entries, /\.kml$/)
   if (kmlName) {
     const kmlText = (await zip.file(kmlName)?.async('text')) ?? ''
-    const geojson = kml(parseXml(kmlText))
+    const doc = parseXml(kmlText)
+    validateKmlDocument(doc)
+    const geojson = kml(doc)
     return processGeoJsonData({
       data: geojson as Parameters<typeof processGeoJsonData>[0]['data'],
       fileDesc,
@@ -273,7 +242,9 @@ const processZip = async ({
   const gpxName = findZipEntry(entries, /\.gpx$/)
   if (gpxName) {
     const gpxText = (await zip.file(gpxName)?.async('text')) ?? ''
-    const geojson = gpx(parseXml(gpxText))
+    const doc = parseXml(gpxText)
+    validateGpxDocument(doc)
+    const geojson = gpx(doc)
     return processGeoJsonData({ data: geojson, fileDesc })
   }
 

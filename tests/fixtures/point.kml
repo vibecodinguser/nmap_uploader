@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" version="2.2.0">
+  <Document>
+    <name>Тест</name>
+    <Placemark>
+      <name>Кремль</name>
+      <Point>
+        <coordinates>37.6176,55.7558,0</coordinates>
+      </Point>
+    </Placemark>
+  </Document>
+</kml>

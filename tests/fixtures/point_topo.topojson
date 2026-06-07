@@ -1,0 +1,13 @@
+{
+  "type": "Topology",
+  "objects": {
+    "place": {
+      "type": "Point",
+      "properties": {
+        "name": "Кремль"
+      },
+      "coordinates": [37.6176, 55.7558]
+    }
+  },
+  "arcs": []
+}

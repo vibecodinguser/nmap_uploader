@@ -1,0 +1,12 @@
+{
+  "type": "Topology",
+  "objects": {
+    "line": {
+      "type": "LineString",
+      "arcs": [5]
+    }
+  },
+  "arcs": [
+    [[37.6, 55.75], [37.61, 55.76]]
+  ]
+}

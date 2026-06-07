@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="nmap_uploader_test"
+  xmlns="http://www.topografix.com/GPX/1/1">
+  <rte>
+    <name>Маршрут</name>
+    <rtept lat="55.75" lon="37.60"><name>A</name></rtept>
+    <rtept lat="55.76" lon="37.62"><name>B</name></rtept>
+    <rtept lat="55.77" lon="37.64"><name>C</name></rtept>
+  </rte>
+</gpx>

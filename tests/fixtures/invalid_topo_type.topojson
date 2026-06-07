@@ -1,0 +1,10 @@
+{
+  "type": "topology",
+  "objects": {
+    "place": {
+      "type": "Point",
+      "coordinates": [37.6, 55.75]
+    }
+  },
+  "arcs": []
+}
