@@ -3,6 +3,7 @@ import type { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
 import type { useStrokeColor } from '@/hooks/useStrokeColor'
 import type { ThemeMode } from '@/hooks/useTheme'
 import { DEFAULT_STROKE_COLOR_INPUT } from '@/lib/stroke_color'
+import packageJson from '../package.json'
 
 type StrokeColorSettings = Pick<
   ReturnType<typeof useStrokeColor>,
@@ -199,7 +200,7 @@ export const SettingsTab = ({
         <dl className="settings-about-list">
           <div className="settings-about-item">
             <dt>Версия</dt>
-            <dd>1.2</dd>
+            <dd>{packageJson.version}</dd>
           </div>
         </dl>
       </section>
