@@ -7,6 +7,10 @@ import {
   processMultipointContent,
 } from '@/lib/point_uploader'
 import {
+  resolveReloadAfterUploadPreference,
+  triggerEditorReloadIfNeeded,
+} from '@/lib/reload_after_upload'
+import {
   buildExpiredSessionLogs,
   ensureUploadAuth,
   hasUploadAuthError,
@@ -74,7 +78,11 @@ export const usePointUpload = ({ onAuthenticated }: { onAuthenticated?: () => vo
       execute,
     }: {
       defaultErrorMessage: string
-      execute: () => Promise<{ priorLogs: UploadLogEntry[]; uploadLogs: UploadLogEntry[] } | null>
+      execute: (reloadAfterUpload: boolean) => Promise<{
+        priorLogs: UploadLogEntry[]
+        uploadLogs: UploadLogEntry[]
+        uploadOk: boolean | undefined
+      } | null>
     }) => {
       const started = await beginUploadSession({
         isUploadingRef,
@@ -92,13 +100,18 @@ export const usePointUpload = ({ onAuthenticated }: { onAuthenticated?: () => vo
           return
         }
 
-        const result = await execute()
+        const reloadAfterUpload = await resolveReloadAfterUploadPreference()
+        const result = await execute(reloadAfterUpload)
         if (!result) return
 
         await applyUploadLogs({
           priorLogs: result.priorLogs,
           uploadLogs: result.uploadLogs,
           setUploadStatus,
+        })
+        await triggerEditorReloadIfNeeded({
+          reloadAfterUpload,
+          uploadOk: result.uploadOk,
         })
       } catch (error) {
         setUploadStatus({
@@ -155,6 +168,7 @@ export const usePointUpload = ({ onAuthenticated }: { onAuthenticated?: () => vo
           return {
             priorLogs,
             uploadLogs: response.logs ?? [],
+            uploadOk: response.ok,
           }
         },
       })
@@ -217,6 +231,7 @@ export const usePointUpload = ({ onAuthenticated }: { onAuthenticated?: () => vo
           return {
             priorLogs,
             uploadLogs: response.logs ?? [],
+            uploadOk: response.ok,
           }
         },
       })

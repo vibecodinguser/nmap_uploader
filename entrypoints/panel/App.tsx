@@ -9,6 +9,7 @@ import { SettingsTab } from '@/components/SettingsTab'
 import { useAuth } from '@/hooks/useAuth'
 import { useFileUpload } from '@/hooks/useFileUpload'
 import { usePointUpload } from '@/hooks/usePointUpload'
+import { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
 import { useStrokeColor } from '@/hooks/useStrokeColor'
 import { useTheme } from '@/hooks/useTheme'
 
@@ -29,6 +30,7 @@ export const App = ({ themeTarget }: AppProps) => {
   const strokeColor = useStrokeColor()
   const { user, avatarDataUrl, isLoggingIn, isLoggedIn, refreshUser, handleLogin, handleLogout } =
     useAuth()
+  const reloadAfterUpload = useReloadAfterUpload(user?.id)
   const { isUploading, progress, uploadStatus, performUpload } = useFileUpload({
     onAuthenticated: refreshUser,
   })
@@ -75,6 +77,7 @@ export const App = ({ themeTarget }: AppProps) => {
             onThemeModeChange={setThemeMode}
             onBack={handleCloseSettings}
             strokeColor={strokeColor}
+            reloadAfterUpload={reloadAfterUpload}
           />
         ) : (
           <>

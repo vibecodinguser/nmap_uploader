@@ -1,4 +1,4 @@
-import { isYandexBrowser } from './browser'
+import { isFirefox, isYandexBrowser } from './browser'
 
 const CHROME_DARK_SURFACE = '#3c3c3c'
 
@@ -8,17 +8,31 @@ const CHROME_DARK_SURFACE_VARS = {
   '--dark-header-bg-blur': CHROME_DARK_SURFACE,
 } as const
 
-const DARK_SURFACE_VAR_KEYS = Object.keys(CHROME_DARK_SURFACE_VARS)
+const BROWSER_THEME_VAR_KEYS = Object.keys(CHROME_DARK_SURFACE_VARS)
 
-/** Применяет цвета тёмной темы с учётом браузера (Chrome / Yandex). */
-export const applyBrowserDarkThemeVars = (el: HTMLElement, isDark: boolean): void => {
-  for (const key of DARK_SURFACE_VAR_KEYS) {
+const clearBrowserThemeVars = (el: HTMLElement): void => {
+  for (const key of BROWSER_THEME_VAR_KEYS) {
     el.style.removeProperty(key)
   }
+}
 
-  if (!isDark || isYandexBrowser()) return
+/** Помечает корень панели для Firefox-токенов в CSS. */
+export const markFirefoxThemeTarget = (el: HTMLElement): void => {
+  if (!isFirefox()) return
+  el.classList.add('browser-firefox')
+}
+
+/** Применяет цвета тёмной темы Chrome (не Yandex, не Firefox — у Firefox свои токены в CSS). */
+export const applyBrowserThemeVars = (el: HTMLElement, isDark: boolean): void => {
+  clearBrowserThemeVars(el)
+  markFirefoxThemeTarget(el)
+
+  if (!isDark || isYandexBrowser() || isFirefox()) return
 
   for (const [key, value] of Object.entries(CHROME_DARK_SURFACE_VARS)) {
     el.style.setProperty(key, value)
   }
 }
+
+/** @deprecated Используйте applyBrowserThemeVars. */
+export const applyBrowserDarkThemeVars = applyBrowserThemeVars

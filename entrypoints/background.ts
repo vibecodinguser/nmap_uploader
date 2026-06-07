@@ -1,5 +1,7 @@
 import { browser } from 'wxt/browser'
 import { defineBackground } from 'wxt/utils/define-background'
+import { isMapTabUrl, MAP_TAB_URL_PATTERN } from '@/lib/map_tab'
+import { reloadMapEditorTabs } from '@/lib/reload_editor_page'
 import { uploadProcessedFilesToYandexDisk } from '@/lib/upload_service'
 import {
   buildAuthPayload,
@@ -23,9 +25,26 @@ const getSidePanelApi = (): SidePanelApi | undefined => {
   return api
 }
 
+type ToolbarActionApi = {
+  onClicked: {
+    addListener: (callback: (tab: Browser.tabs.Tab) => void) => void
+  }
+}
+
+/** Chrome MV3 — `action`, Firefox MV2 — `browserAction`. */
+const getToolbarActionApi = (): ToolbarActionApi | undefined => {
+  if (browser.action?.onClicked) return browser.action
+
+  const browserAction = (browser as typeof browser & { browserAction?: ToolbarActionApi })
+    .browserAction
+  if (browserAction?.onClicked) return browserAction
+
+  return undefined
+}
+
 const PANEL_SIDEBAR_SCRIPT = '/content-scripts/panel-sidebar.js' as const
 const MAP_HOME = 'https://n.maps.yandex.ru/' as const
-const MAP_URL_PATTERN = 'https://n.maps.yandex.ru/*'
+const MAP_URL_PATTERN = MAP_TAB_URL_PATTERN
 const PANEL_SIDEBAR_REGISTRATION_ID = 'nmap-panel-sidebar' as const
 
 const UA_YANDEX_PATTERN = /YaBrowser|Yowser|YaSearchBrowser/i
@@ -120,8 +139,6 @@ const ensurePanelSidebarRegistered = async (): Promise<void> => {
     console.warn('[nmap_uploader] ensurePanelSidebarRegistered failed:', error)
   }
 }
-
-const isMapTabUrl = (url?: string): boolean => url?.startsWith('https://n.maps.yandex.ru/') ?? false
 
 const waitForTabReady = async (tabId: number, maxMs = 15_000): Promise<Browser.tabs.Tab> => {
   const started = Date.now()
@@ -289,11 +306,16 @@ export default defineBackground(() => {
   void persistYandexBrowserFlag()
   void ensurePanelSidebarRegistered()
 
-  browser.action.onClicked.addListener((tab) => {
-    openPanel(tab).catch((error: unknown) => {
-      console.error('[nmap_uploader] openPanel failed:', error)
+  const toolbarAction = getToolbarActionApi()
+  if (!toolbarAction) {
+    console.error('[nmap_uploader] toolbar action API is unavailable in this browser')
+  } else {
+    toolbarAction.onClicked.addListener((tab) => {
+      openPanel(tab).catch((error: unknown) => {
+        console.error('[nmap_uploader] openPanel failed:', error)
+      })
     })
-  })
+  }
 
   browser.runtime.onInstalled.addListener(() => {
     void persistYandexBrowserFlag()
@@ -369,6 +391,16 @@ export default defineBackground(() => {
               },
             ],
           })
+        })
+      return true
+    }
+
+    if (action === 'reloadEditorPage') {
+      reloadMapEditorTabs({ preferredTabId: _sender.tab?.id })
+        .then((ok) => sendResponse({ ok }))
+        .catch((error: unknown) => {
+          console.warn('[nmap_uploader] reloadEditorPage failed:', error)
+          sendResponse({ ok: false })
         })
       return true
     }

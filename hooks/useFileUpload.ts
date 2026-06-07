@@ -5,6 +5,10 @@ import { ProcessingError } from '@/lib/errors'
 import { isAllowedFile } from '@/lib/formats'
 import { isValidTargetDate } from '@/lib/point_uploader'
 import {
+  resolveReloadAfterUploadPreference,
+  triggerEditorReloadIfNeeded,
+} from '@/lib/reload_after_upload'
+import {
   buildExpiredSessionLogs,
   ensureUploadAuth,
   hasUploadAuthError,
@@ -94,6 +98,7 @@ export const useFileUpload = ({ onAuthenticated }: { onAuthenticated?: () => voi
         }
 
         setProgress(85)
+        const reloadAfterUpload = await resolveReloadAfterUploadPreference()
         const response = (await browser.runtime.sendMessage({
           action: 'uploadProcessedFiles',
           files: [processed],
@@ -113,6 +118,7 @@ export const useFileUpload = ({ onAuthenticated }: { onAuthenticated?: () => voi
 
         setProgress(100)
         setUploadStatus(deriveUploadStatus([...conversionLogs, ...uploadLogs]))
+        await triggerEditorReloadIfNeeded({ reloadAfterUpload, uploadOk: response.ok })
       } catch (error) {
         setProgress(100)
         setUploadStatus({

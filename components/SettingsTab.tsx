@@ -1,4 +1,5 @@
 import { ArrowLeft } from 'lucide-react'
+import type { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
 import type { useStrokeColor } from '@/hooks/useStrokeColor'
 import type { ThemeMode } from '@/hooks/useTheme'
 import { DEFAULT_STROKE_COLOR_INPUT } from '@/lib/stroke_color'
@@ -22,11 +23,17 @@ const THEME_MODE_OPTIONS: { value: ThemeMode; label: string }[] = [
   { value: 'system', label: 'Авто' },
 ]
 
+type ReloadAfterUploadSettings = Pick<
+  ReturnType<typeof useReloadAfterUpload>,
+  'isEnabled' | 'isLoaded' | 'setIsEnabled' | 'canChange'
+>
+
 type SettingsTabProps = {
   themeMode: ThemeMode
   onThemeModeChange: (mode: ThemeMode) => void
   onBack: () => void
   strokeColor: StrokeColorSettings
+  reloadAfterUpload: ReloadAfterUploadSettings
 }
 
 export const SettingsTab = ({
@@ -34,6 +41,7 @@ export const SettingsTab = ({
   onThemeModeChange,
   onBack,
   strokeColor,
+  reloadAfterUpload,
 }: SettingsTabProps) => {
   const {
     inputValue,
@@ -46,11 +54,21 @@ export const SettingsTab = ({
     handleInputChange,
     handleApply,
   } = strokeColor
+  const {
+    isEnabled: isReloadAfterUploadEnabled,
+    isLoaded: isReloadAfterUploadLoaded,
+    setIsEnabled: setReloadAfterUploadEnabled,
+    canChange: canChangeReloadAfterUpload,
+  } = reloadAfterUpload
 
   const handleApplyClick = () => {
     handleApply().catch((error: unknown) => {
       console.warn('[nmap_uploader] stroke color apply failed:', error)
     })
+  }
+
+  const handleColorPickerChange = (value: string) => {
+    handleInputChange(value.replace(/^#/, ''))
   }
 
   return (
@@ -69,14 +87,17 @@ export const SettingsTab = ({
 
       <section className="settings-section" aria-labelledby="settings-path-heading">
         <h3 id="settings-path-heading" className="settings-section-title">
-          Цвет контура
+          Контур
         </h3>
         <div className="settings-field">
           <div className="settings-color-field">
-            <span
-              className="settings-color-preview"
-              style={{ backgroundColor: effectiveColor }}
-              aria-hidden
+            <input
+              type="color"
+              className="settings-color-picker"
+              value={effectiveColor}
+              disabled={!isLoaded || isApplying}
+              aria-label="Выбрать цвет контура"
+              onChange={(event) => handleColorPickerChange(event.target.value)}
             />
             <div
               className={
@@ -132,6 +153,22 @@ export const SettingsTab = ({
             </p>
           ) : null}
         </div>
+      </section>
+
+      <section className="settings-section" aria-labelledby="settings-upload-heading">
+        <h3 id="settings-upload-heading" className="settings-section-title">
+          Загрузка
+        </h3>
+        <label className="settings-checkbox">
+          <input
+            type="checkbox"
+            className="settings-checkbox-input"
+            checked={isReloadAfterUploadEnabled}
+            disabled={!isReloadAfterUploadLoaded || !canChangeReloadAfterUpload}
+            onChange={(event) => setReloadAfterUploadEnabled(event.target.checked)}
+          />
+          <span className="settings-checkbox-label">Перезагрузить страницу после загрузки</span>
+        </label>
       </section>
 
       <section className="settings-section" aria-labelledby="settings-appearance-heading">

@@ -36,3 +36,38 @@
   --header-bg: var(--dark-header-bg);
   --header-bg-blur: var(--dark-header-bg-blur);
 }
+
+/* Firefox Side Panel — после .dark, чтобы перекрыть #32333d и #45464f. */
+@supports (-moz-appearance: none) {
+  :root:not(.dark),
+  :host:not(.dark) {
+    --background: #f9f9fb;
+    --muted: #eaeaed;
+  }
+
+  .dark,
+  :host(.dark) {
+    --dark-surface: #333;
+    --dark-header-bg: var(--dark-surface);
+    --dark-header-bg-blur: var(--dark-surface);
+    --background: var(--dark-surface);
+    --muted: #262626;
+    --primary: #262626;
+  }
+}
+
+:root.browser-firefox:not(.dark),
+:host.browser-firefox:not(.dark) {
+  --background: #f9f9fb;
+  --muted: #eaeaed;
+}
+
+.dark.browser-firefox,
+:host(.dark.browser-firefox) {
+  --dark-surface: #333;
+  --dark-header-bg: var(--dark-surface);
+  --dark-header-bg-blur: var(--dark-surface);
+  --background: var(--dark-surface);
+  --muted: #262626;
+  --primary: #262626;
+}
