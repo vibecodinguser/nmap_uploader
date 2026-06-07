@@ -11,6 +11,8 @@ const forceCanvasRepaint = (): void => {
   window.dispatchEvent(new Event('resize'))
 }
 
+// WXT подхватывает default export при сборке; статического import нет
+// noinspection JSUnusedGlobalSymbols
 export default defineContentScript({
   matches: ['https://n.maps.yandex.ru/*'],
   allFrames: true,

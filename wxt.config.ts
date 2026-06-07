@@ -56,7 +56,7 @@ export default defineConfig({
     artifactTemplate: 'NmapUploader-{{browser}}_{{version}}.zip',
     sourcesTemplate: 'NmapUploader-{{browser}}_{{version}}-sources.zip',
   },
-  manifest: ({ browser }) => ({
+  manifest: ({ browser, command }) => ({
     ...baseManifest,
     ...(browser === 'firefox' && {
       browser_specific_settings: {
@@ -70,7 +70,10 @@ export default defineConfig({
         },
       },
     }),
+    // key только для `pnpm dev`: стабильный extension id и OAuth redirect в Chrome.
+    // В production ZIP для магазина key не включаем — иначе CWS отклоняет загрузку.
     ...(browser === 'chrome' &&
+      command === 'serve' &&
       process.env.CHROME_EXTENSION_KEY && {
         key: process.env.CHROME_EXTENSION_KEY,
       }),
