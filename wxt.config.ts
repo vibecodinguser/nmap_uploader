@@ -1,3 +1,4 @@
+import { resolve } from 'node:path'
 import { defineConfig } from 'wxt'
 import packageJson from './package.json'
 
@@ -10,11 +11,20 @@ const extensionIcons = {
 
 const FIREFOX_EXTENSION_ID = 'nmap-uploader@local.dev'
 
+const CHROME_PERMISSIONS = [
+  'sidePanel',
+  'storage',
+  'scripting',
+  'activeTab',
+  'identity',
+  'tabs',
+] as const
+const FIREFOX_PERMISSIONS = ['storage', 'scripting', 'activeTab', 'identity', 'tabs'] as const
+
 const baseManifest = {
   name: 'nmap_uploader',
   version: packageJson.version,
   description: 'Загрузчик в Блокнот картографа Народной карты',
-  permissions: ['sidePanel', 'storage', 'scripting', 'activeTab', 'identity', 'tabs'],
   host_permissions: [
     'https://n.maps.yandex.ru/*',
     'https://cloud-api.yandex.net/*',
@@ -40,6 +50,11 @@ const baseManifest = {
 export default defineConfig({
   modules: ['@wxt-dev/module-react'],
   vite: () => ({
+    resolve: {
+      alias: {
+        setimmediate: resolve(import.meta.dirname, 'lib/setimmediate_shim.ts'),
+      },
+    },
     build: {
       modulePreload: { polyfill: false },
     },
@@ -58,15 +73,19 @@ export default defineConfig({
   },
   manifest: ({ browser, command }) => ({
     ...baseManifest,
+    permissions: browser === 'firefox' ? [...FIREFOX_PERMISSIONS] : [...CHROME_PERMISSIONS],
     ...(browser === 'firefox' && {
       browser_specific_settings: {
         gecko: {
           id: FIREFOX_EXTENSION_ID,
-          strict_min_version: '109.0',
+          strict_min_version: '140.0',
           data_collection_permissions: {
             required: ['authenticationInfo', 'websiteContent'],
             optional: ['technicalAndInteraction'],
           },
+        },
+        gecko_android: {
+          strict_min_version: '142.0',
         },
       },
     }),
