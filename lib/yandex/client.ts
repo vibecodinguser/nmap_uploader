@@ -1,7 +1,7 @@
 import { browser } from 'wxt/browser'
 import { ERR_NETWORK, ProcessingError } from '@/lib/errors'
 import type { NmapIndex } from '@/lib/nmap_index'
-import { getOAuthRedirectUri } from '@/lib/yandex/oauth_redirect'
+import { FIREFOX_OAUTH_REDIRECT_URI, getOAuthRedirectUri } from '@/lib/yandex/oauth_redirect'
 
 export const YANDEX_CLIENT_ID = 'ef45c7e176e844c087bc2487985ad275'
 export const YANDEX_DISK_FOLDER = 'Приложения/Блокнот картографа Народной карты'
@@ -592,7 +592,11 @@ export const launchYandexAuth = async ({
       throw new ProcessingError(
         ERR_NETWORK,
         interactive
-          ? `Авторизация не завершена. Проверьте: 1) Redirect URI в OAuth = ${redirectUri}; 2) в приложении включён cloud_api:disk.write; 3) на экране Яндекса нажмите «Разрешить»`
+          ? `Авторизация не завершена. Проверьте: 1) Redirect URI в oauth.yandex.ru = ${redirectUri}` +
+              (redirectUri === FIREFOX_OAUTH_REDIRECT_URI
+                ? ' (Firefox: SHA1 от gecko.id; не nmap-uploader_local.dev и не 127.0.0.1/mozoauth2…)'
+                : '') +
+              '; 2) в приложении включён cloud_api:disk.write; 3) на экране Яндекса нажмите «Разрешить»'
           : 'Авторизация не завершена',
       )
     }

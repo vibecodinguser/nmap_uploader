@@ -8,5 +8,5 @@
     },
     "types": ["node"]
   },
-  "include": ["./**/*.ts", "../lib/shims.d.ts"]
+  "include": ["./**/*.ts", "../lib/shims.d.ts", "../env.d.ts"]
 }
