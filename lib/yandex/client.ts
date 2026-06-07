@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser'
 import { ERR_NETWORK, ProcessingError } from '@/lib/errors'
 import type { NmapIndex } from '@/lib/nmap_index'
+import { getOAuthRedirectUri } from '@/lib/yandex/oauth_redirect'
 
 export const YANDEX_CLIENT_ID = 'ef45c7e176e844c087bc2487985ad275'
 export const YANDEX_DISK_FOLDER = 'Приложения/Блокнот картографа Народной карты'
@@ -525,7 +526,7 @@ const buildAuthUrl = ({
 }: {
   forceConfirm?: boolean
 } = {}): { authUrl: URL; redirectUri: string; launchUrl: string } => {
-  const redirectUri = browser.identity.getRedirectURL()
+  const redirectUri = getOAuthRedirectUri()
   const authUrl = new URL('https://oauth.yandex.ru/authorize')
   authUrl.searchParams.set('response_type', 'token')
   authUrl.searchParams.set('client_id', YANDEX_CLIENT_ID)
