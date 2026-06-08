@@ -8,6 +8,7 @@ import { PoligonTab } from '@/components/PoligonTab'
 import { SettingsTab } from '@/components/SettingsTab'
 import { useAuth } from '@/hooks/useAuth'
 import { useFileUpload } from '@/hooks/useFileUpload'
+import { useGoToLinks } from '@/hooks/useGoToLinks'
 import { usePointUpload } from '@/hooks/usePointUpload'
 import { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
 import { useStrokeColor } from '@/hooks/useStrokeColor'
@@ -31,6 +32,7 @@ export const App = ({ themeTarget }: AppProps) => {
   const { user, avatarDataUrl, isLoggingIn, isLoggedIn, refreshUser, handleLogin, handleLogout } =
     useAuth()
   const reloadAfterUpload = useReloadAfterUpload(user?.id)
+  const goToLinks = useGoToLinks()
   const { isUploading, progress, uploadStatus, performUpload } = useFileUpload({
     onAuthenticated: refreshUser,
   })
@@ -78,6 +80,7 @@ export const App = ({ themeTarget }: AppProps) => {
             onBack={handleCloseSettings}
             strokeColor={strokeColor}
             reloadAfterUpload={reloadAfterUpload}
+            goToLinks={goToLinks}
           />
         ) : (
           <>

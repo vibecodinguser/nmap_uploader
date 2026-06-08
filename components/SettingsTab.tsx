@@ -1,4 +1,6 @@
 import { ArrowLeft } from 'lucide-react'
+import { GoToLinksSettings } from '@/components/GoToLinksSettings'
+import type { useGoToLinks } from '@/hooks/useGoToLinks'
 import type { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
 import type { useStrokeColor } from '@/hooks/useStrokeColor'
 import type { ThemeMode } from '@/hooks/useTheme'
@@ -29,12 +31,24 @@ type ReloadAfterUploadSettings = Pick<
   'isEnabled' | 'isLoaded' | 'setIsEnabled' | 'canChange'
 >
 
+type GoToLinksSettingsState = Pick<
+  ReturnType<typeof useGoToLinks>,
+  | 'isMenuEnabled'
+  | 'items'
+  | 'isLoaded'
+  | 'setIsMenuEnabled'
+  | 'setItemActive'
+  | 'moveItemUp'
+  | 'moveItemDown'
+>
+
 type SettingsTabProps = {
   themeMode: ThemeMode
   onThemeModeChange: (mode: ThemeMode) => void
   onBack: () => void
   strokeColor: StrokeColorSettings
   reloadAfterUpload: ReloadAfterUploadSettings
+  goToLinks: GoToLinksSettingsState
 }
 
 export const SettingsTab = ({
@@ -43,6 +57,7 @@ export const SettingsTab = ({
   onBack,
   strokeColor,
   reloadAfterUpload,
+  goToLinks,
 }: SettingsTabProps) => {
   const {
     inputValue,
@@ -86,9 +101,56 @@ export const SettingsTab = ({
 
       <h2 className="settings-title">Настройки</h2>
 
+      <section className="settings-section" aria-labelledby="settings-appearance-heading">
+        <h3 id="settings-appearance-heading" className="settings-section-title">
+          Оформление
+        </h3>
+        <div className="theme-mode-switch" role="radiogroup" aria-label="Тема оформления">
+          {THEME_MODE_OPTIONS.map((option) => (
+            <label key={option.value} className="theme-mode-switch-option">
+              <input
+                type="radio"
+                name="theme-mode"
+                value={option.value}
+                className="theme-mode-switch-input"
+                checked={themeMode === option.value}
+                onChange={() => onThemeModeChange(option.value)}
+              />
+              <span className="theme-mode-switch-label">{option.label}</span>
+            </label>
+          ))}
+        </div>
+      </section>
+
+      <section className="settings-section" aria-labelledby="settings-upload-heading">
+        <div className="settings-toggle-row">
+          <h3 id="settings-upload-heading" className="settings-section-title">
+            Автообновление после загрузки
+          </h3>
+          <label className="settings-toggle" htmlFor="settings-reload-after-upload">
+            <input
+              id="settings-reload-after-upload"
+              type="checkbox"
+              role="switch"
+              className="settings-toggle-input"
+              checked={isReloadAfterUploadEnabled}
+              aria-checked={isReloadAfterUploadEnabled}
+              disabled={!isReloadAfterUploadLoaded || !canChangeReloadAfterUpload}
+              aria-label="Автообновление после загрузки"
+              onChange={(event) => setReloadAfterUploadEnabled(event.target.checked)}
+            />
+            <span className="settings-toggle-track" aria-hidden="true">
+              <span className="settings-toggle-thumb" />
+            </span>
+          </label>
+        </div>
+      </section>
+
+      <GoToLinksSettings {...goToLinks} />
+
       <section className="settings-section" aria-labelledby="settings-path-heading">
         <h3 id="settings-path-heading" className="settings-section-title">
-          Контур
+          Обводка контура загруженного объекта
         </h3>
         <div className="settings-field">
           <div className="settings-color-field">
@@ -156,44 +218,10 @@ export const SettingsTab = ({
         </div>
       </section>
 
-      <section className="settings-section" aria-labelledby="settings-upload-heading">
-        <h3 id="settings-upload-heading" className="settings-section-title">
-          Загрузка
-        </h3>
-        <label className="settings-checkbox">
-          <input
-            type="checkbox"
-            className="settings-checkbox-input"
-            checked={isReloadAfterUploadEnabled}
-            disabled={!isReloadAfterUploadLoaded || !canChangeReloadAfterUpload}
-            onChange={(event) => setReloadAfterUploadEnabled(event.target.checked)}
-          />
-          <span className="settings-checkbox-label">Перезагрузить страницу после загрузки</span>
-        </label>
-      </section>
-
-      <section className="settings-section" aria-labelledby="settings-appearance-heading">
-        <h3 id="settings-appearance-heading" className="settings-section-title">
-          Оформление
-        </h3>
-        <div className="theme-mode-switch" role="radiogroup" aria-label="Тема оформления">
-          {THEME_MODE_OPTIONS.map((option) => (
-            <label key={option.value} className="theme-mode-switch-option">
-              <input
-                type="radio"
-                name="theme-mode"
-                value={option.value}
-                className="theme-mode-switch-input"
-                checked={themeMode === option.value}
-                onChange={() => onThemeModeChange(option.value)}
-              />
-              <span className="theme-mode-switch-label">{option.label}</span>
-            </label>
-          ))}
-        </div>
-      </section>
-
-      <section className="settings-section" aria-labelledby="settings-about-heading">
+      <section
+        className="settings-section settings-section--about"
+        aria-labelledby="settings-about-heading"
+      >
         <h3 id="settings-about-heading" className="settings-section-title">
           О приложении
         </h3>
