@@ -34,7 +34,7 @@ export const GoToLinksSettings = ({
     <section className="settings-section" aria-labelledby="settings-go-to-heading">
       <div className="settings-toggle-row">
         <h3 id="settings-go-to-heading" className="settings-section-title">
-          Другие картографические сервисы
+          Внешние геосервисы
         </h3>
         <label className="settings-toggle" htmlFor="settings-go-to-menu-enabled">
           <input
@@ -67,7 +67,7 @@ export const GoToLinksSettings = ({
           aria-hidden
           className={isListExpanded ? 'settings-go-to-toggle-icon--expanded' : undefined}
         />
-        <span className="settings-go-to-toggle-label">Список сервисов</span>
+        <span className="settings-go-to-toggle-label">Список</span>
         <span className="settings-go-to-toggle-meta">
           {activeCount} из {items.length} активны
         </span>

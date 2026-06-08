@@ -33,6 +33,8 @@ const baseManifest = {
     'https://passport.yandex.ru/*',
     'https://login.yandex.ru/*',
     'https://avatars.yandex.net/*',
+    'https://nakarte.me/*',
+    'http://nakarte.me/*',
   ],
   web_accessible_resources: [
     {

@@ -2,6 +2,11 @@ import { browser } from 'wxt/browser'
 import type { ContentScriptContext } from 'wxt/utils/content-script-context'
 import { defineContentScript } from 'wxt/utils/define-content-script'
 import { buildNkUserBarCssVars, readNkUserBarTypography } from '@/lib/nk_user_bar_typography'
+import {
+  CLOSE_PANEL_SIDEBAR_ACTION,
+  PANEL_SIDEBAR_WRAPPER_ID,
+  removePanelSidebarFromDom,
+} from '@/lib/panel_sidebar_notify'
 
 const persistYandexBrowserFlag = async (): Promise<void> => {
   if (!/YaBrowser|Yowser|YaSearchBrowser/i.test(navigator.userAgent)) return
@@ -69,6 +74,7 @@ const applyTypographyToIframe = (iframe: HTMLIFrameElement): void => {
 /** Лёгкая замена createIframeUi без wait-element / MutationObserver. */
 const createSidebarIframeUi = (ctx: ContentScriptContext): SidebarUi => {
   const wrapper = document.createElement('div')
+  wrapper.id = PANEL_SIDEBAR_WRAPPER_ID
   const iframe = document.createElement('iframe')
   wrapper.appendChild(iframe)
 
@@ -114,6 +120,15 @@ export default defineContentScript({
       return ui
     }
 
+    const closePanelIfOpen = (): void => {
+      const isMountedInDom = Boolean(document.getElementById(PANEL_SIDEBAR_WRAPPER_ID))
+      if (!isOpen && !isMountedInDom) return
+
+      ensureUi().remove()
+      removePanelSidebarFromDom()
+      isOpen = false
+    }
+
     const togglePanel = async (): Promise<void> => {
       const panelUi = ensureUi()
 
@@ -129,6 +144,11 @@ export default defineContentScript({
     }
 
     browser.runtime.onMessage.addListener((message) => {
+      if (message?.action === CLOSE_PANEL_SIDEBAR_ACTION) {
+        closePanelIfOpen()
+        return
+      }
+
       if (message?.action !== 'togglePanel') return
 
       void (async () => {

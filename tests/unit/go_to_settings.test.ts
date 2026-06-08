@@ -90,8 +90,8 @@ describe('go_to storage', () => {
 
     const loaded = await getStoredGoToItems()
     expect(loaded).toEqual(saved)
-    expect((await browser.storage.local.get(GO_TO_ITEMS_STORAGE_KEY))[GO_TO_ITEMS_STORAGE_KEY]).toEqual(
-      saved,
-    )
+    expect(
+      (await browser.storage.local.get(GO_TO_ITEMS_STORAGE_KEY))[GO_TO_ITEMS_STORAGE_KEY],
+    ).toEqual(saved)
   })
 })

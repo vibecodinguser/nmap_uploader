@@ -29,27 +29,51 @@ const convertToMercator = (longitude: number, latitude: number): { lon: number; 
   return { lon, lat }
 }
 
+const readNmapsSearchParams = (href: string): URLSearchParams | null => {
+  try {
+    const normalized = new URL(href.replace('/#!', ''))
+    if (normalized.searchParams.has('ll') || normalized.searchParams.has('z')) {
+      return normalized.searchParams
+    }
+  } catch {
+    // fallback: разбор query из hash
+  }
+
+  const hashIndex = href.indexOf('#')
+  if (hashIndex === -1) return null
+
+  const queryIndex = href.indexOf('?', hashIndex)
+  if (queryIndex === -1) return null
+
+  return new URLSearchParams(href.slice(queryIndex + 1))
+}
+
+const parseMapLocationFromSearchParams = (params: URLSearchParams): MapLocation | null => {
+  const ll = params.get('ll')
+  const zoomParam = params.get('z')
+  if (!ll || !zoomParam) return null
+
+  const [lonRaw, latRaw] = ll.split(',')
+  const longitude = Number(lonRaw)
+  const latitude = Number(latRaw)
+  const zoom = Number(zoomParam)
+  if (!Number.isFinite(longitude) || !Number.isFinite(latitude) || !Number.isFinite(zoom)) {
+    return null
+  }
+
+  return {
+    longitude,
+    latitude: clampLatitude(latitude),
+    zoom,
+  }
+}
+
 /** Извлекает координаты и зум из URL редактора НЯК. */
 export const getMapLocationFromUrl = (href: string): MapLocation | null => {
   try {
-    const url = new URL(href.replace('/#!', ''))
-    const ll = url.searchParams.get('ll')
-    const zoomParam = url.searchParams.get('z')
-    if (!ll || !zoomParam) return null
-
-    const [lonRaw, latRaw] = ll.split(',')
-    const longitude = Number(lonRaw)
-    const latitude = Number(latRaw)
-    const zoom = Number(zoomParam)
-    if (!Number.isFinite(longitude) || !Number.isFinite(latitude) || !Number.isFinite(zoom)) {
-      return null
-    }
-
-    return {
-      longitude,
-      latitude: clampLatitude(latitude),
-      zoom,
-    }
+    const params = readNmapsSearchParams(href)
+    if (!params) return null
+    return parseMapLocationFromSearchParams(params)
   } catch {
     return null
   }

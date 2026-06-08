@@ -19,6 +19,12 @@ import {
 } from '@/lib/go_to_settings'
 import { GO_TO_SOURCES, getGoToSourceDisplayName, getGoToSourceIconUrl } from '@/lib/go_to_sources'
 import {
+  buildSplitViewButtonHtml,
+  GO_TO_SPLIT_BUTTON_HIDDEN_CLASS,
+  GO_TO_SPLIT_BUTTON_ID,
+} from '@/lib/go_to_split_button'
+import { isSplitViewOpen, teardownSplitView, toggleSplitView } from '@/lib/go_to_split_view'
+import {
   ensureGoToStyles,
   GO_TO_BUTTON_HOVERED_CLASS,
   GO_TO_MENU_ITEM_HOVERED_CLASS,
@@ -32,6 +38,7 @@ const BUTTON_ANCHOR_SELECTORS = [
 ] as const
 
 const BUTTON_ID = GO_TO_BUTTON_ID
+const SPLIT_BUTTON_ID = GO_TO_SPLIT_BUTTON_ID
 const MENU_ID = 'goToLinksMenu'
 const MENU_ITEMS_ID = 'linksItems'
 
@@ -45,6 +52,8 @@ const MENU_HTML = `<div id="${MENU_ID}" class="nmap-uploader-popup"><div class="
 const MENU_ITEM_HTML = `<div id="goToLink{index}" class="nmap-uploader-menu__item" role="menuitem" style="background-image: url({iconUrl});"></div>`
 
 const getButton = (): HTMLElement | null => document.getElementById(BUTTON_ID)
+const getSplitButton = (): HTMLButtonElement | null =>
+  document.getElementById(SPLIT_BUTTON_ID) as HTMLButtonElement | null
 const getMenu = (): HTMLElement | null => document.getElementById(MENU_ID)
 const getMenuItems = (): HTMLElement | null => document.getElementById(MENU_ITEMS_ID)
 
@@ -90,11 +99,39 @@ const showGoToButton = (): void => {
   }
 }
 
+const hideSplitButton = (): void => {
+  const splitButton = getSplitButton()
+  if (!splitButton) return
+
+  splitButton.classList.add(GO_TO_SPLIT_BUTTON_HIDDEN_CLASS)
+  splitButton.setAttribute('aria-hidden', 'true')
+  for (const className of REGION_BUTTON_CLASSES) {
+    splitButton.classList.remove(className)
+  }
+}
+
+const showSplitButton = (): void => {
+  const splitButton = getSplitButton()
+  if (!splitButton) return
+
+  splitButton.classList.remove(GO_TO_SPLIT_BUTTON_HIDDEN_CLASS)
+  splitButton.removeAttribute('aria-hidden')
+  for (const className of REGION_BUTTON_CLASSES) {
+    splitButton.classList.add(className)
+  }
+}
+
+const removeSplitButton = (): void => {
+  teardownSplitView()
+  getSplitButton()?.remove()
+}
+
 const removeButtonAndMenu = (): void => {
   waitForAnchorCleanup?.()
   waitForAnchorCleanup = undefined
   hideGoToTooltip()
   removeMenu()
+  removeSplitButton()
   getButton()?.remove()
 }
 
@@ -103,7 +140,9 @@ const hideButtonAndMenu = (): void => {
   waitForAnchorCleanup = undefined
   hideGoToTooltip()
   hideMenu()
+  if (isSplitViewOpen()) teardownSplitView()
   hideGoToButton()
+  hideSplitButton()
 }
 
 const renderMenuItems = (items: GoToItem[]): void => {
@@ -140,9 +179,44 @@ const buildMenu = async (): Promise<void> => {
 }
 
 const isButtonMountedInToolbar = (button: HTMLElement, anchor: Element): boolean => {
-  const parent = getButtonInsertParent(anchor)
-  if (!parent) return false
-  return parent.nextElementSibling === button
+  const goToButton = getButton()
+  if (!goToButton) return false
+
+  let expectedPrevious: Element | null = getButtonInsertParent(anchor)
+  if (button === goToButton) {
+    return expectedPrevious?.nextElementSibling === button
+  }
+
+  const splitButton = getSplitButton()
+  if (button === splitButton) {
+    expectedPrevious = goToButton
+    return expectedPrevious?.nextElementSibling === button
+  }
+
+  return false
+}
+
+const mountSplitButton = (): void => {
+  const goToButton = getButton()
+  if (!goToButton) return
+
+  let splitButton = getSplitButton()
+  if (splitButton && splitButton.previousElementSibling !== goToButton) {
+    splitButton.remove()
+    splitButton = null
+  }
+
+  if (!splitButton) {
+    goToButton.insertAdjacentHTML('afterend', buildSplitViewButtonHtml())
+    splitButton = getSplitButton()
+    if (!splitButton) return
+
+    splitButton.addEventListener('click', handleSplitButtonClick)
+    splitButton.addEventListener('mouseover', handleSplitButtonMouseOver)
+    splitButton.addEventListener('mouseout', handleSplitButtonMouseOut)
+  }
+
+  showSplitButton()
 }
 
 const mountButton = (anchor: Element): void => {
@@ -167,6 +241,7 @@ const mountButton = (anchor: Element): void => {
   }
 
   showGoToButton()
+  mountSplitButton()
   void buildMenu()
 }
 
@@ -228,11 +303,51 @@ const handleButtonClick = (): void => {
   showMenu()
 }
 
+const handleSplitButtonClick = (event: MouseEvent): void => {
+  event.preventDefault()
+  event.stopPropagation()
+  hideMenu()
+
+  if (isSplitViewOpen()) {
+    toggleSplitView()
+    return
+  }
+
+  if (!getMapLocationFromUrl(window.location.href)) {
+    const splitButton = getSplitButton()
+    if (!splitButton) return
+    showGoToTooltip('Не удалось определить положение карты из URL (ll, z)', splitButton, 'top')
+    window.setTimeout(() => hideGoToTooltip(), 3000)
+    return
+  }
+
+  if (!toggleSplitView()) {
+    const splitButton = getSplitButton()
+    if (!splitButton) return
+    showGoToTooltip('Не удалось открыть сравнение с Nakarte', splitButton, 'top')
+    window.setTimeout(() => hideGoToTooltip(), 3000)
+  }
+}
+
+const handleSplitButtonMouseOver = (event: MouseEvent): void => {
+  const splitButton = getSplitButton()
+  if (!splitButton || !isElementDescendantToOrEquals(event.target, SPLIT_BUTTON_ID)) return
+  splitButton.classList.add(GO_TO_BUTTON_HOVERED_CLASS)
+  showGoToTooltip('Раздельный вид', splitButton, 'top')
+}
+
+const handleSplitButtonMouseOut = (event: MouseEvent): void => {
+  const splitButton = getSplitButton()
+  if (!splitButton || !isElementDescendantToOrEquals(event.target, SPLIT_BUTTON_ID)) return
+  splitButton.classList.remove(GO_TO_BUTTON_HOVERED_CLASS)
+  hideGoToTooltip()
+}
+
 const handleButtonMouseOver = (event: MouseEvent): void => {
   const button = getButton()
   if (!button || !isElementDescendantToOrEquals(event.target, BUTTON_ID)) return
   button.classList.add(GO_TO_BUTTON_HOVERED_CLASS)
-  showGoToTooltip('Другие картографические сервисы', button, 'top')
+  showGoToTooltip('Внешние геосервисы', button, 'top')
 }
 
 const handleButtonMouseOut = (event: MouseEvent): void => {

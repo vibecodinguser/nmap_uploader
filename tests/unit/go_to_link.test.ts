@@ -18,6 +18,16 @@ describe('getMapLocationFromUrl', () => {
   it('возвращает null при отсутствии параметров', () => {
     expect(getMapLocationFromUrl('https://n.maps.yandex.ru/')).toBeNull()
   })
+
+  it('извлекает координаты из query внутри hash без path', () => {
+    const location = getMapLocationFromUrl('https://n.maps.yandex.ru/#!?z=12&ll=37.6%2C55.7&l=nk')
+
+    expect(location).toEqual({
+      longitude: 37.6,
+      latitude: 55.7,
+      zoom: 12,
+    })
+  })
 })
 
 describe('buildGoToLink', () => {
@@ -45,8 +55,7 @@ describe('buildGoToLink', () => {
     const resolved = resolveMapLocationForSource(location, GO_TO_SOURCES.Rosreestr)
 
     const expectedLon = 6_378_137 * 37.6 * (Math.PI / 180)
-    const expectedLat =
-      6_378_137 * Math.log(Math.tan(Math.PI / 4 + (55.7 * (Math.PI / 180)) / 2))
+    const expectedLat = 6_378_137 * Math.log(Math.tan(Math.PI / 4 + (55.7 * (Math.PI / 180)) / 2))
 
     expect(resolved.longitude).toBeCloseTo(expectedLon, 5)
     expect(resolved.latitude).toBeCloseTo(expectedLat, 5)

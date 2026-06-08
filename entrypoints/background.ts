@@ -2,6 +2,7 @@ import { browser } from 'wxt/browser'
 import { defineBackground } from 'wxt/utils/define-background'
 import { GO_TO_REFRESH_ACTION } from '@/lib/go_to_notify'
 import { isMapTabUrl, MAP_TAB_URL_PATTERN } from '@/lib/map_tab'
+import { CLOSE_PANEL_SIDEBAR_ACTION } from '@/lib/panel_sidebar_notify'
 import { reloadMapEditorTabs } from '@/lib/reload_editor_page'
 import { uploadProcessedFilesToYandexDisk } from '@/lib/upload_service'
 import {
@@ -429,6 +430,34 @@ export default defineBackground(() => {
         .then(() => sendResponse({ ok: true }))
         .catch((error: unknown) => {
           console.warn('[nmap_uploader] refreshGoToMenu relay failed:', error)
+          sendResponse({ ok: false })
+        })
+      return true
+    }
+
+    if (action === CLOSE_PANEL_SIDEBAR_ACTION) {
+      const relayClosePanelSidebar = async (): Promise<void> => {
+        const senderTabId = _sender.tab?.id
+        const senderIsMapTab = _sender.tab?.url?.startsWith('https://n.maps.yandex.ru/')
+
+        if (senderTabId && senderIsMapTab) {
+          await browser.tabs.sendMessage(senderTabId, { action: CLOSE_PANEL_SIDEBAR_ACTION })
+          return
+        }
+
+        const tabs = await browser.tabs.query({ url: 'https://n.maps.yandex.ru/*' })
+        await Promise.allSettled(
+          tabs.map((tab) => {
+            if (!tab.id) return Promise.resolve()
+            return browser.tabs.sendMessage(tab.id, { action: CLOSE_PANEL_SIDEBAR_ACTION })
+          }),
+        )
+      }
+
+      relayClosePanelSidebar()
+        .then(() => sendResponse({ ok: true }))
+        .catch((error: unknown) => {
+          console.warn('[nmap_uploader] closePanelSidebar relay failed:', error)
           sendResponse({ ok: false })
         })
       return true
