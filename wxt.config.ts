@@ -1,4 +1,5 @@
 import { resolve } from 'node:path'
+import { loadEnv } from 'vite'
 import { defineConfig } from 'wxt'
 import packageJson from './package.json'
 
@@ -51,16 +52,25 @@ const baseManifest = {
 
 export default defineConfig({
   modules: ['@wxt-dev/module-react'],
-  vite: () => ({
-    resolve: {
-      alias: {
-        setimmediate: resolve(import.meta.dirname, 'lib/setimmediate_shim.ts'),
+  vite: ({ mode }) => {
+    const env = loadEnv(mode, import.meta.dirname, '')
+    const releasesUrl = env.RELEASES_URL?.trim() ?? ''
+
+    return {
+      envPrefix: ['VITE_', 'WXT_', 'YANDEX_', 'RELEASES_'],
+      define: {
+        __RELEASES_URL__: JSON.stringify(releasesUrl),
       },
-    },
-    build: {
-      modulePreload: { polyfill: false },
-    },
-  }),
+      resolve: {
+        alias: {
+          setimmediate: resolve(import.meta.dirname, 'lib/setimmediate_shim.ts'),
+        },
+      },
+      build: {
+        modulePreload: { polyfill: false },
+      },
+    }
+  },
   webExt: {
     startUrls: [
       'https://n.maps.yandex.ru/#!/objects/3470560507?z=14&ll=39.187968%2C44.969538&l=nk%23sat',

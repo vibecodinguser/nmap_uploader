@@ -92,10 +92,10 @@ export const PointsTab = ({
                 rows={1}
                 value={description}
                 maxLength={150}
-                placeholder="Описание добавляемой точки (макс. 150 символов)"
+                placeholder="Описание объекта (макс. 150 символов)"
                 disabled={isUploading}
                 onChange={(event) => setDescription(event.currentTarget.value)}
-                aria-label="Описание точки"
+                aria-label="Описание объекта"
               />
 
               <div className="coords-row coords-row--manual">

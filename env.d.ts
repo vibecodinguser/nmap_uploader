@@ -7,3 +7,6 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+/** URL релизов из .env — подставляется в wxt.config.ts через define. */
+declare const __RELEASES_URL__: string

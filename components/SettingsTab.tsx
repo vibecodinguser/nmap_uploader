@@ -4,6 +4,7 @@ import type { useGoToLinks } from '@/hooks/useGoToLinks'
 import type { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
 import type { useStrokeColor } from '@/hooks/useStrokeColor'
 import type { ThemeMode } from '@/hooks/useTheme'
+import { RELEASES_URL } from '@/lib/releases_url'
 import { DEFAULT_STROKE_COLOR_INPUT } from '@/lib/stroke_color'
 import packageJson from '../package.json'
 
@@ -222,15 +223,17 @@ export const SettingsTab = ({
         className="settings-section settings-section--about"
         aria-labelledby="settings-about-heading"
       >
-        <h3 id="settings-about-heading" className="settings-section-title">
-          О приложении
+        <h3 className="settings-section-title">
+          <a
+            id="settings-about-heading"
+            href={RELEASES_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="settings-about-link"
+          >
+            Версия {packageJson.version}
+          </a>
         </h3>
-        <dl className="settings-about-list">
-          <div className="settings-about-item">
-            <dt>Версия</dt>
-            <dd>{packageJson.version}</dd>
-          </div>
-        </dl>
       </section>
     </div>
   )
