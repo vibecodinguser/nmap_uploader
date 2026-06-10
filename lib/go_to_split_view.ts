@@ -29,6 +29,7 @@ const WHEEL_ZOOM_STEP_THRESHOLD = 50
 const NAKARTE_ZOOM_PUSH_GRACE_MS = 450
 const STALE_ZOOM_CENTER_EPSILON = 1e-4
 const SPLIT_RESIZED_ATTR = 'data-nmap-uploader-split-resized'
+const CURSOR_MARKER_RADIUS = 8
 
 const NAK_ROOT_SELECTORS = ['.nk-app-view', '.nk-layout-view', '.nk-map-editor-view'] as const
 
@@ -68,52 +69,98 @@ const updateSplitButtonState = (): void => {
   button.setAttribute('aria-pressed', String(isOpen))
 }
 
-const getLeftPanelSize = (): { width: number; height: number } => ({
-  width: document.documentElement.clientWidth,
-  height: document.documentElement.clientHeight,
+const getSplitPanelSize = (): { width: number; height: number } => ({
+  width: Math.max(1, Math.round(window.innerWidth / 2)),
+  height: Math.max(1, window.innerHeight),
 })
 
-const getRightPanelSize = (): { width: number; height: number } => {
-  const overlay = splitRoot?.querySelector(`.${RIGHT_CURSOR_OVERLAY_CLASS}`)
-  if (!(overlay instanceof HTMLElement)) {
-    return { width: window.innerWidth / 2, height: window.innerHeight }
+const getLeftPanelSize = (): { width: number; height: number } => getSplitPanelSize()
+
+const getRightPanelSize = (): { width: number; height: number } => getSplitPanelSize()
+
+const getPanelCenter = (panel: { width: number; height: number }): { x: number; y: number } => ({
+  x: panel.width / 2,
+  y: panel.height / 2,
+})
+
+const resetLeftCursorToPanelCenter = (): void => {
+  const panel = getLeftPanelSize()
+  setMarkerPosition(leftCursorMarker, getPanelCenter(panel), panel)
+}
+
+const resetRightCursorToPanelCenter = (): void => {
+  const panel = getRightPanelSize()
+  setMarkerPosition(rightCursorMarker, getPanelCenter(panel), panel)
+}
+
+const resetCursorsToPanelCenters = (): void => {
+  resetLeftCursorToPanelCenter()
+  resetRightCursorToPanelCenter()
+}
+
+const clampMarkerPosition = (
+  position: { x: number; y: number },
+  panel: { width: number; height: number },
+): { x: number; y: number } | null => {
+  const { x, y } = position
+  const { width, height } = panel
+
+  if (x < 0 || x > width || y < 0 || y > height) return null
+
+  const radius = CURSOR_MARKER_RADIUS
+  return {
+    x: Math.min(Math.max(x, radius), width - radius),
+    y: Math.min(Math.max(y, radius), height - radius),
   }
-  return { width: overlay.clientWidth, height: overlay.clientHeight }
 }
 
 const setMarkerPosition = (
   marker: HTMLElement | null,
   position: { x: number; y: number } | null,
+  panel: { width: number; height: number },
 ): void => {
   if (!marker) return
 
   if (!position) {
     marker.classList.remove(CURSOR_MARKER_VISIBLE_CLASS)
+    marker.style.left = ''
+    marker.style.top = ''
     return
   }
 
-  marker.style.transform = `translate(${position.x}px, ${position.y}px)`
+  const clamped = clampMarkerPosition(position, panel)
+  if (!clamped) {
+    marker.classList.remove(CURSOR_MARKER_VISIBLE_CLASS)
+    marker.style.left = ''
+    marker.style.top = ''
+    return
+  }
+
+  marker.style.left = `${clamped.x}px`
+  marker.style.top = `${clamped.y}px`
   marker.classList.add(CURSOR_MARKER_VISIBLE_CLASS)
 }
 
 const updateRightCursorFromGeo = (location: MapLocation | null): void => {
+  const panel = getRightPanelSize()
   if (!location || !nakarteLocation) {
-    setMarkerPosition(rightCursorMarker, null)
+    setMarkerPosition(rightCursorMarker, null, panel)
     return
   }
 
-  const pixel = latLngToPanelPixel(location, nakarteLocation, getRightPanelSize())
-  setMarkerPosition(rightCursorMarker, pixel)
+  const pixel = latLngToPanelPixel(location, nakarteLocation, panel)
+  setMarkerPosition(rightCursorMarker, pixel, panel)
 }
 
 const updateLeftCursorFromGeo = (location: MapLocation | null): void => {
+  const panel = getLeftPanelSize()
   if (!location || !nmapsLocation) {
-    setMarkerPosition(leftCursorMarker, null)
+    setMarkerPosition(leftCursorMarker, null, panel)
     return
   }
 
-  const pixel = latLngToPanelPixel(location, nmapsLocation, getLeftPanelSize())
-  setMarkerPosition(leftCursorMarker, pixel)
+  const pixel = latLngToPanelPixel(location, nmapsLocation, panel)
+  setMarkerPosition(leftCursorMarker, pixel, panel)
 }
 
 const postLocationToIframe = (location: MapLocation): void => {
@@ -294,12 +341,18 @@ const handleNmapsMouseMove = (event: MouseEvent): void => {
   if (!view) return
 
   const panel = getLeftPanelSize()
-  const cursor = mouseToLatLng(event.clientX, event.clientY, view, panel)
+  const { clientX, clientY } = event
+  if (clientX < 0 || clientX > panel.width || clientY < 0 || clientY > panel.height) {
+    resetRightCursorToPanelCenter()
+    return
+  }
+
+  const cursor = mouseToLatLng(clientX, clientY, view, panel)
   updateRightCursorFromGeo(cursor)
 }
 
 const handleNmapsMouseLeave = (): void => {
-  updateRightCursorFromGeo(null)
+  resetRightCursorToPanelCenter()
 }
 
 const handleWindowMessage = (event: MessageEvent): void => {
@@ -325,7 +378,12 @@ const handleWindowMessage = (event: MessageEvent): void => {
   }
 
   if (data.type === 'cursor') {
-    updateLeftCursorFromGeo(data.location)
+    if (data.location) {
+      updateLeftCursorFromGeo(data.location)
+      return
+    }
+
+    resetLeftCursorToPanelCenter()
   }
 }
 
@@ -432,6 +490,9 @@ const mountSplitView = (): boolean => {
 
   applySplitLayout()
   mountSplitDom(buildNakarteUrl(location))
+  requestAnimationFrame(() => {
+    resetCursorsToPanelCenters()
+  })
 
   const restorePushState = wrapHistoryMethod('pushState', onNmapsUrlChange)
   const restoreReplaceState = wrapHistoryMethod('replaceState', onNmapsUrlChange)

@@ -123,12 +123,22 @@ const retrySendTogglePanel = async (tabId: number): Promise<boolean> => {
   return false
 }
 
-/** В dev-сборке WXT не всегда добавляет content_scripts в manifest — регистрируем вручную. */
-const ensurePanelSidebarRegistered = async (): Promise<void> => {
-  try {
-    const registered = await browser.scripting.getRegisteredContentScripts()
-    if (registered.some((script) => script.id === PANEL_SIDEBAR_REGISTRATION_ID)) return
+const manifestIncludesPanelSidebar = (): boolean => {
+  const entries = browser.runtime.getManifest().content_scripts ?? []
+  return entries.some((entry) => entry.js?.some((path) => path.includes('panel-sidebar')))
+}
 
+const isDuplicateContentScriptIdError = (error: unknown): boolean =>
+  error instanceof Error && error.message.includes('Duplicate script ID')
+
+/** В dev-сборке WXT не добавляет content_scripts в manifest — регистрируем вручную. */
+const registerPanelSidebarContentScript = async (): Promise<void> => {
+  if (manifestIncludesPanelSidebar()) return
+
+  const registered = await browser.scripting.getRegisteredContentScripts()
+  if (registered.some((script) => script.id === PANEL_SIDEBAR_REGISTRATION_ID)) return
+
+  try {
     await browser.scripting.registerContentScripts([
       {
         id: PANEL_SIDEBAR_REGISTRATION_ID,
@@ -138,8 +148,21 @@ const ensurePanelSidebarRegistered = async (): Promise<void> => {
       },
     ])
   } catch (error: unknown) {
-    console.warn('[nmap_uploader] ensurePanelSidebarRegistered failed:', error)
+    if (isDuplicateContentScriptIdError(error)) return
+    throw error
   }
+}
+
+let panelSidebarRegistration: Promise<void> | undefined
+
+const ensurePanelSidebarRegistered = (): Promise<void> => {
+  if (!panelSidebarRegistration) {
+    panelSidebarRegistration = registerPanelSidebarContentScript().catch((error: unknown) => {
+      panelSidebarRegistration = undefined
+      console.warn('[nmap_uploader] ensurePanelSidebarRegistered failed:', error)
+    })
+  }
+  return panelSidebarRegistration
 }
 
 const waitForTabReady = async (tabId: number, maxMs = 15_000): Promise<Browser.tabs.Tab> => {

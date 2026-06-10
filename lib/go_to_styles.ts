@@ -149,6 +149,7 @@ html.nmap-uploader-split-active .nk-app-view {
   position: fixed;
   top: 0;
   left: 0;
+  overflow: hidden;
   pointer-events: none;
   z-index: 2147483641;
 }
@@ -169,31 +170,23 @@ html.nmap-uploader-split-active .nk-app-view {
   position: absolute;
   top: 0;
   left: 0;
-  width: 18px;
-  height: 18px;
-  margin: -9px 0 0 -9px;
-  border: 2px solid #ff3b30;
+  width: 6px;
+  height: 6px;
+  border: none;
   border-radius: 50%;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9);
+  background: #ff3b30;
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 4px #ff3b30;
   opacity: 0;
-  transition: opacity 0.1s ease;
+  visibility: hidden;
+  transform: translate(-50%, -50%);
   pointer-events: none;
 }
 
 .nmap-uploader-split__cursor-marker--visible {
   opacity: 1;
-}
-
-.nmap-uploader-split__cursor-marker--remote::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 2px;
-  height: 2px;
-  margin: -1px 0 0 -1px;
-  background: #ff3b30;
-  border-radius: 50%;
+  visibility: visible;
 }
 `
 
