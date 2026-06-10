@@ -9,12 +9,10 @@ export type GoToItem = {
 export const GO_TO_MENU_ENABLED_STORAGE_KEY = 'go_to_menu_enabled'
 export const GO_TO_ITEMS_STORAGE_KEY = 'go_to_items'
 
-const DEFAULT_ACTIVE_COUNT = 5
-
 export const getDefaultGoToItems = (): GoToItem[] =>
-  GO_TO_SOURCE_NAMES.map((name, index) => ({
+  GO_TO_SOURCE_NAMES.map((name) => ({
     name,
-    active: index < DEFAULT_ACTIVE_COUNT,
+    active: true,
   }))
 
 const isGoToItem = (value: unknown): value is GoToItem => {

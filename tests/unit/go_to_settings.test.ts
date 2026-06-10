@@ -16,8 +16,8 @@ import { resetBrowserMocks } from '../setup/browser_mock'
 describe('normalizeGoToItems', () => {
   it('возвращает значения по умолчанию для пустого хранилища', () => {
     const items = normalizeGoToItems(undefined)
-    expect(items.length).toBeGreaterThan(5)
-    expect(items.filter((item) => item.active)).toHaveLength(5)
+    expect(items.length).toBeGreaterThan(0)
+    expect(items.every((item) => item.active)).toBe(true)
   })
 
   it('сохраняет порядок и добавляет отсутствующие источники', () => {
@@ -38,9 +38,9 @@ describe('normalizeGoToItems', () => {
 })
 
 describe('getDefaultGoToItems', () => {
-  it('активирует первые пять источников', () => {
+  it('активирует все источники', () => {
     const items = getDefaultGoToItems()
-    expect(items.filter((item) => item.active)).toHaveLength(5)
+    expect(items.every((item) => item.active)).toBe(true)
   })
 
   it('сохраняет порядок источников по умолчанию', () => {
