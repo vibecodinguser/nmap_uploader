@@ -1,7 +1,8 @@
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Send } from 'lucide-react'
 import { GoToLinksSettings } from '@/components/GoToLinksSettings'
 import type { useGoToLinks } from '@/hooks/useGoToLinks'
 import type { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
+import type { useSplitViewButton } from '@/hooks/useSplitViewButton'
 import type { useStrokeColor } from '@/hooks/useStrokeColor'
 import type { ThemeMode } from '@/hooks/useTheme'
 import { RELEASES_URL } from '@/lib/releases_url'
@@ -43,12 +44,18 @@ type GoToLinksSettingsState = Pick<
   | 'moveItemDown'
 >
 
+type SplitViewButtonSettings = Pick<
+  ReturnType<typeof useSplitViewButton>,
+  'isEnabled' | 'isLoaded' | 'setIsEnabled'
+>
+
 type SettingsTabProps = {
   themeMode: ThemeMode
   onThemeModeChange: (mode: ThemeMode) => void
   onBack: () => void
   strokeColor: StrokeColorSettings
   reloadAfterUpload: ReloadAfterUploadSettings
+  splitViewButton: SplitViewButtonSettings
   goToLinks: GoToLinksSettingsState
 }
 
@@ -58,6 +65,7 @@ export const SettingsTab = ({
   onBack,
   strokeColor,
   reloadAfterUpload,
+  splitViewButton,
   goToLinks,
 }: SettingsTabProps) => {
   const {
@@ -77,6 +85,11 @@ export const SettingsTab = ({
     setIsEnabled: setReloadAfterUploadEnabled,
     canChange: canChangeReloadAfterUpload,
   } = reloadAfterUpload
+  const {
+    isEnabled: isSplitViewButtonEnabled,
+    isLoaded: isSplitViewButtonLoaded,
+    setIsEnabled: setSplitViewButtonEnabled,
+  } = splitViewButton
 
   const handleApplyClick = () => {
     handleApply().catch((error: unknown) => {
@@ -123,6 +136,32 @@ export const SettingsTab = ({
         </div>
       </section>
 
+      <section className="settings-section" aria-labelledby="settings-split-view-heading">
+        <div className="settings-toggle-row">
+          <h3 id="settings-split-view-heading" className="settings-section-title">
+            Кнопка: Раздельный вид
+          </h3>
+          <label className="settings-toggle" htmlFor="settings-split-view-button">
+            <input
+              id="settings-split-view-button"
+              type="checkbox"
+              role="switch"
+              className="settings-toggle-input"
+              checked={isSplitViewButtonEnabled}
+              aria-checked={isSplitViewButtonEnabled}
+              disabled={!isSplitViewButtonLoaded}
+              aria-label="Раздельный вид"
+              onChange={(event) => setSplitViewButtonEnabled(event.target.checked)}
+            />
+            <span className="settings-toggle-track" aria-hidden="true">
+              <span className="settings-toggle-thumb" />
+            </span>
+          </label>
+        </div>
+      </section>
+
+      <GoToLinksSettings {...goToLinks} />
+
       <section className="settings-section" aria-labelledby="settings-upload-heading">
         <div className="settings-toggle-row">
           <h3 id="settings-upload-heading" className="settings-section-title">
@@ -146,8 +185,6 @@ export const SettingsTab = ({
           </label>
         </div>
       </section>
-
-      <GoToLinksSettings {...goToLinks} />
 
       <section className="settings-section" aria-labelledby="settings-path-heading">
         <h3 id="settings-path-heading" className="settings-section-title">
@@ -223,7 +260,7 @@ export const SettingsTab = ({
         className="settings-section settings-section--about"
         aria-labelledby="settings-about-heading"
       >
-        <h3 className="settings-section-title">
+        <h3 className="settings-section-title settings-section-title--row">
           <a
             id="settings-about-heading"
             href={RELEASES_URL}
@@ -233,6 +270,17 @@ export const SettingsTab = ({
           >
             Версия {packageJson.version}
           </a>
+          <div className="footer-links">
+            <a
+              href="https://t.me/notebook_loader_bot"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="footer-link"
+            >
+              <Send size={16} aria-hidden />
+              @feedback
+            </a>
+          </div>
         </h3>
       </section>
     </div>

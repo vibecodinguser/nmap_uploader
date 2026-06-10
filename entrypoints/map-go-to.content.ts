@@ -1,14 +1,20 @@
 import { browser } from 'wxt/browser'
 import { defineContentScript } from 'wxt/utils/define-content-script'
-import { buildGoToButtonHtml, GO_TO_BUTTON_HIDDEN_CLASS, GO_TO_BUTTON_ID } from '@/lib/go_to_button'
 import {
   hideGoToTooltip,
   isElementDescendantToOrEquals,
+  queryAllByDomId,
   runWhenAnyElementExists,
   showGoToTooltip,
 } from '@/lib/go_to_dom'
 import { buildGoToLink, getMapLocationFromUrl } from '@/lib/go_to_link'
 import { GO_TO_REFRESH_ACTION } from '@/lib/go_to_notify'
+import {
+  buildGoToServiceButtonHtml,
+  GO_TO_BUTTON_HIDDEN_CLASS,
+  GO_TO_SERVICE_BUTTON_ICON_SVG,
+  GO_TO_SERVICE_BUTTON_ID,
+} from '@/lib/go_to_service_button'
 import {
   GO_TO_ITEMS_STORAGE_KEY,
   GO_TO_MENU_ENABLED_STORAGE_KEY,
@@ -20,8 +26,11 @@ import {
 import { GO_TO_SOURCES, getGoToSourceDisplayName, getGoToSourceIconUrl } from '@/lib/go_to_sources'
 import {
   buildSplitViewButtonHtml,
+  GO_TO_SPLIT_BUTTON_ENABLED_STORAGE_KEY,
   GO_TO_SPLIT_BUTTON_HIDDEN_CLASS,
+  GO_TO_SPLIT_BUTTON_ICON_SVG,
   GO_TO_SPLIT_BUTTON_ID,
+  getStoredSplitButtonEnabled,
 } from '@/lib/go_to_split_button'
 import { isSplitViewOpen, teardownSplitView, toggleSplitView } from '@/lib/go_to_split_view'
 import {
@@ -30,6 +39,11 @@ import {
   GO_TO_MENU_ITEM_HOVERED_CLASS,
   GO_TO_POPUP_VISIBLE_CLASS,
 } from '@/lib/go_to_styles'
+import {
+  removeAllGoToToolbarButtons,
+  repairAllGoToToolbarIcons,
+  shouldRemountGoToToolbar,
+} from '@/lib/go_to_toolbar'
 
 const BUTTON_ANCHOR_SELECTORS = [
   '.nk-map-region-view__button .nk-icon_id_ymaps',
@@ -37,7 +51,7 @@ const BUTTON_ANCHOR_SELECTORS = [
   '.nk-icon_id_ymaps',
 ] as const
 
-const BUTTON_ID = GO_TO_BUTTON_ID
+const SERVICE_BUTTON_ID = GO_TO_SERVICE_BUTTON_ID
 const SPLIT_BUTTON_ID = GO_TO_SPLIT_BUTTON_ID
 const MENU_ID = 'goToLinksMenu'
 const MENU_ITEMS_ID = 'linksItems'
@@ -51,7 +65,7 @@ const MENU_HTML = `<div id="${MENU_ID}" class="nmap-uploader-popup"><div class="
 
 const MENU_ITEM_HTML = `<div id="goToLink{index}" class="nmap-uploader-menu__item" role="menuitem" style="background-image: url({iconUrl});"></div>`
 
-const getButton = (): HTMLElement | null => document.getElementById(BUTTON_ID)
+const getServiceButton = (): HTMLElement | null => document.getElementById(SERVICE_BUTTON_ID)
 const getSplitButton = (): HTMLButtonElement | null =>
   document.getElementById(SPLIT_BUTTON_ID) as HTMLButtonElement | null
 const getMenu = (): HTMLElement | null => document.getElementById(MENU_ID)
@@ -59,6 +73,7 @@ const getMenuItems = (): HTMLElement | null => document.getElementById(MENU_ITEM
 
 let waitForAnchorCleanup: (() => void) | undefined
 let refreshPromise: Promise<void> | undefined
+let isRefreshScheduled = false
 
 const resolveAnchor = (): Element | null => {
   for (const selector of BUTTON_ANCHOR_SELECTORS) {
@@ -77,8 +92,8 @@ const removeMenu = (): void => {
   getMenu()?.remove()
 }
 
-const hideGoToButton = (): void => {
-  const button = getButton()
+const hideGoToServiceButton = (): void => {
+  const button = getServiceButton()
   if (!button) return
 
   button.classList.add(GO_TO_BUTTON_HIDDEN_CLASS)
@@ -88,8 +103,8 @@ const hideGoToButton = (): void => {
   }
 }
 
-const showGoToButton = (): void => {
-  const button = getButton()
+const showGoToServiceButton = (): void => {
+  const button = getServiceButton()
   if (!button) return
 
   button.classList.remove(GO_TO_BUTTON_HIDDEN_CLASS)
@@ -131,8 +146,14 @@ const removeButtonAndMenu = (): void => {
   waitForAnchorCleanup = undefined
   hideGoToTooltip()
   removeMenu()
-  removeSplitButton()
-  getButton()?.remove()
+  teardownSplitView()
+  removeAllGoToToolbarButtons()
+}
+
+const hideGoToMenuOnly = (): void => {
+  hideGoToTooltip()
+  hideMenu()
+  hideGoToServiceButton()
 }
 
 const hideButtonAndMenu = (): void => {
@@ -141,7 +162,7 @@ const hideButtonAndMenu = (): void => {
   hideGoToTooltip()
   hideMenu()
   if (isSplitViewOpen()) teardownSplitView()
-  hideGoToButton()
+  hideGoToServiceButton()
   hideSplitButton()
 }
 
@@ -179,17 +200,17 @@ const buildMenu = async (): Promise<void> => {
 }
 
 const isButtonMountedInToolbar = (button: HTMLElement, anchor: Element): boolean => {
-  const goToButton = getButton()
-  if (!goToButton) return false
+  const goToServiceButton = getServiceButton()
+  if (!goToServiceButton) return false
 
   let expectedPrevious: Element | null = getButtonInsertParent(anchor)
-  if (button === goToButton) {
+  if (button === goToServiceButton) {
     return expectedPrevious?.nextElementSibling === button
   }
 
   const splitButton = getSplitButton()
   if (button === splitButton) {
-    expectedPrevious = goToButton
+    expectedPrevious = goToServiceButton
     return expectedPrevious?.nextElementSibling === button
   }
 
@@ -197,17 +218,17 @@ const isButtonMountedInToolbar = (button: HTMLElement, anchor: Element): boolean
 }
 
 const mountSplitButton = (): void => {
-  const goToButton = getButton()
-  if (!goToButton) return
+  const goToServiceButton = getServiceButton()
+  if (!goToServiceButton) return
 
   let splitButton = getSplitButton()
-  if (splitButton && splitButton.previousElementSibling !== goToButton) {
+  if (splitButton && splitButton.previousElementSibling !== goToServiceButton) {
     splitButton.remove()
     splitButton = null
   }
 
   if (!splitButton) {
-    goToButton.insertAdjacentHTML('afterend', buildSplitViewButtonHtml())
+    goToServiceButton.insertAdjacentHTML('afterend', buildSplitViewButtonHtml())
     splitButton = getSplitButton()
     if (!splitButton) return
 
@@ -219,20 +240,59 @@ const mountSplitButton = (): void => {
   showSplitButton()
 }
 
-const mountButton = (anchor: Element): void => {
+const syncSplitButtonState = (splitEnabled: boolean): void => {
+  if (!splitEnabled) {
+    removeSplitButton()
+    return
+  }
+
+  void getStoredGoToMenuEnabled().then((menuEnabled) => {
+    const anchor = resolveAnchor()
+    if (!anchor) return
+    mountToolbar(anchor, menuEnabled, true)
+  })
+}
+
+const getGoToToolbarMountState = (
+  anchor: Element,
+): Parameters<typeof shouldRemountGoToToolbar>[0] => {
+  const goToServiceButtons = queryAllByDomId(GO_TO_SERVICE_BUTTON_ID)
+  const splitButtons = queryAllByDomId(GO_TO_SPLIT_BUTTON_ID)
+  const goToServiceButton = goToServiceButtons[0] ?? null
+
+  return {
+    goToCount: goToServiceButtons.length,
+    splitCount: splitButtons.length,
+    isGoToMountedCorrectly: goToServiceButton
+      ? isButtonMountedInToolbar(goToServiceButton, anchor)
+      : true,
+    isSplitSiblingCorrect:
+      goToServiceButton && splitButtons[0]
+        ? splitButtons[0].previousElementSibling === goToServiceButton
+        : true,
+  }
+}
+
+const repairToolbarIcons = (): void => {
+  repairAllGoToToolbarIcons({
+    [GO_TO_SERVICE_BUTTON_ID]: GO_TO_SERVICE_BUTTON_ICON_SVG,
+    [GO_TO_SPLIT_BUTTON_ID]: GO_TO_SPLIT_BUTTON_ICON_SVG,
+  })
+}
+
+const mountToolbar = (anchor: Element, menuEnabled: boolean, splitButtonEnabled: boolean): void => {
   const parent = getButtonInsertParent(anchor)
   if (!parent) return
 
-  let button = getButton()
-
-  if (button && !isButtonMountedInToolbar(button, anchor)) {
-    button.remove()
-    button = null
+  if (shouldRemountGoToToolbar(getGoToToolbarMountState(anchor))) {
+    removeAllGoToToolbarButtons()
   }
 
+  let button = getServiceButton()
+
   if (!button) {
-    parent.insertAdjacentHTML('afterend', buildGoToButtonHtml())
-    button = getButton()
+    parent.insertAdjacentHTML('afterend', buildGoToServiceButtonHtml())
+    button = getServiceButton()
     if (!button) return
 
     button.addEventListener('click', handleButtonClick)
@@ -240,13 +300,24 @@ const mountButton = (anchor: Element): void => {
     button.addEventListener('mouseout', handleButtonMouseOut)
   }
 
-  showGoToButton()
-  mountSplitButton()
-  void buildMenu()
+  if (menuEnabled) {
+    showGoToServiceButton()
+    void buildMenu()
+  } else {
+    hideGoToMenuOnly()
+  }
+
+  if (splitButtonEnabled) {
+    mountSplitButton()
+  } else {
+    removeSplitButton()
+  }
+
+  repairToolbarIcons()
 }
 
 const hideMenu = (event?: Event): void => {
-  if (event?.target && isElementDescendantToOrEquals(event.target, BUTTON_ID)) {
+  if (event?.target && isElementDescendantToOrEquals(event.target, SERVICE_BUTTON_ID)) {
     event.stopPropagation()
   }
 
@@ -257,7 +328,7 @@ const hideMenu = (event?: Event): void => {
 
 const showMenu = (): void => {
   const menu = getMenu()
-  const button = getButton()
+  const button = getServiceButton()
   if (!menu || !button) return
 
   if (menu.classList.contains(GO_TO_POPUP_VISIBLE_CLASS)) {
@@ -344,15 +415,15 @@ const handleSplitButtonMouseOut = (event: MouseEvent): void => {
 }
 
 const handleButtonMouseOver = (event: MouseEvent): void => {
-  const button = getButton()
-  if (!button || !isElementDescendantToOrEquals(event.target, BUTTON_ID)) return
+  const button = getServiceButton()
+  if (!button || !isElementDescendantToOrEquals(event.target, SERVICE_BUTTON_ID)) return
   button.classList.add(GO_TO_BUTTON_HOVERED_CLASS)
   showGoToTooltip('Внешние геосервисы', button, 'top')
 }
 
 const handleButtonMouseOut = (event: MouseEvent): void => {
-  const button = getButton()
-  if (!button || !isElementDescendantToOrEquals(event.target, BUTTON_ID)) return
+  const button = getServiceButton()
+  if (!button || !isElementDescendantToOrEquals(event.target, SERVICE_BUTTON_ID)) return
   button.classList.remove(GO_TO_BUTTON_HOVERED_CLASS)
   hideGoToTooltip()
 }
@@ -384,23 +455,27 @@ const refreshMenuItems = async (): Promise<void> => {
 const waitForAnchorAndMount = (): void => {
   waitForAnchorCleanup?.()
   waitForAnchorCleanup = runWhenAnyElementExists(BUTTON_ANCHOR_SELECTORS, (anchor) => {
-    void getStoredGoToMenuEnabled().then((isEnabled) => {
-      if (!isEnabled) return
-      mountButton(anchor)
-    })
+    void Promise.all([getStoredGoToMenuEnabled(), getStoredSplitButtonEnabled()]).then(
+      ([menuEnabled, splitButtonEnabled]) => {
+        mountToolbar(anchor, menuEnabled, splitButtonEnabled)
+      },
+    )
   })
 }
 
-const applyEnabledState = async (enabled: boolean): Promise<void> => {
-  if (!enabled) {
+const applyEnabledState = async (
+  menuEnabled: boolean,
+  splitButtonEnabled: boolean,
+): Promise<void> => {
+  if (!menuEnabled && !splitButtonEnabled) {
     hideButtonAndMenu()
     return
   }
 
   const anchor = resolveAnchor()
   if (anchor) {
-    mountButton(anchor)
-    await refreshMenuItems()
+    mountToolbar(anchor, menuEnabled, splitButtonEnabled)
+    if (menuEnabled) await refreshMenuItems()
     return
   }
 
@@ -414,31 +489,92 @@ export default defineContentScript({
   main(ctx) {
     ensureGoToStyles()
 
-    const refresh = (): Promise<void> => {
-      refreshPromise ??= (async () => {
-        const enabled = await getStoredGoToMenuEnabled()
-        await applyEnabledState(enabled)
-      })().finally(() => {
-        refreshPromise = undefined
-      })
+    const runRefresh = async (): Promise<void> => {
+      if (refreshPromise) {
+        isRefreshScheduled = true
+        await refreshPromise
+        if (!isRefreshScheduled) return
+      }
 
-      return refreshPromise
+      isRefreshScheduled = false
+      refreshPromise = (async () => {
+        const [enabled, splitButtonEnabled] = await Promise.all([
+          getStoredGoToMenuEnabled(),
+          getStoredSplitButtonEnabled(),
+        ])
+        await applyEnabledState(enabled, splitButtonEnabled)
+      })()
+
+      try {
+        await refreshPromise
+      } finally {
+        refreshPromise = undefined
+        if (isRefreshScheduled) {
+          void runRefresh().catch((error: unknown) => {
+            console.warn('[nmap_uploader] go-to menu refresh failed:', error)
+          })
+        }
+      }
     }
 
-    void refresh()
+    void runRefresh().catch((error: unknown) => {
+      console.warn('[nmap_uploader] go-to menu refresh failed:', error)
+    })
 
     const scheduleRefresh = (): void => {
-      void refresh().catch((error: unknown) => {
+      isRefreshScheduled = true
+      void runRefresh().catch((error: unknown) => {
         console.warn('[nmap_uploader] go-to menu refresh failed:', error)
       })
     }
+
+    const handlePageResume = (): void => {
+      repairToolbarIcons()
+      scheduleRefresh()
+    }
+
+    const handleVisibilityChange = (): void => {
+      if (document.visibilityState !== 'visible') return
+      handlePageResume()
+    }
+
+    const handlePageShow = (event: PageTransitionEvent): void => {
+      if (!event.persisted) return
+      handlePageResume()
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('pageshow', handlePageShow)
 
     const handleStorageChange = (
       changes: Record<string, { newValue?: unknown }>,
       area: string,
     ): void => {
       if (area !== 'local') return
-      if (!(GO_TO_MENU_ENABLED_STORAGE_KEY in changes) && !(GO_TO_ITEMS_STORAGE_KEY in changes)) {
+
+      if (GO_TO_SPLIT_BUTTON_ENABLED_STORAGE_KEY in changes) {
+        const nextSplitEnabled = changes[GO_TO_SPLIT_BUTTON_ENABLED_STORAGE_KEY]?.newValue
+        if (typeof nextSplitEnabled === 'boolean') {
+          syncSplitButtonState(nextSplitEnabled)
+        }
+      }
+
+      if (GO_TO_MENU_ENABLED_STORAGE_KEY in changes) {
+        const nextMenuEnabled = changes[GO_TO_MENU_ENABLED_STORAGE_KEY]?.newValue
+        if (typeof nextMenuEnabled === 'boolean') {
+          void getStoredSplitButtonEnabled().then((splitButtonEnabled) => {
+            const anchor = resolveAnchor()
+            if (!anchor) return
+            mountToolbar(anchor, nextMenuEnabled, splitButtonEnabled)
+          })
+        }
+      }
+
+      if (
+        !(GO_TO_MENU_ENABLED_STORAGE_KEY in changes) &&
+        !(GO_TO_ITEMS_STORAGE_KEY in changes) &&
+        !(GO_TO_SPLIT_BUTTON_ENABLED_STORAGE_KEY in changes)
+      ) {
         return
       }
 
@@ -447,12 +583,22 @@ export default defineContentScript({
 
     const handleRuntimeMessage = (message: { action?: string }): void => {
       if (message?.action !== GO_TO_REFRESH_ACTION) return
+
+      void Promise.all([getStoredGoToMenuEnabled(), getStoredSplitButtonEnabled()]).then(
+        ([menuEnabled, splitButtonEnabled]) => {
+          const anchor = resolveAnchor()
+          if (!anchor) return
+          mountToolbar(anchor, menuEnabled, splitButtonEnabled)
+        },
+      )
       scheduleRefresh()
     }
 
     browser.storage.onChanged.addListener(handleStorageChange)
     browser.runtime.onMessage.addListener(handleRuntimeMessage)
     ctx.onInvalidated(() => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('pageshow', handlePageShow)
       browser.storage.onChanged.removeListener(handleStorageChange)
       browser.runtime.onMessage.removeListener(handleRuntimeMessage)
       removeButtonAndMenu()

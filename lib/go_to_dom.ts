@@ -1,5 +1,8 @@
 import { GO_TO_POPUP_VISIBLE_CLASS } from '@/lib/go_to_styles'
 
+export const queryAllByDomId = (id: string): HTMLElement[] =>
+  Array.from(document.querySelectorAll<HTMLElement>(`[id="${id}"]`))
+
 export const runWhenAnyElementExists = (
   selectors: readonly string[],
   callback: (element: Element) => void,

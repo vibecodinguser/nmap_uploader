@@ -35,6 +35,7 @@ const GO_TO_STYLES = `
   display: inline-flex;
   width: 24px;
   height: 24px;
+  color: #fff;
 }
 
 .nmap-uploader-goto-icon svg {

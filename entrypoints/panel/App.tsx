@@ -11,6 +11,7 @@ import { useFileUpload } from '@/hooks/useFileUpload'
 import { useGoToLinks } from '@/hooks/useGoToLinks'
 import { usePointUpload } from '@/hooks/usePointUpload'
 import { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
+import { useSplitViewButton } from '@/hooks/useSplitViewButton'
 import { useStrokeColor } from '@/hooks/useStrokeColor'
 import { useTheme } from '@/hooks/useTheme'
 
@@ -32,6 +33,7 @@ export const App = ({ themeTarget }: AppProps) => {
   const { user, avatarDataUrl, isLoggingIn, isLoggedIn, refreshUser, handleLogin, handleLogout } =
     useAuth()
   const reloadAfterUpload = useReloadAfterUpload(user?.id)
+  const splitViewButton = useSplitViewButton()
   const goToLinks = useGoToLinks()
   const { isUploading, progress, uploadStatus, performUpload } = useFileUpload({
     onAuthenticated: refreshUser,
@@ -80,6 +82,7 @@ export const App = ({ themeTarget }: AppProps) => {
             onBack={handleCloseSettings}
             strokeColor={strokeColor}
             reloadAfterUpload={reloadAfterUpload}
+            splitViewButton={splitViewButton}
             goToLinks={goToLinks}
           />
         ) : (

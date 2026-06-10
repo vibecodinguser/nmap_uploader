@@ -34,7 +34,7 @@ export const GoToLinksSettings = ({
     <section className="settings-section" aria-labelledby="settings-go-to-heading">
       <div className="settings-toggle-row">
         <h3 id="settings-go-to-heading" className="settings-section-title">
-          Внешние геосервисы
+          Кнопка: Внешние геосервисы
         </h3>
         <label className="settings-toggle" htmlFor="settings-go-to-menu-enabled">
           <input
