@@ -1,6 +1,7 @@
 import { resolve } from 'node:path'
 import { loadEnv } from 'vite'
 import { defineConfig } from 'wxt'
+import { patchReactDomForAmo } from './lib/vite_patch_react_dom_amo'
 import packageJson from './package.json'
 
 const extensionIcons = {
@@ -57,6 +58,7 @@ export default defineConfig({
 
     return {
       envPrefix: ['VITE_', 'WXT_', 'YANDEX_', 'RELEASES_'],
+      plugins: [patchReactDomForAmo()],
       define: {
         __RELEASES_URL__: JSON.stringify(releasesUrl),
       },
