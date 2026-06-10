@@ -23,7 +23,7 @@ const notifyLocation = (): void => {
 }
 
 export default defineContentScript({
-  matches: ['https://nakarte.me/*', 'http://nakarte.me/*'],
+  matches: ['https://nakarte.me/*'],
   runAt: 'document_idle',
   allFrames: true,
 

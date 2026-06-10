@@ -1,6 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
 import { browser } from 'wxt/browser'
-import { processFile } from '@/lib/converters'
 import { ProcessingError } from '@/lib/errors'
 import { isAllowedFile } from '@/lib/formats'
 import { isValidTargetDate } from '@/lib/point_uploader'
@@ -41,6 +40,7 @@ const convertFileLocally = async (file: File, onProgress: (percent: number) => v
 
   logs.push(createUploadLog('info', `Обработка: ${file.name}`))
   try {
+    const { processFile } = await import('@/lib/converters')
     const result = await processFile({ name: file.name, buffer: await file.arrayBuffer() })
     logs.push(createUploadLog('success', `✓ ${file.name} сконвертирован`))
     onProgress(conversionEnd)

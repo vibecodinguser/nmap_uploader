@@ -2,7 +2,7 @@ import { defineContentScript } from 'wxt/utils/define-content-script'
 import { applyNakarteLocationToPage, parseSetLocationMessage } from '@/lib/nakarte_location_apply'
 
 export default defineContentScript({
-  matches: ['https://nakarte.me/*', 'http://nakarte.me/*'],
+  matches: ['https://nakarte.me/*'],
   runAt: 'document_start',
   allFrames: true,
   world: 'MAIN',

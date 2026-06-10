@@ -27,15 +27,15 @@
 
 ## Скриншоты
 
-<img src="https://github.com/user-attachments/assets/9fcacc7b-15d1-417a-aac4-c641ef43e7df" align="center" width="260"/>
-<img src="https://github.com/user-attachments/assets/8a1cd565-9ca5-4cc3-a4a4-ad8097798a0a" align="center" width="260"/>
-<img src="https://github.com/user-attachments/assets/e9b44313-826b-40db-b569-4f9f03286a70" align="center" width="260"/>
+<img src="https://github.com/user-attachments/assets/9fcacc7b-15d1-417a-aac4-c641ef43e7df" alt="Боковая панель Nmap Uploader: загрузка геоданных" align="center" width="260"/>
+<img src="https://github.com/user-attachments/assets/8a1cd565-9ca5-4cc3-a4a4-ad8097798a0a" alt="Боковая панель Nmap Uploader: настройки и авторизация" align="center" width="260"/>
+<img src="https://github.com/user-attachments/assets/e9b44313-826b-40db-b569-4f9f03286a70" alt="Боковая панель Nmap Uploader: результат загрузки в Блокнот" align="center" width="260"/>
 
 ## Разработка и сборка
 
 Информация по сборке и настройке для тех, кто хочет попробовать свои силы и повайбкодить самостоятельно.
 
-#### Biome
+### Biome
 
 Единый инструмент для качества и оформления, проверяет TypeScript/React на типичные ошибки и производит форматирование кода.
 
@@ -67,7 +67,6 @@ npx stylelint "**/*.css" --fix
 | `pnpm build:firefox` | Production-сборка Firefox       |
 | `pnpm zip`           | ZIP-архив Chrome для публикации |
 | `pnpm zip:firefox`   | ZIP-архив Firefox               |
-
 
 WXT собирает production-версию в `.output/NmapUploader-[[browser]]_X.X.X.zip` в виде архива.
 
