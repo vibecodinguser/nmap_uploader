@@ -61,6 +61,8 @@ export default defineConfig({
         __RELEASES_URL__: JSON.stringify(releasesUrl),
       },
       resolve: {
+        // jszip/browser подменяет lib на browserify-бандл с setimmediate → Function().
+        mainFields: ['module', 'jsnext', 'main'],
         alias: {
           setimmediate: resolve(import.meta.dirname, 'lib/setimmediate_shim.ts'),
         },

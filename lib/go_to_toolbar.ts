@@ -1,6 +1,7 @@
 import { queryAllByDomId } from '@/lib/go_to_dom'
 import { GO_TO_SERVICE_BUTTON_ID } from '@/lib/go_to_service_button'
 import { GO_TO_SPLIT_BUTTON_ID } from '@/lib/go_to_split_button'
+import { parseStaticSvg } from '@/lib/parse_static_svg'
 
 const GO_TO_ICON_SELECTOR = '.nmap-uploader-goto-icon'
 
@@ -37,7 +38,7 @@ export const repairGoToIconHost = (iconHost: Element | null, iconSvg: string): b
   if (!(iconHost instanceof HTMLElement)) return false
   if (iconHost.querySelector('svg')) return false
 
-  iconHost.innerHTML = iconSvg
+  iconHost.replaceChildren(parseStaticSvg(iconSvg))
   return true
 }
 

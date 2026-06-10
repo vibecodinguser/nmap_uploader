@@ -10,7 +10,7 @@ import {
 import { buildGoToLink, getMapLocationFromUrl } from '@/lib/go_to_link'
 import { GO_TO_REFRESH_ACTION } from '@/lib/go_to_notify'
 import {
-  buildGoToServiceButtonHtml,
+  createGoToServiceButton,
   GO_TO_BUTTON_HIDDEN_CLASS,
   GO_TO_SERVICE_BUTTON_ICON_SVG,
   GO_TO_SERVICE_BUTTON_ID,
@@ -25,7 +25,7 @@ import {
 } from '@/lib/go_to_settings'
 import { GO_TO_SOURCES, getGoToSourceDisplayName, getGoToSourceIconUrl } from '@/lib/go_to_sources'
 import {
-  buildSplitViewButtonHtml,
+  createSplitViewButton,
   GO_TO_SPLIT_BUTTON_ENABLED_STORAGE_KEY,
   GO_TO_SPLIT_BUTTON_HIDDEN_CLASS,
   GO_TO_SPLIT_BUTTON_ICON_SVG,
@@ -61,9 +61,34 @@ const REGION_BUTTON_CLASSES = [
   'nk-map-region-view__button_id_goto',
 ] as const
 
-const MENU_HTML = `<div id="${MENU_ID}" class="nmap-uploader-popup"><div class="nmap-uploader-popup__content"><div id="${MENU_ITEMS_ID}" class="nmap-uploader-menu" tabindex="0" role="menu"></div></div></div>`
+const createGoToMenuElement = (): HTMLElement => {
+  const menu = document.createElement('div')
+  menu.id = MENU_ID
+  menu.className = 'nmap-uploader-popup'
 
-const MENU_ITEM_HTML = `<div id="goToLink{index}" class="nmap-uploader-menu__item" role="menuitem" style="background-image: url({iconUrl});"></div>`
+  const content = document.createElement('div')
+  content.className = 'nmap-uploader-popup__content'
+
+  const menuItems = document.createElement('div')
+  menuItems.id = MENU_ITEMS_ID
+  menuItems.className = 'nmap-uploader-menu'
+  menuItems.tabIndex = 0
+  menuItems.setAttribute('role', 'menu')
+
+  content.appendChild(menuItems)
+  menu.appendChild(content)
+  return menu
+}
+
+const createMenuItemElement = (item: GoToItem, iconUrl: string): HTMLDivElement => {
+  const menuItem = document.createElement('div')
+  menuItem.id = `goToLink${item.name}`
+  menuItem.className = 'nmap-uploader-menu__item'
+  menuItem.setAttribute('role', 'menuitem')
+  menuItem.style.backgroundImage = `url("${iconUrl}")`
+  menuItem.textContent = getGoToSourceDisplayName(item.name)
+  return menuItem
+}
 
 const getServiceButton = (): HTMLElement | null => document.getElementById(SERVICE_BUTTON_ID)
 const getSplitButton = (): HTMLButtonElement | null =>
@@ -174,23 +199,19 @@ const renderMenuItems = (items: GoToItem[]): void => {
 
   for (const item of getActiveGoToItems(items)) {
     const iconUrl = getGoToSourceIconUrl(item.name)
-    const menuItemHtml = MENU_ITEM_HTML.replace('{index}', item.name).replace('{iconUrl}', iconUrl)
-    menuItems.insertAdjacentHTML('beforeend', menuItemHtml)
+    const menuItem = createMenuItemElement(item, iconUrl)
 
-    const menuItem = document.getElementById(`goToLink${item.name}`)
-    if (!menuItem) continue
-
-    menuItem.textContent = getGoToSourceDisplayName(item.name)
     menuItem.addEventListener('mouseover', handleMenuItemMouseOver)
     menuItem.addEventListener('mouseout', handleMenuItemMouseOut)
     menuItem.addEventListener('click', handleMenuItemClick)
     menuItem.addEventListener('auxclick', handleMenuItemAuxClick)
+    menuItems.appendChild(menuItem)
   }
 }
 
 const ensureMenu = (): void => {
   if (getMenu()) return
-  document.body.insertAdjacentHTML('beforeend', MENU_HTML)
+  document.body.appendChild(createGoToMenuElement())
 }
 
 const buildMenu = async (): Promise<void> => {
@@ -228,7 +249,7 @@ const mountSplitButton = (): void => {
   }
 
   if (!splitButton) {
-    goToServiceButton.insertAdjacentHTML('afterend', buildSplitViewButtonHtml())
+    goToServiceButton.insertAdjacentElement('afterend', createSplitViewButton())
     splitButton = getSplitButton()
     if (!splitButton) return
 
@@ -291,7 +312,7 @@ const mountToolbar = (anchor: Element, menuEnabled: boolean, splitButtonEnabled:
   let button = getServiceButton()
 
   if (!button) {
-    parent.insertAdjacentHTML('afterend', buildGoToServiceButtonHtml())
+    parent.insertAdjacentElement('afterend', createGoToServiceButton())
     button = getServiceButton()
     if (!button) return
 

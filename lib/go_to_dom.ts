@@ -80,19 +80,31 @@ export const isElementDescendantToOrEquals = (
 
 const TOOLTIP_ID = 'nmapUploaderGoToTooltip'
 
-const TOOLTIP_HTML = `<div id="${TOOLTIP_ID}" class="nmap-uploader-popup nmap-uploader-popup--tooltip" role="tooltip"><div class="nmap-uploader-popup__content"></div></div>`
-
 const getTooltipElement = (): HTMLElement | null => document.getElementById(TOOLTIP_ID)
 
 const getTooltipContentElement = (): HTMLElement | null =>
   document.querySelector(`#${TOOLTIP_ID} > .nmap-uploader-popup__content`)
 
+const createTooltipElement = (): HTMLElement => {
+  const tooltip = document.createElement('div')
+  tooltip.id = TOOLTIP_ID
+  tooltip.className = 'nmap-uploader-popup nmap-uploader-popup--tooltip'
+  tooltip.setAttribute('role', 'tooltip')
+
+  const content = document.createElement('div')
+  content.className = 'nmap-uploader-popup__content'
+  tooltip.appendChild(content)
+
+  return tooltip
+}
+
 const ensureTooltipElement = (): HTMLElement => {
   const existing = getTooltipElement()
   if (existing) return existing
 
-  document.body.insertAdjacentHTML('beforeend', TOOLTIP_HTML)
-  return getTooltipElement() as HTMLElement
+  const tooltip = createTooltipElement()
+  document.body.appendChild(tooltip)
+  return tooltip
 }
 
 export const showGoToTooltip = (
