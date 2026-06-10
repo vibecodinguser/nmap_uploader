@@ -78,24 +78,17 @@ const getLeftPanelSize = (): { width: number; height: number } => getSplitPanelS
 
 const getRightPanelSize = (): { width: number; height: number } => getSplitPanelSize()
 
-const getPanelCenter = (panel: { width: number; height: number }): { x: number; y: number } => ({
-  x: panel.width / 2,
-  y: panel.height / 2,
-})
-
-const resetLeftCursorToPanelCenter = (): void => {
-  const panel = getLeftPanelSize()
-  setMarkerPosition(leftCursorMarker, getPanelCenter(panel), panel)
+const hideLeftCursorMarker = (): void => {
+  setMarkerPosition(leftCursorMarker, null, getLeftPanelSize())
 }
 
-const resetRightCursorToPanelCenter = (): void => {
-  const panel = getRightPanelSize()
-  setMarkerPosition(rightCursorMarker, getPanelCenter(panel), panel)
+const hideRightCursorMarker = (): void => {
+  setMarkerPosition(rightCursorMarker, null, getRightPanelSize())
 }
 
-const resetCursorsToPanelCenters = (): void => {
-  resetLeftCursorToPanelCenter()
-  resetRightCursorToPanelCenter()
+const hideCursorMarkers = (): void => {
+  hideLeftCursorMarker()
+  hideRightCursorMarker()
 }
 
 const clampMarkerPosition = (
@@ -343,7 +336,7 @@ const handleNmapsMouseMove = (event: MouseEvent): void => {
   const panel = getLeftPanelSize()
   const { clientX, clientY } = event
   if (clientX < 0 || clientX > panel.width || clientY < 0 || clientY > panel.height) {
-    resetRightCursorToPanelCenter()
+    hideRightCursorMarker()
     return
   }
 
@@ -352,7 +345,7 @@ const handleNmapsMouseMove = (event: MouseEvent): void => {
 }
 
 const handleNmapsMouseLeave = (): void => {
-  resetRightCursorToPanelCenter()
+  hideRightCursorMarker()
 }
 
 const handleWindowMessage = (event: MessageEvent): void => {
@@ -383,7 +376,7 @@ const handleWindowMessage = (event: MessageEvent): void => {
       return
     }
 
-    resetLeftCursorToPanelCenter()
+    hideLeftCursorMarker()
   }
 }
 
@@ -491,7 +484,7 @@ const mountSplitView = (): boolean => {
   applySplitLayout()
   mountSplitDom(buildNakarteUrl(location))
   requestAnimationFrame(() => {
-    resetCursorsToPanelCenters()
+    hideCursorMarkers()
   })
 
   const restorePushState = wrapHistoryMethod('pushState', onNmapsUrlChange)
