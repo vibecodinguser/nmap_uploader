@@ -9,17 +9,8 @@ export const GO_TO_SPLIT_BUTTON_ACTIVE_CLASS = 'nmap-uploader-split-btn--active'
 
 const GO_TO_STYLES = `
 .nmap-uploader-goto-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  border: none;
-  background: transparent;
+  margin: 0 0 0 4px !important;
   cursor: pointer;
-  text-decoration: none;
-  color: inherit;
 }
 
 .nmap-uploader-goto-btn--hidden {
@@ -27,20 +18,21 @@ const GO_TO_STYLES = `
   pointer-events: none !important;
 }
 
-.nmap-uploader-goto-btn--hovered .nmap-uploader-goto-icon {
-  opacity: 0.85;
-}
-
-.nmap-uploader-goto-icon {
-  display: inline-flex;
-  width: 24px;
-  height: 24px;
-  color: #fff;
-}
-
 .nmap-uploader-goto-icon svg {
-  width: 100%;
-  height: 100%;
+  display: block !important;
+  width: 24px !important;
+  height: 24px !important;
+  margin: 4px auto !important;
+  transform: translateY(2px) !important;
+  color: #fff !important;
+  opacity: 0.65;
+  transition: opacity 0.2s ease-in-out;
+  pointer-events: none;
+}
+
+.nmap-uploader-goto-btn:hover .nmap-uploader-goto-icon svg,
+.nmap-uploader-goto-btn--hovered .nmap-uploader-goto-icon svg {
+  opacity: 1;
 }
 
 .nmap-uploader-popup {
@@ -197,5 +189,5 @@ export const ensureGoToStyles = (): void => {
   const style = document.createElement('style')
   style.id = GO_TO_STYLES_ID
   style.textContent = GO_TO_STYLES
-  ;(document.head ?? document.documentElement).appendChild(style)
+    ; (document.head ?? document.documentElement).appendChild(style)
 }
