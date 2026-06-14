@@ -1,3 +1,4 @@
+import { isNakarteOrigin, NAKARTE_ORIGIN } from '@/lib/extension_origins'
 import { latLngToPanelPixel, mouseToLatLng } from '@/lib/go_to_geo_projection'
 import { getMapLocationFromUrl, type MapLocation } from '@/lib/go_to_link'
 import {
@@ -13,6 +14,7 @@ import {
 import { GO_TO_SPLIT_BUTTON_ID } from '@/lib/go_to_split_button'
 import { GO_TO_SPLIT_ACTIVE_CLASS, GO_TO_SPLIT_BUTTON_ACTIVE_CLASS } from '@/lib/go_to_styles'
 import { NMAPS_BOUNDS_CHANGE_EVENT, parseBoundsChangeEvent } from '@/lib/nmaps_bounds_notify'
+import { notifyNmapsMapResize } from '@/lib/nmaps_map_resize_notify'
 import { NMAPS_URL_CHANGE_EVENT } from '@/lib/nmaps_url_notify'
 import { requestClosePanelSidebar } from '@/lib/panel_sidebar_notify'
 
@@ -164,7 +166,7 @@ const postLocationToIframe = (location: MapLocation): void => {
       type: 'set_location',
       location: normalized,
     },
-    '*',
+    NAKARTE_ORIGIN,
   )
 }
 
@@ -353,6 +355,7 @@ const handleWindowMessage = (event: MessageEvent): void => {
 
   const data = event.data as SplitLocationMessage | undefined
   if (!data || data.source !== NAKARTE_SYNC_MSG_SOURCE) return
+  if (!isNakarteOrigin(event.origin)) return
   if (event.source !== iframe?.contentWindow) return
 
   if (data.type === 'location' && data.location) {
@@ -424,6 +427,15 @@ const clearSplitLayout = (): void => {
   clearNakRootResize()
 }
 
+/** Даёт браузеру применить layout, затем просит ymaps пересчитать тайлы. */
+const scheduleNmapsMapResize = (): void => {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      notifyNmapsMapResize()
+    })
+  })
+}
+
 const createCursorOverlay = (className: string, isRemote: boolean): HTMLElement => {
   const overlay = document.createElement('div')
   overlay.className = className
@@ -483,6 +495,7 @@ const mountSplitView = (): boolean => {
 
   applySplitLayout()
   mountSplitDom(buildNakarteUrl(location))
+  scheduleNmapsMapResize()
   requestAnimationFrame(() => {
     hideCursorMarkers()
   })
@@ -552,6 +565,7 @@ export const teardownSplitView = (): void => {
   lastPolledUrlLocation = null
 
   clearSplitLayout()
+  scheduleNmapsMapResize()
   isOpen = false
   updateSplitButtonState()
 }

@@ -30,9 +30,16 @@ export const buildOAuthRedirectUrl = ({
   return `${REDIRECT_URI}#${params.toString()}`
 }
 
+const EXTENSION_ID = 'test-extension-id'
 const getRedirectURL = vi.fn(() => REDIRECT_URI)
 const launchWebAuthFlow = vi.fn(async () => buildOAuthRedirectUrl())
+const getURL = vi.fn((path: string) => {
+  const normalized = path.replace(/^\//, '')
+  return `chrome-extension://${EXTENSION_ID}/${normalized}`
+})
 
+fakeBrowser.runtime.id = EXTENSION_ID
+fakeBrowser.runtime.getURL = getURL as (path: string) => string
 fakeBrowser.identity.getRedirectURL = getRedirectURL
 ;(fakeBrowser as unknown as BrowserApi).identity.launchWebAuthFlow =
   launchWebAuthFlow as unknown as BrowserApi['identity']['launchWebAuthFlow']
@@ -44,8 +51,13 @@ export const resetBrowserMocks = async () => {
   await fakeBrowser.storage.local.clear()
   getRedirectURL.mockReset()
   getRedirectURL.mockReturnValue(REDIRECT_URI)
+  getURL.mockReset()
+  getURL.mockImplementation((path: string) => {
+    const normalized = path.replace(/^\//, '')
+    return `chrome-extension://${EXTENSION_ID}/${normalized}`
+  })
   launchWebAuthFlow.mockReset()
   launchWebAuthFlow.mockImplementation(async () => buildOAuthRedirectUrl())
 }
 
-export { getRedirectURL, launchWebAuthFlow }
+export { EXTENSION_ID, getRedirectURL, getURL, launchWebAuthFlow }

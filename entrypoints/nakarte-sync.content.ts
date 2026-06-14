@@ -1,4 +1,5 @@
 import { defineContentScript } from 'wxt/utils/define-content-script'
+import { NMAPS_ORIGIN } from '@/lib/extension_origins'
 import { mouseToLatLng } from '@/lib/go_to_geo_projection'
 import type { MapLocation } from '@/lib/go_to_link'
 import { getMapLocationFromNakarteUrl, NAKARTE_SYNC_MSG_SOURCE } from '@/lib/go_to_map_sync'
@@ -9,7 +10,7 @@ const postToParent = (message: {
   type: 'location' | 'cursor'
   location: MapLocation | null
 }): void => {
-  window.parent.postMessage({ source: NAKARTE_SYNC_MSG_SOURCE, ...message }, '*')
+  window.parent.postMessage({ source: NAKARTE_SYNC_MSG_SOURCE, ...message }, NMAPS_ORIGIN)
 }
 
 const getMapElement = (): HTMLElement | null => document.getElementById(MAP_ELEMENT_ID)

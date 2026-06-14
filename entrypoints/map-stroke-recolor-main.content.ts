@@ -1,4 +1,5 @@
 import { defineContentScript } from 'wxt/utils/define-content-script'
+import { isNmapsOrigin } from '@/lib/extension_origins'
 import { installCanvasMagentaRecolor } from '@/lib/recolor_editor_strokes'
 import {
   parseStrokeColorMessage,
@@ -23,6 +24,7 @@ export default defineContentScript({
 
     window.addEventListener('message', (event: MessageEvent) => {
       if (event.source !== window) return
+      if (!isNmapsOrigin(event.origin)) return
 
       const color = parseStrokeColorMessage(event.data)
       if (!color) return

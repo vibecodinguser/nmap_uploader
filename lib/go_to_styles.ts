@@ -189,5 +189,5 @@ export const ensureGoToStyles = (): void => {
   const style = document.createElement('style')
   style.id = GO_TO_STYLES_ID
   style.textContent = GO_TO_STYLES
-    ; (document.head ?? document.documentElement).appendChild(style)
+  ;(document.head ?? document.documentElement).appendChild(style)
 }

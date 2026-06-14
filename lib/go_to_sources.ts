@@ -14,15 +14,15 @@ export const GO_TO_SOURCES: Record<string, GoToSource> = {
     displayName: 'OpenStreetMap',
   },
   Nakarte: {
-    linkTemplate: 'http://nakarte.me/#m={zoom}/{lat}/{lon}&l=S/K',
+    linkTemplate: 'https://nakarte.me/#m={zoom}/{lat}/{lon}&l=S/K',
     displayName: 'Nakarte',
   },
   Wikimapia: {
-    linkTemplate: 'http://wikimapia.org/#lang=ru&lat={lat}&lon={lon}&z={zoom}&m=ys',
+    linkTemplate: 'https://wikimapia.org/#lang=ru&lat={lat}&lon={lon}&z={zoom}&m=ys',
     displayName: 'Wikimapia',
   },
   Retromap: {
-    linkTemplate: 'http://www.retromap.ru/m.html#l=0120090&z={zoom}&y={lat}&x={lon}',
+    linkTemplate: 'https://retromap.ru/m.html#l=0120090&z={zoom}&y={lat}&x={lon}',
     displayName: 'Retromap',
   },
   Rosreestr: {

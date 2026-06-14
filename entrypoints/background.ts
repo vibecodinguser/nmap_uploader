@@ -2,6 +2,12 @@ import { browser } from 'wxt/browser'
 import { defineBackground } from 'wxt/utils/define-background'
 import { GO_TO_REFRESH_ACTION } from '@/lib/go_to_notify'
 import { isMapTabUrl, MAP_TAB_URL_PATTERN } from '@/lib/map_tab'
+import {
+  isTrustedNmapsOrPanelSender,
+  isTrustedPanelSender,
+  logRejectedMessage,
+  NMAPS_TAB_URL_PREFIX,
+} from '@/lib/message_auth'
 import { CLOSE_PANEL_SIDEBAR_ACTION } from '@/lib/panel_sidebar_notify'
 import { reloadMapEditorTabs } from '@/lib/reload_editor_page'
 import { uploadProcessedFilesToYandexDisk } from '@/lib/upload_service'
@@ -356,10 +362,16 @@ export default defineBackground(() => {
     })
   })
 
-  browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const action = message?.action as string | undefined
 
     if (action === 'getAuth') {
+      if (!isTrustedPanelSender(sender)) {
+        logRejectedMessage(action, sender)
+        sendResponse({ user: null, avatarDataUrl: null })
+        return true
+      }
+
       getStoredAuth()
         .then((auth) => buildAuthPayload(auth))
         .then((payload) => sendResponse(payload))
@@ -368,6 +380,12 @@ export default defineBackground(() => {
     }
 
     if (action === 'ensureAuth') {
+      if (!isTrustedPanelSender(sender)) {
+        logRejectedMessage(action, sender)
+        sendResponse({ ok: false, user: null, avatarDataUrl: null })
+        return true
+      }
+
       handleYandexAuthMessage({
         interactive: Boolean(message.interactive),
         sendResponse,
@@ -377,6 +395,12 @@ export default defineBackground(() => {
     }
 
     if (action === 'login') {
+      if (!isTrustedPanelSender(sender)) {
+        logRejectedMessage(action, sender)
+        sendResponse({ ok: false, user: null, avatarDataUrl: null, error: 'Доступ запрещён' })
+        return true
+      }
+
       handleYandexAuthMessage({
         interactive: true,
         sendResponse,
@@ -387,6 +411,12 @@ export default defineBackground(() => {
     }
 
     if (action === 'logout') {
+      if (!isTrustedPanelSender(sender)) {
+        logRejectedMessage(action, sender)
+        sendResponse({ ok: false })
+        return true
+      }
+
       clearAuth({ explicit: true })
         .then(() => sendResponse({ ok: true }))
         .catch((error: unknown) => {
@@ -397,6 +427,23 @@ export default defineBackground(() => {
     }
 
     if (action === 'uploadProcessedFiles') {
+      if (!isTrustedPanelSender(sender)) {
+        logRejectedMessage(action, sender)
+        sendResponse({
+          ok: false,
+          processedCount: 0,
+          skippedCount: 0,
+          logs: [
+            {
+              id: crypto.randomUUID(),
+              level: 'error',
+              message: 'Доступ запрещён',
+            },
+          ],
+        })
+        return true
+      }
+
       uploadProcessedFilesToYandexDisk({
         files: message.files ?? [],
         targetDate: message.targetDate,
@@ -421,7 +468,13 @@ export default defineBackground(() => {
     }
 
     if (action === 'reloadEditorPage') {
-      reloadMapEditorTabs({ preferredTabId: _sender.tab?.id })
+      if (!isTrustedNmapsOrPanelSender(sender)) {
+        logRejectedMessage(action, sender)
+        sendResponse({ ok: false })
+        return true
+      }
+
+      reloadMapEditorTabs({ preferredTabId: sender.tab?.id })
         .then((ok) => sendResponse({ ok }))
         .catch((error: unknown) => {
           console.warn('[nmap_uploader] reloadEditorPage failed:', error)
@@ -431,9 +484,15 @@ export default defineBackground(() => {
     }
 
     if (action === GO_TO_REFRESH_ACTION) {
+      if (!isTrustedNmapsOrPanelSender(sender)) {
+        logRejectedMessage(action, sender)
+        sendResponse({ ok: false })
+        return true
+      }
+
       const relayGoToRefresh = async (): Promise<void> => {
-        const senderTabId = _sender.tab?.id
-        const senderIsMapTab = _sender.tab?.url?.startsWith('https://n.maps.yandex.ru/')
+        const senderTabId = sender.tab?.id
+        const senderIsMapTab = sender.tab?.url?.startsWith(NMAPS_TAB_URL_PREFIX)
 
         if (senderTabId && senderIsMapTab) {
           await browser.tabs.sendMessage(senderTabId, { action: GO_TO_REFRESH_ACTION })
@@ -459,9 +518,15 @@ export default defineBackground(() => {
     }
 
     if (action === CLOSE_PANEL_SIDEBAR_ACTION) {
+      if (!isTrustedNmapsOrPanelSender(sender)) {
+        logRejectedMessage(action, sender)
+        sendResponse({ ok: false })
+        return true
+      }
+
       const relayClosePanelSidebar = async (): Promise<void> => {
-        const senderTabId = _sender.tab?.id
-        const senderIsMapTab = _sender.tab?.url?.startsWith('https://n.maps.yandex.ru/')
+        const senderTabId = sender.tab?.id
+        const senderIsMapTab = sender.tab?.url?.startsWith(NMAPS_TAB_URL_PREFIX)
 
         if (senderTabId && senderIsMapTab) {
           await browser.tabs.sendMessage(senderTabId, { action: CLOSE_PANEL_SIDEBAR_ACTION })
@@ -493,9 +558,15 @@ export default defineBackground(() => {
         return true
       }
 
+      if (!isTrustedNmapsOrPanelSender(sender)) {
+        logRejectedMessage(action, sender)
+        sendResponse({ ok: false })
+        return true
+      }
+
       const relayStrokeColor = async (): Promise<void> => {
-        const senderTabId = _sender.tab?.id
-        const senderIsMapTab = _sender.tab?.url?.startsWith('https://n.maps.yandex.ru/')
+        const senderTabId = sender.tab?.id
+        const senderIsMapTab = sender.tab?.url?.startsWith(NMAPS_TAB_URL_PREFIX)
 
         if (senderTabId && senderIsMapTab) {
           await browser.tabs.sendMessage(senderTabId, { action: 'applyStrokeColor', color })

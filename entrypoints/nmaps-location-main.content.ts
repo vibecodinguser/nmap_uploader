@@ -1,5 +1,6 @@
 import { defineContentScript } from 'wxt/utils/define-content-script'
 import { notifyNmapsBoundsChange } from '@/lib/nmaps_bounds_notify'
+import { NMAPS_MAP_RESIZE_EVENT } from '@/lib/nmaps_map_resize_notify'
 import { notifyNmapsUrlChange } from '@/lib/nmaps_url_notify'
 
 const MAP_DISCOVERY_POLL_MS = 500
@@ -58,6 +59,21 @@ const findMapFromGlobalYmaps = (): YmapsMapLike | null => {
 
   // Пробуем найти карту из DOM при наличии ymaps
   return findMapInstanceFromDom()
+}
+
+/** Пересчитывает размер карты после изменения layout страницы. */
+const requestMapRepaint = (): void => {
+  window.dispatchEvent(new Event('resize'))
+
+  const map = findMapFromGlobalYmaps() ?? findMapInstanceFromDom()
+  if (!map) return
+
+  try {
+    const container = (map as unknown as { container?: { fitToViewport?: () => void } }).container
+    container?.fitToViewport?.()
+  } catch {
+    // Объект карты мог быть уничтожен
+  }
 }
 
 /** Подписывается на события карты и транслирует координаты через CustomEvent. */
@@ -132,5 +148,7 @@ export default defineContentScript({
 
     // Новый механизм: реалтайм-синхронизация через ymaps API
     startMapDiscovery()
+
+    document.addEventListener(NMAPS_MAP_RESIZE_EVENT, requestMapRepaint)
   },
 })

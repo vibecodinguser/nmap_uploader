@@ -1,3 +1,4 @@
+import { HttpResponse, http } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { createNmapOutputTemplate } from '@/lib/nmap_index'
 import {
@@ -8,11 +9,14 @@ import {
   verifyDiskAccess,
   YANDEX_DISK_FOLDER,
 } from '@/lib/yandex/client'
+import { server } from '@/tests/setup/vitest.setup'
 import {
   getCreatedPaths,
   seedIndexJson,
   simulateParentNotFoundOnPut,
 } from '@/tests/setup/yandex_handlers'
+
+const DISK_API = 'https://cloud-api.yandex.net/v1/disk'
 
 describe('Yandex Disk', () => {
   const token = 'test-token'
@@ -83,5 +87,31 @@ describe('Yandex Disk', () => {
 
     const downloaded = await downloadIndexJson({ token, targetDate: '2026-05-24' })
     expect(downloaded).toEqual(data)
+  })
+
+  it('uploadIndexJson: отклоняет подменённый href вне доменов Яндекс.Диска', async () => {
+    server.use(
+      http.get(`${DISK_API}/resources/upload`, () =>
+        HttpResponse.json({ href: 'https://evil.com/upload' }),
+      ),
+    )
+
+    const data = createNmapOutputTemplate()
+    await expect(uploadIndexJson({ token, data, targetDate: '2026-05-24' })).rejects.toMatchObject({
+      message: expect.stringContaining('Недопустимый URL'),
+    })
+  })
+
+  it('downloadIndexJson: отклоняет подменённый href вне доменов Яндекс.Диска', async () => {
+    seedIndexJson(createNmapOutputTemplate())
+    server.use(
+      http.get(`${DISK_API}/resources/download`, () =>
+        HttpResponse.json({ href: 'https://evil.com/download' }),
+      ),
+    )
+
+    await expect(downloadIndexJson({ token, targetDate: '2026-05-24' })).rejects.toMatchObject({
+      message: expect.stringContaining('Недопустимый URL'),
+    })
   })
 })

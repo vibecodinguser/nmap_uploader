@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser'
 import { ERR_NETWORK, ProcessingError } from '@/lib/errors'
 import type { NmapIndex } from '@/lib/nmap_index'
+import { assertAllowedDiskHref } from '@/lib/yandex/disk_url'
 import { FIREFOX_OAUTH_REDIRECT_URI, getOAuthRedirectUri } from '@/lib/yandex/oauth_redirect'
 
 export const YANDEX_CLIENT_ID = 'ef45c7e176e844c087bc2487985ad275'
@@ -432,6 +433,7 @@ export const downloadIndexJson = async ({
     throw new ProcessingError(ERR_NETWORK, 'Не удалось получить ссылку на скачивание index.json')
   }
 
+  assertAllowedDiskHref(href)
   const fileResponse = await safeFetch(href)
   if (!fileResponse.ok) {
     throw new ProcessingError(ERR_NETWORK, 'Не удалось скачать index.json')
@@ -486,6 +488,7 @@ export const uploadIndexJson = async ({
     throw new ProcessingError(ERR_NETWORK, 'Не удалось получить ссылку на загрузку index.json')
   }
 
+  assertAllowedDiskHref(href)
   const jsonData = JSON.stringify(data, null, 2)
   const uploadResponse = await safeFetch(href, {
     method: 'PUT',

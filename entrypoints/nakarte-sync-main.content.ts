@@ -1,4 +1,5 @@
 import { defineContentScript } from 'wxt/utils/define-content-script'
+import { isNmapsOrigin } from '@/lib/extension_origins'
 import { applyNakarteLocationToPage, parseSetLocationMessage } from '@/lib/nakarte_location_apply'
 
 export default defineContentScript({
@@ -12,6 +13,7 @@ export default defineContentScript({
 
     const handleParentMessage = (event: MessageEvent): void => {
       if (event.source !== window.parent) return
+      if (!isNmapsOrigin(event.origin)) return
 
       const location = parseSetLocationMessage(event.data)
       if (!location) return

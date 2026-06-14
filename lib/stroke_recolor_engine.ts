@@ -1,4 +1,5 @@
 import { browser } from 'wxt/browser'
+import { isNmapsOrigin } from '@/lib/extension_origins'
 import { setTargetStroke, startEditorStrokeRecolor } from '@/lib/recolor_editor_strokes'
 import {
   getEffectiveStrokeColor,
@@ -23,8 +24,9 @@ let stopRecolor: (() => void) | undefined
 let cleanupListeners: (() => void) | undefined
 
 export const applyStrokeColorOnPage = (color: string): void => {
-  publishStrokeColorToPage(color)
-  setTargetStroke(color)
+  const normalized = getEffectiveStrokeColor(color)
+  publishStrokeColorToPage(normalized)
+  setTargetStroke(normalized)
 }
 
 const bindStrokeColorListeners = (): (() => void) => {
@@ -50,7 +52,9 @@ const bindStrokeColorListeners = (): (() => void) => {
     if (message?.action !== 'applyStrokeColor') return
 
     const color =
-      typeof message.color === 'string' ? message.color : getEffectiveStrokeColor(message.raw)
+      typeof message.color === 'string'
+        ? getEffectiveStrokeColor(message.color)
+        : getEffectiveStrokeColor(message.raw)
 
     applyStrokeColorOnPage(color)
   }
@@ -59,6 +63,7 @@ const bindStrokeColorListeners = (): (() => void) => {
 
   const handleWindowMessage = (event: MessageEvent): void => {
     if (event.source !== window) return
+    if (!isNmapsOrigin(event.origin)) return
     if (!isStrokeColorRequest(event.data)) return
 
     getStoredStrokeColorRaw()

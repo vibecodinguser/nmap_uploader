@@ -30,3 +30,13 @@ describe('getGoToSourceIconUrl', () => {
     expect(getGoToSourceIconUrl('Unknown')).toBe('')
   })
 })
+
+describe('GO_TO_SOURCES linkTemplate', () => {
+  it('использует только HTTPS для внешних переходов', async () => {
+    const { GO_TO_SOURCES } = await import('@/lib/go_to_sources')
+
+    for (const [name, source] of Object.entries(GO_TO_SOURCES)) {
+      expect(source.linkTemplate, name).toMatch(/^https:\/\//u)
+    }
+  })
+})

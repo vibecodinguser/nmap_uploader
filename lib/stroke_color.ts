@@ -1,3 +1,5 @@
+import { NMAPS_ORIGIN } from '@/lib/extension_origins'
+
 export const DEFAULT_STROKE_COLOR = '#ff00ff'
 
 /** Значение по умолчанию для поля ввода (без префикса #). */
@@ -53,20 +55,24 @@ type StrokeColorMessage = {
 /** Отправляет цвет в общую шину сообщений окна (читается во всех мирах одной вкладки). */
 export const postStrokeColorMessage = (color: string): void => {
   if (typeof window === 'undefined') return
-  window.postMessage({ type: STROKE_COLOR_MESSAGE_TYPE, color } satisfies StrokeColorMessage, '*')
+  window.postMessage(
+    { type: STROKE_COLOR_MESSAGE_TYPE, color } satisfies StrokeColorMessage,
+    NMAPS_ORIGIN,
+  )
 }
 
 /** MAIN мир запрашивает актуальный цвет у изолированного при старте. */
 export const requestStrokeColorFromPage = (): void => {
   if (typeof window === 'undefined') return
-  window.postMessage({ type: STROKE_COLOR_REQUEST_TYPE }, '*')
+  window.postMessage({ type: STROKE_COLOR_REQUEST_TYPE }, NMAPS_ORIGIN)
 }
 
 export const parseStrokeColorMessage = (data: unknown): string | null => {
   if (!data || typeof data !== 'object') return null
   const message = data as Partial<StrokeColorMessage>
   if (message.type !== STROKE_COLOR_MESSAGE_TYPE) return null
-  return typeof message.color === 'string' ? message.color : null
+  if (typeof message.color !== 'string') return null
+  return normalizeStrokeColor(message.color)
 }
 
 export const isStrokeColorRequest = (data: unknown): boolean =>
@@ -77,9 +83,12 @@ export const isStrokeColorRequest = (data: unknown): boolean =>
 export const publishStrokeColorToPage = (color: string): void => {
   if (typeof window === 'undefined') return
 
-  window[STROKE_COLOR_WINDOW_KEY] = color
-  window.dispatchEvent(new CustomEvent(STROKE_COLOR_CHANGED_EVENT, { detail: { color } }))
-  postStrokeColorMessage(color)
+  const normalized = getEffectiveStrokeColor(color)
+  window[STROKE_COLOR_WINDOW_KEY] = normalized
+  window.dispatchEvent(
+    new CustomEvent(STROKE_COLOR_CHANGED_EVENT, { detail: { color: normalized } }),
+  )
+  postStrokeColorMessage(normalized)
 }
 
 export const readStrokeColorFromPage = (): string | undefined => {
