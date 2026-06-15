@@ -34,7 +34,10 @@ pnpm-debug.log*
 web-ext.config.ts
 
 # Редактор и IDE
+.agents/
+.cursor/
 .vscode/*
+skills-lock.json
 !.vscode/extensions.json
 .idea/
 *.suo

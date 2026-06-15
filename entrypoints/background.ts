@@ -16,6 +16,7 @@ import {
   clearAuth,
   ensureYandexAuth,
   getStoredAuth,
+  listExistingDateFolders,
   loadUserAvatarDataUrl,
   type YandexUser,
 } from '@/lib/yandex/client'
@@ -422,6 +423,33 @@ export default defineBackground(() => {
         .catch((error: unknown) => {
           console.error('[nmap_uploader] logout failed:', error)
           sendResponse({ ok: false })
+        })
+      return true
+    }
+
+    if (action === 'listOccupiedDates') {
+      if (!isTrustedPanelSender(sender)) {
+        logRejectedMessage(action, sender)
+        sendResponse({ ok: false, dates: [] })
+        return true
+      }
+
+      getStoredAuth()
+        .then(async (auth) => {
+          if (!auth) {
+            sendResponse({ ok: true, dates: [] })
+            return
+          }
+          const dates = await listExistingDateFolders({ token: auth.token })
+          sendResponse({ ok: true, dates })
+        })
+        .catch((error: unknown) => {
+          console.error('[nmap_uploader] listOccupiedDates failed:', error)
+          sendResponse({
+            ok: false,
+            dates: [],
+            error: error instanceof Error ? error.message : 'Ошибка чтения папок',
+          })
         })
       return true
     }

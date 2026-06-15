@@ -130,9 +130,6 @@ body {
 .coords-row--manual .coords-field label,
 .coords-row--manual #point_latitude,
 .coords-row--manual #point_longitude,
-.coords-row--manual #point_date,
-.coords-row--list #multipoint_date,
-.coords-row--polygon #polygon_date,
 .coords-row--list .coords-field label,
 .coords-row--polygon .coords-field label,
 .coords-field input,
@@ -145,9 +142,7 @@ body {
 .upload-progress-status,
 .tab-btn,
 .upload-dropzone,
-.submit-btn,
-.coords-row--list #multipoint_date,
-.coords-row--polygon #polygon_date {
+.submit-btn {
   text-align: center;
 }
 
@@ -568,7 +563,7 @@ body {
 
 .coords-row--manual {
   grid-template-columns: minmax(0, 40fr) minmax(0, 30fr) minmax(0, 30fr);
-  align-items: start;
+  align-items: end;
 }
 
 .coords-row--list {
@@ -578,11 +573,12 @@ body {
 
 .coords-row--manual #point_latitude,
 .coords-row--manual #point_longitude,
-.coords-row--manual #point_date,
-.coords-row--list #multipoint_date,
-.coords-row--polygon #polygon_date {
+.coords-row--manual .coords-field--date,
+.coords-row--list .coords-field--date,
+.coords-row--polygon .coords-field--date {
   min-width: 0;
   max-width: 100%;
+  width: 100%;
 }
 
 .coords-field {
@@ -595,17 +591,163 @@ body {
   padding: 0 0.75rem;
 }
 
-:is(.dark, :host(.dark)) .coords-row--manual #point_date,
-:is(.dark, :host(.dark)) .coords-row--list #multipoint_date,
-:is(.dark, :host(.dark)) .coords-row--polygon #polygon_date {
-  color-scheme: dark;
+.point-date-control {
+  position: relative;
+  width: 100%;
 }
 
-:is(.dark, :host(.dark)) .coords-row--manual #point_date::-webkit-calendar-picker-indicator,
-:is(.dark, :host(.dark)) .coords-row--list #multipoint_date::-webkit-calendar-picker-indicator,
-:is(.dark, :host(.dark)) .coords-row--polygon #polygon_date::-webkit-calendar-picker-indicator {
-  color-scheme: dark;
+.point-date-input {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px;
+  grid-template-rows: 40px;
+  align-items: stretch;
+  width: 100%;
+  border: 1px solid var(--input);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition:
+    box-shadow var(--transition-ui),
+    border-color var(--transition-ui);
 }
+
+.point-date-input:focus-within {
+  border-color: var(--ring);
+  box-shadow: var(--input-focus-shadow);
+}
+
+.point-date-input > input {
+  grid-column: 1;
+  grid-row: 1;
+  width: 100%;
+  min-width: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  text-align: center;
+}
+
+.point-date-input > input:focus {
+  border: none;
+  box-shadow: none;
+}
+
+.point-date-trigger {
+  grid-column: 2;
+  grid-row: 1;
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-left: 1px solid var(--input);
+  border-radius: 0;
+  background-color: transparent;
+  color: var(--foreground);
+  cursor: pointer;
+  transition: background-color var(--transition-ui);
+}
+
+.point-date-input:focus-within .point-date-trigger {
+  border-left-color: var(--ring);
+}
+
+.point-date-trigger:hover:not(:disabled) {
+  background-color: var(--muted);
+}
+
+.point-date-trigger:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.point-date-trigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.point-date-popover {
+  position: fixed;
+  z-index: 1000;
+  box-sizing: border-box;
+  min-width: 16.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background-color: var(--background);
+  box-shadow: var(--elevation-sm);
+  pointer-events: auto;
+}
+
+.point-date-popover-status {
+  margin: 0 0 0.5rem;
+  font-size: var(--text-xs);
+  color: var(--muted-foreground);
+  text-align: center;
+}
+
+.point-date-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  margin: 0.5rem 0 0;
+  font-size: var(--text-xs);
+  color: var(--muted-foreground);
+  text-align: center;
+  line-height: 1.3;
+}
+
+.point-date-legend-swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 999px;
+  background-color: var(--error);
+}
+
+/* stylelint-disable selector-class-pattern, custom-property-pattern -- react-day-picker */
+.point-date-popover .rdp-root {
+  --rdp-accent-color: var(--ring);
+  --rdp-accent-background-color: var(--muted);
+  --rdp-day-height: 2rem;
+  --rdp-day-width: 2rem;
+  --rdp-day_button-height: 2rem;
+  --rdp-day_button-width: 2rem;
+  --rdp-selected-border: 2px solid var(--ring);
+  --rdp-today-color: var(--foreground);
+  width: 100%;
+  font-size: var(--text-sm);
+  color: var(--foreground);
+}
+
+.point-date-popover .point-date-day--occupied .rdp-day_button {
+  background-color: var(--error);
+  color: #ffffff;
+}
+
+.point-date-popover .point-date-day--occupied .rdp-day_button:hover {
+  background-color: #c62828;
+  color: #ffffff;
+}
+
+:is(.dark, :host(.dark)) .point-date-popover .point-date-day--occupied .rdp-day_button:hover {
+  background-color: #ef5350;
+}
+
+.point-date-popover .rdp-selected .rdp-day_button {
+  border-color: var(--ring);
+}
+
+.point-date-popover .rdp-selected.point-date-day--occupied .rdp-day_button {
+  box-shadow:
+    0 0 0 2px var(--background),
+    0 0 0 4px var(--ring);
+}
+/* stylelint-enable selector-class-pattern, custom-property-pattern */
 
 .manual-upload-container > .point-description-input {
   width: 100%;

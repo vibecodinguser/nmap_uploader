@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser'
 import { ERR_NETWORK, ProcessingError } from '@/lib/errors'
 import type { NmapIndex } from '@/lib/nmap_index'
+import { isValidTargetDate } from '@/lib/point_uploader'
 import { assertAllowedDiskHref } from '@/lib/yandex/disk_url'
 import { FIREFOX_OAUTH_REDIRECT_URI, getOAuthRedirectUri } from '@/lib/yandex/oauth_redirect'
 
@@ -381,6 +382,82 @@ export const resolveFolderPath = ({
     return `${basePath}/${new Date().toISOString().slice(0, 10)}`
   }
   return basePath
+}
+
+const DATE_FOLDER_NAME_PATTERN = /^\d{4}-\d{2}-\d{2}$/
+const DISK_LIST_PAGE_SIZE = 100
+
+type DiskListItem = {
+  name?: string
+  type?: string
+}
+
+type DiskListResponse = {
+  _embedded?: {
+    items?: DiskListItem[]
+    total?: number
+    offset?: number
+    limit?: number
+  }
+}
+
+const isDateFolderName = (name: string): boolean =>
+  DATE_FOLDER_NAME_PATTERN.test(name) && isValidTargetDate(name)
+
+/** Возвращает даты (YYYY-MM-DD), для которых на Диске уже есть папка загрузки. */
+export const listExistingDateFolders = async ({ token }: { token: string }): Promise<string[]> => {
+  const basePath = resolveFolderPath({ includeToday: false })
+  const headers = getHeaders(token)
+  const dates: string[] = []
+  let offset = 0
+
+  while (true) {
+    const params = new URLSearchParams({
+      path: toDiskApiPath(basePath),
+      limit: String(DISK_LIST_PAGE_SIZE),
+      offset: String(offset),
+      fields:
+        '_embedded.items.name,_embedded.items.type,_embedded.total,_embedded.offset,_embedded.limit',
+    })
+
+    const response = await safeFetch(`${API_BASE_URL}?${params}`, { headers })
+    throwIfUnauthorized(response.status, 'Список папок на Диске')
+
+    if (response.status === 404) {
+      return dates
+    }
+
+    if (!response.ok) {
+      const detail = await response.text()
+      throw new ProcessingError(
+        ERR_NETWORK,
+        `Не удалось получить список папок: ${response.statusText}${detail ? ` — ${detail}` : ''}`,
+      )
+    }
+
+    let data: DiskListResponse
+    try {
+      data = (await response.json()) as DiskListResponse
+    } catch {
+      throw new ProcessingError(ERR_NETWORK, 'Некорректный ответ Яндекс.Диска при чтении папок')
+    }
+
+    const items = data._embedded?.items ?? []
+    for (const item of items) {
+      const name = item.name?.trim()
+      if (item.type === 'dir' && name && isDateFolderName(name)) {
+        dates.push(name)
+      }
+    }
+
+    const total = data._embedded?.total ?? items.length
+    offset += items.length
+    if (items.length === 0 || offset >= total) {
+      break
+    }
+  }
+
+  return dates.sort()
 }
 
 export const ensureStorageFolders = async ({ token }: { token: string }): Promise<void> => {

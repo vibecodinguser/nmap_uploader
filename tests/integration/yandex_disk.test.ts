@@ -4,6 +4,7 @@ import { createNmapOutputTemplate } from '@/lib/nmap_index'
 import {
   downloadIndexJson,
   ensureStorageFolders,
+  listExistingDateFolders,
   resolveFolderPath,
   uploadIndexJson,
   verifyDiskAccess,
@@ -60,6 +61,18 @@ describe('Yandex Disk', () => {
 
   it('resolveFolderPath: добавляет дату в путь', () => {
     expect(resolveFolderPath({ targetDate: '2026-05-24' })).toBe(`${YANDEX_DISK_FOLDER}/2026-05-24`)
+  })
+
+  it('listExistingDateFolders: возвращает пустой список, если папок с датами нет', async () => {
+    await expect(listExistingDateFolders({ token })).resolves.toEqual([])
+  })
+
+  it('listExistingDateFolders: возвращает даты существующих папок', async () => {
+    const data = createNmapOutputTemplate()
+    await uploadIndexJson({ token, data, targetDate: '2026-05-24' })
+    await uploadIndexJson({ token, data, targetDate: '2026-06-01' })
+
+    await expect(listExistingDateFolders({ token })).resolves.toEqual(['2026-05-24', '2026-06-01'])
   })
 
   it('downloadIndexJson: возвращает null, если index.json отсутствует', async () => {

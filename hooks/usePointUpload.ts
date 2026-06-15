@@ -1,9 +1,10 @@
 import { useCallback, useRef, useState } from 'react'
 import { browser } from 'wxt/browser'
+import { normalizeDisplayTargetDate } from '@/lib/date_format'
+import { invalidateOccupiedDatesCache } from '@/lib/occupied_dates_cache'
 import {
   areCoordinatesValid,
   createPointIndex,
-  isValidTargetDate,
   processMultipointContent,
 } from '@/lib/point_uploader'
 import {
@@ -21,14 +22,7 @@ import { beginUploadSession, endUploadSession } from '@/lib/upload_session'
 
 export type PointUploadStatus = UploadStatus
 
-const normalizeTargetDate = (date: string): string | undefined => {
-  const trimmed = date.trim()
-  if (!trimmed) return undefined
-  if (!isValidTargetDate(trimmed)) {
-    throw new Error('Неверный формат даты')
-  }
-  return trimmed
-}
+const normalizeTargetDate = normalizeDisplayTargetDate
 
 const uploadPointData = async ({
   files,
@@ -109,6 +103,9 @@ export const usePointUpload = ({ onAuthenticated }: { onAuthenticated?: () => vo
           uploadLogs: result.uploadLogs,
           setUploadStatus,
         })
+        if (result.uploadOk) {
+          invalidateOccupiedDatesCache()
+        }
         await triggerEditorReloadIfNeeded({
           reloadAfterUpload,
           uploadOk: result.uploadOk,

@@ -48,6 +48,23 @@ export const simulateParentNotFoundOnPut = (path: string, attempts = 1): void =>
 
 const isDirectoryCreated = (path: string): boolean => createdPaths.has(normalizeDiskPath(path))
 
+const listDateChildFolders = (parentPath: string): string[] => {
+  const normalizedParent = normalizeDiskPath(parentPath).replace(/\/+$/, '') || '/'
+  const prefix = normalizedParent === '/' ? '/' : `${normalizedParent}/`
+
+  return [...createdPaths]
+    .map(normalizeDiskPath)
+    .filter((candidate) => {
+      if (!candidate.startsWith(prefix) || candidate === normalizedParent) return false
+      const relative = candidate.slice(prefix.length)
+      if (relative.includes('/')) return false
+      return /^\d{4}-\d{2}-\d{2}$/.test(relative)
+    })
+    .map((candidate) => candidate.split('/').pop() ?? '')
+    .filter(Boolean)
+    .sort()
+}
+
 const markDirectoryCreated = (path: string): void => {
   createdPaths.add(normalizeDiskPath(path))
 }
@@ -94,6 +111,32 @@ export const yandexHandlers = [
     }
 
     const normalizedPath = normalizeDiskPath(path)
+    const limitParam = new URL(request.url).searchParams.get('limit')
+
+    if (limitParam) {
+      const dateFolders = listDateChildFolders(normalizedPath)
+      if (dateFolders.length === 0 && !isDirectoryCreated(path)) {
+        return new HttpResponse(null, { status: 404 })
+      }
+
+      const offset = Number(new URL(request.url).searchParams.get('offset') ?? 0)
+      const limit = Number(limitParam)
+      const page = dateFolders.slice(offset, offset + limit).map((name) => ({
+        type: 'dir',
+        name,
+        path: `${normalizedPath.replace(/\/+$/, '')}/${name}`,
+      }))
+
+      return HttpResponse.json({
+        type: 'dir',
+        _embedded: {
+          items: page,
+          limit,
+          offset,
+          total: dateFolders.length,
+        },
+      })
+    }
 
     if (normalizedPath.endsWith('/index.json') && indexJsonBody) {
       return HttpResponse.json({ type: 'file', name: 'index.json', path: normalizedPath })

@@ -9,6 +9,7 @@ import { SettingsTab } from '@/components/SettingsTab'
 import { useAuth } from '@/hooks/useAuth'
 import { useFileUpload } from '@/hooks/useFileUpload'
 import { useGoToLinks } from '@/hooks/useGoToLinks'
+import { OccupiedDatesProvider } from '@/hooks/useOccupiedDates'
 import { usePointUpload } from '@/hooks/usePointUpload'
 import { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
 import { useSplitViewButton } from '@/hooks/useSplitViewButton'
@@ -75,48 +76,50 @@ export const App = ({ themeTarget }: AppProps) => {
       />
 
       <main className="sidepanel-main">
-        {activeView === 'settings' ? (
-          <SettingsTab
-            themeMode={themeMode}
-            onThemeModeChange={setThemeMode}
-            onBack={handleCloseSettings}
-            strokeColor={strokeColor}
-            reloadAfterUpload={reloadAfterUpload}
-            splitViewButton={splitViewButton}
-            goToLinks={goToLinks}
-          />
-        ) : (
-          <>
-            <TabBar
-              tabs={MAIN_TABS}
-              activeId={activeTab}
-              onChange={setActiveTab}
-              ariaLabel="Режим ввода"
+        <OccupiedDatesProvider isLoggedIn={isLoggedIn}>
+          {activeView === 'settings' ? (
+            <SettingsTab
+              themeMode={themeMode}
+              onThemeModeChange={setThemeMode}
+              onBack={handleCloseSettings}
+              strokeColor={strokeColor}
+              reloadAfterUpload={reloadAfterUpload}
+              splitViewButton={splitViewButton}
+              goToLinks={goToLinks}
             />
-
-            {activeTab === 'upload' && (
-              <PoligonTab
-                isUploading={isUploading}
-                progress={progress}
-                uploadStatus={uploadStatus}
-                isLoggedIn={isLoggedIn}
-                onRequireAuth={handleRequireAuth}
-                onUpload={performUpload}
+          ) : (
+            <>
+              <TabBar
+                tabs={MAIN_TABS}
+                activeId={activeTab}
+                onChange={setActiveTab}
+                ariaLabel="Режим ввода"
               />
-            )}
 
-            {activeTab === 'manual' && (
-              <PointsTab
-                isUploading={isPointUploading}
-                uploadStatus={pointUploadStatus}
-                isLoggedIn={isLoggedIn}
-                onRequireAuth={handleRequireAuth}
-                onManualUpload={performManualUpload}
-                onMultipointUpload={performMultipointUpload}
-              />
-            )}
-          </>
-        )}
+              {activeTab === 'upload' && (
+                <PoligonTab
+                  isUploading={isUploading}
+                  progress={progress}
+                  uploadStatus={uploadStatus}
+                  isLoggedIn={isLoggedIn}
+                  onRequireAuth={handleRequireAuth}
+                  onUpload={performUpload}
+                />
+              )}
+
+              {activeTab === 'manual' && (
+                <PointsTab
+                  isUploading={isPointUploading}
+                  uploadStatus={pointUploadStatus}
+                  isLoggedIn={isLoggedIn}
+                  onRequireAuth={handleRequireAuth}
+                  onManualUpload={performManualUpload}
+                  onMultipointUpload={performMultipointUpload}
+                />
+              )}
+            </>
+          )}
+        </OccupiedDatesProvider>
       </main>
 
       {activeView === 'main' && (
