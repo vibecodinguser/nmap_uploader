@@ -33,6 +33,7 @@ export const buildOAuthRedirectUrl = ({
 const EXTENSION_ID = 'test-extension-id'
 const getRedirectURL = vi.fn(() => REDIRECT_URI)
 const launchWebAuthFlow = vi.fn(async () => buildOAuthRedirectUrl())
+const getUILanguage = vi.fn(() => 'ru-RU')
 const getURL = vi.fn((path: string) => {
   const normalized = path.replace(/^\//, '')
   return `chrome-extension://${EXTENSION_ID}/${normalized}`
@@ -41,6 +42,7 @@ const getURL = vi.fn((path: string) => {
 fakeBrowser.runtime.id = EXTENSION_ID
 fakeBrowser.runtime.getURL = getURL as (path: string) => string
 fakeBrowser.identity.getRedirectURL = getRedirectURL
+fakeBrowser.i18n.getUILanguage = getUILanguage
 ;(fakeBrowser as unknown as BrowserApi).identity.launchWebAuthFlow =
   launchWebAuthFlow as unknown as BrowserApi['identity']['launchWebAuthFlow']
 
@@ -58,6 +60,8 @@ export const resetBrowserMocks = async () => {
   })
   launchWebAuthFlow.mockReset()
   launchWebAuthFlow.mockImplementation(async () => buildOAuthRedirectUrl())
+  getUILanguage.mockReset()
+  getUILanguage.mockReturnValue('ru-RU')
 }
 
 export { EXTENSION_ID, getRedirectURL, getURL, launchWebAuthFlow }

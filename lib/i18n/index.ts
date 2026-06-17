@@ -3,8 +3,8 @@ import {
   DEFAULT_LOCALE,
   isLocale,
   LOCALE_STORAGE_KEY,
-  localeFromUiLanguage,
   type Locale,
+  localeFromUiLanguage,
 } from '@/lib/i18n/locale'
 import { enMessages } from '@/lib/i18n/messages/en'
 import { type MessageKey, type Messages, ruMessages } from '@/lib/i18n/messages/ru'
