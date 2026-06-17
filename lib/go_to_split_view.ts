@@ -13,6 +13,7 @@ import {
 } from '@/lib/go_to_map_sync'
 import { GO_TO_SPLIT_BUTTON_ID } from '@/lib/go_to_split_button'
 import { GO_TO_SPLIT_ACTIVE_CLASS, GO_TO_SPLIT_BUTTON_ACTIVE_CLASS } from '@/lib/go_to_styles'
+import { applyGoToTheme, refreshGoToThemeFromStorage, syncGoToTheme } from '@/lib/go_to_theme'
 import { NMAPS_BOUNDS_CHANGE_EVENT, parseBoundsChangeEvent } from '@/lib/nmaps_bounds_notify'
 import { notifyNmapsMapResize } from '@/lib/nmaps_map_resize_notify'
 import { NMAPS_URL_CHANGE_EVENT } from '@/lib/nmaps_url_notify'
@@ -477,6 +478,10 @@ const mountSplitDom = (nakarteUrl: string): void => {
   root.appendChild(rightOverlay)
   document.body.appendChild(root)
   document.body.appendChild(leftOverlay)
+  void refreshGoToThemeFromStorage().then(() => {
+    applyGoToTheme(root)
+    syncGoToTheme()
+  })
 
   splitRoot = root
   iframe = frame

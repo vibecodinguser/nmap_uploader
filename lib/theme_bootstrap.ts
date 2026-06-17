@@ -1,5 +1,5 @@
-import { getStoredThemeMode, resolveTheme } from '@/hooks/useTheme'
 import { applyBrowserThemeVars } from '@/lib/browser_theme'
+import { getStoredThemeMode, resolveTheme, syncThemeLocalToExtensionStorage } from '@/lib/theme'
 
 /** Применяет сохранённую тему к элементу и shadow host при первом mount. */
 export const applyStoredDarkTheme = (themeTarget: HTMLElement): void => {
@@ -18,4 +18,8 @@ export const applyStoredDarkTheme = (themeTarget: HTMLElement): void => {
     }
     applyBrowserThemeVars(root.host, isDark)
   }
+
+  void syncThemeLocalToExtensionStorage().catch((error: unknown) => {
+    console.warn('[nmap_uploader] theme storage bootstrap failed:', error)
+  })
 }

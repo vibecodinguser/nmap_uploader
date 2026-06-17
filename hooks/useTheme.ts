@@ -1,22 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
 import { applyBrowserThemeVars } from '@/lib/browser_theme'
+import {
+  getStoredThemeMode,
+  getSystemTheme,
+  setStoredExtensionThemeMode,
+  THEME_STORAGE_KEY,
+  type Theme,
+  type ThemeMode,
+} from '@/lib/theme'
 
-export type Theme = 'light' | 'dark'
-export type ThemeMode = 'light' | 'dark' | 'system'
-
-const STORAGE_KEY = 'theme'
-
-export const getSystemTheme = (): Theme =>
-  window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-
-export const getStoredThemeMode = (): ThemeMode => {
-  const stored = localStorage.getItem(STORAGE_KEY)
-  if (stored === 'light' || stored === 'dark' || stored === 'system') return stored
-  return 'system'
-}
-
-export const resolveTheme = (mode: ThemeMode): Theme =>
-  mode === 'system' ? getSystemTheme() : mode
+export type { Theme, ThemeMode } from '@/lib/theme'
 
 const applyThemeClass = (themeTarget: Element | undefined, isDark: boolean) => {
   const el = themeTarget ?? document.documentElement
@@ -55,7 +48,10 @@ export const useTheme = (themeTarget?: Element) => {
 
   useEffect(() => {
     applyThemeClass(themeTarget, resolvedTheme === 'dark')
-    localStorage.setItem(STORAGE_KEY, themeMode)
+    localStorage.setItem(THEME_STORAGE_KEY, themeMode)
+    void setStoredExtensionThemeMode(themeMode).catch((error: unknown) => {
+      console.warn('[nmap_uploader] theme storage sync failed:', error)
+    })
   }, [themeMode, resolvedTheme, themeTarget])
 
   const setThemeMode = useCallback((mode: ThemeMode) => {

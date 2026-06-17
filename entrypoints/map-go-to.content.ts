@@ -40,6 +40,12 @@ import {
   GO_TO_POPUP_VISIBLE_CLASS,
 } from '@/lib/go_to_styles'
 import {
+  applyGoToTheme,
+  observeGoToTheme,
+  refreshGoToThemeFromStorage,
+  syncGoToTheme,
+} from '@/lib/go_to_theme'
+import {
   removeAllGoToToolbarButtons,
   repairAllGoToToolbarIcons,
   shouldRemountGoToToolbar,
@@ -80,6 +86,7 @@ const createGoToMenuElement = (): HTMLElement => {
 
   content.appendChild(menuItems)
   menu.appendChild(content)
+  applyGoToTheme(menu)
   return menu
 }
 
@@ -375,11 +382,14 @@ const showMenu = (): void => {
     return
   }
 
-  menu.classList.add(GO_TO_POPUP_VISIBLE_CLASS)
-  menu.style.bottom = `${document.body.clientHeight - button.getBoundingClientRect().top + 10}px`
-  menu.style.left = `${button.getBoundingClientRect().left}px`
-  document.body.addEventListener('click', hideMenu, true)
-  hideGoToTooltip()
+  void refreshGoToThemeFromStorage().then(() => {
+    syncGoToTheme()
+    menu.classList.add(GO_TO_POPUP_VISIBLE_CLASS)
+    menu.style.bottom = `${document.body.clientHeight - button.getBoundingClientRect().top + 10}px`
+    menu.style.left = `${button.getBoundingClientRect().left}px`
+    document.body.addEventListener('click', hideMenu, true)
+    hideGoToTooltip()
+  })
 }
 
 const openGoToLink = (sourceName: string, keepFocus: boolean): void => {
@@ -527,6 +537,7 @@ export default defineContentScript({
 
   main(ctx) {
     ensureGoToStyles()
+    const cleanupThemeObserver = observeGoToTheme()
     void refreshContentLocale()
 
     const runRefresh = async (): Promise<void> => {
@@ -641,6 +652,7 @@ export default defineContentScript({
     browser.storage.onChanged.addListener(handleStorageChange)
     browser.runtime.onMessage.addListener(handleRuntimeMessage)
     ctx.onInvalidated(() => {
+      cleanupThemeObserver()
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('pageshow', handlePageShow)
       browser.storage.onChanged.removeListener(handleStorageChange)

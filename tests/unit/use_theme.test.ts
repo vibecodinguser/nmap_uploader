@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getStoredThemeMode, getSystemTheme, resolveTheme } from '@/hooks/useTheme'
+import { getStoredThemeMode, getSystemTheme, resolveTheme } from '@/lib/theme'
 
 const STORAGE_KEY = 'theme'
 

@@ -41,7 +41,11 @@ const GO_TO_STYLES = `
   display: none;
   box-sizing: border-box;
   border-radius: 4px;
+}
+
+.nmap-uploader-popup:not(.nmap-uploader-popup--tooltip) {
   background: #fff;
+  color: #000;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
@@ -83,7 +87,7 @@ const GO_TO_STYLES = `
     arial,
     helvetica,
     sans-serif;
-  color: #000;
+  color: inherit;
   cursor: pointer;
   background-repeat: no-repeat;
   background-position: 10px center;
@@ -91,7 +95,7 @@ const GO_TO_STYLES = `
 }
 
 .nmap-uploader-menu__item--hovered {
-  background-color: #ffeba0;
+  background-color: var(--nmap-uploader-menu-item-hover-bg, #ffeba0);
 }
 
 .nmap-uploader-split-btn--active .nmap-uploader-goto-icon {
