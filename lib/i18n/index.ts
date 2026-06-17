@@ -1,5 +1,11 @@
 import { browser } from 'wxt/browser'
-import { DEFAULT_LOCALE, isLocale, LOCALE_STORAGE_KEY, type Locale } from '@/lib/i18n/locale'
+import {
+  DEFAULT_LOCALE,
+  isLocale,
+  LOCALE_STORAGE_KEY,
+  localeFromUiLanguage,
+  type Locale,
+} from '@/lib/i18n/locale'
 import { enMessages } from '@/lib/i18n/messages/en'
 import { type MessageKey, type Messages, ruMessages } from '@/lib/i18n/messages/ru'
 
@@ -67,7 +73,11 @@ export const t = createTranslator(runtimeLocale)
 export const getStoredLocale = async (): Promise<Locale> => {
   const stored = await browser.storage.local.get(LOCALE_STORAGE_KEY)
   const value = stored[LOCALE_STORAGE_KEY]
-  return isLocale(value) ? value : DEFAULT_LOCALE
+  if (isLocale(value)) return value
+
+  const detected = localeFromUiLanguage(browser.i18n.getUILanguage())
+  await browser.storage.local.set({ [LOCALE_STORAGE_KEY]: detected })
+  return detected
 }
 
 export const setStoredLocale = async (locale: Locale): Promise<void> => {

@@ -8,7 +8,7 @@ import {
   setStoredLocale,
   type TranslateFn,
 } from '@/lib/i18n'
-import { LOCALE_STORAGE_KEY } from '@/lib/i18n/locale'
+import { DEFAULT_LOCALE, LOCALE_STORAGE_KEY } from '@/lib/i18n/locale'
 
 type LocaleContextValue = {
   locale: Locale
@@ -19,7 +19,7 @@ type LocaleContextValue = {
 const LocaleContext = createContext<LocaleContextValue | null>(null)
 
 export const LocaleProvider = ({ children }: { children: React.ReactNode }) => {
-  const [locale, setLocaleState] = useState<Locale>('ru')
+  const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE)
 
   useEffect(() => {
     getStoredLocale().then((storedLocale) => {

@@ -149,7 +149,7 @@ export const PointsTab = ({
                 {isUploading ? t('common.sending') : t('common.upload')}
               </button>
 
-              <blockquote className="points-section-subtitle">{t('points.manualHint')}</blockquote>
+              <p className="points-section-subtitle">{t('points.manualHint')}</p>
             </div>
           </form>
         </section>
@@ -185,7 +185,7 @@ export const PointsTab = ({
               onChange={handleMultipointChange}
             />
 
-            <blockquote className="points-section-subtitle">{t('points.batchHint')}</blockquote>
+            <p className="points-section-subtitle">{t('points.batchHint')}</p>
           </div>
         </section>
       )}
