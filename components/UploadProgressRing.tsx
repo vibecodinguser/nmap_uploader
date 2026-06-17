@@ -1,7 +1,4 @@
-const PROGRESS_RADIUS = 52
-const PROGRESS_SIZE = 120
-const PROGRESS_STROKE = 6
-const PROGRESS_CIRCUMFERENCE = 2 * Math.PI * PROGRESS_RADIUS
+import { useTranslate } from '@/hooks/useLocale'
 
 type UploadProgressRingProps = {
   progress: number
@@ -9,8 +6,13 @@ type UploadProgressRingProps = {
 }
 
 export const UploadProgressRing = ({ progress, isActive }: UploadProgressRingProps) => {
+  const t = useTranslate()
   const clampedProgress = Math.min(100, Math.max(0, progress))
-  const strokeOffset = PROGRESS_CIRCUMFERENCE - (clampedProgress / 100) * PROGRESS_CIRCUMFERENCE
+  const strokeOffset = 2 * Math.PI * 52 - (clampedProgress / 100) * 2 * Math.PI * 52
+  const PROGRESS_RADIUS = 52
+  const PROGRESS_SIZE = 120
+  const PROGRESS_STROKE = 6
+  const PROGRESS_CIRCUMFERENCE = 2 * Math.PI * PROGRESS_RADIUS
 
   return (
     <div
@@ -19,7 +21,7 @@ export const UploadProgressRing = ({ progress, isActive }: UploadProgressRingPro
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={Math.round(clampedProgress)}
-      aria-label="Прогресс загрузки"
+      aria-label={t('upload.progressAria')}
     >
       <svg
         className="upload-progress-svg"

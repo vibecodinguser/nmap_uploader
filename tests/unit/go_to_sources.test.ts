@@ -5,6 +5,7 @@ describe('getGoToSourceDisplayName', () => {
   it('возвращает displayName известного источника', () => {
     expect(getGoToSourceDisplayName('Google')).toBe('Google Maps')
     expect(getGoToSourceDisplayName('Rosreestr')).toBe('Портал НСПД')
+    expect(getGoToSourceDisplayName('Rosreestr', 'en')).toBe('NSPD Portal')
   })
 
   it('возвращает исходное имя для неизвестного источника', () => {

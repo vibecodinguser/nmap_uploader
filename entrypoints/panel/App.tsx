@@ -1,5 +1,5 @@
 import { Settings } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { TabBar } from '@/components/TabBar'
 import '@/assets/styles/uploader.css'
 import { Header } from '@/components/Header'
@@ -9,6 +9,7 @@ import { SettingsTab } from '@/components/SettingsTab'
 import { useAuth } from '@/hooks/useAuth'
 import { useFileUpload } from '@/hooks/useFileUpload'
 import { useGoToLinks } from '@/hooks/useGoToLinks'
+import { useLocale } from '@/hooks/useLocale'
 import { OccupiedDatesProvider } from '@/hooks/useOccupiedDates'
 import { usePointUpload } from '@/hooks/usePointUpload'
 import { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
@@ -23,12 +24,8 @@ type AppProps = {
 type MainTab = 'upload' | 'manual'
 type AppView = 'main' | 'settings'
 
-const MAIN_TABS: { id: MainTab; label: string }[] = [
-  { id: 'upload', label: 'Полигоны' },
-  { id: 'manual', label: 'Точки' },
-]
-
 export const App = ({ themeTarget }: AppProps) => {
+  const { t } = useLocale()
   const { themeMode, setThemeMode } = useTheme(themeTarget)
   const strokeColor = useStrokeColor()
   const { user, avatarDataUrl, isLoggingIn, isLoggedIn, refreshUser, handleLogin, handleLogout } =
@@ -47,6 +44,14 @@ export const App = ({ themeTarget }: AppProps) => {
   } = usePointUpload({ onAuthenticated: refreshUser })
   const [activeTab, setActiveTab] = useState<MainTab>('upload')
   const [activeView, setActiveView] = useState<AppView>('main')
+
+  const mainTabs = useMemo(
+    () => [
+      { id: 'upload' as const, label: t('tabs.polygons') },
+      { id: 'manual' as const, label: t('tabs.points') },
+    ],
+    [t],
+  )
 
   const handleOpenSettings = () => {
     setActiveView('settings')
@@ -90,10 +95,10 @@ export const App = ({ themeTarget }: AppProps) => {
           ) : (
             <>
               <TabBar
-                tabs={MAIN_TABS}
+                tabs={mainTabs}
                 activeId={activeTab}
                 onChange={setActiveTab}
-                ariaLabel="Режим ввода"
+                ariaLabel={t('tabs.inputModeAria')}
               />
 
               {activeTab === 'upload' && (
@@ -127,10 +132,10 @@ export const App = ({ themeTarget }: AppProps) => {
           type="button"
           className="settings-nav-btn"
           onClick={handleOpenSettings}
-          aria-label="Открыть настройки"
+          aria-label={t('tabs.openSettingsAria')}
         >
           <Settings size={18} aria-hidden />
-          <span>Настройки</span>
+          <span>{t('common.settings')}</span>
         </button>
       )}
     </div>

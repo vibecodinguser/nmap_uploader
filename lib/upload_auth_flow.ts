@@ -1,18 +1,17 @@
 import { browser } from 'wxt/browser'
+import { createTranslator, getRuntimeLocale, syncLocaleFromStorage } from '@/lib/i18n'
 import { createUploadLog } from '@/lib/upload_logs'
 import type { UploadLogEntry } from '@/lib/upload_service'
 import { requestEnsureAuth } from '@/lib/yandex/auth_message'
-
-export const UPLOAD_AUTH_ERROR_MESSAGE =
-  'Для загрузки нужен доступ к Яндекс.Диску. Разрешите запись в окне Яндекс ID'
-
-export const SESSION_EXPIRED_LOG_MESSAGE = 'Сессия истекла. Повторите загрузку для повторного входа'
 
 export const hasUploadAuthError = (logs: UploadLogEntry[]): boolean =>
   logs.some(
     (log) =>
       log.level === 'error' &&
-      (log.message.includes('сессия недействительна') || log.message.includes('Выйдите и войдите')),
+      (log.message.includes('сессия недействительна') ||
+        log.message.includes('Выйдите и войдите') ||
+        log.message.toLowerCase().includes('session is invalid') ||
+        log.message.includes('Sign out and sign in')),
   )
 
 export const ensureUploadAuth = async ({
@@ -20,11 +19,12 @@ export const ensureUploadAuth = async ({
 }: {
   onAuthenticated?: () => void
 }): Promise<{ ok: true } | { ok: false; message: string }> => {
+  const t = createTranslator(getRuntimeLocale())
   const authResponse = await requestEnsureAuth({ interactive: true })
   if (!authResponse.ok) {
     return {
       ok: false,
-      message: authResponse.error ?? UPLOAD_AUTH_ERROR_MESSAGE,
+      message: authResponse.error ?? t('upload.authDiskRequired'),
     }
   }
 
@@ -39,6 +39,11 @@ export const buildExpiredSessionLogs = async ({
   priorLogs: UploadLogEntry[]
   uploadLogs: UploadLogEntry[]
 }): Promise<UploadLogEntry[]> => {
+  const t = createTranslator(getRuntimeLocale())
   await browser.runtime.sendMessage({ action: 'logout' })
-  return [...priorLogs, ...uploadLogs, createUploadLog('error', SESSION_EXPIRED_LOG_MESSAGE)]
+  return [...priorLogs, ...uploadLogs, createUploadLog('error', t('upload.sessionExpired'))]
+}
+
+export const prepareUploadLocale = async (): Promise<void> => {
+  await syncLocaleFromStorage()
 }

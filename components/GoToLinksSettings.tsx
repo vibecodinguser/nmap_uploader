@@ -1,6 +1,7 @@
 import { ChevronDown, ChevronRight, ChevronUp } from 'lucide-react'
 import { useState } from 'react'
 import type { useGoToLinks } from '@/hooks/useGoToLinks'
+import { useLocale, useTranslate } from '@/hooks/useLocale'
 import { getGoToSourceDisplayName, getGoToSourceIconUrl } from '@/lib/go_to_sources'
 
 type GoToLinksSettingsProps = Pick<
@@ -23,6 +24,8 @@ export const GoToLinksSettings = ({
   moveItemUp,
   moveItemDown,
 }: GoToLinksSettingsProps) => {
+  const t = useTranslate()
+  const { locale } = useLocale()
   const [isListExpanded, setIsListExpanded] = useState(false)
   const activeCount = items.filter((item) => item.active).length
 
@@ -34,7 +37,7 @@ export const GoToLinksSettings = ({
     <section className="settings-section" aria-labelledby="settings-go-to-heading">
       <div className="settings-toggle-row">
         <h3 id="settings-go-to-heading" className="settings-section-title">
-          Кнопка: Внешние геосервисы
+          {t('settings.goToButton')}
         </h3>
         <label className="settings-toggle" htmlFor="settings-go-to-menu-enabled">
           <input
@@ -45,7 +48,7 @@ export const GoToLinksSettings = ({
             checked={isMenuEnabled}
             aria-checked={isMenuEnabled}
             disabled={!isLoaded}
-            aria-label="Отображать кнопку"
+            aria-label={t('settings.showButtonAria')}
             onChange={(event) => setIsMenuEnabled(event.target.checked)}
           />
           <span className="settings-toggle-track" aria-hidden="true">
@@ -67,21 +70,19 @@ export const GoToLinksSettings = ({
           aria-hidden
           className={isListExpanded ? 'settings-go-to-toggle-icon--expanded' : undefined}
         />
-        <span className="settings-go-to-toggle-label">Список</span>
+        <span className="settings-go-to-toggle-label">{t('common.list')}</span>
         <span className="settings-go-to-toggle-meta">
-          {activeCount} из {items.length} активны
+          {t('settings.activeCount', { active: activeCount, total: items.length })}
         </span>
       </button>
 
       {isListExpanded ? (
         <div id="settings-go-to-list" className="settings-go-to-panel">
-          <p className="settings-go-to-hint">
-            Порядок пунктов в списке соответствует их расположению в меню.
-          </p>
+          <p className="settings-go-to-hint">{t('settings.goToHint')}</p>
 
-          <ul className="settings-go-to-list" aria-label="Ссылки для перехода на геосервисы">
+          <ul className="settings-go-to-list" aria-label={t('settings.goToListAria')}>
             {items.map((item, index) => {
-              const displayName = getGoToSourceDisplayName(item.name)
+              const displayName = getGoToSourceDisplayName(item.name, locale)
               const iconUrl = getGoToSourceIconUrl(item.name)
               const canMoveUp = index > 0
               const canMoveDown = index < items.length - 1
@@ -106,7 +107,7 @@ export const GoToLinksSettings = ({
                       checked={item.active}
                       aria-checked={item.active}
                       disabled={!isLoaded}
-                      aria-label={`Показывать ${displayName} в меню`}
+                      aria-label={t('settings.showInMenuAria', { name: displayName })}
                       onChange={(event) => setItemActive(item.name, event.target.checked)}
                     />
                     <span className="settings-toggle-track" aria-hidden="true">
@@ -119,7 +120,7 @@ export const GoToLinksSettings = ({
                       type="button"
                       className="settings-go-to-move-btn"
                       disabled={!isLoaded || !canMoveUp}
-                      aria-label={`Поднять ${displayName}`}
+                      aria-label={t('settings.moveUpAria', { name: displayName })}
                       onClick={() => moveItemUp(item.name)}
                     >
                       <ChevronUp size={16} aria-hidden />
@@ -128,7 +129,7 @@ export const GoToLinksSettings = ({
                       type="button"
                       className="settings-go-to-move-btn"
                       disabled={!isLoaded || !canMoveDown}
-                      aria-label={`Опустить ${displayName}`}
+                      aria-label={t('settings.moveDownAria', { name: displayName })}
                       onClick={() => moveItemDown(item.name)}
                     >
                       <ChevronDown size={16} aria-hidden />

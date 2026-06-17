@@ -44,6 +44,9 @@ import {
   repairAllGoToToolbarIcons,
   shouldRemountGoToToolbar,
 } from '@/lib/go_to_toolbar'
+import { createTranslator, getStoredLocale, type TranslateFn } from '@/lib/i18n'
+import type { Locale } from '@/lib/i18n/locale'
+import { LOCALE_STORAGE_KEY } from '@/lib/i18n/locale'
 
 const BUTTON_ANCHOR_SELECTORS = [
   '.nk-map-region-view__button .nk-icon_id_ymaps',
@@ -80,13 +83,25 @@ const createGoToMenuElement = (): HTMLElement => {
   return menu
 }
 
+let contentLocale: Locale = 'ru'
+let contentTranslator: TranslateFn = createTranslator(contentLocale)
+
+const refreshContentLocale = async (): Promise<void> => {
+  contentLocale = await getStoredLocale()
+  contentTranslator = createTranslator(contentLocale)
+  const splitButton = getSplitButton()
+  if (splitButton) {
+    splitButton.setAttribute('aria-label', contentTranslator('map.splitView'))
+  }
+}
+
 const createMenuItemElement = (item: GoToItem, iconUrl: string): HTMLDivElement => {
   const menuItem = document.createElement('div')
   menuItem.id = `goToLink${item.name}`
   menuItem.className = 'nmap-uploader-menu__item'
   menuItem.setAttribute('role', 'menuitem')
   menuItem.style.backgroundImage = `url("${iconUrl}")`
-  menuItem.textContent = getGoToSourceDisplayName(item.name)
+  menuItem.textContent = getGoToSourceDisplayName(item.name, contentLocale)
   return menuItem
 }
 
@@ -249,7 +264,10 @@ const mountSplitButton = (): void => {
   }
 
   if (!splitButton) {
-    goToServiceButton.insertAdjacentElement('afterend', createSplitViewButton())
+    goToServiceButton.insertAdjacentElement(
+      'afterend',
+      createSplitViewButton(contentTranslator('map.splitView')),
+    )
     splitButton = getSplitButton()
     if (!splitButton) return
 
@@ -408,7 +426,7 @@ const handleSplitButtonClick = (event: MouseEvent): void => {
   if (!getMapLocationFromUrl(window.location.href)) {
     const splitButton = getSplitButton()
     if (!splitButton) return
-    showGoToTooltip('Не удалось определить положение карты из URL (ll, z)', splitButton, 'top')
+    showGoToTooltip(contentTranslator('map.mapLocationError'), splitButton, 'top')
     window.setTimeout(() => hideGoToTooltip(), 3000)
     return
   }
@@ -416,7 +434,7 @@ const handleSplitButtonClick = (event: MouseEvent): void => {
   if (!toggleSplitView()) {
     const splitButton = getSplitButton()
     if (!splitButton) return
-    showGoToTooltip('Не удалось открыть сравнение с Nakarte', splitButton, 'top')
+    showGoToTooltip(contentTranslator('map.nakarteCompareError'), splitButton, 'top')
     window.setTimeout(() => hideGoToTooltip(), 3000)
   }
 }
@@ -425,7 +443,7 @@ const handleSplitButtonMouseOver = (event: MouseEvent): void => {
   const splitButton = getSplitButton()
   if (!splitButton || !isElementDescendantToOrEquals(event.target, SPLIT_BUTTON_ID)) return
   splitButton.classList.add(GO_TO_BUTTON_HOVERED_CLASS)
-  showGoToTooltip('Раздельный вид', splitButton, 'top')
+  showGoToTooltip(contentTranslator('map.splitView'), splitButton, 'top')
 }
 
 const handleSplitButtonMouseOut = (event: MouseEvent): void => {
@@ -439,7 +457,7 @@ const handleButtonMouseOver = (event: MouseEvent): void => {
   const button = getServiceButton()
   if (!button || !isElementDescendantToOrEquals(event.target, SERVICE_BUTTON_ID)) return
   button.classList.add(GO_TO_BUTTON_HOVERED_CLASS)
-  showGoToTooltip('Внешние геосервисы', button, 'top')
+  showGoToTooltip(contentTranslator('map.externalGeoservices'), button, 'top')
 }
 
 const handleButtonMouseOut = (event: MouseEvent): void => {
@@ -509,6 +527,7 @@ export default defineContentScript({
 
   main(ctx) {
     ensureGoToStyles()
+    void refreshContentLocale()
 
     const runRefresh = async (): Promise<void> => {
       if (refreshPromise) {
@@ -578,6 +597,10 @@ export default defineContentScript({
         if (typeof nextSplitEnabled === 'boolean') {
           syncSplitButtonState(nextSplitEnabled)
         }
+      }
+
+      if (LOCALE_STORAGE_KEY in changes) {
+        void refreshContentLocale().then(() => scheduleRefresh())
       }
 
       if (GO_TO_MENU_ENABLED_STORAGE_KEY in changes) {

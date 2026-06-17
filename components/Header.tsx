@@ -1,4 +1,5 @@
 import { LogIn, LogOut } from 'lucide-react'
+import { useTranslate } from '@/hooks/useLocale'
 import type { YandexUser } from '@/lib/yandex/client'
 
 type HeaderProps = {
@@ -10,6 +11,7 @@ type HeaderProps = {
 }
 
 export const Header = ({ user, avatarDataUrl, isLoggingIn, onLogin, onLogout }: HeaderProps) => {
+  const t = useTranslate()
   const displayName = user?.display_name || user?.real_name || user?.login
 
   return (
@@ -34,8 +36,8 @@ export const Header = ({ user, avatarDataUrl, isLoggingIn, onLogin, onLogout }: 
               type="button"
               className="btn-icon"
               onClick={onLogout}
-              aria-label="Выйти"
-              title="Выйти"
+              aria-label={t('header.logout')}
+              title={t('header.logout')}
             >
               <LogOut size={16} />
             </button>
@@ -47,10 +49,12 @@ export const Header = ({ user, avatarDataUrl, isLoggingIn, onLogin, onLogout }: 
             onClick={onLogin}
             disabled={isLoggingIn}
             aria-busy={isLoggingIn}
-            aria-label="Войти через Яндекс ID"
+            aria-label={t('header.loginAria')}
           >
             <LogIn size={16} aria-hidden />
-            <span className="nk-user-bar-view__login">{isLoggingIn ? 'Вход…' : 'Войти'}</span>
+            <span className="nk-user-bar-view__login">
+              {isLoggingIn ? t('header.loggingIn') : t('header.login')}
+            </span>
           </button>
         )}
       </div>

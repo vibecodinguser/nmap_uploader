@@ -1,16 +1,12 @@
-import { type ChangeEvent, type SubmitEvent, useRef, useState } from 'react'
+import { type ChangeEvent, type SubmitEvent, useMemo, useRef, useState } from 'react'
 import { PointDateField } from '@/components/PointDateField'
 import { TabBar } from '@/components/TabBar'
 import { UploadStatusMessage } from '@/components/UploadStatusMessage'
+import { useLocale, useTranslate } from '@/hooks/useLocale'
 import type { PointUploadStatus } from '@/hooks/usePointUpload'
 import { requireAuthBeforeAction } from '@/lib/require_auth'
 
 type PointSubTab = 'manual' | 'list'
-
-const POINT_SUB_TABS: { id: PointSubTab; label: string }[] = [
-  { id: 'manual', label: 'Ручное добавление' },
-  { id: 'list', label: 'Загрузка списком' },
-]
 
 type PointsTabProps = {
   isUploading: boolean
@@ -34,6 +30,8 @@ export const PointsTab = ({
   onManualUpload,
   onMultipointUpload,
 }: PointsTabProps) => {
+  const t = useTranslate()
+  const { locale } = useLocale()
   const [activeSubTab, setActiveSubTab] = useState<PointSubTab>('manual')
   const [description, setDescription] = useState('')
   const [latitude, setLatitude] = useState('')
@@ -41,6 +39,14 @@ export const PointsTab = ({
   const [manualDate, setManualDate] = useState('')
   const [listDate, setListDate] = useState('')
   const multipointInputRef = useRef<HTMLInputElement>(null)
+
+  const pointSubTabs = useMemo(
+    () => [
+      { id: 'manual' as const, label: t('points.manualEntry') },
+      { id: 'list' as const, label: t('points.batchUpload') },
+    ],
+    [t],
+  )
 
   const isManualSubmitDisabled = isUploading || !latitude.trim() || !longitude.trim()
 
@@ -72,17 +78,17 @@ export const PointsTab = ({
   }
 
   return (
-    <div className="tab-panel points-tab">
+    <div className="tab-panel points-tab" key={locale}>
       <TabBar
-        tabs={POINT_SUB_TABS}
+        tabs={pointSubTabs}
         activeId={activeSubTab}
         onChange={setActiveSubTab}
-        ariaLabel="Режим добавления точек"
+        ariaLabel={t('points.modeAria')}
         className="tabs point-tabs"
       />
 
       {activeSubTab === 'manual' && (
-        <section className="points-section" aria-label="Ручное добавление точки">
+        <section className="points-section" aria-label={t('points.manualSectionAria')}>
           <form className="manual-form points-form" onSubmit={handleManualSubmit}>
             <div className="manual-upload-container">
               <textarea
@@ -92,10 +98,10 @@ export const PointsTab = ({
                 rows={1}
                 value={description}
                 maxLength={150}
-                placeholder="Описание объекта (макс. 150 символов)"
+                placeholder={t('points.descriptionPlaceholder')}
                 disabled={isUploading}
                 onChange={(event) => setDescription(event.currentTarget.value)}
-                aria-label="Описание объекта"
+                aria-label={t('points.descriptionAria')}
               />
 
               <div className="coords-row coords-row--manual">
@@ -106,7 +112,7 @@ export const PointsTab = ({
                   onChange={setManualDate}
                 />
                 <div className="coords-field coords-field--latitude">
-                  <label htmlFor="point_latitude">Широта</label>
+                  <label htmlFor="point_latitude">{t('points.latitude')}</label>
                   <input
                     type="number"
                     id="point_latitude"
@@ -120,7 +126,7 @@ export const PointsTab = ({
                   />
                 </div>
                 <div className="coords-field coords-field--longitude">
-                  <label htmlFor="point_longitude">Долгота</label>
+                  <label htmlFor="point_longitude">{t('points.longitude')}</label>
                   <input
                     type="number"
                     id="point_longitude"
@@ -140,20 +146,17 @@ export const PointsTab = ({
                 className="submit-btn submit-btn--outline"
                 disabled={isManualSubmitDisabled}
               >
-                {isUploading ? 'Отправка…' : 'Загрузить'}
+                {isUploading ? t('common.sending') : t('common.upload')}
               </button>
 
-              <blockquote className="points-section-subtitle">
-                С помощью этой формы можно загрузить «заметку» в Блокнот картографа в виде точки с
-                описанием.
-              </blockquote>
+              <blockquote className="points-section-subtitle">{t('points.manualHint')}</blockquote>
             </div>
           </form>
         </section>
       )}
 
       {activeSubTab === 'list' && (
-        <section className="points-section" aria-label="Загрузка точек списком">
+        <section className="points-section" aria-label={t('points.batchSectionAria')}>
           <div className="manual-upload-container">
             <div className="coords-row coords-row--list">
               <PointDateField
@@ -168,7 +171,7 @@ export const PointsTab = ({
                 disabled={isUploading}
                 onClick={handleMultipointPick}
               >
-                {isUploading ? 'Загрузка…' : 'Загрузить'}
+                {isUploading ? t('common.uploading') : t('common.upload')}
               </button>
             </div>
 
@@ -182,9 +185,7 @@ export const PointsTab = ({
               onChange={handleMultipointChange}
             />
 
-            <blockquote className="points-section-subtitle">
-              Загрузите текстовый файл с точками в формате: "Название точки", 55.123456, 37.123456;
-            </blockquote>
+            <blockquote className="points-section-subtitle">{t('points.batchHint')}</blockquote>
           </div>
         </section>
       )}

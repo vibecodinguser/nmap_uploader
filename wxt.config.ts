@@ -24,9 +24,10 @@ const CHROME_PERMISSIONS = [
 const FIREFOX_PERMISSIONS = ['storage', 'scripting', 'activeTab', 'identity', 'tabs'] as const
 
 const baseManifest = {
-  name: 'nmap_uploader',
+  name: '__MSG_extName__',
   version: packageJson.version,
-  description: 'Загрузчик в Блокнот картографа Народной карты',
+  description: '__MSG_extDescription__',
+  default_locale: 'ru',
   host_permissions: [
     'https://n.maps.yandex.ru/*',
     'https://cloud-api.yandex.net/*',
@@ -44,7 +45,7 @@ const baseManifest = {
     },
   ],
   action: {
-    default_title: 'nmap_uploader',
+    default_title: '__MSG_extName__',
     default_icon: extensionIcons,
   },
   icons: extensionIcons,

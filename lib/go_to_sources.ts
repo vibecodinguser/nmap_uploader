@@ -1,3 +1,6 @@
+import { getGoToSourceDisplayName as getLocalizedGoToSourceName } from '@/lib/i18n'
+import type { Locale } from '@/lib/i18n/locale'
+
 export type GoToSource = {
   linkTemplate: string
   maxZoom?: number
@@ -61,7 +64,8 @@ export const GO_TO_SOURCES: Record<string, GoToSource> = {
 
 export const GO_TO_SOURCE_NAMES = Object.keys(GO_TO_SOURCES)
 
-export const getGoToSourceDisplayName = (name: string): string => {
+export const getGoToSourceDisplayName = (name: string, locale?: Locale): string => {
+  if (locale) return getLocalizedGoToSourceName(name, locale)
   const source = GO_TO_SOURCES[name]
   return source?.displayName ?? name
 }

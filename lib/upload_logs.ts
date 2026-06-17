@@ -1,3 +1,9 @@
+import {
+  createTranslator,
+  getRuntimeLocale,
+  isUploadCompleteMessage,
+  type Locale,
+} from '@/lib/i18n'
 import type { UploadLogEntry } from '@/lib/upload_service'
 
 export type UploadStatus = {
@@ -14,13 +20,17 @@ export const createUploadLog = (
   message,
 })
 
-export const deriveUploadStatus = (logs: UploadLogEntry[]): UploadStatus => {
+export const deriveUploadStatus = (
+  logs: UploadLogEntry[],
+  locale: Locale = getRuntimeLocale(),
+): UploadStatus => {
+  const t = createTranslator(locale)
   const errorLog = [...logs].reverse().find((log) => log.level === 'error')
   if (errorLog) {
     return { level: 'error', message: errorLog.message }
   }
 
-  const summaryLog = [...logs].reverse().find((log) => log.message.startsWith('Завершено:'))
+  const summaryLog = [...logs].reverse().find((log) => isUploadCompleteMessage(log.message, locale))
   if (summaryLog) {
     return { level: 'success', message: summaryLog.message }
   }
@@ -28,7 +38,7 @@ export const deriveUploadStatus = (logs: UploadLogEntry[]): UploadStatus => {
   const successLog = [...logs].reverse().find((log) => log.level === 'success')
   return {
     level: 'success',
-    message: successLog?.message ?? 'Загрузка завершена',
+    message: successLog?.message ?? t('upload.uploadComplete'),
   }
 }
 

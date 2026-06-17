@@ -11,6 +11,7 @@ import { PointDateField } from '@/components/PointDateField'
 import { UploadProgressRing } from '@/components/UploadProgressRing'
 import { UploadStatusMessage } from '@/components/UploadStatusMessage'
 import type { UploadStatus } from '@/hooks/useFileUpload'
+import { useTranslate } from '@/hooks/useLocale'
 import { ACCEPTED_FORMATS } from '@/lib/formats'
 import { requireAuthBeforeAction } from '@/lib/require_auth'
 
@@ -31,6 +32,7 @@ export const PoligonTab = ({
   onRequireAuth,
   onUpload,
 }: PoligonTabProps) => {
+  const t = useTranslate()
   const inputRef = useRef<HTMLInputElement>(null)
   const [polygonDate, setPolygonDate] = useState('')
   const [isDragOver, setIsDragOver] = useState(false)
@@ -101,6 +103,7 @@ export const PoligonTab = ({
             id="polygon_date"
             value={polygonDate}
             disabled={isUploading}
+            centerPlaceholderWithButton
             onChange={setPolygonDate}
           />
         </div>
@@ -115,14 +118,13 @@ export const PoligonTab = ({
           onDrop={handleDrop}
           onClick={handleDropzoneClick}
           onKeyDown={handleKeyDown}
-          aria-label="Зона загрузки файлов"
+          aria-label={t('upload.dropzoneAria')}
           aria-busy={isUploading}
         >
           <Upload className="upload-dropzone-icon" aria-hidden />
-          <p className="upload-dropzone-title">Перетащите файлы сюда</p>
+          <p className="upload-dropzone-title">{t('upload.dropzoneTitle')}</p>
           <p className="upload-dropzone-subtitle">
-            или нажмите, чтобы выбрать файл на диске: <br /> SHP, GPX, KML, KMZ, WKT, GeoJSON,
-            TopoJSON
+            {t('upload.dropzoneSubtitleLine1')} <br /> {t('upload.dropzoneSubtitleLine2')}
           </p>
           <br />
           <button
@@ -135,7 +137,7 @@ export const PoligonTab = ({
               inputRef.current?.click()
             }}
           >
-            {isUploading ? 'Загрузка…' : 'Выбрать файл'}
+            {isUploading ? t('common.uploading') : t('upload.chooseFile')}
           </button>
           <input
             ref={inputRef}

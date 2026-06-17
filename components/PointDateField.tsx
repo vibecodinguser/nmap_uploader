@@ -1,7 +1,8 @@
 import { Calendar } from 'lucide-react'
 import { type CSSProperties, useCallback, useEffect, useId, useRef, useState } from 'react'
 import { DayPicker } from 'react-day-picker'
-import { ru } from 'react-day-picker/locale'
+import { enUS, ru } from 'react-day-picker/locale'
+import { useLocale, useTranslate } from '@/hooks/useLocale'
 import { useOccupiedDates } from '@/hooks/useOccupiedDates'
 import {
   formatDateDisplay,
@@ -11,11 +12,14 @@ import {
 } from '@/lib/date_format'
 import 'react-day-picker/style.css'
 
+const POPOVER_WIDTH = 378
+
 type PointDateFieldProps = {
   id: string
   name?: string
   value: string
   disabled?: boolean
+  centerPlaceholderWithButton?: boolean
   onChange: (value: string) => void
 }
 
@@ -24,11 +28,15 @@ export const PointDateField = ({
   name = 'date',
   value,
   disabled = false,
+  centerPlaceholderWithButton = false,
   onChange,
 }: PointDateFieldProps) => {
+  const t = useTranslate()
+  const { locale } = useLocale()
+  const dayPickerLocale = locale === 'en' ? enUS : ru
   const popoverId = useId()
   const containerRef = useRef<HTMLDivElement>(null)
-  const controlRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLDivElement>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [popoverStyle, setPopoverStyle] = useState<CSSProperties>({})
   const { occupiedDates, isLoading, refreshOccupiedDates } = useOccupiedDates()
@@ -45,14 +53,14 @@ export const PointDateField = ({
   }, [disabled, refreshOccupiedDates])
 
   const updatePopoverPosition = useCallback(() => {
-    const control = controlRef.current
-    if (!control) return
+    const input = inputRef.current
+    if (!input) return
 
-    const rect = control.getBoundingClientRect()
+    const rect = input.getBoundingClientRect()
     const gap = 6
     const viewportPadding = 8
-    const popoverWidth = Math.min(296, window.innerWidth - viewportPadding * 2)
-    let left = rect.left + (rect.width - popoverWidth) / 2
+    const popoverWidth = Math.min(POPOVER_WIDTH, window.innerWidth - viewportPadding * 2)
+    let left = rect.left
 
     if (left + popoverWidth > window.innerWidth - viewportPadding) {
       left = window.innerWidth - viewportPadding - popoverWidth
@@ -117,15 +125,22 @@ export const PointDateField = ({
 
   return (
     <div className="coords-field coords-field--date" ref={containerRef}>
-      <label htmlFor={id}>Дата заметки</label>
-      <div className="point-date-control" ref={controlRef}>
-        <div className="point-date-input">
+      <label htmlFor={id}>{t('dateField.label')}</label>
+      <div className="point-date-control">
+        <div
+          className={
+            centerPlaceholderWithButton
+              ? 'point-date-input point-date-input--center-with-button'
+              : 'point-date-input'
+          }
+          ref={inputRef}
+        >
           <input
             type="text"
             id={id}
             name={name}
             value={value}
-            placeholder="дд-мм-гггг"
+            placeholder={t('dateField.placeholder')}
             maxLength={10}
             inputMode="numeric"
             autoComplete="off"
@@ -138,7 +153,7 @@ export const PointDateField = ({
             type="button"
             className="point-date-trigger"
             disabled={disabled}
-            aria-label="Открыть календарь"
+            aria-label={t('dateField.openCalendarAria')}
             aria-expanded={isOpen}
             aria-controls={isOpen ? popoverId : undefined}
             onClick={handleTriggerClick}
@@ -151,13 +166,15 @@ export const PointDateField = ({
             className="point-date-popover"
             id={popoverId}
             role="dialog"
-            aria-label="Календарь"
+            aria-label={t('dateField.calendarAria')}
             style={popoverStyle}
           >
-            {isLoading && <p className="point-date-popover-status">Загрузка дат…</p>}
+            {isLoading && (
+              <p className="point-date-popover-status">{t('dateField.loadingDates')}</p>
+            )}
             <DayPicker
               mode="single"
-              locale={ru}
+              locale={dayPickerLocale}
               weekStartsOn={1}
               selected={selectedDate}
               onSelect={handleSelect}
@@ -170,7 +187,7 @@ export const PointDateField = ({
             />
             <p className="point-date-legend">
               <span className="point-date-legend-swatch" aria-hidden />
-              Дата с заметкой в Блокноте картографа
+              {t('dateField.occupiedLegend')}
             </p>
           </div>
         )}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { browser } from 'wxt/browser'
+import { useTranslate } from '@/hooks/useLocale'
 import {
   DEFAULT_STROKE_COLOR,
   getEffectiveStrokeColor,
@@ -13,6 +14,7 @@ import { getStoredStrokeColorRaw, setStoredStrokeColorRaw } from '@/lib/stroke_c
 type ApplyStatus = 'idle' | 'success' | 'error'
 
 export const useStrokeColor = () => {
+  const t = useTranslate()
   const [inputValue, setInputValue] = useState('')
   const [effectiveColor, setEffectiveColor] = useState(DEFAULT_STROKE_COLOR)
   const [validationError, setValidationError] = useState<string | null>(null)
@@ -57,7 +59,7 @@ export const useStrokeColor = () => {
 
     const normalized = normalizeStrokeColor(value)
     if (!normalized) {
-      setValidationError('Введите цвет в формате RGB или RRGGBB')
+      setValidationError(t('settings.strokeColorValidation'))
       return
     }
 

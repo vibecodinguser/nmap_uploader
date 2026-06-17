@@ -1,8 +1,10 @@
 import { useCallback, useRef, useState } from 'react'
 import { browser } from 'wxt/browser'
+import { useTranslate } from '@/hooks/useLocale'
 import { normalizeDisplayTargetDate } from '@/lib/date_format'
 import { ProcessingError } from '@/lib/errors'
 import { isAllowedFile } from '@/lib/formats'
+import type { TranslateFn } from '@/lib/i18n'
 import { invalidateOccupiedDatesCache } from '@/lib/occupied_dates_cache'
 import {
   resolveReloadAfterUploadPreference,
@@ -12,6 +14,7 @@ import {
   buildExpiredSessionLogs,
   ensureUploadAuth,
   hasUploadAuthError,
+  prepareUploadLocale,
 } from '@/lib/upload_auth_flow'
 import { createUploadLog, deriveUploadStatus, type UploadStatus } from '@/lib/upload_logs'
 import type { UploadLogEntry } from '@/lib/upload_service'
@@ -22,25 +25,29 @@ export type { UploadStatus } from '@/lib/upload_logs'
 const normalizeTargetDate = normalizeDisplayTargetDate
 
 /** Конвертирует один файл в JSON-результат — без передачи бинарных данных в background. */
-const convertFileLocally = async (file: File, onProgress: (percent: number) => void) => {
+const convertFileLocally = async (
+  file: File,
+  onProgress: (percent: number) => void,
+  t: TranslateFn,
+) => {
   const logs: UploadLogEntry[] = []
   const conversionEnd = 80
 
   if (!isAllowedFile(file.name)) {
-    logs.push(createUploadLog('error', `✗ ${file.name}: неподдерживаемый формат`))
+    logs.push(createUploadLog('error', `✗ ${t('upload.unsupportedFormat', { file: file.name })}`))
     onProgress(conversionEnd)
     return { processed: null, logs }
   }
 
-  logs.push(createUploadLog('info', `Обработка: ${file.name}`))
+  logs.push(createUploadLog('info', t('upload.processing', { file: file.name })))
   try {
     const { processFile } = await import('@/lib/converters')
     const result = await processFile({ name: file.name, buffer: await file.arrayBuffer() })
-    logs.push(createUploadLog('success', `✓ ${file.name} сконвертирован`))
+    logs.push(createUploadLog('success', `✓ ${t('upload.converted', { file: file.name })}`))
     onProgress(conversionEnd)
     return { processed: { name: file.name, result }, logs }
   } catch (error) {
-    const message = error instanceof ProcessingError ? error.message : 'Неизвестная ошибка'
+    const message = error instanceof ProcessingError ? error.message : t('common.unknownError')
     logs.push(createUploadLog('error', `✗ ${file.name}: ${message}`))
     onProgress(conversionEnd)
     return { processed: null, logs }
@@ -48,6 +55,7 @@ const convertFileLocally = async (file: File, onProgress: (percent: number) => v
 }
 
 export const useFileUpload = ({ onAuthenticated }: { onAuthenticated?: () => void }) => {
+  const t = useTranslate()
   const [isUploading, setIsUploading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [uploadStatus, setUploadStatus] = useState<UploadStatus | null>(null)
@@ -55,11 +63,13 @@ export const useFileUpload = ({ onAuthenticated }: { onAuthenticated?: () => voi
 
   const performUpload = useCallback(
     async ({ file, date }: { file: File; date: string }) => {
+      await prepareUploadLocale()
+
       let targetDate: string | undefined
       try {
         targetDate = normalizeTargetDate(date)
       } catch {
-        setUploadStatus({ level: 'error', message: 'Неверный формат даты' })
+        setUploadStatus({ level: 'error', message: t('common.invalidDateFormat') })
         return
       }
 
@@ -83,7 +93,7 @@ export const useFileUpload = ({ onAuthenticated }: { onAuthenticated?: () => voi
         }
 
         setProgress(15)
-        const { processed, logs: conversionLogs } = await convertFileLocally(file, setProgress)
+        const { processed, logs: conversionLogs } = await convertFileLocally(file, setProgress, t)
 
         if (!processed) {
           setProgress(100)
@@ -120,13 +130,13 @@ export const useFileUpload = ({ onAuthenticated }: { onAuthenticated?: () => voi
         setProgress(100)
         setUploadStatus({
           level: 'error',
-          message: error instanceof Error ? error.message : 'Ошибка при загрузке',
+          message: error instanceof Error ? error.message : t('upload.uploadError'),
         })
       } finally {
         endUploadSession({ isUploadingRef, onEnd: () => setIsUploading(false) })
       }
     },
-    [onAuthenticated],
+    [onAuthenticated, t],
   )
 
   return {

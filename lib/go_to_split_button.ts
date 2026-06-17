@@ -19,12 +19,14 @@ const createSplitIconHost = (): HTMLSpanElement => {
 }
 
 /** Создаёт кнопку раздельного вида без insertAdjacentHTML. */
-export const createSplitViewButton = (): HTMLButtonElement => {
+export const createSplitViewButton = (ariaLabel = ''): HTMLButtonElement => {
   const button = document.createElement('button')
   button.type = 'button'
   button.id = GO_TO_SPLIT_BUTTON_ID
   button.setAttribute('aria-pressed', 'false')
-  button.setAttribute('aria-label', 'Раздельный вид')
+  if (ariaLabel) {
+    button.setAttribute('aria-label', ariaLabel)
+  }
   button.className = GO_TO_SPLIT_BUTTON_CLASS
   button.appendChild(createSplitIconHost())
   return button

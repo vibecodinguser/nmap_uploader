@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser'
 import { defineBackground } from 'wxt/utils/define-background'
 import { GO_TO_REFRESH_ACTION } from '@/lib/go_to_notify'
+import { createTranslator, syncLocaleFromStorage } from '@/lib/i18n'
 import { isMapTabUrl, MAP_TAB_URL_PATTERN } from '@/lib/map_tab'
 import {
   isTrustedNmapsOrPanelSender,
@@ -172,8 +173,11 @@ const ensurePanelSidebarRegistered = (): Promise<void> => {
   return panelSidebarRegistration
 }
 
+const getBackgroundTranslator = async () => createTranslator(await syncLocaleFromStorage())
+
 const waitForTabReady = async (tabId: number, maxMs = 15_000): Promise<Browser.tabs.Tab> => {
   const started = Date.now()
+  const t = await getBackgroundTranslator()
 
   while (Date.now() - started < maxMs) {
     const tab = await browser.tabs.get(tabId)
@@ -181,7 +185,7 @@ const waitForTabReady = async (tabId: number, maxMs = 15_000): Promise<Browser.t
     await sleep(150)
   }
 
-  throw new Error('Страница n.maps.yandex.ru не успела загрузиться')
+  throw new Error(t('background.mapPageLoadTimeout'))
 }
 
 const focusTab = async (tab: Browser.tabs.Tab): Promise<void> => {
@@ -214,7 +218,10 @@ const resolveMapTargetTab = async (clickedTab: Browser.tabs.Tab): Promise<Browse
   }
 
   const created = await browser.tabs.create({ url: MAP_HOME, active: true })
-  if (!created.id) throw new Error('Не удалось открыть n.maps.yandex.ru')
+  if (!created.id) {
+    const t = await getBackgroundTranslator()
+    throw new Error(t('background.openMapFailed'))
+  }
   return waitForTabReady(created.id)
 }
 
@@ -226,7 +233,8 @@ const toggleInjectedSidebar = async (tabId: number, tabUrl?: string) => {
   }
 
   if (!isMapTabUrl(url)) {
-    throw new Error('Откройте n.maps.yandex.ru и нажмите иконку снова')
+    const t = await getBackgroundTranslator()
+    throw new Error(t('background.openMapAndRetry'))
   }
 
   // content script может ещё инициализироваться после загрузки страницы
@@ -239,7 +247,8 @@ const toggleInjectedSidebar = async (tabId: number, tabUrl?: string) => {
 
   if (await retrySendTogglePanel(tabId)) return
 
-  throw new Error('Не удалось открыть панель на текущей вкладке')
+  const t = await getBackgroundTranslator()
+  throw new Error(t('background.openPanelFailed'))
 }
 
 type AuthMessageResponse = {
@@ -279,27 +288,29 @@ const handleYandexAuthMessage = ({
         avatarDataUrl,
       })
     })
-    .catch((error: unknown) => {
+    .catch(async (error: unknown) => {
       console.error(`[nmap_uploader] ${logLabel} failed:`, error)
+      const t = await getBackgroundTranslator()
       sendResponse({
         ok: false,
         user: null,
         avatarDataUrl: null,
-        error: error instanceof Error ? error.message : 'Ошибка авторизации',
+        error: error instanceof Error ? error.message : t('auth.authError'),
       })
     })
 }
 
 const openInjectedPanel = async (tab: Browser.tabs.Tab) => {
+  const t = await getBackgroundTranslator()
   const targetTab = await resolveMapTargetTab(tab)
-  if (!targetTab.id) throw new Error('Не удалось найти вкладку для панели')
+  if (!targetTab.id) throw new Error(t('background.tabNotFound'))
 
   if (!isMapTabUrl(targetTab.url) || targetTab.status !== 'complete') {
     await waitForTabReady(targetTab.id)
   }
 
   const readyTab = await browser.tabs.get(targetTab.id)
-  if (!readyTab.id) throw new Error('Не удалось найти вкладку для панели')
+  if (!readyTab.id) throw new Error(t('background.tabNotFound'))
   await toggleInjectedSidebar(readyTab.id, readyTab.url)
 }
 
@@ -337,6 +348,7 @@ const openPanel = async (tab: Browser.tabs.Tab) => {
 export default defineBackground(() => {
   void persistYandexBrowserFlag()
   void ensurePanelSidebarRegistered()
+  void syncLocaleFromStorage()
 
   const toolbarAction = getToolbarActionApi()
   if (!toolbarAction) {
@@ -398,15 +410,24 @@ export default defineBackground(() => {
     if (action === 'login') {
       if (!isTrustedPanelSender(sender)) {
         logRejectedMessage(action, sender)
-        sendResponse({ ok: false, user: null, avatarDataUrl: null, error: 'Доступ запрещён' })
+        void getBackgroundTranslator().then((t) => {
+          sendResponse({
+            ok: false,
+            user: null,
+            avatarDataUrl: null,
+            error: t('common.accessDenied'),
+          })
+        })
         return true
       }
 
-      handleYandexAuthMessage({
-        interactive: true,
-        sendResponse,
-        logLabel: 'login',
-        cancelError: 'Авторизация отменена',
+      void getBackgroundTranslator().then((t) => {
+        handleYandexAuthMessage({
+          interactive: true,
+          sendResponse,
+          logLabel: 'login',
+          cancelError: t('auth.authCancelled'),
+        })
       })
       return true
     }
@@ -443,12 +464,13 @@ export default defineBackground(() => {
           const dates = await listExistingDateFolders({ token: auth.token })
           sendResponse({ ok: true, dates })
         })
-        .catch((error: unknown) => {
+        .catch(async (error: unknown) => {
           console.error('[nmap_uploader] listOccupiedDates failed:', error)
+          const t = await getBackgroundTranslator()
           sendResponse({
             ok: false,
             dates: [],
-            error: error instanceof Error ? error.message : 'Ошибка чтения папок',
+            error: error instanceof Error ? error.message : t('auth.folderReadError'),
           })
         })
       return true
@@ -457,17 +479,19 @@ export default defineBackground(() => {
     if (action === 'uploadProcessedFiles') {
       if (!isTrustedPanelSender(sender)) {
         logRejectedMessage(action, sender)
-        sendResponse({
-          ok: false,
-          processedCount: 0,
-          skippedCount: 0,
-          logs: [
-            {
-              id: crypto.randomUUID(),
-              level: 'error',
-              message: 'Доступ запрещён',
-            },
-          ],
+        void getBackgroundTranslator().then((t) => {
+          sendResponse({
+            ok: false,
+            processedCount: 0,
+            skippedCount: 0,
+            logs: [
+              {
+                id: crypto.randomUUID(),
+                level: 'error',
+                message: t('common.accessDenied'),
+              },
+            ],
+          })
         })
         return true
       }
@@ -477,8 +501,9 @@ export default defineBackground(() => {
         targetDate: message.targetDate,
       })
         .then((result) => sendResponse(result))
-        .catch((error: unknown) => {
+        .catch(async (error: unknown) => {
           console.error('[nmap_uploader] upload failed:', error)
+          const t = await getBackgroundTranslator()
           sendResponse({
             ok: false,
             processedCount: 0,
@@ -487,7 +512,7 @@ export default defineBackground(() => {
               {
                 id: crypto.randomUUID(),
                 level: 'error',
-                message: error instanceof Error ? error.message : 'Ошибка загрузки',
+                message: error instanceof Error ? error.message : t('auth.uploadError'),
               },
             ],
           })

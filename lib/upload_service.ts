@@ -1,3 +1,4 @@
+import { createTranslator, syncLocaleFromStorage } from '@/lib/i18n'
 import { getErrorMessage } from './errors'
 import { createNmapOutputTemplate, mergeNmapOutputTemplate, type ProcessResult } from './nmap_index'
 import { createUploadLog } from './upload_logs'
@@ -35,44 +36,46 @@ export const uploadProcessedFilesToYandexDisk = async ({
   files: ProcessedFileInput[]
   targetDate?: string
 }): Promise<UploadFilesResult> => {
+  const locale = await syncLocaleFromStorage()
+  const t = createTranslator(locale)
   const logs: UploadLogEntry[] = []
   const pushLog = (level: UploadLogEntry['level'], message: string) => {
     logs.push(createUploadLog(level, message))
   }
 
   if (files.length === 0) {
-    pushLog('error', 'Нет данных для загрузки')
+    pushLog('error', t('upload.noDataToUpload'))
     return { ok: false, logs, processedCount: 0, skippedCount: 0 }
   }
 
   const auth = await getStoredAuth()
   if (!auth) {
-    pushLog('error', 'Необходима авторизация. Войдите через Яндекс ID')
+    pushLog('error', t('upload.authRequired'))
     return { ok: false, logs, processedCount: 0, skippedCount: 0 }
   }
 
   const { token } = auth
 
   try {
-    pushLog('info', 'Проверка доступа к Яндекс.Диску')
+    pushLog('info', t('upload.checkingDiskAccess'))
     await verifyDiskAccess({ token })
-    pushLog('info', 'Проверка папок на Яндекс.Диске')
+    pushLog('info', t('upload.checkingFolders'))
     await ensureUploadFolder({ token, targetDate })
-    pushLog('success', 'Папки готовы')
+    pushLog('success', t('upload.foldersReady'))
   } catch (error: unknown) {
-    const message = getErrorMessage(error, 'Ошибка доступа к Диску')
+    const message = getErrorMessage(error, t('upload.diskAccessError'))
     pushLog('error', message)
     return { ok: false, logs, processedCount: 0, skippedCount: 0 }
   }
 
   let currentIndex = createNmapOutputTemplate()
   try {
-    pushLog('info', 'Загрузка текущего index.json')
+    pushLog('info', t('upload.loadingIndex'))
     const existing = await downloadIndexJson({ token, targetDate })
     currentIndex = existing ?? createNmapOutputTemplate()
-    pushLog('success', existing ? 'Текущий index.json загружен' : 'Создан новый index.json')
+    pushLog('success', existing ? t('upload.indexLoaded') : t('upload.indexCreated'))
   } catch (error: unknown) {
-    const message = getErrorMessage(error, 'Не удалось загрузить index.json')
+    const message = getErrorMessage(error, t('upload.indexLoadError'))
     pushLog('error', message)
     return { ok: false, logs, processedCount: 0, skippedCount: 0 }
   }
@@ -83,16 +86,16 @@ export const uploadProcessedFilesToYandexDisk = async ({
   }
 
   try {
-    pushLog('info', 'Загрузка результатов в Блокнот картографа')
+    pushLog('info', t('upload.uploadingToNotebook'))
     const finalIndex = mergeNmapOutputTemplate(currentIndex, newData)
     await uploadIndexJson({ data: finalIndex, token, targetDate })
-    pushLog('success', 'index.json загружен на Яндекс.Диск')
+    pushLog('success', t('upload.indexUploaded'))
   } catch (error: unknown) {
-    const message = getErrorMessage(error, 'Ошибка сохранения')
+    const message = getErrorMessage(error, t('upload.saveError'))
     pushLog('error', message)
     return { ok: false, logs, processedCount: files.length, skippedCount: 0 }
   }
 
-  pushLog('success', 'Завершено: файл загружен')
+  pushLog('success', t('upload.uploadCompleteSummary'))
   return { ok: true, logs, processedCount: 1, skippedCount: 0 }
 }

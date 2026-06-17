@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { browser } from 'wxt/browser'
+import { useTranslate } from '@/hooks/useLocale'
 import { normalizeDisplayTargetDate } from '@/lib/date_format'
 import { invalidateOccupiedDatesCache } from '@/lib/occupied_dates_cache'
 import {
@@ -15,6 +16,7 @@ import {
   buildExpiredSessionLogs,
   ensureUploadAuth,
   hasUploadAuthError,
+  prepareUploadLocale,
 } from '@/lib/upload_auth_flow'
 import { createUploadLog, deriveUploadStatus, type UploadStatus } from '@/lib/upload_logs'
 import type { UploadLogEntry } from '@/lib/upload_service'
@@ -62,6 +64,7 @@ export type ManualPointInput = {
 }
 
 export const usePointUpload = ({ onAuthenticated }: { onAuthenticated?: () => void }) => {
+  const t = useTranslate()
   const [isUploading, setIsUploading] = useState(false)
   const [uploadStatus, setUploadStatus] = useState<PointUploadStatus | null>(null)
   const isUploadingRef = useRef(false)
@@ -78,6 +81,8 @@ export const usePointUpload = ({ onAuthenticated }: { onAuthenticated?: () => vo
         uploadOk: boolean | undefined
       } | null>
     }) => {
+      await prepareUploadLocale()
+
       const started = await beginUploadSession({
         isUploadingRef,
         onBegin: () => {
@@ -128,14 +133,14 @@ export const usePointUpload = ({ onAuthenticated }: { onAuthenticated?: () => vo
       const lon = Number.parseFloat(longitude.trim())
 
       if (Number.isNaN(lat) || Number.isNaN(lon)) {
-        setUploadStatus({ level: 'error', message: 'Координаты не указаны' })
+        setUploadStatus({ level: 'error', message: t('points.coordinatesMissing') })
         return
       }
 
       if (!areCoordinatesValid({ latitude: lat, longitude: lon })) {
         setUploadStatus({
           level: 'error',
-          message: 'Координаты находятся вне допустимых диапазонов',
+          message: t('points.coordinatesOutOfRange'),
         })
         return
       }
@@ -144,14 +149,14 @@ export const usePointUpload = ({ onAuthenticated }: { onAuthenticated?: () => vo
       try {
         targetDate = normalizeTargetDate(date)
       } catch {
-        setUploadStatus({ level: 'error', message: 'Неверный формат даты' })
+        setUploadStatus({ level: 'error', message: t('common.invalidDateFormat') })
         return
       }
 
       await runPointUpload({
-        defaultErrorMessage: 'Ошибка при загрузке точки',
+        defaultErrorMessage: t('points.pointUploadError'),
         execute: async () => {
-          const priorLogs = [createUploadLog('info', 'Подготовка точки')]
+          const priorLogs = [createUploadLog('info', t('points.preparingPoint'))]
           const pointData = createPointIndex({
             latitude: lat,
             longitude: lon,
@@ -170,19 +175,19 @@ export const usePointUpload = ({ onAuthenticated }: { onAuthenticated?: () => vo
         },
       })
     },
-    [runPointUpload],
+    [runPointUpload, t],
   )
 
   const performMultipointUpload = useCallback(
     async ({ files, date }: { files: File[]; date: string }) => {
       if (files.length === 0) {
-        setUploadStatus({ level: 'error', message: 'Файлы не выбраны' })
+        setUploadStatus({ level: 'error', message: t('points.noFilesSelected') })
         return
       }
 
       const invalidFile = files.find((file) => !file.name.toLowerCase().endsWith('.txt'))
       if (invalidFile) {
-        setUploadStatus({ level: 'error', message: 'Только .txt файлы разрешены' })
+        setUploadStatus({ level: 'error', message: t('points.onlyTxtAllowed') })
         return
       }
 
@@ -190,24 +195,31 @@ export const usePointUpload = ({ onAuthenticated }: { onAuthenticated?: () => vo
       try {
         targetDate = normalizeTargetDate(date)
       } catch {
-        setUploadStatus({ level: 'error', message: 'Неверный формат даты' })
+        setUploadStatus({ level: 'error', message: t('common.invalidDateFormat') })
         return
       }
 
       await runPointUpload({
-        defaultErrorMessage: 'Ошибка при загрузке точек',
+        defaultErrorMessage: t('points.pointsUploadError'),
         execute: async () => {
           const priorLogs: UploadLogEntry[] = []
           const processedFiles = await Promise.all(
             files.map(async (file) => {
-              priorLogs.push(createUploadLog('info', `Обработка: ${file.name}`))
+              priorLogs.push(createUploadLog('info', t('upload.processing', { file: file.name })))
               const content = await file.text()
               const result = processMultipointContent(content)
               const pointCount = Object.keys(result.points).length
               if (pointCount === 0) {
-                priorLogs.push(createUploadLog('error', `✗ ${file.name}: точки не найдены`))
+                priorLogs.push(
+                  createUploadLog('error', `✗ ${t('points.pointsNotFound', { file: file.name })}`),
+                )
               } else {
-                priorLogs.push(createUploadLog('success', `✓ ${file.name}: ${pointCount} точек`))
+                priorLogs.push(
+                  createUploadLog(
+                    'success',
+                    `✓ ${t('points.pointsCount', { file: file.name, count: pointCount })}`,
+                  ),
+                )
               }
               return { name: file.name, result }
             }),
@@ -219,7 +231,7 @@ export const usePointUpload = ({ onAuthenticated }: { onAuthenticated?: () => vo
           if (validFiles.length === 0) {
             setUploadStatus({
               level: 'error',
-              message: 'Не найдено точек в файлах (проверьте формат)',
+              message: t('points.noPointsInFiles'),
             })
             return null
           }
@@ -233,7 +245,7 @@ export const usePointUpload = ({ onAuthenticated }: { onAuthenticated?: () => vo
         },
       })
     },
-    [runPointUpload],
+    [runPointUpload, t],
   )
 
   return {

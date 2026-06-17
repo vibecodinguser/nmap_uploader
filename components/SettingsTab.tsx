@@ -1,10 +1,13 @@
 import { ArrowLeft, Send } from 'lucide-react'
+import { useMemo } from 'react'
 import { GoToLinksSettings } from '@/components/GoToLinksSettings'
 import type { useGoToLinks } from '@/hooks/useGoToLinks'
+import { useLocale } from '@/hooks/useLocale'
 import type { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
 import type { useSplitViewButton } from '@/hooks/useSplitViewButton'
 import type { useStrokeColor } from '@/hooks/useStrokeColor'
 import type { ThemeMode } from '@/hooks/useTheme'
+import { LOCALE_OPTIONS } from '@/lib/i18n/locale'
 import { RELEASES_URL } from '@/lib/releases_url'
 import { DEFAULT_STROKE_COLOR_INPUT } from '@/lib/stroke_color'
 import packageJson from '../package.json'
@@ -21,12 +24,6 @@ type StrokeColorSettings = Pick<
   | 'handleInputChange'
   | 'handleApply'
 >
-
-const THEME_MODE_OPTIONS: { value: ThemeMode; label: string }[] = [
-  { value: 'dark', label: 'Тёмная тема' },
-  { value: 'light', label: 'Светлая тема' },
-  { value: 'system', label: 'Авто' },
-]
 
 type ReloadAfterUploadSettings = Pick<
   ReturnType<typeof useReloadAfterUpload>,
@@ -68,6 +65,7 @@ export const SettingsTab = ({
   splitViewButton,
   goToLinks,
 }: SettingsTabProps) => {
+  const { locale, setLocale, t } = useLocale()
   const {
     inputValue,
     effectiveColor,
@@ -91,6 +89,16 @@ export const SettingsTab = ({
     setIsEnabled: setSplitViewButtonEnabled,
   } = splitViewButton
 
+  const themeModeOptions = useMemo(
+    () =>
+      [
+        { value: 'dark' as const, label: t('settings.themeDark') },
+        { value: 'light' as const, label: t('settings.themeLight') },
+        { value: 'system' as const, label: t('settings.themeSystem') },
+      ] as const,
+    [t],
+  )
+
   const handleApplyClick = () => {
     handleApply().catch((error: unknown) => {
       console.warn('[nmap_uploader] stroke color apply failed:', error)
@@ -107,20 +115,45 @@ export const SettingsTab = ({
         type="button"
         className="settings-back-btn"
         onClick={onBack}
-        aria-label="Назад к загрузке"
+        aria-label={t('tabs.backToUploadAria')}
       >
         <ArrowLeft size={18} aria-hidden />
-        <span>Назад</span>
+        <span>{t('common.back')}</span>
       </button>
 
-      <h2 className="settings-title">Настройки</h2>
+      <h2 className="settings-title">{t('settings.title')}</h2>
+
+      <section className="settings-section" aria-labelledby="settings-language-heading">
+        <h3 id="settings-language-heading" className="settings-section-title">
+          {t('locale.label')}
+        </h3>
+        <div
+          className="theme-mode-switch"
+          role="radiogroup"
+          aria-label={t('settings.languageAria')}
+        >
+          {LOCALE_OPTIONS.map((option) => (
+            <label key={option.value} className="theme-mode-switch-option">
+              <input
+                type="radio"
+                name="locale"
+                value={option.value}
+                className="theme-mode-switch-input"
+                checked={locale === option.value}
+                onChange={() => setLocale(option.value)}
+              />
+              <span className="theme-mode-switch-label">{t(option.labelKey)}</span>
+            </label>
+          ))}
+        </div>
+      </section>
 
       <section className="settings-section" aria-labelledby="settings-appearance-heading">
         <h3 id="settings-appearance-heading" className="settings-section-title">
-          Оформление
+          {t('settings.appearance')}
         </h3>
-        <div className="theme-mode-switch" role="radiogroup" aria-label="Тема оформления">
-          {THEME_MODE_OPTIONS.map((option) => (
+        <div className="theme-mode-switch" role="radiogroup" aria-label={t('settings.themeAria')}>
+          {themeModeOptions.map((option) => (
             <label key={option.value} className="theme-mode-switch-option">
               <input
                 type="radio"
@@ -139,7 +172,7 @@ export const SettingsTab = ({
       <section className="settings-section" aria-labelledby="settings-split-view-heading">
         <div className="settings-toggle-row">
           <h3 id="settings-split-view-heading" className="settings-section-title">
-            Кнопка: Раздельный вид
+            {t('settings.splitViewButton')}
           </h3>
           <label className="settings-toggle" htmlFor="settings-split-view-button">
             <input
@@ -150,7 +183,7 @@ export const SettingsTab = ({
               checked={isSplitViewButtonEnabled}
               aria-checked={isSplitViewButtonEnabled}
               disabled={!isSplitViewButtonLoaded}
-              aria-label="Раздельный вид"
+              aria-label={t('settings.splitViewAria')}
               onChange={(event) => setSplitViewButtonEnabled(event.target.checked)}
             />
             <span className="settings-toggle-track" aria-hidden="true">
@@ -165,7 +198,7 @@ export const SettingsTab = ({
       <section className="settings-section" aria-labelledby="settings-upload-heading">
         <div className="settings-toggle-row">
           <h3 id="settings-upload-heading" className="settings-section-title">
-            Автообновление после загрузки
+            {t('settings.reloadAfterUpload')}
           </h3>
           <label className="settings-toggle" htmlFor="settings-reload-after-upload">
             <input
@@ -176,7 +209,7 @@ export const SettingsTab = ({
               checked={isReloadAfterUploadEnabled}
               aria-checked={isReloadAfterUploadEnabled}
               disabled={!isReloadAfterUploadLoaded || !canChangeReloadAfterUpload}
-              aria-label="Автообновление после загрузки"
+              aria-label={t('settings.reloadAfterUploadAria')}
               onChange={(event) => setReloadAfterUploadEnabled(event.target.checked)}
             />
             <span className="settings-toggle-track" aria-hidden="true">
@@ -188,7 +221,7 @@ export const SettingsTab = ({
 
       <section className="settings-section" aria-labelledby="settings-path-heading">
         <h3 id="settings-path-heading" className="settings-section-title">
-          Обводка контура загруженного объекта
+          {t('settings.strokeColor')}
         </h3>
         <div className="settings-field">
           <div className="settings-color-field">
@@ -197,7 +230,7 @@ export const SettingsTab = ({
               className="settings-color-picker"
               value={effectiveColor}
               disabled={!isLoaded || isApplying}
-              aria-label="Выбрать цвет контура"
+              aria-label={t('settings.pickStrokeColorAria')}
               onChange={(event) => handleColorPickerChange(event.target.value)}
             />
             <div
@@ -234,7 +267,7 @@ export const SettingsTab = ({
               disabled={!canApply}
               onClick={handleApplyClick}
             >
-              {isApplying ? '…' : 'Применить'}
+              {isApplying ? '…' : t('common.apply')}
             </button>
           </div>
 
@@ -245,12 +278,12 @@ export const SettingsTab = ({
           ) : null}
           {applyStatus === 'success' ? (
             <p className="settings-field-success" role="status">
-              Цвет контура применён
+              {t('settings.strokeColorApplied')}
             </p>
           ) : null}
           {applyStatus === 'error' ? (
             <p className="settings-field-error" role="alert">
-              Не удалось применить цвет. Обновите страницу карты и попробуйте снова.
+              {t('settings.strokeColorApplyError')}
             </p>
           ) : null}
         </div>
@@ -268,7 +301,7 @@ export const SettingsTab = ({
             rel="noopener noreferrer"
             className="settings-about-link"
           >
-            Версия {packageJson.version}
+            {t('common.version')} {packageJson.version}
           </a>
           <div className="footer-links">
             <a
