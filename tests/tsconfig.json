@@ -6,7 +6,8 @@
     "paths": {
       "@/*": ["./*"]
     },
-    "types": ["node"]
+    "types": ["node"],
+    "jsx": "react-jsx"
   },
-  "include": ["./**/*.ts", "../lib/shims.d.ts", "../env.d.ts"]
+  "include": ["./**/*.ts", "./types/**/*.d.ts", "../lib/shims.d.ts", "../env.d.ts"]
 }
