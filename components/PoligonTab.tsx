@@ -1,7 +1,6 @@
 import { Upload } from 'lucide-react'
 import {
   type DragEvent,
-  type KeyboardEvent,
   type MouseEvent,
   useEffect,
   useRef,
@@ -87,14 +86,6 @@ export const PoligonTab = ({
     return 'upload-dropzone'
   })()
 
-  const handleKeyDown = (event: KeyboardEvent) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault()
-      if (!ensureAuthenticated()) return
-      inputRef.current?.click()
-    }
-  }
-
   return (
     <div className="tab-panel">
       <form className="upload-form" onSubmit={(event) => event.preventDefault()}>
@@ -108,17 +99,12 @@ export const PoligonTab = ({
           />
         </div>
 
-        {/* biome-ignore lint/a11y/useSemanticElements: dropzone contains inner button */}
         <div
-          role="button"
-          tabIndex={0}
           className={dropzoneClassName}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={handleDropzoneClick}
-          onKeyDown={handleKeyDown}
-          aria-label={t('upload.dropzoneAria')}
           aria-busy={isUploading}
         >
           <Upload className="upload-dropzone-icon" aria-hidden />
@@ -145,6 +131,7 @@ export const PoligonTab = ({
             accept={ACCEPTED_FORMATS}
             hidden
             disabled={isUploading}
+            aria-label={t('upload.chooseFile')}
             onChange={(event) => {
               handleFile(event.target.files)
               event.target.value = ''

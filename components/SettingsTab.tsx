@@ -250,6 +250,7 @@ export const SettingsTab = ({
                 value={inputValue}
                 placeholder={DEFAULT_STROKE_COLOR_INPUT}
                 disabled={!isLoaded || isApplying}
+                aria-label={t('settings.strokeColor')}
                 aria-invalid={validationError ? true : undefined}
                 aria-describedby="stroke-color-hint stroke-color-error"
                 onChange={(event) => handleInputChange(event.target.value.replace(/^#/, ''))}
