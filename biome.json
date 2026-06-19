@@ -51,10 +51,13 @@
         "components/GoToLinksSettingsItem.tsx",
         "components/PointDateField.tsx",
         "components/PointsTab.tsx",
+        "components/ManualTab.tsx",
+        "components/BatchTab.tsx",
         "components/PoligonTab.tsx",
         "components/MultipointUpload.tsx",
         "components/ManualPointUpload.tsx",
         "components/SettingsTab.tsx",
+        "components/TabButton.tsx",
         "components/UploadStatusMessage.tsx",
         "components/UploadProgressRing.tsx",
         "tests/setup/a11y.tsx"

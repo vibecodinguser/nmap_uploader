@@ -1,22 +1,25 @@
 export type TabBarItem<T extends string> = {
-  id: T
-  label: string
-}
+  id: T;
+  label: string;
+};
 
 type TabButtonProps<T extends string> = {
-  tab: TabBarItem<T>
-  isActive: boolean
-}
+  tab: TabBarItem<T>;
+  isActive: boolean;
+};
 
 function getButtonClassName(isActive: boolean): string {
-  let className = 'tab-btn'
+  let className = 'tab-btn';
   if (isActive) {
-    className += ' active'
+    className += ' active';
   }
-  return className
+  return className;
 }
 
-export function TabButton<T extends string>({ tab, isActive }: TabButtonProps<T>) {
+export const TabButton = function tabButton<T extends string>({
+  tab,
+  isActive,
+}: TabButtonProps<T>) {
   return (
     <button
       key={tab.id}
@@ -28,5 +31,5 @@ export function TabButton<T extends string>({ tab, isActive }: TabButtonProps<T>
     >
       {tab.label}
     </button>
-  )
-}
+  );
+};

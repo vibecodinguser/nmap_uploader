@@ -10,7 +10,29 @@ type BatchTabProps = {
   onMultipointUpload: (input: { files: File[]; date: string }) => void;
 };
 
-export function BatchTab({
+function handleMultipointPick(
+  isLoggedIn: boolean,
+  onRequireAuth: () => void,
+  multipointInputRef: RefObject<HTMLInputElement | null>,
+) {
+  if (requireAuthBeforeAction({ isLoggedIn, onRequireAuth })) {
+    multipointInputRef.current?.click();
+  }
+}
+
+function handleMultipointChange(
+  event: ChangeEvent<HTMLInputElement>,
+  listDate: string,
+  onMultipointUpload: (input: { files: File[]; date: string }) => void,
+) {
+  const selectedFiles = Array.from(event.target.files ?? []);
+  event.target.value = '';
+  if (selectedFiles.length > 0) {
+    onMultipointUpload({ files: selectedFiles, date: listDate });
+  }
+}
+
+export const BatchTab = function batchTab({
   isUploading,
   isLoggedIn,
   onRequireAuth,
@@ -20,26 +42,23 @@ export function BatchTab({
   const [listDate, setListDate] = useState('');
   const multipointInputRef = useRef<HTMLInputElement>(null);
 
-  let multipointButtonText;
+  let multipointButtonText: string;
   if (isUploading) {
     multipointButtonText = t('common.uploading');
   } else {
     multipointButtonText = t('common.upload');
   }
 
-  const handleMultipointPick = useCallback(() => {
-    if (requireAuthBeforeAction({ isLoggedIn, onRequireAuth })) {
-      multipointInputRef.current?.click();
-    }
-  }, [isLoggedIn, onRequireAuth]);
+  const onMultipointPick = useCallback(
+    function onMultipointPick() {
+      handleMultipointPick(isLoggedIn, onRequireAuth, multipointInputRef);
+    },
+    [isLoggedIn, onRequireAuth],
+  );
 
-  const handleMultipointChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      const selectedFiles = Array.from(event.target.files ?? []);
-      event.target.value = '';
-      if (selectedFiles.length > 0) {
-        onMultipointUpload({ files: selectedFiles, date: listDate });
-      }
+  const onMultipointChange = useCallback(
+    function onMultipointChange(event: ChangeEvent<HTMLInputElement>) {
+      handleMultipointChange(event, listDate, onMultipointUpload);
     },
     [listDate, onMultipointUpload],
   );
@@ -53,8 +72,8 @@ export function BatchTab({
       sectionAriaLabel={t('points.batchSectionAria')}
       multipointInputRef={multipointInputRef as RefObject<HTMLInputElement>}
       onListDateChange={setListDate}
-      onMultipointPick={handleMultipointPick}
-      onMultipointChange={handleMultipointChange}
+      onMultipointPick={onMultipointPick}
+      onMultipointChange={onMultipointChange}
     />
   );
-}
+};

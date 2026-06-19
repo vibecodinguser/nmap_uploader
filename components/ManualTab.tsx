@@ -15,7 +15,7 @@ type ManualTabProps = {
   }) => void;
 };
 
-export function ManualTab({
+export const ManualTab = function manualTab({
   isUploading,
   isLoggedIn,
   onRequireAuth,
@@ -36,20 +36,26 @@ export function ManualTab({
     manualSubmitButtonText = t('common.upload');
   }
 
-  const handleDescriptionChange = useCallback((event: ChangeEvent<HTMLTextAreaElement>) => {
+  const handleDescriptionChange = useCallback(function handleDescriptionChange(
+    event: ChangeEvent<HTMLTextAreaElement>,
+  ) {
     setDescription(event.currentTarget.value);
   }, []);
 
-  const handleLatitudeChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+  const handleLatitudeChange = useCallback(function handleLatitudeChange(
+    event: ChangeEvent<HTMLInputElement>,
+  ) {
     setLatitude(event.target.value);
   }, []);
 
-  const handleLongitudeChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+  const handleLongitudeChange = useCallback(function handleLongitudeChange(
+    event: ChangeEvent<HTMLInputElement>,
+  ) {
     setLongitude(event.target.value);
   }, []);
 
   const handleManualSubmit = useCallback(
-    (event: SubmitEvent<HTMLFormElement>) => {
+    function handleManualSubmit(event: SubmitEvent<HTMLFormElement>) {
       event.preventDefault();
       if (!isManualSubmitDisabled && requireAuthBeforeAction({ isLoggedIn, onRequireAuth })) {
         onManualUpload({
@@ -94,4 +100,4 @@ export function ManualTab({
       onManualSubmit={handleManualSubmit}
     />
   );
-}
+};
