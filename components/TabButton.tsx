@@ -6,6 +6,7 @@ export type TabBarItem<T extends string> = {
 type TabButtonProps<T extends string> = {
   tab: TabBarItem<T>;
   isActive: boolean;
+  onSelect: (id: T) => void;
 };
 
 function getButtonClassName(isActive: boolean): string {
@@ -19,7 +20,12 @@ function getButtonClassName(isActive: boolean): string {
 export const TabButton = function tabButton<T extends string>({
   tab,
   isActive,
+  onSelect,
 }: TabButtonProps<T>) {
+  const handleClick = (): void => {
+    onSelect(tab.id);
+  };
+
   return (
     <button
       key={tab.id}
@@ -28,6 +34,7 @@ export const TabButton = function tabButton<T extends string>({
       className={getButtonClassName(isActive)}
       aria-selected={isActive}
       data-id={tab.id}
+      onClick={handleClick}
     >
       {tab.label}
     </button>

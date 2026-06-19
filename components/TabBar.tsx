@@ -1,5 +1,5 @@
-import React, { MouseEvent } from 'react';
-import { TabButton, type TabBarItem } from './TabButton';
+import React from 'react';
+import { type TabBarItem, TabButton } from './TabButton';
 
 type TabBarProps<T extends string> = {
   tabs: TabBarItem<T>[];
@@ -10,34 +10,18 @@ type TabBarProps<T extends string> = {
 };
 
 export class TabBar<T extends string> extends React.Component<TabBarProps<T>> {
-  private handleTabBarClick = (event: MouseEvent<HTMLDivElement>): void => {
-    const target = event.target as HTMLElement;
-    const button = target.closest('button');
-    if (button) {
-      const id = button.getAttribute('data-id') as T;
-      if (id) {
-        this.props.onChange(id);
-      }
-    }
-  };
-
   public render() {
-    const { tabs, activeId, ariaLabel, className = 'tabs' } = this.props;
+    const { tabs, activeId, ariaLabel, className = 'tabs', onChange } = this.props;
 
     const tabButtons = [];
     for (let i = 0; i < tabs.length; i++) {
       const tab = tabs[i];
       const isActive = activeId === tab.id;
-      tabButtons.push(<TabButton key={tab.id} tab={tab} isActive={isActive} />);
+      tabButtons.push(<TabButton key={tab.id} tab={tab} isActive={isActive} onSelect={onChange} />);
     }
 
     return (
-      <div
-        className={className}
-        role="tablist"
-        aria-label={ariaLabel}
-        onClick={this.handleTabBarClick}
-      >
+      <div className={className} role="tablist" aria-label={ariaLabel}>
         {tabButtons}
       </div>
     );
