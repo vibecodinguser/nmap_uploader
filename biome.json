@@ -68,6 +68,10 @@
         "components/UploadStatusMessage.tsx",
         "components/UploadProgressRing.tsx",
         "tests/setup/a11y.tsx",
+        "tests/setup/browser_mock.ts",
+        "tests/setup/content_script_context.ts",
+        "tests/setup/vitest.setup.ts",
+        "tests/setup/yandex_handlers.ts",
         "tests/integration/upload_service.test.ts",
         "tests/integration/yandex_disk.test.ts",
         "tests/integration/yandex_oauth.test.ts"

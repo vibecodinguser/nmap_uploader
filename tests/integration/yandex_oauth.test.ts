@@ -8,7 +8,11 @@ import {
   launchYandexAuth,
   saveAuth,
 } from '@/lib/yandex/client';
-import { buildOAuthRedirectUrl, launchWebAuthFlow } from '@/tests/setup/browser_mock';
+import {
+  buildOAuthRedirectUrl,
+  launchWebAuthFlow,
+  type OAuthRedirectUrlOptions,
+} from '@/tests/setup/browser_mock';
 
 function assertCalledOnce(mock: { mock: { calls: unknown[] } }): void {
   assert.equal(mock.mock.calls.length, 1);
@@ -36,9 +40,7 @@ function parseLaunchWebAuthFlowUrl(): URL {
   return new URL(callUrl);
 }
 
-function mockOAuthRedirectUrl(
-  options: Parameters<typeof buildOAuthRedirectUrl>[0] = {},
-): void {
+function mockOAuthRedirectUrl(options: OAuthRedirectUrlOptions = {}): void {
   const redirectUrl = buildOAuthRedirectUrl(options);
   launchWebAuthFlow.mockResolvedValueOnce(redirectUrl);
 }
