@@ -34,12 +34,14 @@
     {
       "includes": [
         "entrypoints/panel/App.tsx",
+        "entrypoints/panel/main.tsx",
         "entrypoints/panel-sidebar.content.tsx",
         "entrypoints/map-go-to.content.ts",
         "entrypoints/map-stroke-recolor.content.ts",
         "entrypoints/map-stroke-recolor-main.content.ts",
         "entrypoints/nakarte-sync.content.ts",
         "entrypoints/nakarte-sync-main.content.ts",
+        "entrypoints/nmaps-location-main.content.ts",
         "lib/browser.ts",
         "lib/go_to_geo_projection.ts",
         "lib/go_to_theme.ts",
