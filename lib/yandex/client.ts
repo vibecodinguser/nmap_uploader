@@ -1,5 +1,6 @@
 import { browser } from 'wxt/browser'
 import { ERR_NETWORK, ProcessingError } from '@/lib/errors'
+import { FIREFOX_EXTENSION_ID } from '@/lib/firefox_extension_id'
 import type { NmapIndex } from '@/lib/nmap_index'
 import { isValidTargetDate } from '@/lib/point_uploader'
 import { assertAllowedDiskHref } from '@/lib/yandex/disk_url'
@@ -674,7 +675,7 @@ export const launchYandexAuth = async ({
         interactive
           ? `Авторизация не завершена. Проверьте: 1) Redirect URI в oauth.yandex.ru = ${redirectUri}` +
               (redirectUri === FIREFOX_OAUTH_REDIRECT_URI
-                ? ' (Firefox: SHA1 от gecko.id; не nmap-uploader_local.dev и не 127.0.0.1/mozoauth2…)'
+                ? ` (Firefox: SHA1 от ${FIREFOX_EXTENSION_ID}; не nmap-uploader_local.dev и не 127.0.0.1/mozoauth2…)`
                 : '') +
               '; 2) в приложении включён cloud_api:disk.write; 3) на экране Яндекса нажмите «Разрешить»'
           : 'Авторизация не завершена',

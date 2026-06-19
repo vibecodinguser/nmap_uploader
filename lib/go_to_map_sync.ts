@@ -89,9 +89,3 @@ export const buildNakarteHash = (location: MapLocation, layers = 'S/K'): string 
   const lng = normalized.longitude.toFixed(NAKARTE_COORD_PRECISION)
   return `m=${normalized.zoom}/${lat}/${lng}&l=${layers}`
 }
-
-/** Собирает полный URL nakarte с hash. */
-export const buildNakarteHref = (location: MapLocation, layers = 'S/K'): string => {
-  const base = buildNakarteUrl(location).split('#')[0] ?? 'https://nakarte.me/'
-  return `${base}#${buildNakarteHash(location, layers)}`
-}

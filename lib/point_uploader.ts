@@ -4,6 +4,7 @@ export const MIN_LAT = -90
 export const MAX_LAT = 90
 export const MIN_LON = -180
 export const MAX_LON = 180
+export const POINT_DESCRIPTION_MAX_LENGTH = 150
 
 const QUOTED_POINT_PATTERN = /"(.*?)"[,\s;]+\s*([-\d.]+)[,\s;]+\s*([-\d.]+)/
 const UNQUOTED_POINT_PATTERN = /^(.*?)[,\s;]+\s*([-\d.]+)[,\s;]+\s*([-\d.]+)\s*$/
@@ -41,7 +42,7 @@ export const createPointIndex = ({
     points: {
       [pointUuid]: {
         coords: [longitude, latitude],
-        desc: description.slice(0, 150),
+        desc: description.slice(0, POINT_DESCRIPTION_MAX_LENGTH),
       },
     },
   }

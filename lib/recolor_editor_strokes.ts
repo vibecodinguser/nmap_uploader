@@ -4,8 +4,6 @@ import {
   STROKE_COLOR_WINDOW_KEY,
 } from '@/lib/stroke_color'
 
-export { DEFAULT_STROKE_COLOR as TARGET_STROKE } from '@/lib/stroke_color'
-
 const MAGENTA_NAMES = new Set(['magenta', '#f0f', '#ff00ff'])
 const RECOLOR_MARKER = 'data-nmap-recolored'
 const KNOWN_COLORS_KEY = '__NMAP_KNOWN_STROKE_COLORS__'

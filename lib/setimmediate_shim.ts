@@ -1,26 +1,27 @@
 /** Безопасная замена пакета setimmediate: без Function() для прохождения AMO-линтера. */
 type ImmediateHandle = ReturnType<typeof setTimeout>
-
-const setImmediateImpl = (
+type SetImmediateFn = (
   callback: (...args: unknown[]) => void,
   ...args: unknown[]
-): ImmediateHandle =>
+) => ImmediateHandle
+type ClearImmediateFn = (handle: ImmediateHandle) => void
+
+const setImmediateImpl: SetImmediateFn = (callback, ...args) =>
   setTimeout(() => {
     callback(...args)
   }, 0)
 
-const clearImmediateImpl = (handle: ImmediateHandle): void => {
+const clearImmediateImpl: ClearImmediateFn = (handle) => {
   clearTimeout(handle)
 }
 
-const globalScope = globalThis as typeof globalThis & {
-  setImmediate?: typeof setImmediateImpl
-  clearImmediate?: typeof clearImmediateImpl
-}
-
-if (!globalScope.setImmediate) {
-  globalScope.setImmediate = setImmediateImpl
-  globalScope.clearImmediate = clearImmediateImpl
+if (typeof globalThis.setImmediate !== 'function') {
+  const scope = globalThis as unknown as {
+    setImmediate: SetImmediateFn
+    clearImmediate: ClearImmediateFn
+  }
+  scope.setImmediate = setImmediateImpl
+  scope.clearImmediate = clearImmediateImpl
 }
 
 export {}

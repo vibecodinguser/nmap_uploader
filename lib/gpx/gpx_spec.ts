@@ -1,9 +1,6 @@
 import { ERR_SHAPEFILE, ProcessingError } from '@/lib/errors'
 import { getElementLocalName, hasXmlParserError, parseXmlDocument } from '@/lib/xml/parse_xml'
 
-/** Целевой namespace GPX 1.1 (Schema Document Properties). */
-export const GPX_NAMESPACE = 'http://www.topografix.com/GPX/1/1'
-
 /** Обязательная версия GPX (атрибут version, fixed="1.1"). */
 export const GPX_VERSION = '1.1'
 

@@ -2,13 +2,10 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { browser } from 'wxt/browser'
-import {
-  CLOSE_PANEL_SIDEBAR_ACTION,
-  PANEL_SIDEBAR_WRAPPER_ID,
-} from '@/lib/panel_sidebar_notify'
 import panelSidebarScript from '@/entrypoints/panel-sidebar.content'
-import { createContentScriptContext } from '@/tests/setup/content_script_context'
+import { CLOSE_PANEL_SIDEBAR_ACTION, PANEL_SIDEBAR_WRAPPER_ID } from '@/lib/panel_sidebar_notify'
 import { getURL } from '@/tests/setup/browser_mock'
+import { createContentScriptContext } from '@/tests/setup/content_script_context'
 
 describe('panel-sidebar.content', () => {
   let ctx: ReturnType<typeof createContentScriptContext>
@@ -43,9 +40,7 @@ describe('panel-sidebar.content', () => {
     panelSidebarScript.main?.(ctx)
 
     dispatchMessage('togglePanel')
-    await vi.waitFor(() =>
-      expect(document.getElementById(PANEL_SIDEBAR_WRAPPER_ID)).not.toBeNull(),
-    )
+    await vi.waitFor(() => expect(document.getElementById(PANEL_SIDEBAR_WRAPPER_ID)).not.toBeNull())
 
     expect(getURL).toHaveBeenCalledWith('/panel.html')
     const iframe = document.querySelector(`#${PANEL_SIDEBAR_WRAPPER_ID} iframe`)
@@ -56,9 +51,7 @@ describe('panel-sidebar.content', () => {
     panelSidebarScript.main?.(ctx)
 
     dispatchMessage('togglePanel')
-    await vi.waitFor(() =>
-      expect(document.getElementById(PANEL_SIDEBAR_WRAPPER_ID)).not.toBeNull(),
-    )
+    await vi.waitFor(() => expect(document.getElementById(PANEL_SIDEBAR_WRAPPER_ID)).not.toBeNull())
 
     dispatchMessage('togglePanel')
     await vi.waitFor(() => expect(document.getElementById(PANEL_SIDEBAR_WRAPPER_ID)).toBeNull())
@@ -68,9 +61,7 @@ describe('panel-sidebar.content', () => {
     panelSidebarScript.main?.(ctx)
 
     dispatchMessage('togglePanel')
-    await vi.waitFor(() =>
-      expect(document.getElementById(PANEL_SIDEBAR_WRAPPER_ID)).not.toBeNull(),
-    )
+    await vi.waitFor(() => expect(document.getElementById(PANEL_SIDEBAR_WRAPPER_ID)).not.toBeNull())
 
     dispatchMessage(CLOSE_PANEL_SIDEBAR_ACTION)
     expect(document.getElementById(PANEL_SIDEBAR_WRAPPER_ID)).toBeNull()

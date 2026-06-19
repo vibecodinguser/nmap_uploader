@@ -1,10 +1,7 @@
 import { browser } from 'wxt/browser'
 
-/** gecko.id Firefox-сборки (wxt.config.ts). */
-export const FIREFOX_GECKO_ID = 'nmap-uploader@local.dev'
-
 /**
- * Redirect URI Firefox для oauth.yandex.ru: SHA1(gecko.id) + extensions.allizom.org.
+ * Redirect URI Firefox для oauth.yandex.ru: SHA1(gecko.id из lib/firefox_extension_id) + extensions.allizom.org.
  * launchWebAuthFlow перехватывает его без реального HTTP-запроса (в отличие от 127.0.0.1/mozoauth2).
  * @see https://searchfox.org/mozilla-central/source/toolkit/components/extensions/child/ext-identity.js
  */

@@ -1,13 +1,10 @@
 // @vitest-environment happy-dom
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { NMAP_UPLOADER_MSG_SOURCE } from '@/lib/go_to_map_sync'
-import { NMAPS_ORIGIN } from '@/lib/extension_origins'
 import nakarteSyncMainScript from '@/entrypoints/nakarte-sync-main.content'
-import {
-  createContentScriptContext,
-  mockIframeWindow,
-} from '@/tests/setup/content_script_context'
+import { NMAPS_ORIGIN } from '@/lib/extension_origins'
+import { NMAP_UPLOADER_MSG_SOURCE } from '@/lib/go_to_map_sync'
+import { createContentScriptContext, mockIframeWindow } from '@/tests/setup/content_script_context'
 
 describe('nakarte-sync-main.content', () => {
   let restoreIframe: (() => void) | undefined

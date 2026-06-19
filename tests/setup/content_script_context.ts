@@ -7,7 +7,7 @@ export const createContentScriptContext = (): ContentScriptContext & {
 } => {
   const cleanupFns: Array<() => void> = []
 
-  const ctx = {
+  return {
     id: 'test-content-script',
     contentScriptName: 'test',
     isInvalid: false,
@@ -20,8 +20,6 @@ export const createContentScriptContext = (): ContentScriptContext & {
       cleanupFns.length = 0
     },
   } as unknown as ContentScriptContext & { runInvalidated: () => void }
-
-  return ctx
 }
 
 /** Имитирует iframe: content script не должен работать в top frame. */
@@ -40,7 +38,7 @@ export const mockIframeWindow = (): (() => void) => {
   }
 }
 
-/** Шпионит за postMessage родительского окна. */
+/** Смотрит за postMessage родительского окна. */
 export const spyParentPostMessage = (): {
   messages: unknown[]
   restore: () => void

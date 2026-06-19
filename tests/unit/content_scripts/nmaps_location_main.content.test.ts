@@ -1,13 +1,10 @@
 // @vitest-environment happy-dom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  NMAPS_BOUNDS_CHANGE_EVENT,
-  parseBoundsChangeEvent,
-} from '@/lib/nmaps_bounds_notify'
-import { NMAPS_URL_CHANGE_EVENT } from '@/lib/nmaps_url_notify'
-import { NMAPS_MAP_RESIZE_EVENT } from '@/lib/nmaps_map_resize_notify'
 import nmapsLocationMainScript from '@/entrypoints/nmaps-location-main.content'
+import { NMAPS_BOUNDS_CHANGE_EVENT, parseBoundsChangeEvent } from '@/lib/nmaps_bounds_notify'
+import { NMAPS_MAP_RESIZE_EVENT } from '@/lib/nmaps_map_resize_notify'
+import { NMAPS_URL_CHANGE_EVENT } from '@/lib/nmaps_url_notify'
 import { createContentScriptContext } from '@/tests/setup/content_script_context'
 
 const runMain = (): void => {

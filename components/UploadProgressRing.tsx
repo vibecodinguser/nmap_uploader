@@ -1,59 +1,86 @@
-import { useTranslate } from '@/hooks/useLocale'
+import { useTranslate } from '@/hooks/useLocale';
+
+const progressRadius = 52;
+const progressSize = 120;
+const progressStroke = 6;
+const progressCenter = progressSize / 2;
+const progressCircumference = 2 * Math.PI * progressRadius;
 
 type UploadProgressRingProps = {
-  progress: number
-  isActive: boolean
+  progress: number;
+  isActive: boolean;
+};
+
+function clampProgress(value: number): number {
+  let result = value;
+  if (result < 0) {
+    result = 0;
+  }
+  if (result > 100) {
+    result = 100;
+  }
+  return result;
+}
+
+function getProgressRingClassName(isActive: boolean): string {
+  let className = 'upload-progress-ring';
+  if (isActive) {
+    className += ' is-active';
+  }
+  return className;
+}
+
+function getStrokeOffset(progress: number): number {
+  const progressRatio = progress / 100;
+  return progressCircumference * (1 - progressRatio);
 }
 
 export const UploadProgressRing = ({ progress, isActive }: UploadProgressRingProps) => {
-  const t = useTranslate()
-  const clampedProgress = Math.min(100, Math.max(0, progress))
-  const strokeOffset = 2 * Math.PI * 52 - (clampedProgress / 100) * 2 * Math.PI * 52
-  const PROGRESS_RADIUS = 52
-  const PROGRESS_SIZE = 120
-  const PROGRESS_STROKE = 6
-  const PROGRESS_CIRCUMFERENCE = 2 * Math.PI * PROGRESS_RADIUS
+  const t = useTranslate();
+  const clampedProgress = clampProgress(progress);
+  const strokeOffset = getStrokeOffset(clampedProgress);
+  const roundedProgress = Math.round(clampedProgress);
 
   return (
     <div
-      className={isActive ? 'upload-progress-ring is-active' : 'upload-progress-ring'}
+      className={getProgressRingClassName(isActive)}
       role="progressbar"
       aria-valuemin={0}
       aria-valuemax={100}
-      aria-valuenow={Math.round(clampedProgress)}
+      aria-valuenow={roundedProgress}
       aria-label={t('upload.progressAria')}
     >
       <svg
         className="upload-progress-svg"
-        viewBox={`0 0 ${PROGRESS_SIZE} ${PROGRESS_SIZE}`}
+        viewBox={`0 0 ${progressSize} ${progressSize}`}
         aria-hidden="true"
         focusable="false"
       >
-        <g transform={`rotate(-90 ${PROGRESS_SIZE / 2} ${PROGRESS_SIZE / 2})`}>
+        <g transform={`rotate(-90 ${progressCenter} ${progressCenter})`}>
           <circle
             className="upload-progress-track"
-            cx={PROGRESS_SIZE / 2}
-            cy={PROGRESS_SIZE / 2}
-            r={PROGRESS_RADIUS}
+            cx={progressCenter}
+            cy={progressCenter}
+            r={progressRadius}
             fill="none"
-            strokeWidth={PROGRESS_STROKE}
+            strokeWidth={progressStroke}
           />
           <circle
             className="upload-progress-indicator"
-            cx={PROGRESS_SIZE / 2}
-            cy={PROGRESS_SIZE / 2}
-            r={PROGRESS_RADIUS}
+            cx={progressCenter}
+            cy={progressCenter}
+            r={progressRadius}
             fill="none"
-            strokeWidth={PROGRESS_STROKE}
+            strokeWidth={progressStroke}
             strokeLinecap="round"
-            strokeDasharray={PROGRESS_CIRCUMFERENCE}
+            strokeDasharray={progressCircumference}
             strokeDashoffset={strokeOffset}
           />
         </g>
       </svg>
       <span className="upload-progress-percent" aria-hidden="true">
-        {Math.round(clampedProgress)}%
+        {roundedProgress}%
       </span>
     </div>
-  )
-}
+  );
+};

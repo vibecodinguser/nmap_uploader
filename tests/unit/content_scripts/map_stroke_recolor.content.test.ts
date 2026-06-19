@@ -51,6 +51,9 @@ describe('map-stroke-recolor.content', () => {
 
   it('устанавливает stroke recolor engine', () => {
     mapStrokeRecolorScript.main?.(ctx)
-    expect((window as Window & { __NMAP_STROKE_RECOLOR_ENGINE__?: string }).__NMAP_STROKE_RECOLOR_ENGINE__).toBe('active')
+    expect(
+      (window as Window & { __NMAP_STROKE_RECOLOR_ENGINE__?: string })
+        .__NMAP_STROKE_RECOLOR_ENGINE__,
+    ).toBe('active')
   })
 })

@@ -1,34 +1,54 @@
-import { browser } from 'wxt/browser'
-import type { ContentScriptContext } from 'wxt/utils/content-script-context'
-import { defineContentScript } from 'wxt/utils/define-content-script'
-import { buildNkUserBarCssVars, readNkUserBarTypography } from '@/lib/nk_user_bar_typography'
+import { browser } from 'wxt/browser';
+import type { ContentScriptContext } from 'wxt/utils/content-script-context';
+import { defineContentScript } from 'wxt/utils/define-content-script';
+import { isYandexBrowser } from '@/lib/browser';
+import { buildNkUserBarCssVars, readNkUserBarTypography } from '@/lib/nk_user_bar_typography';
 import {
   CLOSE_PANEL_SIDEBAR_ACTION,
+  isPanelSidebarMountedInDom,
   PANEL_SIDEBAR_WRAPPER_ID,
   removePanelSidebarFromDom,
-} from '@/lib/panel_sidebar_notify'
+} from '@/lib/panel_sidebar_notify';
 
-const persistYandexBrowserFlag = async (): Promise<void> => {
-  if (!/YaBrowser|Yowser|YaSearchBrowser/i.test(navigator.userAgent)) return
-  await browser.storage.local.set({ is_yandex_browser: true })
-}
-
-const PANEL_PAGE = '/panel.html' as const
-const PANEL_WIDTH = 425
-const Z_INDEX = 2_147_483_647
+const PANEL_PAGE = '/panel.html' as const;
+const PANEL_WIDTH = 425;
+const Z_INDEX = 2_147_483_647;
+const TOGGLE_PANEL_ACTION = 'togglePanel' as const;
+const DOCUMENT_READY_STATE = 'complete' as const;
 
 type SidebarUi = {
-  mount: () => void
-  remove: () => void
-}
+  mount: () => void;
+  remove: () => void;
+};
+
+type RuntimeMessage = {
+  action?: string;
+};
+
+const persistYandexBrowserFlag = async (): Promise<void> => {
+  if (isYandexBrowser()) {
+    await browser.storage.local.set({ is_yandex_browser: true });
+  }
+};
+
+const reportPersistYandexBrowserFlagError = (error: unknown): void => {
+  console.error('[nmap_uploader] persistYandexBrowserFlag failed:', error);
+};
+
+const startPersistYandexBrowserFlag = (): void => {
+  const promise = persistYandexBrowserFlag();
+  promise.catch(reportPersistYandexBrowserFlagError);
+};
+
+const onYieldAnimationFrame = (resolve: () => void): void => {
+  const completeYield = (): void => {
+    resolve();
+  };
+  requestAnimationFrame(completeYield);
+};
 
 /** Отдаёт управление main thread между короткими задачами. */
-const yieldToMain = (): Promise<void> =>
-  new Promise((resolve) => {
-    requestAnimationFrame(() => {
-      resolve()
-    })
-  })
+const yieldToMain = (): Promise<void> => new Promise(onYieldAnimationFrame);
 
 const styleSidebarWrapper = (wrapper: HTMLElement): void => {
   wrapper.style.cssText = `
@@ -41,8 +61,8 @@ const styleSidebarWrapper = (wrapper: HTMLElement): void => {
     display: block !important;
     overflow: hidden !important;
     box-shadow: -4px 0 24px rgba(0, 0, 0, 0.12) !important;
-  `
-}
+  `;
+};
 
 const styleSidebarIframe = (iframe: HTMLIFrameElement): void => {
   iframe.style.cssText = `
@@ -50,59 +70,66 @@ const styleSidebarIframe = (iframe: HTMLIFrameElement): void => {
     height: 100% !important;
     border: none !important;
     display: block !important;
-  `
-}
+  `;
+};
+
+const appendSidebarWrapper = (wrapper: HTMLElement): void => {
+  document.documentElement.appendChild(wrapper);
+};
 
 /** Подставляет типографику nk-user-bar с host-страницы в документ iframe. */
 const applyTypographyToIframe = (iframe: HTMLIFrameElement): void => {
-  const apply = (): void => {
-    const doc = iframe.contentDocument
-    if (!doc) return
+  const applyTypography = (): void => {
+    const doc = iframe.contentDocument;
+    if (doc) {
+      const typography = readNkUserBarTypography();
+      const cssVars = buildNkUserBarCssVars(typography);
+      doc.documentElement.style.cssText += cssVars;
+    }
+  };
 
-    const cssVars = buildNkUserBarCssVars(readNkUserBarTypography())
-    doc.documentElement.style.cssText += cssVars
+  const isDocumentReady = DOCUMENT_READY_STATE === iframe.contentDocument?.readyState;
+  if (isDocumentReady) {
+    applyTypography();
+  } else {
+    iframe.addEventListener('load', applyTypography, { once: true });
   }
-
-  if (iframe.contentDocument?.readyState === 'complete') {
-    apply()
-    return
-  }
-
-  iframe.addEventListener('load', apply, { once: true })
-}
+};
 
 /** Лёгкая замена createIframeUi без wait-element / MutationObserver. */
 const createSidebarIframeUi = (ctx: ContentScriptContext): SidebarUi => {
-  const wrapper = document.createElement('div')
-  wrapper.id = PANEL_SIDEBAR_WRAPPER_ID
-  const iframe = document.createElement('iframe')
-  wrapper.appendChild(iframe)
-
-  let isMounted = false
+  const wrapper = document.createElement('div');
+  wrapper.id = PANEL_SIDEBAR_WRAPPER_ID;
+  const iframe = document.createElement('iframe');
+  wrapper.appendChild(iframe);
 
   const mount = (): void => {
-    if (isMounted) return
+    if (!wrapper.isConnected) {
+      if (!iframe.src) {
+        iframe.src = browser.runtime.getURL(PANEL_PAGE);
+      }
 
-    if (!iframe.src) {
-      iframe.src = browser.runtime.getURL(PANEL_PAGE)
+      styleSidebarWrapper(wrapper);
+      styleSidebarIframe(iframe);
+      appendSidebarWrapper(wrapper);
+      applyTypographyToIframe(iframe);
     }
-
-    styleSidebarWrapper(wrapper)
-    styleSidebarIframe(iframe)
-    document.body.appendChild(wrapper)
-    applyTypographyToIframe(iframe)
-    isMounted = true
-  }
+  };
 
   const remove = (): void => {
-    wrapper.remove()
-    isMounted = false
-  }
+    if (wrapper.isConnected) {
+      wrapper.remove();
+    }
+  };
 
-  ctx.onInvalidated(remove)
+  ctx.onInvalidated(remove);
 
-  return { mount, remove }
-}
+  return { mount, remove };
+};
+
+const reportTogglePanelError = (error: unknown): void => {
+  console.error('[nmap_uploader] togglePanel failed:', error);
+};
 
 // WXT подхватывает default export при сборке; статического import нет
 // noinspection JSUnusedGlobalSymbols
@@ -111,52 +138,51 @@ export default defineContentScript({
   runAt: 'document_idle',
 
   main(ctx) {
-    void persistYandexBrowserFlag()
-    let ui: SidebarUi | undefined
-    let isOpen = false
+    startPersistYandexBrowserFlag();
+    let ui: SidebarUi | undefined;
 
     const ensureUi = (): SidebarUi => {
-      ui ??= createSidebarIframeUi(ctx)
-      return ui
-    }
+      ui ??= createSidebarIframeUi(ctx);
+      return ui;
+    };
 
     const closePanelIfOpen = (): void => {
-      const isMountedInDom = Boolean(document.getElementById(PANEL_SIDEBAR_WRAPPER_ID))
-      if (!isOpen && !isMountedInDom) return
-
-      ensureUi().remove()
-      removePanelSidebarFromDom()
-      isOpen = false
-    }
+      if (isPanelSidebarMountedInDom()) {
+        const panelUi = ensureUi();
+        panelUi.remove();
+        removePanelSidebarFromDom();
+      }
+    };
 
     const togglePanel = async (): Promise<void> => {
-      const panelUi = ensureUi()
+      const panelUi = ensureUi();
 
-      if (isOpen) {
-        panelUi.remove()
-        isOpen = false
-        return
+      if (isPanelSidebarMountedInDom()) {
+        panelUi.remove();
+      } else {
+        await yieldToMain();
+        panelUi.mount();
       }
+    };
 
-      await yieldToMain()
-      panelUi.mount()
-      isOpen = true
-    }
+    const runTogglePanel = async (): Promise<void> => {
+      await yieldToMain();
+      await togglePanel();
+    };
 
-    browser.runtime.onMessage.addListener((message) => {
-      if (message?.action === CLOSE_PANEL_SIDEBAR_ACTION) {
-        closePanelIfOpen()
-        return
+    const startTogglePanel = (): void => {
+      const promise = runTogglePanel();
+      promise.catch(reportTogglePanelError);
+    };
+
+    const handleRuntimeMessage = (message: RuntimeMessage): void => {
+      if (CLOSE_PANEL_SIDEBAR_ACTION === message?.action) {
+        closePanelIfOpen();
+      } else if (TOGGLE_PANEL_ACTION === message?.action) {
+        startTogglePanel();
       }
+    };
 
-      if (message?.action !== 'togglePanel') return
-
-      void (async () => {
-        await yieldToMain()
-        await togglePanel()
-      })().catch((error: unknown) => {
-        console.error('[nmap_uploader] togglePanel failed:', error)
-      })
-    })
+    browser.runtime.onMessage.addListener(handleRuntimeMessage);
   },
-})
+});

@@ -2,6 +2,7 @@ import { defineContentScript } from 'wxt/utils/define-content-script'
 import { isNmapsOrigin } from '@/lib/extension_origins'
 import { applyNakarteLocationToPage, parseSetLocationMessage } from '@/lib/nakarte_location_apply'
 
+// noinspection JSUnusedGlobalSymbols
 export default defineContentScript({
   matches: ['https://nakarte.me/*'],
   runAt: 'document_start',

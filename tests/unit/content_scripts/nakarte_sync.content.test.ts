@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { NAKARTE_SYNC_MSG_SOURCE } from '@/lib/go_to_map_sync'
-import { NMAPS_ORIGIN } from '@/lib/extension_origins'
 import nakarteSyncScript from '@/entrypoints/nakarte-sync.content'
+import { NMAPS_ORIGIN } from '@/lib/extension_origins'
+import { NAKARTE_SYNC_MSG_SOURCE } from '@/lib/go_to_map_sync'
 import {
   createContentScriptContext,
   mockIframeWindow,
@@ -82,7 +82,11 @@ describe('nakarte-sync.content', () => {
     document.body.appendChild(map)
 
     nakarteSyncScript.main?.(ctx)
-    await vi.waitFor(() => expect(parentSpy.messages.some((m) => (m as { type?: string }).type === 'location')).toBe(true))
+    await vi.waitFor(() =>
+      expect(parentSpy.messages.some((m) => (m as { type?: string }).type === 'location')).toBe(
+        true,
+      ),
+    )
     parentSpy.messages.length = 0
 
     map.dispatchEvent(

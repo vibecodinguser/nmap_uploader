@@ -7,6 +7,7 @@ const persistYandexBrowserFlag = async (): Promise<void> => {
   await browser.storage.local.set({ is_yandex_browser: true })
 }
 
+// noinspection JSUnusedGlobalSymbols
 export default defineContentScript({
   matches: ['https://n.maps.yandex.ru/*'],
   allFrames: true,

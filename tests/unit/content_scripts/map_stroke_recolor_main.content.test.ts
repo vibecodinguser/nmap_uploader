@@ -1,13 +1,13 @@
 // @vitest-environment happy-dom
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import mapStrokeRecolorMainScript from '@/entrypoints/map-stroke-recolor-main.content'
 import { NMAPS_ORIGIN } from '@/lib/extension_origins'
 import {
   parseStrokeColorMessage,
   STROKE_COLOR_MESSAGE_TYPE,
   STROKE_COLOR_WINDOW_KEY,
 } from '@/lib/stroke_color'
-import mapStrokeRecolorMainScript from '@/entrypoints/map-stroke-recolor-main.content'
 import { createContentScriptContext } from '@/tests/setup/content_script_context'
 
 const runMain = (): void => {

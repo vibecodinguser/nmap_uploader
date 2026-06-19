@@ -1,3 +1,4 @@
+// noinspection JSUnusedGlobalSymbols
 import 'wxt/browser'
 
 declare module 'wxt/browser' {

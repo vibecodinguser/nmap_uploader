@@ -23,6 +23,7 @@ const notifyLocation = (): void => {
   postToParent({ type: 'location', location })
 }
 
+// noinspection JSUnusedGlobalSymbols
 export default defineContentScript({
   matches: ['https://nakarte.me/*'],
   runAt: 'document_idle',

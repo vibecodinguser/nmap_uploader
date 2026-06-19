@@ -1,6 +1,7 @@
 import { resolve } from 'node:path'
 import { loadEnv } from 'vite'
 import { defineConfig } from 'wxt'
+import { FIREFOX_EXTENSION_ID } from './lib/firefox_extension_id'
 import { patchReactDomForAmo } from './lib/vite_patch_react_dom_amo'
 import packageJson from './package.json'
 
@@ -10,8 +11,6 @@ const extensionIcons = {
   48: '/icon/48.png',
   128: '/icon/128.png',
 } as const
-
-const FIREFOX_EXTENSION_ID = 'nmap-uploader@local.dev'
 
 const CHROME_PERMISSIONS = [
   'sidePanel',

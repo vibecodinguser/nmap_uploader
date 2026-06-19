@@ -124,6 +124,7 @@ const startMapDiscovery = (): void => {
   }
 }
 
+// noinspection JSUnusedGlobalSymbols
 export default defineContentScript({
   matches: ['https://n.maps.yandex.ru/*'],
   runAt: 'document_start',

@@ -9,11 +9,5 @@
     "types": ["node"],
     "jsx": "react-jsx"
   },
-  "include": [
-    "./**/*.ts",
-    "./**/*.tsx",
-    "./types/**/*.d.ts",
-    "../lib/shims.d.ts",
-    "../env.d.ts"
-  ]
+  "include": ["./**/*.ts", "./**/*.tsx", "./types/**/*.d.ts", "../lib/shims.d.ts", "../env.d.ts"]
 }

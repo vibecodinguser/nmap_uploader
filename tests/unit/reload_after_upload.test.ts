@@ -2,10 +2,12 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { browser } from 'wxt/browser'
 import {
   getStoredReloadAfterUpload,
-  LEGACY_RELOAD_AFTER_UPLOAD_STORAGE_KEY,
   RELOAD_AFTER_UPLOAD_BY_USER_STORAGE_KEY,
   setStoredReloadAfterUpload,
 } from '@/lib/reload_after_upload'
+
+const LEGACY_RELOAD_AFTER_UPLOAD_STORAGE_KEY = 'reloadAfterUpload'
+
 import { resetBrowserMocks } from '../setup/browser_mock'
 
 describe('reload_after_upload settings', () => {

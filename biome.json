@@ -30,6 +30,42 @@
       "semicolons": "asNeeded"
     }
   },
+  "overrides": [
+    {
+      "includes": [
+        "entrypoints/panel/App.tsx",
+        "entrypoints/panel-sidebar.content.tsx",
+        "entrypoints/map-go-to.content.ts",
+        "lib/browser.ts",
+        "lib/go_to_geo_projection.ts",
+        "lib/go_to_theme.ts",
+        "hooks/useAuth.ts",
+        "hooks/useFileUpload.ts",
+        "hooks/usePointUpload.ts",
+        "hooks/useGoToLinks.ts",
+        "hooks/useLocale.tsx",
+        "hooks/useReloadAfterUpload.ts",
+        "hooks/useStrokeColor.ts",
+        "hooks/useTheme.ts",
+        "components/GoToLinksSettings.tsx",
+        "components/GoToLinksSettingsItem.tsx",
+        "components/PointDateField.tsx",
+        "components/PointsTab.tsx",
+        "components/PoligonTab.tsx",
+        "components/MultipointUpload.tsx",
+        "components/ManualPointUpload.tsx",
+        "components/SettingsTab.tsx",
+        "components/UploadStatusMessage.tsx",
+        "components/UploadProgressRing.tsx",
+        "tests/setup/a11y.tsx"
+      ],
+      "javascript": {
+        "formatter": {
+          "semicolons": "always"
+        }
+      }
+    }
+  ],
   "assist": {
     "actions": {
       "source": {

@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser'
+import { NMAPS_ORIGIN } from '@/lib/extension_origins'
 
-export const NMAPS_TAB_URL_PREFIX = 'https://n.maps.yandex.ru/' as const
+export const NMAPS_TAB_URL_PREFIX = `${NMAPS_ORIGIN}/` as const
 
 export type RuntimeMessageSender = {
   id?: string

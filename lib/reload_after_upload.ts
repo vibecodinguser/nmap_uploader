@@ -2,8 +2,7 @@ import { browser } from 'wxt/browser'
 import { RELOAD_EDITOR_PAGE_ACTION } from '@/lib/reload_editor_page'
 import { getStoredAuth } from '@/lib/yandex/client'
 
-/** @deprecated Миграция с глобальной настройки до привязки к пользователю. */
-export const LEGACY_RELOAD_AFTER_UPLOAD_STORAGE_KEY = 'reloadAfterUpload'
+const LEGACY_RELOAD_AFTER_UPLOAD_STORAGE_KEY = 'reloadAfterUpload'
 
 export const RELOAD_AFTER_UPLOAD_BY_USER_STORAGE_KEY = 'reloadAfterUploadByUser'
 
@@ -38,14 +37,9 @@ export const getStoredReloadAfterUpload = async (userId: string): Promise<boolea
   if (!normalizedUserId) return false
 
   const settings = await readReloadAfterUploadByUser()
-  if (normalizedUserId in settings) {
-    return settings[normalizedUserId] === true
-  }
-
-  const migrated = await migrateLegacyReloadAfterUpload(normalizedUserId)
-  if (migrated !== null) return migrated
-
-  return false
+  return (
+    settings[normalizedUserId] ?? (await migrateLegacyReloadAfterUpload(normalizedUserId)) ?? false
+  )
 }
 
 export const setStoredReloadAfterUpload = async (

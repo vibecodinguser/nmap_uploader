@@ -1,18 +1,16 @@
 import { browser } from 'wxt/browser'
-import { createTranslator, getRuntimeLocale, syncLocaleFromStorage } from '@/lib/i18n'
+import {
+  createTranslator,
+  getRuntimeLocale,
+  hasUploadAuthErrorInLogs,
+  syncLocaleFromStorage,
+} from '@/lib/i18n'
 import { createUploadLog } from '@/lib/upload_logs'
 import type { UploadLogEntry } from '@/lib/upload_service'
 import { requestEnsureAuth } from '@/lib/yandex/auth_message'
 
 export const hasUploadAuthError = (logs: UploadLogEntry[]): boolean =>
-  logs.some(
-    (log) =>
-      log.level === 'error' &&
-      (log.message.includes('сессия недействительна') ||
-        log.message.includes('Выйдите и войдите') ||
-        log.message.toLowerCase().includes('session is invalid') ||
-        log.message.includes('Sign out and sign in')),
-  )
+  hasUploadAuthErrorInLogs(logs.filter((log) => log.level === 'error').map((log) => log.message))
 
 export const ensureUploadAuth = async ({
   onAuthenticated,

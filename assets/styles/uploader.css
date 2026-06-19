@@ -1,4 +1,4 @@
-/* noinspection CssUnusedSymbol — классы используются в components/*.tsx и entrypoints/panel/App.tsx */
+/* noinspection CssUnusedSymbol — классы используются в components и entrypoints/panel/App.tsx */
 @import "./theme_tokens.css";
 
 :root {
@@ -63,8 +63,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-.manual-form label,
-.coords-field label {
+.manual-form label {
   font-size: var(--text-sm);
   font-weight: 500;
   color: var(--foreground);
@@ -75,6 +74,9 @@ body {
 .coords-row--polygon .coords-field label {
   display: block;
   text-align: center;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--foreground);
 }
 
 .sidepanel-app,
@@ -84,7 +86,6 @@ body {
 .upload-dropzone,
 .manual-form,
 .manual-upload-container,
-.coords-field,
 .tab-panel,
 .points-section {
   display: flex;
@@ -97,24 +98,33 @@ body {
 .tab-btn,
 .upload-progress,
 .upload-dropzone,
-.submit-btn,
 .coords-row--manual .coords-field,
 .coords-row--list .coords-field,
 .coords-row--polygon .coords-field {
   align-items: center;
 }
 
+.coords-row--manual .coords-field,
+.coords-row--list .coords-field,
+.coords-row--polygon .coords-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
 .btn-icon,
 .upload-progress,
 .tab-btn,
-.upload-dropzone,
-.submit-btn {
+.upload-dropzone {
   justify-content: center;
 }
 
-.header-container,
 .user-info {
   display: flex;
+  gap: 0.375rem;
+  min-width: 0;
+  flex: 1;
 }
 
 .sidepanel-header,
@@ -122,17 +132,18 @@ body {
 .tabs,
 .upload-form,
 .upload-dropzone,
-.submit-btn,
 .manual-form,
 .manual-form input,
 .manual-upload-container,
-.coords-row,
+.coords-row--manual,
+.coords-row--list,
+.coords-row--polygon,
 .coords-row--manual .coords-field label,
-.coords-row--manual #point_latitude,
-.coords-row--manual #point_longitude,
 .coords-row--list .coords-field label,
 .coords-row--polygon .coords-field label,
-.coords-field input,
+.coords-row--manual .coords-field input,
+.coords-row--list .coords-field input,
+.coords-row--polygon .coords-field input,
 .manual-upload-container > .point-description-input,
 .points-section,
 .points-form {
@@ -141,8 +152,7 @@ body {
 
 .upload-progress-status,
 .tab-btn,
-.upload-dropzone,
-.submit-btn {
+.upload-dropzone {
   text-align: center;
 }
 
@@ -176,6 +186,8 @@ body {
 }
 
 .header-container {
+  display: flex;
+  align-items: center;
   height: 3.5rem;
   justify-content: flex-start;
   padding: 0 1rem;
@@ -208,12 +220,6 @@ body {
   cursor: not-allowed;
 }
 
-.user-info {
-  gap: 0.375rem;
-  min-width: 0;
-  flex: 1;
-}
-
 .nk-user-bar-view__user-icon {
   flex-shrink: 0;
   width: 40px;
@@ -238,18 +244,34 @@ body {
   color: #e00;
 }
 
-.btn-icon {
+.btn-icon,
+.settings-go-to-move-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   background-color: var(--background);
   color: var(--foreground);
-  border: 1px solid var(--border);
-  transition: all var(--transition-ui);
-  padding: 0;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-ui),
+    border-color var(--transition-ui);
+}
+
+.btn-icon {
   width: 40px;
   height: 40px;
 }
 
-.btn-icon:hover:not(:disabled) {
+.settings-go-to-move-btn {
+  width: 28px;
+  height: 28px;
+}
+
+.btn-icon:hover:not(:disabled),
+.settings-go-to-move-btn:hover:not(:disabled) {
   background-color: var(--muted);
 }
 
@@ -264,7 +286,9 @@ body {
 
 .btn-icon:focus-visible,
 .settings-back-btn:focus-visible,
-.theme-mode-switch-option:has(.theme-mode-switch-input:focus-visible) {
+.settings-go-to-move-btn:focus-visible,
+.theme-mode-switch-option:has(.theme-mode-switch-input:focus-visible),
+.settings-go-to-toggle:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
 }
@@ -433,30 +457,35 @@ body {
   color: var(--muted-foreground);
 }
 
-.submit-btn {
+.submit-btn--inline,
+.submit-btn--outline {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
   border-radius: var(--radius);
   font-size: var(--text-sm);
   font-weight: 500;
   min-height: 2.5rem;
   padding: 0.5rem 1rem;
-  background-color: var(--primary);
-  color: var(--primary-foreground);
   border: 1px solid transparent;
   transition: all 0.2s;
-  box-shadow: var(--elevation-sm);
   line-height: 1.25;
 }
 
-.submit-btn:hover:not(:disabled) {
+.submit-btn--inline:hover:not(:disabled),
+.submit-btn--outline:hover:not(:disabled) {
   opacity: 0.9;
   transform: translateY(-1px);
 }
 
-.submit-btn:active:not(:disabled) {
+.submit-btn--inline:active:not(:disabled),
+.submit-btn--outline:active:not(:disabled) {
   transform: translateY(0);
 }
 
-.submit-btn:disabled {
+.submit-btn--inline:disabled,
+.submit-btn--outline:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -464,6 +493,25 @@ body {
 .submit-btn--inline {
   width: auto;
   min-width: 180px;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: var(--elevation-sm);
+}
+
+.submit-btn--outline {
+  width: 100%;
+  background-color: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--input);
+  box-shadow: none;
+  height: 40px;
+  min-height: 40px;
+  padding: 0 1rem;
+}
+
+.submit-btn--outline:hover:not(:disabled) {
+  background-color: var(--muted);
+  transform: none;
 }
 
 .manual-form {
@@ -471,8 +519,11 @@ body {
 }
 
 .manual-form input,
-.coords-field input,
+.coords-row--manual .coords-field input,
+.coords-row--list .coords-field input,
+.coords-row--polygon .coords-field input,
 .manual-upload-container > .point-description-input,
+.point-date-input,
 .settings-color-input-group {
   border: 1px solid var(--input);
   background-color: transparent;
@@ -487,15 +538,20 @@ body {
 }
 
 .manual-form input:focus,
-.coords-field input:focus,
+.coords-row--manual .coords-field input:focus,
+.coords-row--list .coords-field input:focus,
+.coords-row--polygon .coords-field input:focus,
 .manual-upload-container > .point-description-input:focus,
+.point-date-input:focus-within,
 .settings-color-input-group:focus-within {
   border-color: var(--ring);
   box-shadow: var(--input-focus-shadow);
 }
 
 .manual-form input::placeholder,
-.coords-field input::placeholder,
+.coords-row--manual .coords-field input::placeholder,
+.coords-row--list .coords-field input::placeholder,
+.coords-row--polygon .coords-field input::placeholder,
 .manual-upload-container > .point-description-input::placeholder {
   color: var(--muted-foreground);
   opacity: 0.7;
@@ -582,12 +638,9 @@ body {
   width: 100%;
 }
 
-.coords-field {
-  gap: 0.375rem;
-  min-width: 0;
-}
-
-.coords-field input {
+.coords-row--manual .coords-field input,
+.coords-row--list .coords-field input,
+.coords-row--polygon .coords-field input {
   min-width: 0;
   padding: 0 0.75rem;
 }
@@ -604,17 +657,7 @@ body {
   grid-template-rows: 40px;
   align-items: stretch;
   width: 100%;
-  border: 1px solid var(--input);
-  border-radius: var(--radius);
   overflow: hidden;
-  transition:
-    box-shadow var(--transition-ui),
-    border-color var(--transition-ui);
-}
-
-.point-date-input:focus-within {
-  border-color: var(--ring);
-  box-shadow: var(--input-focus-shadow);
 }
 
 .point-date-input > input {
@@ -700,6 +743,19 @@ body {
   background-color: var(--background);
   box-shadow: var(--elevation-sm);
   pointer-events: auto;
+  font-size: var(--text-sm);
+  color: var(--foreground);
+
+  /* stylelint-disable custom-property-pattern -- react-day-picker */
+  --rdp-accent-color: var(--ring);
+  --rdp-accent-background-color: var(--muted);
+  --rdp-day-height: 2rem;
+  --rdp-day-width: 2rem;
+  --rdp-day_button-height: 2rem;
+  --rdp-day_button-width: 2rem;
+  --rdp-selected-border: 2px solid var(--ring);
+  --rdp-today-color: var(--foreground);
+  /* stylelint-enable custom-property-pattern */
 }
 
 .point-date-popover-status {
@@ -731,18 +787,8 @@ body {
 
 /* stylelint-disable selector-class-pattern, custom-property-pattern -- react-day-picker */
 .point-date-popover .rdp-root {
-  --rdp-accent-color: var(--ring);
-  --rdp-accent-background-color: var(--muted);
-  --rdp-day-height: 2rem;
-  --rdp-day-width: 2rem;
-  --rdp-day_button-height: 2rem;
-  --rdp-day_button-width: 2rem;
-  --rdp-selected-border: 2px solid var(--ring);
-  --rdp-today-color: var(--foreground);
   width: fit-content;
   margin-inline: auto;
-  font-size: var(--text-sm);
-  color: var(--foreground);
 }
 
 .point-date-popover .point-date-day--occupied .rdp-day_button {
@@ -780,22 +826,6 @@ body {
   resize: none;
   overflow: hidden;
   field-sizing: content;
-}
-
-.submit-btn--outline {
-  background-color: var(--background);
-  color: var(--foreground);
-  border: 1px solid var(--input);
-  box-shadow: none;
-  height: 40px;
-  min-height: 40px;
-  padding: 0 1rem;
-  line-height: 1.25;
-}
-
-.submit-btn--outline:hover:not(:disabled) {
-  background-color: var(--muted);
-  transform: none;
 }
 
 .settings-nav-btn {
@@ -1099,12 +1129,6 @@ body {
   min-width: 0;
 }
 
-.settings-toggle-label {
-  font-size: var(--text-sm);
-  line-height: 1.25;
-  color: var(--foreground);
-}
-
 .settings-toggle {
   position: relative;
   flex-shrink: 0;
@@ -1112,7 +1136,7 @@ body {
   cursor: pointer;
 }
 
-.settings-toggle-input {
+:is(.settings-toggle-input, .theme-mode-switch-input) {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -1199,11 +1223,6 @@ body {
   cursor: not-allowed;
 }
 
-.settings-go-to-toggle:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-}
-
 .settings-go-to-toggle svg {
   flex-shrink: 0;
   transition: transform var(--transition-ui);
@@ -1277,13 +1296,16 @@ body {
   background-color: var(--background);
 }
 
-.settings-go-to-item-label {
+:is(.settings-go-to-item-label, .theme-mode-switch-option) {
   display: flex;
   flex: 1;
   align-items: center;
-  gap: 0.5rem;
   min-width: 0;
   cursor: pointer;
+}
+
+.settings-go-to-item-label {
+  gap: 0.5rem;
 }
 
 .settings-go-to-item-icon {
@@ -1311,35 +1333,9 @@ body {
   gap: 0.125rem;
 }
 
-.settings-go-to-move-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background-color: var(--background);
-  color: var(--foreground);
-  cursor: pointer;
-  transition:
-    background-color var(--transition-ui),
-    border-color var(--transition-ui);
-}
-
-.settings-go-to-move-btn:hover:not(:disabled) {
-  background-color: var(--muted);
-}
-
 .settings-go-to-move-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-}
-
-.settings-go-to-move-btn:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
 }
 
 .theme-mode-switch {
@@ -1355,30 +1351,13 @@ body {
 
 .theme-mode-switch-option {
   position: relative;
-  flex: 1;
-  display: flex;
-  align-items: center;
   justify-content: center;
-  min-width: 0;
   height: 100%;
   border-radius: calc(var(--radius) - 2px);
-  cursor: pointer;
   transition:
     background-color var(--transition-ui),
     color var(--transition-ui),
     box-shadow var(--transition-ui);
-}
-
-.theme-mode-switch-input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
 }
 
 .theme-mode-switch-label {

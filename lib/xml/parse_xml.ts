@@ -9,14 +9,8 @@ export const getElementLocalName = (element: Element): string => {
 }
 
 /** Проверяет наличие ошибки парсинга XML. */
-export const hasXmlParserError = (doc: Document): boolean => {
-  if (typeof doc.querySelector === 'function') {
-    return Boolean(doc.querySelector('parsererror'))
-  }
-
-  const errors = doc.getElementsByTagName('parsererror')
-  return errors.length > 0
-}
+export const hasXmlParserError = (doc: Document): boolean =>
+  doc.getElementsByTagName('parsererror').length > 0
 
 /** Парсит XML-текст и выбрасывает ProcessingError при синтаксической ошибке. */
 export const parseXmlDocument = (text: string): Document => {

@@ -1,8 +1,27 @@
-import { ChevronDown, ChevronRight, ChevronUp } from 'lucide-react'
-import { useState } from 'react'
-import type { useGoToLinks } from '@/hooks/useGoToLinks'
-import { useLocale, useTranslate } from '@/hooks/useLocale'
-import { getGoToSourceDisplayName, getGoToSourceIconUrl } from '@/lib/go_to_sources'
+import { ChevronRight } from 'lucide-react';
+import { type ChangeEvent, type ReactNode, useState } from 'react';
+import { GoToLinksSettingsItem } from '@/components/GoToLinksSettingsItem';
+import type { useGoToLinks } from '@/hooks/useGoToLinks';
+import { useTranslate } from '@/hooks/useLocale';
+import type { GoToItem } from '@/lib/go_to_settings';
+
+const GO_TO_CHEVRON_ICON_SIZE = 16;
+
+function isActiveGoToItem(item: GoToItem): boolean {
+  return item.active;
+}
+
+function getToggledListExpanded(isExpanded: boolean): boolean {
+  return !isExpanded;
+}
+
+function getGoToToggleIconClassName(isExpanded: boolean): string | undefined {
+  let className: string | undefined;
+  if (isExpanded) {
+    className = 'settings-go-to-toggle-icon--expanded';
+  }
+  return className;
+}
 
 type GoToLinksSettingsProps = Pick<
   ReturnType<typeof useGoToLinks>,
@@ -13,7 +32,63 @@ type GoToLinksSettingsProps = Pick<
   | 'setItemActive'
   | 'moveItemUp'
   | 'moveItemDown'
->
+>;
+
+type GoToLinksListRenderContext = {
+  totalItems: number;
+  isLoaded: boolean;
+  setItemActive: GoToLinksSettingsProps['setItemActive'];
+  moveItemUp: GoToLinksSettingsProps['moveItemUp'];
+  moveItemDown: GoToLinksSettingsProps['moveItemDown'];
+};
+
+type ExpandedGoToListProps = {
+  isListExpanded: boolean;
+  items: GoToItem[];
+  listContext: GoToLinksListRenderContext;
+  listHint: string;
+  listAriaLabel: string;
+};
+
+function buildGoToLinksListItems(
+  items: GoToItem[],
+  context: GoToLinksListRenderContext,
+): ReactNode[] {
+  const renderedItems: ReactNode[] = [];
+  for (let index = 0; index < items.length; index += 1) {
+    const item = items[index];
+    renderedItems.push(
+      <GoToLinksSettingsItem
+        key={item.name}
+        item={item}
+        index={index}
+        totalItems={context.totalItems}
+        isLoaded={context.isLoaded}
+        setItemActive={context.setItemActive}
+        moveItemUp={context.moveItemUp}
+        moveItemDown={context.moveItemDown}
+      />,
+    );
+  }
+  return renderedItems;
+}
+
+function renderExpandedGoToList(props: ExpandedGoToListProps) {
+  let panel: ReactNode = null;
+  if (props.isListExpanded) {
+    const listItems = buildGoToLinksListItems(props.items, props.listContext);
+    panel = (
+      <div id="settings-go-to-list" className="settings-go-to-panel">
+        <p className="settings-go-to-hint">{props.listHint}</p>
+
+        <ul className="settings-go-to-list" aria-label={props.listAriaLabel}>
+          {listItems}
+        </ul>
+      </div>
+    );
+  }
+  return panel;
+}
 
 export const GoToLinksSettings = ({
   isMenuEnabled,
@@ -24,14 +99,25 @@ export const GoToLinksSettings = ({
   moveItemUp,
   moveItemDown,
 }: GoToLinksSettingsProps) => {
-  const t = useTranslate()
-  const { locale } = useLocale()
-  const [isListExpanded, setIsListExpanded] = useState(false)
-  const activeCount = items.filter((item) => item.active).length
+  const t = useTranslate();
+  const [isListExpanded, setIsListExpanded] = useState(false);
+  const activeCount = items.filter(isActiveGoToItem).length;
 
   const handleToggleList = () => {
-    setIsListExpanded((isExpanded) => !isExpanded)
-  }
+    setIsListExpanded(getToggledListExpanded);
+  };
+
+  const handleMenuEnabledChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setIsMenuEnabled(event.target.checked);
+  };
+
+  const listContext: GoToLinksListRenderContext = {
+    totalItems: items.length,
+    isLoaded,
+    setItemActive,
+    moveItemUp,
+    moveItemDown,
+  };
 
   return (
     <section className="settings-section" aria-labelledby="settings-go-to-heading">
@@ -49,7 +135,7 @@ export const GoToLinksSettings = ({
             aria-checked={isMenuEnabled}
             disabled={!isLoaded}
             aria-label={t('settings.showButtonAria')}
-            onChange={(event) => setIsMenuEnabled(event.target.checked)}
+            onChange={handleMenuEnabledChange}
           />
           <span className="settings-toggle-track" aria-hidden="true">
             <span className="settings-toggle-thumb" />
@@ -66,9 +152,9 @@ export const GoToLinksSettings = ({
         onClick={handleToggleList}
       >
         <ChevronRight
-          size={16}
+          size={GO_TO_CHEVRON_ICON_SIZE}
           aria-hidden
-          className={isListExpanded ? 'settings-go-to-toggle-icon--expanded' : undefined}
+          className={getGoToToggleIconClassName(isListExpanded)}
         />
         <span className="settings-go-to-toggle-label">{t('common.list')}</span>
         <span className="settings-go-to-toggle-meta">
@@ -76,71 +162,13 @@ export const GoToLinksSettings = ({
         </span>
       </button>
 
-      {isListExpanded ? (
-        <div id="settings-go-to-list" className="settings-go-to-panel">
-          <p className="settings-go-to-hint">{t('settings.goToHint')}</p>
-
-          <ul className="settings-go-to-list" aria-label={t('settings.goToListAria')}>
-            {items.map((item, index) => {
-              const displayName = getGoToSourceDisplayName(item.name, locale)
-              const iconUrl = getGoToSourceIconUrl(item.name)
-              const canMoveUp = index > 0
-              const canMoveDown = index < items.length - 1
-
-              return (
-                <li key={item.name} className="settings-go-to-item">
-                  <div className="settings-go-to-item-label">
-                    <span
-                      className="settings-go-to-item-icon"
-                      style={{ backgroundImage: `url(${iconUrl})` }}
-                      aria-hidden
-                    />
-                    <span className="settings-go-to-item-name">{displayName}</span>
-                  </div>
-
-                  <label className="settings-toggle" htmlFor={`settings-go-to-item-${item.name}`}>
-                    <input
-                      id={`settings-go-to-item-${item.name}`}
-                      type="checkbox"
-                      role="switch"
-                      className="settings-toggle-input"
-                      checked={item.active}
-                      aria-checked={item.active}
-                      disabled={!isLoaded}
-                      aria-label={t('settings.showInMenuAria', { name: displayName })}
-                      onChange={(event) => setItemActive(item.name, event.target.checked)}
-                    />
-                    <span className="settings-toggle-track" aria-hidden="true">
-                      <span className="settings-toggle-thumb" />
-                    </span>
-                  </label>
-
-                  <div className="settings-go-to-item-actions">
-                    <button
-                      type="button"
-                      className="settings-go-to-move-btn"
-                      disabled={!isLoaded || !canMoveUp}
-                      aria-label={t('settings.moveUpAria', { name: displayName })}
-                      onClick={() => moveItemUp(item.name)}
-                    >
-                      <ChevronUp size={16} aria-hidden />
-                    </button>
-                    <button
-                      type="button"
-                      className="settings-go-to-move-btn"
-                      disabled={!isLoaded || !canMoveDown}
-                      aria-label={t('settings.moveDownAria', { name: displayName })}
-                      onClick={() => moveItemDown(item.name)}
-                    >
-                      <ChevronDown size={16} aria-hidden />
-                    </button>
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
-        </div>
-      ) : null}
+      {renderExpandedGoToList({
+        isListExpanded,
+        items,
+        listContext,
+        listHint: t('settings.goToHint'),
+        listAriaLabel: t('settings.goToListAria'),
+      })}
     </section>
-  )
-}
+  );
+};

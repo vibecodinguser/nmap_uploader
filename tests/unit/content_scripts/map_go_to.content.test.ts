@@ -2,17 +2,14 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { browser } from 'wxt/browser'
+import mapGoToScript from '@/entrypoints/map-go-to.content'
+import { GO_TO_REFRESH_ACTION } from '@/lib/go_to_notify'
 import { GO_TO_SERVICE_BUTTON_ID } from '@/lib/go_to_service_button'
+import { GO_TO_ITEMS_STORAGE_KEY, GO_TO_MENU_ENABLED_STORAGE_KEY } from '@/lib/go_to_settings'
 import {
   GO_TO_SPLIT_BUTTON_ENABLED_STORAGE_KEY,
   GO_TO_SPLIT_BUTTON_ID,
 } from '@/lib/go_to_split_button'
-import {
-  GO_TO_ITEMS_STORAGE_KEY,
-  GO_TO_MENU_ENABLED_STORAGE_KEY,
-} from '@/lib/go_to_settings'
-import { GO_TO_REFRESH_ACTION } from '@/lib/go_to_notify'
-import mapGoToScript from '@/entrypoints/map-go-to.content'
 import { createContentScriptContext } from '@/tests/setup/content_script_context'
 
 const mountNmapsToolbarAnchor = (): HTMLElement => {
@@ -54,9 +51,7 @@ describe('map-go-to.content', () => {
     mountNmapsToolbarAnchor()
     mapGoToScript.main?.(ctx)
 
-    await vi.waitFor(() =>
-      expect(document.getElementById(GO_TO_SERVICE_BUTTON_ID)).not.toBeNull(),
-    )
+    await vi.waitFor(() => expect(document.getElementById(GO_TO_SERVICE_BUTTON_ID)).not.toBeNull())
   })
 
   it('скрывает кнопки при выключенных меню и split-view', async () => {
@@ -78,17 +73,13 @@ describe('map-go-to.content', () => {
     mountNmapsToolbarAnchor()
     mapGoToScript.main?.(ctx)
 
-    await vi.waitFor(() =>
-      expect(document.getElementById(GO_TO_SERVICE_BUTTON_ID)).not.toBeNull(),
-    )
+    await vi.waitFor(() => expect(document.getElementById(GO_TO_SERVICE_BUTTON_ID)).not.toBeNull())
 
     document.getElementById(GO_TO_SERVICE_BUTTON_ID)?.remove()
 
     runtimeListener?.({ action: GO_TO_REFRESH_ACTION })
 
-    await vi.waitFor(() =>
-      expect(document.getElementById(GO_TO_SERVICE_BUTTON_ID)).not.toBeNull(),
-    )
+    await vi.waitFor(() => expect(document.getElementById(GO_TO_SERVICE_BUTTON_ID)).not.toBeNull())
   })
 
   it('монтирует split-view кнопку при включённой опции', async () => {

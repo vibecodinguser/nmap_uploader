@@ -1,17 +1,23 @@
-import { browser } from 'wxt/browser'
-import { defineBackground } from 'wxt/utils/define-background'
-import { GO_TO_REFRESH_ACTION } from '@/lib/go_to_notify'
-import { createTranslator, syncLocaleFromStorage } from '@/lib/i18n'
-import { isMapTabUrl, MAP_TAB_URL_PATTERN } from '@/lib/map_tab'
+import { browser, type Browser } from 'wxt/browser';
+import { defineBackground } from 'wxt/utils/define-background';
+import { GO_TO_REFRESH_ACTION } from '@/lib/go_to_notify';
+import { createTranslator, syncLocaleFromStorage } from '@/lib/i18n';
+import { collectMapTabIds, isMapTabUrl, MAP_ORIGIN, MAP_TAB_URL_PATTERN } from '@/lib/map_tab';
 import {
   isTrustedNmapsOrPanelSender,
   isTrustedPanelSender,
   logRejectedMessage,
-  NMAPS_TAB_URL_PREFIX,
-} from '@/lib/message_auth'
-import { CLOSE_PANEL_SIDEBAR_ACTION } from '@/lib/panel_sidebar_notify'
-import { reloadMapEditorTabs } from '@/lib/reload_editor_page'
-import { uploadProcessedFilesToYandexDisk } from '@/lib/upload_service'
+  type RuntimeMessageSender,
+} from '@/lib/message_auth';
+import { CLOSE_PANEL_SIDEBAR_ACTION } from '@/lib/panel_sidebar_notify';
+import { reloadMapEditorTabs } from '@/lib/reload_editor_page';
+import { detectYandexBrowserInPageContext, isYandexBrowser } from '@/lib/browser';
+import { getErrorMessage } from '@/lib/errors';
+import {
+  uploadProcessedFilesToYandexDisk,
+  type ProcessedFileInput,
+  type UploadResult,
+} from '@/lib/upload_service';
 import {
   buildAuthPayload,
   clearAuth,
@@ -19,244 +25,389 @@ import {
   getStoredAuth,
   listExistingDateFolders,
   loadUserAvatarDataUrl,
+  type AuthPayload,
   type YandexUser,
-} from '@/lib/yandex/client'
+} from '@/lib/yandex/client';
 
-const PANEL_PAGE = '/panel.html'
+const PANEL_PAGE = '/panel.html';
 
 type SidePanelApi = {
-  open: (options: { windowId?: number; tabId?: number }) => Promise<void>
-  setOptions: (options: { path: string; enabled?: boolean }) => Promise<void>
-}
+  open: (options: { windowId?: number; tabId?: number }) => Promise<void>;
+  setOptions: (options: { path: string; enabled?: boolean }) => Promise<void>;
+};
 
 const getSidePanelApi = (): SidePanelApi | undefined => {
-  const api = (browser as typeof browser & { sidePanel?: SidePanelApi }).sidePanel
-  if (!api?.open) return undefined
-  return api
-}
+  return (browser as typeof browser & { sidePanel?: SidePanelApi }).sidePanel;
+};
 
 type ToolbarActionApi = {
   onClicked: {
-    addListener: (callback: (tab: Browser.tabs.Tab) => void) => void
-  }
-}
+    addListener: (callback: (tab: Browser.tabs.Tab) => void) => void;
+  };
+};
 
-/** Chrome MV3 — `action`, Firefox MV2 — `browserAction`. */
 const getToolbarActionApi = (): ToolbarActionApi | undefined => {
-  if (browser.action?.onClicked) return browser.action
+  let result: ToolbarActionApi | undefined;
+  if (browser.action?.onClicked) {
+    result = browser.action;
+  } else {
+    const browserAction = (browser as typeof browser & { browserAction?: ToolbarActionApi })
+      .browserAction;
+    if (browserAction?.onClicked) {
+      result = browserAction;
+    }
+  }
+  return result;
+};
 
-  const browserAction = (browser as typeof browser & { browserAction?: ToolbarActionApi })
-    .browserAction
-  if (browserAction?.onClicked) return browserAction
+const PANEL_SIDEBAR_SCRIPT = '/content-scripts/panel-sidebar.js' as const;
+const MAP_HOME = `${MAP_ORIGIN}/` as const;
+const MAP_URL_PATTERN = MAP_TAB_URL_PATTERN;
+const PANEL_SIDEBAR_REGISTRATION_ID = 'nmap-panel-sidebar' as const;
 
-  return undefined
-}
+const logBackgroundTaskFailure = (label: string, error: unknown): void => {
+  console.warn(`[nmap_uploader] ${label} failed:`, error);
+};
 
-const PANEL_SIDEBAR_SCRIPT = '/content-scripts/panel-sidebar.js' as const
-const MAP_HOME = 'https://n.maps.yandex.ru/' as const
-const MAP_URL_PATTERN = MAP_TAB_URL_PATTERN
-const PANEL_SIDEBAR_REGISTRATION_ID = 'nmap-panel-sidebar' as const
+const pendingBackgroundTasks = new Set<Promise<void>>();
 
-const UA_YANDEX_PATTERN = /YaBrowser|Yowser|YaSearchBrowser/i
+const executeBackgroundTask = async (task: Promise<unknown>, label: string): Promise<void> => {
+  try {
+    await task;
+  } catch (error: unknown) {
+    logBackgroundTaskFailure(label, error);
+  }
+};
 
-/** Локальная копия для SW: при HMR импорт функций из lib/browser может «отвалиться». */
-const detectYandexBrowserInServiceWorker = (): boolean => {
-  if (UA_YANDEX_PATTERN.test(navigator.userAgent)) return true
+const runBackgroundTask = (task: Promise<unknown>, label: string): void => {
+  const execution = executeBackgroundTask(task, label);
+  pendingBackgroundTasks.add(execution);
+};
 
-  const brands = (navigator as Navigator & { userAgentData?: { brands?: { brand: string }[] } })
-    .userAgentData?.brands
-  return Boolean(brands?.some(({ brand }) => /yandex/i.test(brand)))
-}
+const relayMessageToMapTabs = async (
+  sender: RuntimeMessageSender,
+  message: Record<string, unknown>,
+): Promise<void> => {
+  const senderTabId = sender.tab?.id;
+  if (senderTabId && isMapTabUrl(sender.tab?.url)) {
+    await browser.tabs.sendMessage(senderTabId, message);
+  } else {
+    const tabIds = await collectMapTabIds();
+    const sendRelayToTab = (tabId: number) => browser.tabs.sendMessage(tabId, message);
+    const promises = tabIds.map(sendRelayToTab);
+    await Promise.allSettled(promises);
+  }
+};
 
 const persistYandexBrowserFlag = async (): Promise<void> => {
-  if (!detectYandexBrowserInServiceWorker()) return
-  await browser.storage.local.set({ is_yandex_browser: true })
-}
+  const yandexBrowser = isYandexBrowser();
+  if (yandexBrowser) {
+    await browser.storage.local.set({ is_yandex_browser: true });
+  }
+};
 
 const readYandexUaFromTab = async (tabId: number): Promise<boolean> => {
+  let result = false;
   try {
     const [injection] = await browser.scripting.executeScript({
       target: { tabId },
-      func: () => /YaBrowser|Yowser|YaSearchBrowser/i.test(navigator.userAgent),
-    })
-    return Boolean(injection?.result)
+      func: detectYandexBrowserInPageContext,
+    });
+    result = Boolean(injection?.result);
   } catch {
-    return false
+    // ignore errors
   }
-}
+  return result;
+};
 
 const resolveIsYandexBrowser = async (): Promise<boolean> => {
-  if (detectYandexBrowserInServiceWorker()) {
-    await browser.storage.local.set({ is_yandex_browser: true })
-    return true
-  }
+  let isYandex = false;
 
-  const stored = await browser.storage.local.get('is_yandex_browser')
-  if (stored.is_yandex_browser === true) return true
-
-  const mapTabs = await browser.tabs.query({ url: MAP_URL_PATTERN })
-  for (const mapTab of mapTabs) {
-    if (!mapTab.id) continue
-    if (await readYandexUaFromTab(mapTab.id)) {
-      await browser.storage.local.set({ is_yandex_browser: true })
-      return true
+  if (isYandexBrowser()) {
+    await browser.storage.local.set({ is_yandex_browser: true });
+    isYandex = true;
+  } else {
+    const stored = await browser.storage.local.get('is_yandex_browser');
+    if (true === stored.is_yandex_browser) {
+      isYandex = true;
+    } else {
+      const mapTabs = await browser.tabs.query({ url: MAP_URL_PATTERN });
+      for (const mapTab of mapTabs) {
+        if (!isYandex && mapTab.id) {
+          const tabIsYandex = await readYandexUaFromTab(mapTab.id);
+          if (tabIsYandex) {
+            await browser.storage.local.set({ is_yandex_browser: true });
+            isYandex = true;
+          }
+        }
+      }
     }
   }
 
-  return false
-}
+  return isYandex;
+};
 
-/** В Yandex Browser sidePanel API есть, но UI не отображается — используем injected sidebar. */
 const shouldUseNativeSidePanel = async (): Promise<boolean> => {
-  if (await resolveIsYandexBrowser()) return false
-  return Boolean(getSidePanelApi())
-}
+  const isYandex = await resolveIsYandexBrowser();
+  const sidePanelApi = getSidePanelApi();
+  let useNative = false;
+  if (!isYandex && sidePanelApi) {
+    useNative = true;
+  }
+  return useNative;
+};
 
-const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
+const sleep = (ms: number): Promise<void> => {
+  const resolveAfterDelay = (resolve: () => void) => {
+    setTimeout(resolve, ms);
+  };
+  return new Promise<void>(resolveAfterDelay);
+};
 
 const sendTogglePanel = async (tabId: number): Promise<void> => {
-  await browser.tabs.sendMessage(tabId, { action: 'togglePanel' })
-}
+  await browser.tabs.sendMessage(tabId, { action: 'togglePanel' });
+};
 
 const retrySendTogglePanel = async (tabId: number): Promise<boolean> => {
-  for (let attempt = 0; attempt < 8; attempt += 1) {
+  let succeeded = false;
+  const maxAttempts = 8;
+  for (let attempt = 0; attempt < maxAttempts && !succeeded; attempt += 1) {
     try {
-      await sendTogglePanel(tabId)
-      return true
+      await sendTogglePanel(tabId);
+      succeeded = true;
     } catch {
-      await sleep(150 * (attempt + 1))
+      const delay = 150 * (attempt + 1);
+      await sleep(delay);
     }
   }
+  return succeeded;
+};
 
-  return false
-}
+const isPanelSidebarScript = (path: string): boolean => {
+  return path.includes('panel-sidebar');
+};
 
 const manifestIncludesPanelSidebar = (): boolean => {
-  const entries = browser.runtime.getManifest().content_scripts ?? []
-  return entries.some((entry) => entry.js?.some((path) => path.includes('panel-sidebar')))
-}
+  const entries = browser.runtime.getManifest().content_scripts ?? [];
+  const entryIncludesPanelSidebar = (entry: { js?: string[] }) =>
+    entry.js?.some(isPanelSidebarScript) ?? false;
+  return entries.some(entryIncludesPanelSidebar);
+};
 
-const isDuplicateContentScriptIdError = (error: unknown): boolean =>
-  error instanceof Error && error.message.includes('Duplicate script ID')
+const isDuplicateContentScriptIdError = (error: unknown): boolean => {
+  return error instanceof Error && error.message.includes('Duplicate script ID');
+};
 
-/** В dev-сборке WXT не добавляет content_scripts в manifest — регистрируем вручную. */
 const registerPanelSidebarContentScript = async (): Promise<void> => {
-  if (manifestIncludesPanelSidebar()) return
-
-  const registered = await browser.scripting.getRegisteredContentScripts()
-  if (registered.some((script) => script.id === PANEL_SIDEBAR_REGISTRATION_ID)) return
-
-  try {
-    await browser.scripting.registerContentScripts([
-      {
-        id: PANEL_SIDEBAR_REGISTRATION_ID,
-        matches: ['https://n.maps.yandex.ru/*'],
-        js: [PANEL_SIDEBAR_SCRIPT],
-        runAt: 'document_idle',
-      },
-    ])
-  } catch (error: unknown) {
-    if (isDuplicateContentScriptIdError(error)) return
-    throw error
+  if (!manifestIncludesPanelSidebar()) {
+    const registered = await browser.scripting.getRegisteredContentScripts();
+    const isRegisteredPanelSidebar = (script: { id: string }) =>
+      script.id === PANEL_SIDEBAR_REGISTRATION_ID;
+    const isAlreadyRegistered = registered.some(isRegisteredPanelSidebar);
+    if (!isAlreadyRegistered) {
+      try {
+        await browser.scripting.registerContentScripts([
+          {
+            id: PANEL_SIDEBAR_REGISTRATION_ID,
+            matches: ['https://n.maps.yandex.ru/*'],
+            js: [PANEL_SIDEBAR_SCRIPT],
+            runAt: 'document_idle',
+          },
+        ]);
+      } catch (error: unknown) {
+        if (!isDuplicateContentScriptIdError(error)) {
+          throw error;
+        }
+      }
+    }
   }
-}
+};
 
-let panelSidebarRegistration: Promise<void> | undefined
+let panelSidebarRegistration: Promise<void> | undefined;
+
+const handleEnsurePanelSidebarError = (error: unknown): void => {
+  panelSidebarRegistration = undefined;
+  console.warn('[nmap_uploader] ensurePanelSidebarRegistered failed:', error);
+};
+
+const registerPanelSidebarSafely = async (): Promise<void> => {
+  try {
+    await registerPanelSidebarContentScript();
+  } catch (error: unknown) {
+    handleEnsurePanelSidebarError(error);
+  }
+};
 
 const ensurePanelSidebarRegistered = (): Promise<void> => {
   if (!panelSidebarRegistration) {
-    panelSidebarRegistration = registerPanelSidebarContentScript().catch((error: unknown) => {
-      panelSidebarRegistration = undefined
-      console.warn('[nmap_uploader] ensurePanelSidebarRegistered failed:', error)
-    })
+    panelSidebarRegistration = registerPanelSidebarSafely();
   }
-  return panelSidebarRegistration
-}
+  return panelSidebarRegistration;
+};
 
-const getBackgroundTranslator = async () => createTranslator(await syncLocaleFromStorage())
+const getBackgroundTranslator = async () => {
+  const locale = await syncLocaleFromStorage();
+  return createTranslator(locale);
+};
 
 const waitForTabReady = async (tabId: number, maxMs = 15_000): Promise<Browser.tabs.Tab> => {
-  const started = Date.now()
-  const t = await getBackgroundTranslator()
+  const started = Date.now();
+  const t = await getBackgroundTranslator();
 
   while (Date.now() - started < maxMs) {
-    const tab = await browser.tabs.get(tabId)
-    if (tab.status === 'complete' && isMapTabUrl(tab.url)) return tab
-    await sleep(150)
+    const tab = await browser.tabs.get(tabId);
+    const isReady = 'complete' === tab.status && isMapTabUrl(tab.url);
+    if (isReady) {
+      return tab;
+    }
+    await sleep(150);
   }
 
-  throw new Error(t('background.mapPageLoadTimeout'))
-}
+  const message = t('background.mapPageLoadTimeout');
+  throw new Error(message);
+};
 
 const focusTab = async (tab: Browser.tabs.Tab): Promise<void> => {
-  if (!tab.id) return
-  await browser.tabs.update(tab.id, { active: true })
-  if (tab.windowId) {
-    await browser.windows.update(tab.windowId, { focused: true })
+  if (tab.id) {
+    await browser.tabs.update(tab.id, { active: true });
+    if (tab.windowId) {
+      await browser.windows.update(tab.windowId, { focused: true });
+    }
   }
-}
+};
 
-/** Вкладка n.maps для injected sidebar: текущая, другая в окне или новая. */
+const hasDefinedTabId = (tab: Browser.tabs.Tab): boolean => tab.id !== undefined;
+
 const resolveMapTargetTab = async (clickedTab: Browser.tabs.Tab): Promise<Browser.tabs.Tab> => {
-  if (clickedTab.id && isMapTabUrl(clickedTab.url)) return clickedTab
+  let result: Browser.tabs.Tab;
 
-  const tabsInWindow = await browser.tabs.query({
-    url: MAP_URL_PATTERN,
-    ...(clickedTab.windowId === undefined ? {} : { windowId: clickedTab.windowId }),
-  })
-  const mapTabInWindow = tabsInWindow.find((tab) => tab.id !== undefined)
-  if (mapTabInWindow) {
-    await focusTab(mapTabInWindow)
-    return mapTabInWindow
+  if (clickedTab.id && isMapTabUrl(clickedTab.url)) {
+    result = clickedTab;
+  } else {
+    const queryOptions = {
+      url: MAP_URL_PATTERN,
+      ...(clickedTab.windowId !== undefined && { windowId: clickedTab.windowId }),
+    };
+    const tabsInWindow = await browser.tabs.query(queryOptions);
+    const mapTabInWindow = tabsInWindow.find(hasDefinedTabId);
+    if (mapTabInWindow) {
+      await focusTab(mapTabInWindow);
+      result = mapTabInWindow;
+    } else {
+      const tabsAnywhere = await browser.tabs.query({ url: MAP_URL_PATTERN });
+      const mapTabAnywhere = tabsAnywhere.find(hasDefinedTabId);
+      if (mapTabAnywhere) {
+        await focusTab(mapTabAnywhere);
+        result = mapTabAnywhere;
+      } else {
+        const created = await browser.tabs.create({ url: MAP_HOME, active: true });
+        if (!created.id) {
+          const t = await getBackgroundTranslator();
+          const openMapFailedMessage = t('background.openMapFailed');
+          throw new Error(openMapFailedMessage);
+        }
+        result = await waitForTabReady(created.id);
+      }
+    }
   }
 
-  const tabsAnywhere = await browser.tabs.query({ url: MAP_URL_PATTERN })
-  const mapTabAnywhere = tabsAnywhere.find((tab) => tab.id !== undefined)
-  if (mapTabAnywhere) {
-    await focusTab(mapTabAnywhere)
-    return mapTabAnywhere
-  }
+  return result;
+};
 
-  const created = await browser.tabs.create({ url: MAP_HOME, active: true })
-  if (!created.id) {
-    const t = await getBackgroundTranslator()
-    throw new Error(t('background.openMapFailed'))
-  }
-  return waitForTabReady(created.id)
-}
-
-const toggleInjectedSidebar = async (tabId: number, tabUrl?: string) => {
-  let url = tabUrl
+const toggleInjectedSidebar = async (tabId: number, tabUrl?: string): Promise<void> => {
+  let url = tabUrl;
   if (!isMapTabUrl(url)) {
-    const tab = await browser.tabs.get(tabId)
-    url = tab.url
+    const tab = await browser.tabs.get(tabId);
+    url = tab.url;
   }
 
-  if (!isMapTabUrl(url)) {
-    const t = await getBackgroundTranslator()
-    throw new Error(t('background.openMapAndRetry'))
+  if (isMapTabUrl(url)) {
+    const toggled = await retrySendTogglePanel(tabId);
+    if (!toggled) {
+      await browser.scripting.executeScript({
+        target: { tabId },
+        files: [PANEL_SIDEBAR_SCRIPT],
+      });
+
+      const retried = await retrySendTogglePanel(tabId);
+      if (!retried) {
+        const t = await getBackgroundTranslator();
+        const openPanelFailedMessage = t('background.openPanelFailed');
+        throw new Error(openPanelFailedMessage);
+      }
+    }
+  } else {
+    const t = await getBackgroundTranslator();
+    const openMapAndRetryMessage = t('background.openMapAndRetry');
+    throw new Error(openMapAndRetryMessage);
   }
-
-  // content script может ещё инициализироваться после загрузки страницы
-  if (await retrySendTogglePanel(tabId)) return
-
-  await browser.scripting.executeScript({
-    target: { tabId },
-    files: [PANEL_SIDEBAR_SCRIPT],
-  })
-
-  if (await retrySendTogglePanel(tabId)) return
-
-  const t = await getBackgroundTranslator()
-  throw new Error(t('background.openPanelFailed'))
-}
+};
 
 type AuthMessageResponse = {
-  ok: boolean
-  user: YandexUser | null
-  avatarDataUrl: string | null
-  error?: string
-}
+  ok: boolean;
+  user: YandexUser | null;
+  avatarDataUrl: string | null;
+  error?: string;
+};
+
+const handleYandexAuthSuccess = async (
+  auth: AuthPayload | null,
+  sendResponse: (response: AuthMessageResponse) => void,
+  cancelError?: string,
+): Promise<void> => {
+  if (auth?.user) {
+    const avatarDataUrl = await loadUserAvatarDataUrl(auth.user);
+    sendResponse({
+      ok: true,
+      user: auth.user,
+      avatarDataUrl,
+    });
+  } else {
+    sendResponse({
+      ok: false,
+      user: null,
+      avatarDataUrl: null,
+      ...(cancelError && { error: cancelError }),
+    });
+  }
+};
+
+const handleYandexAuthFailure = async (
+  error: unknown,
+  sendResponse: (response: AuthMessageResponse) => void,
+  logLabel: string,
+): Promise<void> => {
+  console.error(`[nmap_uploader] ${logLabel} failed:`, error);
+  const t = await getBackgroundTranslator();
+  const authErrorFallback = t('auth.authError');
+  const errorMessage = getErrorMessage(error, authErrorFallback);
+  sendResponse({
+    ok: false,
+    user: null,
+    avatarDataUrl: null,
+    error: errorMessage,
+  });
+};
+
+const processYandexAuthMessage = async ({
+  interactive,
+  sendResponse,
+  logLabel,
+  cancelError,
+}: {
+  interactive: boolean;
+  sendResponse: (response: AuthMessageResponse) => void;
+  logLabel: string;
+  cancelError?: string;
+}): Promise<void> => {
+  try {
+    const auth = await ensureYandexAuth({ interactive });
+    const payload = await buildAuthPayload(auth);
+    await handleYandexAuthSuccess(payload, sendResponse, cancelError);
+  } catch (error: unknown) {
+    await handleYandexAuthFailure(error, sendResponse, logLabel);
+  }
+};
 
 const handleYandexAuthMessage = ({
   interactive,
@@ -264,386 +415,455 @@ const handleYandexAuthMessage = ({
   logLabel,
   cancelError,
 }: {
-  interactive: boolean
-  sendResponse: (response: AuthMessageResponse) => void
-  logLabel: string
-  cancelError?: string
-}) => {
-  ensureYandexAuth({ interactive })
-    .then(async (auth) => {
-      if (!auth) {
-        sendResponse({
-          ok: false,
-          user: null,
-          avatarDataUrl: null,
-          ...(cancelError ? { error: cancelError } : {}),
-        })
-        return
-      }
+  interactive: boolean;
+  sendResponse: (response: AuthMessageResponse) => void;
+  logLabel: string;
+  cancelError?: string;
+}): void => {
+  const authTask = processYandexAuthMessage({ interactive, sendResponse, logLabel, cancelError });
+  runBackgroundTask(authTask, logLabel);
+};
 
-      const avatarDataUrl = await loadUserAvatarDataUrl(auth.user)
-      sendResponse({
-        ok: true,
-        user: auth.user,
-        avatarDataUrl,
-      })
-    })
-    .catch(async (error: unknown) => {
-      console.error(`[nmap_uploader] ${logLabel} failed:`, error)
-      const t = await getBackgroundTranslator()
-      sendResponse({
-        ok: false,
-        user: null,
-        avatarDataUrl: null,
-        error: error instanceof Error ? error.message : t('auth.authError'),
-      })
-    })
-}
-
-const openInjectedPanel = async (tab: Browser.tabs.Tab) => {
-  const t = await getBackgroundTranslator()
-  const targetTab = await resolveMapTargetTab(tab)
-  if (!targetTab.id) throw new Error(t('background.tabNotFound'))
-
-  if (!isMapTabUrl(targetTab.url) || targetTab.status !== 'complete') {
-    await waitForTabReady(targetTab.id)
+const openInjectedPanel = async (tab: Browser.tabs.Tab): Promise<void> => {
+  const t = await getBackgroundTranslator();
+  const targetTab = await resolveMapTargetTab(tab);
+  if (!targetTab.id) {
+    const message = t('background.tabNotFound');
+    throw new Error(message);
   }
 
-  const readyTab = await browser.tabs.get(targetTab.id)
-  if (!readyTab.id) throw new Error(t('background.tabNotFound'))
-  await toggleInjectedSidebar(readyTab.id, readyTab.url)
-}
+  const isReady = isMapTabUrl(targetTab.url) && 'complete' === targetTab.status;
+  if (!isReady) {
+    await waitForTabReady(targetTab.id);
+  }
+
+  const readyTab = await browser.tabs.get(targetTab.id);
+  if (!readyTab.id) {
+    const message = t('background.tabNotFound');
+    throw new Error(message);
+  }
+  await toggleInjectedSidebar(readyTab.id, readyTab.url);
+};
 
 const resolveClickedTab = async (tab: Browser.tabs.Tab): Promise<Browser.tabs.Tab | undefined> => {
-  if (tab.id) return tab
-  const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true })
-  return activeTab
-}
-
-const openPanel = async (tab: Browser.tabs.Tab) => {
-  const clickedTab = await resolveClickedTab(tab)
-  if (!clickedTab?.id) return
-
-  if (await resolveIsYandexBrowser()) {
-    await openInjectedPanel(clickedTab)
-    return
-  }
-
-  if ((await shouldUseNativeSidePanel()) && clickedTab.windowId) {
-    const sidePanel = getSidePanelApi()
-    try {
-      await sidePanel?.setOptions({ path: PANEL_PAGE, enabled: true })
-      await sidePanel?.open({ windowId: clickedTab.windowId })
-      return
-    } catch (error: unknown) {
-      console.warn('[nmap_uploader] native sidePanel.open failed:', error)
-    }
-  }
-
-  await openInjectedPanel(clickedTab)
-}
-
-// WXT подхватывает default export при сборке; статического import нет
-// noinspection JSUnusedGlobalSymbols
-export default defineBackground(() => {
-  void persistYandexBrowserFlag()
-  void ensurePanelSidebarRegistered()
-  void syncLocaleFromStorage()
-
-  const toolbarAction = getToolbarActionApi()
-  if (!toolbarAction) {
-    console.error('[nmap_uploader] toolbar action API is unavailable in this browser')
+  let result: Browser.tabs.Tab | undefined;
+  if (tab.id) {
+    result = tab;
   } else {
-    toolbarAction.onClicked.addListener((tab) => {
-      openPanel(tab).catch((error: unknown) => {
-        console.error('[nmap_uploader] openPanel failed:', error)
-      })
-    })
+    const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true });
+    result = activeTab;
+  }
+  return result;
+};
+
+const openPanel = async (tab: Browser.tabs.Tab): Promise<void> => {
+  const clickedTab = await resolveClickedTab(tab);
+  if (clickedTab?.id) {
+    const isYandex = await resolveIsYandexBrowser();
+    if (isYandex) {
+      await openInjectedPanel(clickedTab);
+    } else {
+      const useNative = await shouldUseNativeSidePanel();
+      let openedNatively = false;
+      if (useNative && clickedTab.windowId) {
+        const sidePanel = getSidePanelApi();
+        try {
+          if (sidePanel) {
+            await sidePanel.setOptions({ path: PANEL_PAGE, enabled: true });
+            await sidePanel.open({ windowId: clickedTab.windowId });
+            openedNatively = true;
+          }
+        } catch (error: unknown) {
+          console.warn('[nmap_uploader] native sidePanel.open failed:', error);
+        }
+      }
+      if (!openedNatively) {
+        await openInjectedPanel(clickedTab);
+      }
+    }
+  }
+};
+
+const handleToolbarClick = (tab: Browser.tabs.Tab): void => {
+  const panelTask = openPanel(tab);
+  runBackgroundTask(panelTask, 'openPanel');
+};
+
+const configureInstalledSidePanel = async (): Promise<void> => {
+  const useNative = await shouldUseNativeSidePanel();
+  if (useNative) {
+    const sidePanel = getSidePanelApi();
+    try {
+      await sidePanel?.setOptions({ path: PANEL_PAGE, enabled: true });
+    } catch (error: unknown) {
+      console.warn('[nmap_uploader] sidePanel.setOptions failed:', error);
+    }
+  }
+};
+
+const handleInstalled = (): void => {
+  const persistTask = persistYandexBrowserFlag();
+  runBackgroundTask(persistTask, 'persistYandexBrowserFlag');
+
+  const registerTask = ensurePanelSidebarRegistered();
+  runBackgroundTask(registerTask, 'ensurePanelSidebarRegistered');
+
+  const configureTask = configureInstalledSidePanel();
+  runBackgroundTask(configureTask, 'shouldUseNativeSidePanel');
+};
+
+// --- Message Handlers ---
+
+type MessageHandler = (
+  message: Record<string, unknown>,
+  sender: RuntimeMessageSender,
+  sendResponse: (response: any) => void,
+) => boolean;
+
+const processGetAuth = async (
+  sendResponse: (response: AuthPayload | { user: null; avatarDataUrl: null }) => void,
+): Promise<void> => {
+  try {
+    const auth = await getStoredAuth();
+    const payload = await buildAuthPayload(auth);
+    sendResponse(payload);
+  } catch {
+    sendResponse({ user: null, avatarDataUrl: null });
+  }
+};
+
+const processLogin = async (
+  sendResponse: (response: AuthMessageResponse) => void,
+): Promise<void> => {
+  const t = await getBackgroundTranslator();
+  const authCancelledMessage = t('auth.authCancelled');
+  await processYandexAuthMessage({
+    interactive: true,
+    sendResponse,
+    logLabel: 'login',
+    cancelError: authCancelledMessage,
+  });
+};
+
+const processLoginAccessDenied = async (
+  sendResponse: (response: AuthMessageResponse) => void,
+): Promise<void> => {
+  const t = await getBackgroundTranslator();
+  const accessDeniedMessage = t('common.accessDenied');
+  sendResponse({
+    ok: false,
+    user: null,
+    avatarDataUrl: null,
+    error: accessDeniedMessage,
+  });
+};
+
+const processLogout = async (
+  sendResponse: (response: { ok: boolean }) => void,
+): Promise<void> => {
+  try {
+    await clearAuth({ explicit: true });
+    sendResponse({ ok: true });
+  } catch (error: unknown) {
+    console.error('[nmap_uploader] logout failed:', error);
+    sendResponse({ ok: false });
+  }
+};
+
+const processListOccupiedDates = async (
+  sendResponse: (response: {
+    ok: boolean;
+    dates: string[];
+    error?: string;
+  }) => void,
+): Promise<void> => {
+  try {
+    const auth = await getStoredAuth();
+    if (auth) {
+      const dates = await listExistingDateFolders({ token: auth.token });
+      sendResponse({ ok: true, dates });
+    } else {
+      sendResponse({ ok: true, dates: [] });
+    }
+  } catch (error: unknown) {
+    console.error('[nmap_uploader] listOccupiedDates failed:', error);
+    const t = await getBackgroundTranslator();
+    const folderReadErrorFallback = t('auth.folderReadError');
+    sendResponse({
+      ok: false,
+      dates: [],
+      error: getErrorMessage(error, folderReadErrorFallback),
+    });
+  }
+};
+
+const getUploadMessagePayload = (
+  message: Record<string, unknown>,
+): { files: ProcessedFileInput[]; targetDate?: string } => {
+  let files: ProcessedFileInput[] = [];
+  if (Array.isArray(message.files)) {
+    files = message.files as ProcessedFileInput[];
   }
 
-  browser.runtime.onInstalled.addListener(() => {
-    void persistYandexBrowserFlag()
-    void ensurePanelSidebarRegistered()
+  let targetDate: string | undefined;
+  if ('string' === typeof message.targetDate) {
+    targetDate = message.targetDate;
+  }
 
-    void shouldUseNativeSidePanel().then((useNative) => {
-      if (!useNative) return
+  return { files, targetDate };
+};
 
-      const sidePanel = getSidePanelApi()
-      sidePanel?.setOptions({ path: PANEL_PAGE, enabled: true }).catch((error: unknown) => {
-        console.warn('[nmap_uploader] sidePanel.setOptions failed:', error)
-      })
-    })
-  })
+const processUpload = async (
+  message: Record<string, unknown>,
+  sendResponse: (response: UploadResult) => void,
+): Promise<void> => {
+  try {
+    const { files, targetDate } = getUploadMessagePayload(message);
+    const result = await uploadProcessedFilesToYandexDisk({ files, targetDate });
+    sendResponse(result);
+  } catch (error: unknown) {
+    console.error('[nmap_uploader] upload failed:', error);
+    const t = await getBackgroundTranslator();
+    const uploadErrorFallback = t('auth.uploadError');
+    sendResponse({
+      ok: false,
+      processedCount: 0,
+      skippedCount: 0,
+      logs: [
+        {
+          id: crypto.randomUUID(),
+          level: 'error',
+          message: getErrorMessage(error, uploadErrorFallback),
+        },
+      ],
+    });
+  }
+};
 
-  browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    const action = message?.action as string | undefined
+const processUploadAccessDenied = async (
+  sendResponse: (response: UploadResult) => void,
+): Promise<void> => {
+  const t = await getBackgroundTranslator();
+  const accessDeniedMessage = t('common.accessDenied');
+  sendResponse({
+    ok: false,
+    processedCount: 0,
+    skippedCount: 0,
+    logs: [
+      {
+        id: crypto.randomUUID(),
+        level: 'error',
+        message: accessDeniedMessage,
+      },
+    ],
+  });
+};
 
-    if (action === 'getAuth') {
-      if (!isTrustedPanelSender(sender)) {
-        logRejectedMessage(action, sender)
-        sendResponse({ user: null, avatarDataUrl: null })
-        return true
-      }
+const processReloadEditor = async (
+  sender: RuntimeMessageSender,
+  sendResponse: (response: { ok: boolean }) => void,
+): Promise<void> => {
+  try {
+    const ok = await reloadMapEditorTabs({ preferredTabId: sender.tab?.id });
+    sendResponse({ ok });
+  } catch (error: unknown) {
+    console.warn('[nmap_uploader] reloadEditorPage failed:', error);
+    sendResponse({ ok: false });
+  }
+};
 
-      getStoredAuth()
-        .then((auth) => buildAuthPayload(auth))
-        .then((payload) => sendResponse(payload))
-        .catch(() => sendResponse({ user: null, avatarDataUrl: null }))
-      return true
+const processRelayToMapTabs = async (
+  sender: RuntimeMessageSender,
+  relayMessage: Record<string, unknown>,
+  sendResponse: (response: { ok: boolean }) => void,
+  logLabel: string,
+): Promise<void> => {
+  try {
+    await relayMessageToMapTabs(sender, relayMessage);
+    sendResponse({ ok: true });
+  } catch (error: unknown) {
+    console.warn(`[nmap_uploader] ${logLabel} relay failed:`, error);
+    sendResponse({ ok: false });
+  }
+};
+
+const handleGetAuth: MessageHandler = (_message, sender, sendResponse) => {
+  if (isTrustedPanelSender(sender)) {
+    const authTask = processGetAuth(sendResponse);
+    runBackgroundTask(authTask, 'getAuth');
+  } else {
+    logRejectedMessage('getAuth', sender);
+    sendResponse({ user: null, avatarDataUrl: null });
+  }
+  return true;
+};
+
+const handleEnsureAuth: MessageHandler = (message, sender, sendResponse) => {
+  if (isTrustedPanelSender(sender)) {
+    handleYandexAuthMessage({
+      interactive: Boolean(message.interactive),
+      sendResponse,
+      logLabel: 'ensureAuth',
+    });
+  } else {
+    logRejectedMessage('ensureAuth', sender);
+    sendResponse({ ok: false, user: null, avatarDataUrl: null });
+  }
+  return true;
+};
+
+const handleLogin: MessageHandler = (_message, sender, sendResponse) => {
+  if (isTrustedPanelSender(sender)) {
+    const loginTask = processLogin(sendResponse);
+    runBackgroundTask(loginTask, 'login');
+  } else {
+    logRejectedMessage('login', sender);
+    const accessDeniedTask = processLoginAccessDenied(sendResponse);
+    runBackgroundTask(accessDeniedTask, 'login');
+  }
+  return true;
+};
+
+const handleLogout: MessageHandler = (_message, sender, sendResponse) => {
+  if (isTrustedPanelSender(sender)) {
+    const logoutTask = processLogout(sendResponse);
+    runBackgroundTask(logoutTask, 'logout');
+  } else {
+    logRejectedMessage('logout', sender);
+    sendResponse({ ok: false });
+  }
+  return true;
+};
+
+const handleListOccupiedDates: MessageHandler = (_message, sender, sendResponse) => {
+  if (isTrustedPanelSender(sender)) {
+    const listDatesTask = processListOccupiedDates(sendResponse);
+    runBackgroundTask(listDatesTask, 'listOccupiedDates');
+  } else {
+    logRejectedMessage('listOccupiedDates', sender);
+    sendResponse({ ok: false, dates: [] });
+  }
+  return true;
+};
+
+const handleUpload: MessageHandler = (message, sender, sendResponse) => {
+  if (isTrustedPanelSender(sender)) {
+    const uploadTask = processUpload(message, sendResponse);
+    runBackgroundTask(uploadTask, 'uploadProcessedFiles');
+  } else {
+    logRejectedMessage('uploadProcessedFiles', sender);
+    const accessDeniedTask = processUploadAccessDenied(sendResponse);
+    runBackgroundTask(accessDeniedTask, 'uploadProcessedFiles');
+  }
+  return true;
+};
+
+const handleReloadEditor: MessageHandler = (_message, sender, sendResponse) => {
+  if (isTrustedNmapsOrPanelSender(sender)) {
+    const reloadTask = processReloadEditor(sender, sendResponse);
+    runBackgroundTask(reloadTask, 'reloadEditorPage');
+  } else {
+    logRejectedMessage('reloadEditorPage', sender);
+    sendResponse({ ok: false });
+  }
+  return true;
+};
+
+const handleGoToRefresh: MessageHandler = (_message, sender, sendResponse) => {
+  if (isTrustedNmapsOrPanelSender(sender)) {
+    const relayMessage = { action: GO_TO_REFRESH_ACTION };
+    const relayTask = processRelayToMapTabs(sender, relayMessage, sendResponse, 'refreshGoToMenu');
+    runBackgroundTask(relayTask, GO_TO_REFRESH_ACTION);
+  } else {
+    logRejectedMessage(GO_TO_REFRESH_ACTION, sender);
+    sendResponse({ ok: false });
+  }
+  return true;
+};
+
+const handleClosePanel: MessageHandler = (_message, sender, sendResponse) => {
+  if (isTrustedNmapsOrPanelSender(sender)) {
+    const relayMessage = { action: CLOSE_PANEL_SIDEBAR_ACTION };
+    const relayTask = processRelayToMapTabs(sender, relayMessage, sendResponse, 'closePanelSidebar');
+    runBackgroundTask(relayTask, CLOSE_PANEL_SIDEBAR_ACTION);
+  } else {
+    logRejectedMessage(CLOSE_PANEL_SIDEBAR_ACTION, sender);
+    sendResponse({ ok: false });
+  }
+  return true;
+};
+
+const handleApplyStrokeColor: MessageHandler = (message, sender, sendResponse) => {
+  let color = '';
+  if ('string' === typeof message.color) {
+    color = message.color;
+  }
+  const canRelay = color && isTrustedNmapsOrPanelSender(sender);
+
+  if (canRelay) {
+    const relayMessage = { action: 'applyStrokeColor', color };
+    const relayTask = processRelayToMapTabs(sender, relayMessage, sendResponse, 'applyStrokeColor');
+    runBackgroundTask(relayTask, 'applyStrokeColor');
+  } else {
+    if (color) {
+      logRejectedMessage('applyStrokeColor', sender);
     }
+    sendResponse({ ok: false });
+  }
+  return true;
+};
 
-    if (action === 'ensureAuth') {
-      if (!isTrustedPanelSender(sender)) {
-        logRejectedMessage(action, sender)
-        sendResponse({ ok: false, user: null, avatarDataUrl: null })
-        return true
-      }
+const messageHandlers: Record<string, MessageHandler> = {
+  getAuth: handleGetAuth,
+  ensureAuth: handleEnsureAuth,
+  login: handleLogin,
+  logout: handleLogout,
+  listOccupiedDates: handleListOccupiedDates,
+  uploadProcessedFiles: handleUpload,
+  reloadEditorPage: handleReloadEditor,
+  [GO_TO_REFRESH_ACTION]: handleGoToRefresh,
+  [CLOSE_PANEL_SIDEBAR_ACTION]: handleClosePanel,
+  applyStrokeColor: handleApplyStrokeColor,
+};
 
-      handleYandexAuthMessage({
-        interactive: Boolean(message.interactive),
-        sendResponse,
-        logLabel: 'ensureAuth',
-      })
-      return true
-    }
+const onMessageHandler = (
+  message: any,
+  sender: RuntimeMessageSender,
+  sendResponse: (response: any) => void,
+): boolean | undefined => {
+  const action = message?.action as string | undefined;
+  let handler: MessageHandler | undefined;
+  if (action) {
+    handler = messageHandlers[action];
+  }
 
-    if (action === 'login') {
-      if (!isTrustedPanelSender(sender)) {
-        logRejectedMessage(action, sender)
-        void getBackgroundTranslator().then((t) => {
-          sendResponse({
-            ok: false,
-            user: null,
-            avatarDataUrl: null,
-            error: t('common.accessDenied'),
-          })
-        })
-        return true
-      }
+  let result: boolean | undefined;
+  if (handler) {
+    result = handler(message, sender, sendResponse);
+  }
+  return result;
+};
 
-      void getBackgroundTranslator().then((t) => {
-        handleYandexAuthMessage({
-          interactive: true,
-          sendResponse,
-          logLabel: 'login',
-          cancelError: t('auth.authCancelled'),
-        })
-      })
-      return true
-    }
+const initBackground = (): void => {
+  const persistTask = persistYandexBrowserFlag();
+  runBackgroundTask(persistTask, 'persistYandexBrowserFlag');
 
-    if (action === 'logout') {
-      if (!isTrustedPanelSender(sender)) {
-        logRejectedMessage(action, sender)
-        sendResponse({ ok: false })
-        return true
-      }
+  const registerTask = ensurePanelSidebarRegistered();
+  runBackgroundTask(registerTask, 'ensurePanelSidebarRegistered');
 
-      clearAuth({ explicit: true })
-        .then(() => sendResponse({ ok: true }))
-        .catch((error: unknown) => {
-          console.error('[nmap_uploader] logout failed:', error)
-          sendResponse({ ok: false })
-        })
-      return true
-    }
+  const localeTask = syncLocaleFromStorage();
+  runBackgroundTask(localeTask, 'syncLocaleFromStorage');
 
-    if (action === 'listOccupiedDates') {
-      if (!isTrustedPanelSender(sender)) {
-        logRejectedMessage(action, sender)
-        sendResponse({ ok: false, dates: [] })
-        return true
-      }
+  const toolbarAction = getToolbarActionApi();
+  if (toolbarAction) {
+    toolbarAction.onClicked.addListener(handleToolbarClick);
+  } else {
+    console.error('[nmap_uploader] toolbar action API is unavailable in this browser');
+  }
 
-      getStoredAuth()
-        .then(async (auth) => {
-          if (!auth) {
-            sendResponse({ ok: true, dates: [] })
-            return
-          }
-          const dates = await listExistingDateFolders({ token: auth.token })
-          sendResponse({ ok: true, dates })
-        })
-        .catch(async (error: unknown) => {
-          console.error('[nmap_uploader] listOccupiedDates failed:', error)
-          const t = await getBackgroundTranslator()
-          sendResponse({
-            ok: false,
-            dates: [],
-            error: error instanceof Error ? error.message : t('auth.folderReadError'),
-          })
-        })
-      return true
-    }
+  browser.runtime.onInstalled.addListener(handleInstalled);
+  browser.runtime.onMessage.addListener(onMessageHandler);
+};
 
-    if (action === 'uploadProcessedFiles') {
-      if (!isTrustedPanelSender(sender)) {
-        logRejectedMessage(action, sender)
-        void getBackgroundTranslator().then((t) => {
-          sendResponse({
-            ok: false,
-            processedCount: 0,
-            skippedCount: 0,
-            logs: [
-              {
-                id: crypto.randomUUID(),
-                level: 'error',
-                message: t('common.accessDenied'),
-              },
-            ],
-          })
-        })
-        return true
-      }
-
-      uploadProcessedFilesToYandexDisk({
-        files: message.files ?? [],
-        targetDate: message.targetDate,
-      })
-        .then((result) => sendResponse(result))
-        .catch(async (error: unknown) => {
-          console.error('[nmap_uploader] upload failed:', error)
-          const t = await getBackgroundTranslator()
-          sendResponse({
-            ok: false,
-            processedCount: 0,
-            skippedCount: 0,
-            logs: [
-              {
-                id: crypto.randomUUID(),
-                level: 'error',
-                message: error instanceof Error ? error.message : t('auth.uploadError'),
-              },
-            ],
-          })
-        })
-      return true
-    }
-
-    if (action === 'reloadEditorPage') {
-      if (!isTrustedNmapsOrPanelSender(sender)) {
-        logRejectedMessage(action, sender)
-        sendResponse({ ok: false })
-        return true
-      }
-
-      reloadMapEditorTabs({ preferredTabId: sender.tab?.id })
-        .then((ok) => sendResponse({ ok }))
-        .catch((error: unknown) => {
-          console.warn('[nmap_uploader] reloadEditorPage failed:', error)
-          sendResponse({ ok: false })
-        })
-      return true
-    }
-
-    if (action === GO_TO_REFRESH_ACTION) {
-      if (!isTrustedNmapsOrPanelSender(sender)) {
-        logRejectedMessage(action, sender)
-        sendResponse({ ok: false })
-        return true
-      }
-
-      const relayGoToRefresh = async (): Promise<void> => {
-        const senderTabId = sender.tab?.id
-        const senderIsMapTab = sender.tab?.url?.startsWith(NMAPS_TAB_URL_PREFIX)
-
-        if (senderTabId && senderIsMapTab) {
-          await browser.tabs.sendMessage(senderTabId, { action: GO_TO_REFRESH_ACTION })
-          return
-        }
-
-        const tabs = await browser.tabs.query({ url: 'https://n.maps.yandex.ru/*' })
-        await Promise.allSettled(
-          tabs.map((tab) => {
-            if (!tab.id) return Promise.resolve()
-            return browser.tabs.sendMessage(tab.id, { action: GO_TO_REFRESH_ACTION })
-          }),
-        )
-      }
-
-      relayGoToRefresh()
-        .then(() => sendResponse({ ok: true }))
-        .catch((error: unknown) => {
-          console.warn('[nmap_uploader] refreshGoToMenu relay failed:', error)
-          sendResponse({ ok: false })
-        })
-      return true
-    }
-
-    if (action === CLOSE_PANEL_SIDEBAR_ACTION) {
-      if (!isTrustedNmapsOrPanelSender(sender)) {
-        logRejectedMessage(action, sender)
-        sendResponse({ ok: false })
-        return true
-      }
-
-      const relayClosePanelSidebar = async (): Promise<void> => {
-        const senderTabId = sender.tab?.id
-        const senderIsMapTab = sender.tab?.url?.startsWith(NMAPS_TAB_URL_PREFIX)
-
-        if (senderTabId && senderIsMapTab) {
-          await browser.tabs.sendMessage(senderTabId, { action: CLOSE_PANEL_SIDEBAR_ACTION })
-          return
-        }
-
-        const tabs = await browser.tabs.query({ url: 'https://n.maps.yandex.ru/*' })
-        await Promise.allSettled(
-          tabs.map((tab) => {
-            if (!tab.id) return Promise.resolve()
-            return browser.tabs.sendMessage(tab.id, { action: CLOSE_PANEL_SIDEBAR_ACTION })
-          }),
-        )
-      }
-
-      relayClosePanelSidebar()
-        .then(() => sendResponse({ ok: true }))
-        .catch((error: unknown) => {
-          console.warn('[nmap_uploader] closePanelSidebar relay failed:', error)
-          sendResponse({ ok: false })
-        })
-      return true
-    }
-
-    if (action === 'applyStrokeColor') {
-      const color = typeof message.color === 'string' ? message.color : ''
-      if (!color) {
-        sendResponse({ ok: false })
-        return true
-      }
-
-      if (!isTrustedNmapsOrPanelSender(sender)) {
-        logRejectedMessage(action, sender)
-        sendResponse({ ok: false })
-        return true
-      }
-
-      const relayStrokeColor = async (): Promise<void> => {
-        const senderTabId = sender.tab?.id
-        const senderIsMapTab = sender.tab?.url?.startsWith(NMAPS_TAB_URL_PREFIX)
-
-        if (senderTabId && senderIsMapTab) {
-          await browser.tabs.sendMessage(senderTabId, { action: 'applyStrokeColor', color })
-          return
-        }
-
-        const tabs = await browser.tabs.query({ url: 'https://n.maps.yandex.ru/*' })
-        await Promise.allSettled(
-          tabs.map((tab) => {
-            if (!tab.id) return Promise.resolve()
-            return browser.tabs.sendMessage(tab.id, { action: 'applyStrokeColor', color })
-          }),
-        )
-      }
-
-      relayStrokeColor()
-        .then(() => sendResponse({ ok: true }))
-        .catch((error: unknown) => {
-          console.warn('[nmap_uploader] applyStrokeColor relay failed:', error)
-          sendResponse({ ok: false })
-        })
-      return true
-    }
-
-    return undefined
-  })
-})
+// noinspection JSUnusedGlobalSymbols
+export default defineBackground(initBackground);

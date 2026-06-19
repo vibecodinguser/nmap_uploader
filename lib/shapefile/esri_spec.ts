@@ -31,8 +31,6 @@ export const ESRI_SHAPE_TYPE = {
   MULTIPATCH: 31,
 } as const
 
-export type EsriShapeType = (typeof ESRI_SHAPE_TYPE)[keyof typeof ESRI_SHAPE_TYPE]
-
 export type ShapefileComponentSet = {
   basename: string
   shp: ArrayBuffer
@@ -65,12 +63,6 @@ const readDoubleLe = (view: DataView, offset: number): number => view.getFloat64
 export const isValidEsriBasename = (basename: string): boolean => {
   if (!basename) return false
   return /^[a-z0-9][a-z0-9_-]*$/i.test(basename)
-}
-
-/** Проверяет basename по строгому правилу 8.3 DOS (стр. 2 PDF). */
-export const isValidEsriDosBasename = (basename: string): boolean => {
-  if (!basename || basename.length > 8) return false
-  return /^[a-z0-9][a-z0-9_-]{0,7}$/i.test(basename)
 }
 
 const toProcessingError = (message: string): ProcessingError =>

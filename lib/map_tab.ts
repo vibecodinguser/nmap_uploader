@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser'
+import { NMAPS_ORIGIN } from '@/lib/extension_origins'
 
-export const MAP_ORIGIN = 'https://n.maps.yandex.ru'
+export const MAP_ORIGIN = NMAPS_ORIGIN
 export const MAP_TAB_URL_PATTERN = `${MAP_ORIGIN}/*`
 
 export const isMapTabUrl = (url?: string): boolean => {
@@ -27,11 +28,6 @@ export const collectMapTabIds = async (preferredTabId?: number): Promise<number[
     ids.add(activeMapTabId)
   }
 
-  const tabsByPattern = await browser.tabs.query({ url: MAP_TAB_URL_PATTERN })
-  for (const tab of tabsByPattern) {
-    if (tab.id !== undefined) ids.add(tab.id)
-  }
-
   const allTabs = await browser.tabs.query({})
   for (const tab of allTabs) {
     if (tab.id !== undefined && isMapTabUrl(tab.url)) {
@@ -43,19 +39,16 @@ export const collectMapTabIds = async (preferredTabId?: number): Promise<number[
 }
 
 export const getActiveMapTabId = async (): Promise<number | undefined> => {
-  const queries = [
+  const results = await Promise.allSettled([
     browser.tabs.query({ active: true, lastFocusedWindow: true }),
     browser.tabs.query({ active: true, currentWindow: true }),
-  ]
+  ])
 
-  for (const query of queries) {
-    try {
-      const [tab] = await query
-      if (tab?.id !== undefined && isMapTabUrl(tab.url)) {
-        return tab.id
-      }
-    } catch {
-      // query может быть недоступен в части контекстов
+  for (const result of results) {
+    if (result.status !== 'fulfilled') continue
+    const [tab] = result.value
+    if (tab?.id !== undefined && isMapTabUrl(tab.url)) {
+      return tab.id
     }
   }
 

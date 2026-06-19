@@ -7,7 +7,7 @@ import { PoligonTab } from '@/components/PoligonTab'
 import { SettingsTab } from '@/components/SettingsTab'
 import { TabBar } from '@/components/TabBar'
 import { UploadStatusMessage } from '@/components/UploadStatusMessage'
-import { expectNoA11yViolations, cleanupA11y, renderA11y } from '@/tests/setup/a11y'
+import { cleanupA11y, expectNoA11yViolations, renderA11y } from '@/tests/setup/a11y'
 
 const noop = () => {}
 
