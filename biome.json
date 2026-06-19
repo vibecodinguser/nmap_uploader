@@ -67,7 +67,10 @@
         "components/TabButton.tsx",
         "components/UploadStatusMessage.tsx",
         "components/UploadProgressRing.tsx",
-        "tests/setup/a11y.tsx"
+        "tests/setup/a11y.tsx",
+        "tests/integration/upload_service.test.ts",
+        "tests/integration/yandex_disk.test.ts",
+        "tests/integration/yandex_oauth.test.ts"
       ],
       "javascript": {
         "formatter": {

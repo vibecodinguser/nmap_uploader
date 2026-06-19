@@ -1,6 +1,7 @@
-import { HttpResponse, http } from 'msw'
-import { describe, expect, it } from 'vitest'
-import { createNmapOutputTemplate } from '@/lib/nmap_index'
+import assert from 'node:assert/strict';
+import { HttpResponse, http } from 'msw';
+import { describe, it } from 'vitest';
+import { createNmapOutputTemplate } from '@/lib/nmap_index';
 import {
   downloadIndexJson,
   ensureStorageFolders,
@@ -9,122 +10,179 @@ import {
   uploadIndexJson,
   verifyDiskAccess,
   YANDEX_DISK_FOLDER,
-} from '@/lib/yandex/client'
-import { server } from '@/tests/setup/vitest.setup'
+} from '@/lib/yandex/client';
+import { server } from '@/tests/setup/vitest.setup';
 import {
   getCreatedPaths,
   seedIndexJson,
   simulateParentNotFoundOnPut,
-} from '@/tests/setup/yandex_handlers'
+} from '@/tests/setup/yandex_handlers';
 
-const DISK_API = 'https://cloud-api.yandex.net/v1/disk'
+const DISK_API = 'https://cloud-api.yandex.net/v1/disk';
+const token = 'test-token';
+const baseFolderPath = `/${YANDEX_DISK_FOLDER}`;
+const targetDate = '2026-05-24';
+const testLongitude = 37.6;
+const testLatitude = 55.7;
+const testCoords: [number, number] = [testLongitude, testLatitude];
 
-describe('Yandex Disk', () => {
-  const token = 'test-token'
-  const baseFolderPath = `/${YANDEX_DISK_FOLDER}`
+function isDateFolderPath(path: string): boolean {
+  return path.startsWith(`${baseFolderPath}/`);
+}
 
-  it('verifyDiskAccess: успешная проверка токена', async () => {
-    await expect(verifyDiskAccess({ token })).resolves.toBeUndefined()
-  })
+function respondWithEvilUploadHref() {
+  return HttpResponse.json({ href: 'https://evil.com/upload' });
+}
 
-  it('verifyDiskAccess: 401 для просроченного токена', async () => {
-    await expect(verifyDiskAccess({ token: 'expired-token' })).rejects.toMatchObject({
-      message: expect.stringContaining('Выйдите и войдите'),
-    })
-  })
+function respondWithEvilDownloadHref() {
+  return HttpResponse.json({ href: 'https://evil.com/download' });
+}
 
-  it('ensureStorageFolders: создаёт «Приложения», базовую и дневную папки', async () => {
-    await expect(ensureStorageFolders({ token })).resolves.toBeUndefined()
+const evilUploadHandler = http.get(`${DISK_API}/resources/upload`, respondWithEvilUploadHref);
+const evilDownloadHandler = http.get(`${DISK_API}/resources/download`, respondWithEvilDownloadHref);
 
-    const createdPaths = getCreatedPaths()
-    expect(createdPaths).toContain('/Приложения')
-    expect(createdPaths).toContain(baseFolderPath)
-    expect(createdPaths.some((path) => path.startsWith(`${baseFolderPath}/`))).toBe(true)
-  })
+function assertPathCreated(paths: string[], path: string): void {
+  const exists = paths.includes(path);
+  assert.ok(exists);
+}
 
-  it('ensureStorageFolders: идемпотентен при повторном вызове', async () => {
-    await ensureStorageFolders({ token })
-    const pathsAfterFirstCall = getCreatedPaths()
+function assertHasDateFolder(paths: string[]): void {
+  const hasDateFolder = paths.some(isDateFolderPath);
+  assert.ok(hasDateFolder);
+}
 
-    await ensureStorageFolders({ token })
+async function callExpiredToken(): Promise<void> {
+  await verifyDiskAccess({ token: 'expired-token' });
+}
 
-    expect(getCreatedPaths()).toEqual(pathsAfterFirstCall)
-  })
+async function uploadDefaultData(): Promise<void> {
+  const data = createNmapOutputTemplate();
+  await uploadIndexJson({ token, data, targetDate });
+}
 
-  it('ensureStorageFolders: при 409 DiskPathDoesntExistsError создаёт родителя и повторяет', async () => {
-    simulateParentNotFoundOnPut(baseFolderPath)
+async function downloadDefaultDate(): Promise<void> {
+  await downloadIndexJson({ token, targetDate });
+}
 
-    await expect(ensureStorageFolders({ token })).resolves.toBeUndefined()
-    expect(getCreatedPaths()).toContain('/Приложения')
-    expect(getCreatedPaths()).toContain(baseFolderPath)
-  })
+async function accessOk(): Promise<void> {
+  await verifyDiskAccess({ token });
+}
 
-  it('resolveFolderPath: добавляет дату в путь', () => {
-    expect(resolveFolderPath({ targetDate: '2026-05-24' })).toBe(`${YANDEX_DISK_FOLDER}/2026-05-24`)
-  })
+async function expiredTokenError(): Promise<void> {
+  await assert.rejects(callExpiredToken, {
+    message: /Выйдите и войдите/,
+  });
+}
 
-  it('listExistingDateFolders: возвращает пустой список, если папок с датами нет', async () => {
-    await expect(listExistingDateFolders({ token })).resolves.toEqual([])
-  })
+async function foldersCreatePaths(): Promise<void> {
+  await ensureStorageFolders({ token });
 
-  it('listExistingDateFolders: возвращает даты существующих папок', async () => {
-    const data = createNmapOutputTemplate()
-    await uploadIndexJson({ token, data, targetDate: '2026-05-24' })
-    await uploadIndexJson({ token, data, targetDate: '2026-06-01' })
+  const createdPaths = getCreatedPaths();
+  assertPathCreated(createdPaths, '/Приложения');
+  assertPathCreated(createdPaths, baseFolderPath);
+  assertHasDateFolder(createdPaths);
+}
 
-    await expect(listExistingDateFolders({ token })).resolves.toEqual(['2026-05-24', '2026-06-01'])
-  })
+async function foldersIdempotent(): Promise<void> {
+  await ensureStorageFolders({ token });
+  const pathsAfterFirstCall = getCreatedPaths();
 
-  it('downloadIndexJson: возвращает null, если index.json отсутствует', async () => {
-    const result = await downloadIndexJson({ token, targetDate: '2026-05-24' })
-    expect(result).toBeNull()
-  })
+  await ensureStorageFolders({ token });
 
-  it('downloadIndexJson: скачивает существующий index.json', async () => {
-    const existing = createNmapOutputTemplate()
-    existing.points.point1 = { coords: [37.6, 55.7], desc: 'test' }
-    seedIndexJson(existing)
+  const pathsAfterSecondCall = getCreatedPaths();
+  assert.deepEqual(pathsAfterSecondCall, pathsAfterFirstCall);
+}
 
-    const result = await downloadIndexJson({ token, targetDate: '2026-05-24' })
+async function foldersParentNotFound(): Promise<void> {
+  simulateParentNotFoundOnPut(baseFolderPath);
 
-    expect(result).toEqual(existing)
-  })
+  await ensureStorageFolders({ token });
 
-  it('uploadIndexJson: загружает index.json на Диск', async () => {
-    const data = createNmapOutputTemplate()
-    data.paths.path1 = [[37.6, 55.7]]
+  const createdPaths = getCreatedPaths();
+  assertPathCreated(createdPaths, '/Приложения');
+  assertPathCreated(createdPaths, baseFolderPath);
+}
 
-    await expect(
-      uploadIndexJson({ token, data, targetDate: '2026-05-24' }),
-    ).resolves.toBeUndefined()
+function resolveFolderDate(): void {
+  const folderPath = resolveFolderPath({ targetDate });
+  const expectedPath = `${YANDEX_DISK_FOLDER}/${targetDate}`;
+  assert.equal(folderPath, expectedPath);
+}
 
-    const downloaded = await downloadIndexJson({ token, targetDate: '2026-05-24' })
-    expect(downloaded).toEqual(data)
-  })
+async function listDatesEmpty(): Promise<void> {
+  const result = await listExistingDateFolders({ token });
+  assert.deepEqual(result, []);
+}
 
-  it('uploadIndexJson: отклоняет подменённый href вне доменов Яндекс.Диска', async () => {
-    server.use(
-      http.get(`${DISK_API}/resources/upload`, () =>
-        HttpResponse.json({ href: 'https://evil.com/upload' }),
-      ),
-    )
+async function listDatesExisting(): Promise<void> {
+  const data = createNmapOutputTemplate();
+  await uploadIndexJson({ token, data, targetDate });
+  await uploadIndexJson({ token, data, targetDate: '2026-06-01' });
 
-    const data = createNmapOutputTemplate()
-    await expect(uploadIndexJson({ token, data, targetDate: '2026-05-24' })).rejects.toMatchObject({
-      message: expect.stringContaining('Недопустимый URL'),
-    })
-  })
+  const result = await listExistingDateFolders({ token });
+  assert.deepEqual(result, ['2026-05-24', '2026-06-01']);
+}
 
-  it('downloadIndexJson: отклоняет подменённый href вне доменов Яндекс.Диска', async () => {
-    seedIndexJson(createNmapOutputTemplate())
-    server.use(
-      http.get(`${DISK_API}/resources/download`, () =>
-        HttpResponse.json({ href: 'https://evil.com/download' }),
-      ),
-    )
+async function downloadNull(): Promise<void> {
+  const result = await downloadIndexJson({ token, targetDate });
+  assert.equal(result, null);
+}
 
-    await expect(downloadIndexJson({ token, targetDate: '2026-05-24' })).rejects.toMatchObject({
-      message: expect.stringContaining('Недопустимый URL'),
-    })
-  })
-})
+async function downloadExisting(): Promise<void> {
+  const existing = createNmapOutputTemplate();
+  existing.points.point1 = { coords: testCoords, desc: 'test' };
+  seedIndexJson(existing);
+
+  const result = await downloadIndexJson({ token, targetDate });
+
+  assert.deepEqual(result, existing);
+}
+
+async function uploadIndex(): Promise<void> {
+  const data = createNmapOutputTemplate();
+  data.paths.path1 = [testCoords];
+
+  await uploadIndexJson({ token, data, targetDate });
+
+  const downloaded = await downloadIndexJson({ token, targetDate });
+  assert.deepEqual(downloaded, data);
+}
+
+async function rejectEvilUpload(): Promise<void> {
+  server.use(evilUploadHandler);
+
+  await assert.rejects(uploadDefaultData, {
+    message: /Недопустимый URL/,
+  });
+}
+
+async function rejectEvilDownload(): Promise<void> {
+  const seed = createNmapOutputTemplate();
+  seedIndexJson(seed);
+  server.use(evilDownloadHandler);
+
+  await assert.rejects(downloadDefaultDate, {
+    message: /Недопустимый URL/,
+  });
+}
+
+function yandexDiskTests(): void {
+  it('verifyDiskAccess: успешная проверка токена', accessOk);
+  it('verifyDiskAccess: 401 для просроченного токена', expiredTokenError);
+  it('ensureStorageFolders: создаёт «Приложения», базовую и дневную папки', foldersCreatePaths);
+  it('ensureStorageFolders: идемпотентен при повторном вызове', foldersIdempotent);
+  it(
+    'ensureStorageFolders: при 409 DiskPathDoesntExistsError создаёт родителя и повторяет',
+    foldersParentNotFound,
+  );
+  it('resolveFolderPath: добавляет дату в путь', resolveFolderDate);
+  it('listExistingDateFolders: возвращает пустой список, если папок с датами нет', listDatesEmpty);
+  it('listExistingDateFolders: возвращает даты существующих папок', listDatesExisting);
+  it('downloadIndexJson: возвращает null, если index.json отсутствует', downloadNull);
+  it('downloadIndexJson: скачивает существующий index.json', downloadExisting);
+  it('uploadIndexJson: загружает index.json на Диск', uploadIndex);
+  it('uploadIndexJson: отклоняет подменённый href вне доменов Яндекс.Диска', rejectEvilUpload);
+  it('downloadIndexJson: отклоняет подменённый href вне доменов Яндекс.Диска', rejectEvilDownload);
+}
+
+describe('Yandex Disk', yandexDiskTests);

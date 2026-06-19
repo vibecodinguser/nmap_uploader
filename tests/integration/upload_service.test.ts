@@ -1,61 +1,99 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import { createNmapOutputTemplate, type ProcessResult } from '@/lib/nmap_index'
-import { uploadProcessedFilesToYandexDisk } from '@/lib/upload_service'
-import { clearAuth, saveAuth } from '@/lib/yandex/client'
+import assert from 'node:assert/strict';
+import { beforeEach, describe, it } from 'vitest';
+import { createNmapOutputTemplate, type ProcessResult } from '@/lib/nmap_index';
+import { type UploadLogEntry, uploadProcessedFilesToYandexDisk } from '@/lib/upload_service';
+import { clearAuth, saveAuth } from '@/lib/yandex/client';
 
-const createProcessResult = (): ProcessResult => ({
-  ...createNmapOutputTemplate(),
-  metadata: [],
-})
+function createProcessResult(): ProcessResult {
+  return {
+    ...createNmapOutputTemplate(),
+    metadata: [],
+  };
+}
 
-describe('uploadProcessedFilesToYandexDisk', () => {
-  beforeEach(async () => {
-    await saveAuth({
-      token: 'test-token',
-      user: { id: '123', login: 'testuser' },
-    })
-  })
+function isUploadCompleteLog(log: UploadLogEntry): boolean {
+  return log.message === 'Завершено: файл загружен';
+}
 
-  it('полный happy-path для одного файла', async () => {
-    const result = await uploadProcessedFilesToYandexDisk({
-      files: [{ name: 'test.geojson', result: createProcessResult() }],
-    })
+function isAuthRefreshLog(log: UploadLogEntry): boolean {
+  return log.message.includes('Выйдите и войдите');
+}
 
-    expect(result.ok).toBe(true)
-    expect(result.processedCount).toBe(1)
-    expect(result.logs.some((log) => log.message === 'Завершено: файл загружен')).toBe(true)
-  })
+function isDiskAccessErrorLog(log: UploadLogEntry): boolean {
+  return log.message === 'Ошибка доступа к Диску';
+}
 
-  it('без файлов возвращает ошибку', async () => {
-    const result = await uploadProcessedFilesToYandexDisk({ files: [] })
+async function saveDefaultAuth(): Promise<void> {
+  await saveAuth({
+    token: 'test-token',
+    user: { id: '123', login: 'testuser' },
+  });
+}
 
-    expect(result.ok).toBe(false)
-    expect(result.logs.at(-1)?.message).toBe('Нет данных для загрузки')
-  })
+async function uploadsSingleFileSuccessfully(): Promise<void> {
+  const result = await uploadProcessedFilesToYandexDisk({
+    files: [{ name: 'test.geojson', result: createProcessResult() }],
+  });
 
-  it('без авторизации возвращает ошибку', async () => {
-    await clearAuth()
+  assert.equal(result.ok, true);
+  assert.equal(result.processedCount, 1);
 
-    const result = await uploadProcessedFilesToYandexDisk({
-      files: [{ name: 'test.geojson', result: createProcessResult() }],
-    })
+  const successLog = result.logs.find(isUploadCompleteLog);
+  assert.notEqual(successLog, undefined);
+}
 
-    expect(result.ok).toBe(false)
-    expect(result.logs.at(-1)?.message).toBe('Необходима авторизация. Войдите через Яндекс ID')
-  })
+async function returnsErrorWhenNoFiles(): Promise<void> {
+  const result = await uploadProcessedFilesToYandexDisk({ files: [] });
 
-  it('при недействительном токене возвращает конкретную ошибку доступа', async () => {
-    await saveAuth({
-      token: 'expired-token',
-      user: { id: '1', login: 'expired' },
-    })
+  assert.equal(result.ok, false);
 
-    const result = await uploadProcessedFilesToYandexDisk({
-      files: [{ name: 'test.geojson', result: createProcessResult() }],
-    })
+  const logs = result.logs;
+  const lastLog = logs[logs.length - 1];
+  assert.ok(lastLog !== undefined);
+  assert.equal(lastLog.message, 'Нет данных для загрузки');
+}
 
-    expect(result.ok).toBe(false)
-    expect(result.logs.some((log) => log.message.includes('Выйдите и войдите'))).toBe(true)
-    expect(result.logs.some((log) => log.message === 'Ошибка доступа к Диску')).toBe(false)
-  })
-})
+async function returnsErrorWhenNotAuthenticated(): Promise<void> {
+  await clearAuth();
+
+  const result = await uploadProcessedFilesToYandexDisk({
+    files: [{ name: 'test.geojson', result: createProcessResult() }],
+  });
+
+  assert.equal(result.ok, false);
+
+  const logs = result.logs;
+  const lastLog = logs[logs.length - 1];
+  assert.ok(lastLog !== undefined);
+  assert.equal(lastLog.message, 'Необходима авторизация. Войдите через Яндекс ID');
+}
+
+async function expiredTokenError(): Promise<void> {
+  await saveAuth({
+    token: 'expired-token',
+    user: { id: '1', login: 'expired' },
+  });
+
+  const result = await uploadProcessedFilesToYandexDisk({
+    files: [{ name: 'test.geojson', result: createProcessResult() }],
+  });
+
+  assert.equal(result.ok, false);
+
+  const authErrorLog = result.logs.find(isAuthRefreshLog);
+  assert.notEqual(authErrorLog, undefined);
+
+  const diskAccessErrorLog = result.logs.find(isDiskAccessErrorLog);
+  assert.equal(diskAccessErrorLog, undefined);
+}
+
+function diskUploadTests(): void {
+  beforeEach(saveDefaultAuth);
+
+  it('полный happy-path для одного файла', uploadsSingleFileSuccessfully);
+  it('без файлов возвращает ошибку', returnsErrorWhenNoFiles);
+  it('без авторизации возвращает ошибку', returnsErrorWhenNotAuthenticated);
+  it('при недействительном токене возвращает конкретную ошибку доступа', expiredTokenError);
+}
+
+describe('uploadProcessedFilesToYandexDisk', diskUploadTests);
