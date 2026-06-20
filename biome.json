@@ -52,6 +52,7 @@
         "lib/kml/kml_spec.ts",
         "lib/shapefile/esri_spec.ts",
         "lib/topojson/topojson_spec.ts",
+        "lib/wkt/wkt_spec.ts",
         "hooks/useAuth.ts",
         "hooks/useFileUpload.ts",
         "hooks/usePointUpload.ts",
