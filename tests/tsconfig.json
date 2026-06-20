@@ -4,10 +4,19 @@
     "allowImportingTsExtensions": true,
     "baseUrl": "..",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": [
+        "./*"
+      ]
     },
     "types": ["node", "vitest"],
     "jsx": "react-jsx"
   },
-  "include": ["./**/*.ts", "./**/*.tsx", "./types/**/*.d.ts", "../lib/shims.d.ts", "../env.d.ts"]
+  "include": [
+    "./**/*.ts",
+    "./**/*.tsx",
+    "./types/**/*.d.ts",
+    "../.wxt/types/paths.d.ts",
+    "../lib/shims.d.ts",
+    "../env.d.ts"
+  ]
 }
