@@ -1,5 +1,3 @@
-import type { Messages } from './types'
-
 export const enMessages = {
   locale: {
     label: 'Language',
@@ -142,4 +140,4 @@ export const enMessages = {
     openPanelFailed: 'Failed to open the panel on the current tab',
     tabNotFound: 'Could not find a tab for the panel',
   },
-} as const satisfies Messages
+}

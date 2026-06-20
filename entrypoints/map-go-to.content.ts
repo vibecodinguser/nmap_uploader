@@ -51,7 +51,7 @@ import {
   shouldRemountGoToToolbar,
 } from '@/lib/go_to_toolbar';
 import { createTranslator, getStoredLocale, type TranslateFn } from '@/lib/i18n';
-import type { Locale } from '@/lib/i18n/locale';
+import type { Locale } from '@/lib/i18n/locale.types';
 import { LOCALE_STORAGE_KEY } from '@/lib/i18n/locale';
 
 const BUTTON_ANCHOR_SELECTORS = [

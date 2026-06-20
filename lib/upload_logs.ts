@@ -1,9 +1,6 @@
-import {
-  createTranslator,
-  getRuntimeLocale,
-  isUploadCompleteMessage,
-  type Locale,
-} from '@/lib/i18n'
+import { createTranslator, type Locale } from '@/lib/i18n'
+import { getRuntimeLocale } from '@/lib/i18n/locale_state'
+import { isUploadCompleteMessage } from '@/lib/i18n/upload_complete'
 import type { UploadLogEntry } from '@/lib/upload_service'
 
 export type UploadStatus = {

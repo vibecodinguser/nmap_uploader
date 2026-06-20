@@ -1,5 +1,3 @@
-import type { Messages } from './types'
-
 export const ruMessages = {
   locale: {
     label: 'Язык',
@@ -142,6 +140,4 @@ export const ruMessages = {
     openPanelFailed: 'Не удалось открыть панель на текущей вкладке',
     tabNotFound: 'Не удалось найти вкладку для панели',
   },
-} as const satisfies Messages
-
-export type { MessageKey, Messages } from './types'
+}

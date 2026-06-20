@@ -1,5 +1,5 @@
 import { getGoToSourceDisplayName as getLocalizedGoToSourceName } from '@/lib/i18n'
-import type { Locale } from '@/lib/i18n/locale'
+import type { Locale } from '@/lib/i18n/locale.types'
 
 export type GoToSource = {
   linkTemplate: string

@@ -1,10 +1,7 @@
 import { browser } from 'wxt/browser'
-import {
-  createTranslator,
-  getRuntimeLocale,
-  hasUploadAuthErrorInLogs,
-  syncLocaleFromStorage,
-} from '@/lib/i18n'
+import { createTranslator, syncLocaleFromStorage } from '@/lib/i18n'
+import { getRuntimeLocale } from '@/lib/i18n/locale_state'
+import { hasUploadAuthErrorInLogs } from '@/lib/i18n/upload_auth_logs'
 import { createUploadLog } from '@/lib/upload_logs'
 import type { UploadLogEntry } from '@/lib/upload_service'
 import { requestEnsureAuth } from '@/lib/yandex/auth_message'

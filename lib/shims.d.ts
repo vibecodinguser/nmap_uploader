@@ -1,3 +1,70 @@
+declare module 'wxt/browser' {
+  export interface Browser {
+    storage: {
+      local: {
+        get(keys: string | string[] | Record<string, unknown> | null): Promise<Record<string, unknown>>
+        set(items: Record<string, unknown>): Promise<void>
+      }
+    }
+    i18n: {
+      getUILanguage(): string
+    }
+  }
+
+  export const browser: Browser
+}
+
+declare module '@/lib/i18n/locale' {
+  import type { Locale, LocaleOption } from '@/lib/i18n/locale.types'
+
+  export type { Locale, LocaleOption }
+
+  export const DEFAULT_LOCALE: Locale
+
+  export const LOCALE_STORAGE_KEY: string
+
+  export const LOCALE_OPTIONS: readonly LocaleOption[]
+
+  export function isLocale(value: unknown): value is Locale
+
+  export function localeFromUiLanguage(uiLanguage: string): Locale
+}
+
+declare module '@/lib/i18n/translate' {
+  import type { Locale } from '@/lib/i18n/locale.types'
+  import type { TranslateFn } from '@/lib/i18n/types'
+
+  export function createTranslator(locale: Locale): TranslateFn
+  export function getGoToSourceDisplayName(name: string, locale: Locale): string
+}
+
+declare module '@/lib/i18n/upload_complete' {
+  import type { Locale } from '@/lib/i18n/locale.types'
+
+  export function getUploadCompletePrefixes(locale: Locale): string[]
+  export function isUploadCompleteMessage(message: string, locale: Locale): boolean
+}
+
+declare module '@/lib/i18n/upload_auth_logs' {
+  export const sessionInvalidMarkers: readonly string[]
+  export function hasUploadAuthErrorInLogs(messages: string[]): boolean
+}
+
+declare module '@/lib/i18n/locale_state' {
+  import type { Locale } from '@/lib/i18n/locale.types'
+
+  export function getRuntimeLocale(): Locale
+  export function setRuntimeLocale(locale: Locale): void
+}
+
+declare module '@/lib/i18n/locale_storage' {
+  import type { Locale } from '@/lib/i18n/locale.types'
+
+  export function getStoredLocale(): Promise<Locale>
+  export function setStoredLocale(locale: Locale): Promise<void>
+  export function syncLocaleFromStorage(): Promise<Locale>
+}
+
 declare module 'shpjs' {
   import type { FeatureCollection } from 'geojson'
 

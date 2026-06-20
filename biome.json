@@ -81,6 +81,12 @@
         "tests/integration/yandex_oauth.test.ts",
         "wxt.config.ts",
         "stylelint.config.js",
+        "lib/i18n/upload_auth_logs.js",
+        "lib/i18n/upload_complete.js",
+        "lib/i18n/translate.js",
+        "lib/i18n/locale_storage.js",
+        "lib/i18n/locale_state.js",
+        "lib/i18n/locale.js",
         "env.d.ts"
       ],
       "javascript": {

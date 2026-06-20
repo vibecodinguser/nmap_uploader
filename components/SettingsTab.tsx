@@ -8,7 +8,8 @@ import type { useSplitViewButton } from '@/hooks/useSplitViewButton';
 import type { useStrokeColor } from '@/hooks/useStrokeColor';
 import type { ThemeMode } from '@/hooks/useTheme';
 import type { TranslateFn } from '@/lib/i18n';
-import { LOCALE_OPTIONS, type Locale } from '@/lib/i18n/locale';
+import { LOCALE_OPTIONS } from '@/lib/i18n/locale';
+import type { Locale, LocaleOption } from '@/lib/i18n/locale.types';
 import { RELEASES_URL } from '@/lib/releases_url';
 import { DEFAULT_STROKE_COLOR_INPUT, toStrokeColorInputValue } from '@/lib/stroke_color';
 import packageJson from '../package.json';
@@ -154,7 +155,7 @@ function getApplyDisabled(canApply: boolean): boolean {
 function buildLocaleOptionItems(context: LocaleOptionRenderContext): ReactNode[] {
   const items: ReactNode[] = [];
   for (let index = 0; index < LOCALE_OPTIONS.length; index += 1) {
-    const option = LOCALE_OPTIONS[index];
+    const option = LOCALE_OPTIONS[index] as LocaleOption;
     const localeOptionItem = (
       <label key={option.value} className="theme-mode-switch-option">
         <input

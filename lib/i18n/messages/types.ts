@@ -1,3 +1,7 @@
+export interface InterpolationParams {
+  [paramName: string]: string | number
+}
+
 export type Messages = {
   locale: {
     label: string

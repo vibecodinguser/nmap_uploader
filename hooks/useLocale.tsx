@@ -13,9 +13,9 @@ import {
   getStoredLocale,
   type Locale,
   setRuntimeLocale,
-  setStoredLocale,
   type TranslateFn,
 } from '@/lib/i18n';
+import { setStoredLocale } from '@/lib/i18n/locale_storage';
 import { DEFAULT_LOCALE, isLocale, LOCALE_STORAGE_KEY } from '@/lib/i18n/locale';
 
 type LocaleContextValue = {

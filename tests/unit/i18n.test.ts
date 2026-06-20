@@ -2,7 +2,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { browser } from 'wxt/browser'
 import { createTranslator, getStoredLocale } from '@/lib/i18n'
 import { LOCALE_STORAGE_KEY, localeFromUiLanguage } from '@/lib/i18n/locale'
+import { enMessages } from '@/lib/i18n/messages/en'
+import { ruMessages } from '@/lib/i18n/messages/ru'
+import type { Messages } from '@/lib/i18n/messages/types'
+import { LOCALE_OPTIONS } from '@/lib/i18n/locale'
+import type { LocaleOption } from '@/lib/i18n/locale.types'
 import { resetBrowserMocks } from '../setup/browser_mock'
+
+const assertMessagesShape = (messages: Messages): Messages => messages
+assertMessagesShape(ruMessages)
+assertMessagesShape(enMessages)
+
+const assertLocaleOptions = (options: readonly LocaleOption[]): readonly LocaleOption[] => options
+assertLocaleOptions(LOCALE_OPTIONS)
 
 describe('i18n', () => {
   it('returns Russian messages by default', () => {
