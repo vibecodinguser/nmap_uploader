@@ -43,6 +43,8 @@
         "entrypoints/nakarte-sync-main.content.ts",
         "entrypoints/nmaps-location-main.content.ts",
         "lib/browser.ts",
+        "lib/converters/geojson.ts",
+        "lib/converters/index.ts",
         "lib/go_to_geo_projection.ts",
         "lib/go_to_theme.ts",
         "hooks/useAuth.ts",
