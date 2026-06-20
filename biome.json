@@ -50,6 +50,7 @@
         "lib/geojson/geojson_spec.ts",
         "lib/gpx/gpx_spec.ts",
         "lib/kml/kml_spec.ts",
+        "lib/shapefile/esri_spec.ts",
         "hooks/useAuth.ts",
         "hooks/useFileUpload.ts",
         "hooks/usePointUpload.ts",
