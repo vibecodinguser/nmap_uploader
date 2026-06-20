@@ -1,4 +1,6 @@
+/* jshint esversion: 11, module: true */
 /** @type {import('stylelint').Config} */
+// noinspection JSUnusedGlobalSymbols
 export default {
   extends: ['stylelint-config-standard'],
   ignoreFiles: ['**/.output/**', '**/.wxt/**', '**/node_modules/**'],
@@ -63,4 +65,4 @@ export default {
 
     'media-feature-range-notation': 'context',
   },
-}
+};

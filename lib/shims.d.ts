@@ -11,10 +11,10 @@ declare module '*.svg' {
 }
 
 declare module 'topojson-client' {
-  import type { Feature, FeatureCollection } from 'geojson'
-  import type { Topology } from 'topojson-specification'
+  import type { Feature, FeatureCollection } from 'geojson';
+  import type { Topology } from 'topojson-specification';
 
-  type TopoJsonObject = Topology['objects'][string]
+  type TopoJsonObject = Topology['objects'][string];
 
-  export function feature(topology: Topology, object: TopoJsonObject): Feature | FeatureCollection
+  export function feature(topology: Topology, object: TopoJsonObject): Feature | FeatureCollection;
 }
