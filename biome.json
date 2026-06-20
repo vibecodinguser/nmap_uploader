@@ -50,6 +50,7 @@
         "lib/geojson/geojson_spec.ts",
         "lib/gpx/gpx_spec.ts",
         "lib/kml/kml_spec.ts",
+        "lib/xml/parse_xml.ts",
         "lib/shapefile/esri_spec.ts",
         "lib/topojson/topojson_spec.ts",
         "lib/wkt/wkt_spec.ts",
