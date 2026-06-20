@@ -49,6 +49,7 @@
         "lib/go_to_theme.ts",
         "lib/geojson/geojson_spec.ts",
         "lib/gpx/gpx_spec.ts",
+        "lib/kml/kml_spec.ts",
         "hooks/useAuth.ts",
         "hooks/useFileUpload.ts",
         "hooks/usePointUpload.ts",
