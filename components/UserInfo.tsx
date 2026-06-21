@@ -1,16 +1,16 @@
-import { LogOut } from 'lucide-react';
-import { useTranslate } from '@/hooks/useLocale';
-import type { YandexUser } from '@/lib/yandex/client';
+import { LogOut } from 'lucide-react'
+import { useTranslate } from '@/hooks/useLocale'
+import type { YandexUser } from '@/lib/yandex/client'
 
 type UserInfoProps = {
-  user: YandexUser;
-  avatarDataUrl: string | null;
-  onLogout: () => void;
-};
+  user: YandexUser
+  avatarDataUrl: string | null
+  onLogout: () => void
+}
 
 export const UserInfo = ({ user, avatarDataUrl, onLogout }: UserInfoProps) => {
-  const t = useTranslate();
-  const displayName = user.display_name || user.real_name || user.login;
+  const t = useTranslate()
+  const displayName = user.displayName || user.realName || user.login
 
   return (
     <div className="user-info">
@@ -37,5 +37,5 @@ export const UserInfo = ({ user, avatarDataUrl, onLogout }: UserInfoProps) => {
         <LogOut size={16} />
       </button>
     </div>
-  );
-};
+  )
+}

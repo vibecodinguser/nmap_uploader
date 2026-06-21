@@ -1,77 +1,77 @@
-import { Settings } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { TabBar } from '@/components/TabBar';
-import '@/assets/styles/uploader.css';
-import { Header } from '@/components/Header';
-import { PointsTab } from '@/components/PointsTab';
-import { PoligonTab } from '@/components/PoligonTab';
-import { SettingsTab } from '@/components/SettingsTab';
-import { useAuth } from '@/hooks/useAuth';
-import { useFileUpload } from '@/hooks/useFileUpload';
-import { useGoToLinks } from '@/hooks/useGoToLinks';
-import { useLocale } from '@/hooks/useLocale';
-import { OccupiedDatesProvider } from '@/hooks/useOccupiedDates';
-import { usePointUpload } from '@/hooks/usePointUpload';
-import { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload';
-import { useSplitViewButton } from '@/hooks/useSplitViewButton';
-import { useStrokeColor } from '@/hooks/useStrokeColor';
-import { useTheme } from '@/hooks/useTheme';
+import { Settings } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { TabBar } from '@/components/TabBar'
+import '@/assets/styles/uploader.css'
+import { Header } from '@/components/Header'
+import { PointsTab } from '@/components/PointsTab'
+import { PoligonTab } from '@/components/PoligonTab'
+import { SettingsTab } from '@/components/SettingsTab'
+import { useAuth } from '@/hooks/useAuth'
+import { useFileUpload } from '@/hooks/useFileUpload'
+import { useGoToLinks } from '@/hooks/useGoToLinks'
+import { useLocale } from '@/hooks/useLocale'
+import { OccupiedDatesProvider } from '@/hooks/useOccupiedDates'
+import { usePointUpload } from '@/hooks/usePointUpload'
+import { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
+import { useSplitViewButton } from '@/hooks/useSplitViewButton'
+import { useStrokeColor } from '@/hooks/useStrokeColor'
+import { useTheme } from '@/hooks/useTheme'
 
 type AppProps = {
-  themeTarget?: Element;
-};
+  themeTarget?: Element
+}
 
-type MainTab = 'upload' | 'manual';
-type AppView = 'main' | 'settings';
+type MainTab = 'upload' | 'manual'
+type AppView = 'main' | 'settings'
 
 export const App = ({ themeTarget }: AppProps) => {
-  const { t } = useLocale();
-  const { themeMode, setThemeMode } = useTheme(themeTarget);
-  const strokeColor = useStrokeColor();
+  const { t } = useLocale()
+  const { themeMode, setThemeMode } = useTheme(themeTarget)
+  const strokeColor = useStrokeColor()
   const { user, avatarDataUrl, isLoggingIn, isLoggedIn, refreshUser, handleLogin, handleLogout } =
-    useAuth();
-  const reloadAfterUpload = useReloadAfterUpload(user?.id);
-  const splitViewButton = useSplitViewButton();
-  const goToLinks = useGoToLinks();
+    useAuth()
+  const reloadAfterUpload = useReloadAfterUpload(user?.id)
+  const splitViewButton = useSplitViewButton()
+  const goToLinks = useGoToLinks()
   const { isUploading, progress, uploadStatus, performUpload } = useFileUpload({
     onAuthenticated: refreshUser,
-  });
+  })
   const {
     isUploading: isPointUploading,
     uploadStatus: pointUploadStatus,
     performManualUpload,
     performMultipointUpload,
-  } = usePointUpload({ onAuthenticated: refreshUser });
-  const [activeTab, setActiveTab] = useState<MainTab>('upload');
-  const [activeView, setActiveView] = useState<AppView>('main');
+  } = usePointUpload({ onAuthenticated: refreshUser })
+  const [activeTab, setActiveTab] = useState<MainTab>('upload')
+  const [activeView, setActiveView] = useState<AppView>('main')
 
   const mainTabs = useMemo(
     function buildMainTabs() {
       return [
         { id: 'upload' as const, label: t('tabs.polygons') },
         { id: 'manual' as const, label: t('tabs.points') },
-      ];
+      ]
     },
     [t],
-  );
+  )
 
   const handleOpenSettings = () => {
-    setActiveView('settings');
-  };
+    setActiveView('settings')
+  }
 
   const handleCloseSettings = () => {
-    setActiveView('main');
-  };
+    setActiveView('main')
+  }
 
   const triggerLogin = async () => {
-    await handleLogin();
-  };
+    await handleLogin()
+  }
 
   const handleRequireAuth = async () => {
     if (!isLoggingIn) {
-      await triggerLogin();
+      await triggerLogin()
     }
-  };
+  }
 
   return (
     <div className="sidepanel-app">
@@ -144,5 +144,5 @@ export const App = ({ themeTarget }: AppProps) => {
         </button>
       )}
     </div>
-  );
-};
+  )
+}

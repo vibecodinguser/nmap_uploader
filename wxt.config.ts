@@ -1,16 +1,16 @@
-import { resolve } from 'node:path';
-import { loadEnv } from 'vite';
-import { defineConfig } from 'wxt';
-import { FIREFOX_EXTENSION_ID } from './lib/firefox_extension_id';
-import { patchReactDomForAmo } from './lib/vite_patch_react_dom_amo';
-import packageJson from './package.json';
+import { resolve } from 'node:path'
+import { loadEnv } from 'vite'
+import { defineConfig } from 'wxt'
+import { FIREFOX_EXTENSION_ID } from './lib/firefox_extension_id'
+import { patchReactDomForAmo } from './lib/vite_patch_react_dom_amo'
+import packageJson from './package.json'
 
 const extensionIcons = {
   16: '/icon/16.png',
   32: '/icon/32.png',
   48: '/icon/48.png',
   128: '/icon/128.png',
-} as const;
+} as const
 
 const CHROME_PERMISSIONS = [
   'sidePanel',
@@ -19,20 +19,20 @@ const CHROME_PERMISSIONS = [
   'activeTab',
   'identity',
   'tabs',
-] as const;
-const FIREFOX_PERMISSIONS = ['storage', 'scripting', 'activeTab', 'identity', 'tabs'] as const;
+] as const
+const FIREFOX_PERMISSIONS = ['storage', 'scripting', 'activeTab', 'identity', 'tabs'] as const
 
-const URI_SCHEME = 'https';
+const URI_SCHEME = 'https'
 
 function manifestHostPattern(host: string): string {
   // biome-ignore lint/style/useTemplate: split '://' so analyzers do not treat '//' as a comment
-  return URI_SCHEME + '://' + host;
+  return URI_SCHEME + '://' + host
 }
 
-const MAPS_HOST = 'n.maps.yandex.ru';
-const MAPS_START_PATH = '/#!/objects/3470560507?z=14&ll=39.187968%2C44.969538&l=nk%23sat';
+const MAPS_HOST = 'n.maps.yandex.ru'
+const MAPS_START_PATH = '/#!/objects/3470560507?z=14&ll=39.187968%2C44.969538&l=nk%23sat'
 // biome-ignore lint/style/useTemplate: split '://' so analyzers do not treat '//' as a comment
-const MAPS_START_URL = URI_SCHEME + '://' + MAPS_HOST + MAPS_START_PATH;
+const MAPS_START_URL = URI_SCHEME + '://' + MAPS_HOST + MAPS_START_PATH
 
 const baseManifest = {
   name: '__MSG_extName__',
@@ -60,20 +60,20 @@ const baseManifest = {
     default_icon: extensionIcons,
   },
   icons: extensionIcons,
-} as const;
+} as const
 
 function getPermissions(browser: string) {
-  let permissions: readonly (typeof CHROME_PERMISSIONS)[number][];
+  let permissions: readonly (typeof CHROME_PERMISSIONS)[number][]
   if (browser === 'firefox') {
-    permissions = FIREFOX_PERMISSIONS;
+    permissions = FIREFOX_PERMISSIONS
   } else {
-    permissions = CHROME_PERMISSIONS;
+    permissions = CHROME_PERMISSIONS
   }
-  return [...permissions];
+  return [...permissions]
 }
 
 function getFirefoxSettings(browser: string) {
-  let settings = {};
+  let settings = {}
   if (browser === 'firefox') {
     settings = {
       browser_specific_settings: {
@@ -89,17 +89,17 @@ function getFirefoxSettings(browser: string) {
           strict_min_version: '142.0',
         },
       },
-    };
+    }
   }
-  return settings;
+  return settings
 }
 
 function getChromeDevKey(browser: string, command: string) {
-  let keySettings = {};
+  let keySettings = {}
   if (browser === 'chrome' && command === 'serve' && process.env.CHROME_EXTENSION_KEY) {
-    keySettings = { key: process.env.CHROME_EXTENSION_KEY };
+    keySettings = { key: process.env.CHROME_EXTENSION_KEY }
   }
-  return keySettings;
+  return keySettings
 }
 
 function buildManifest({ browser, command }: { browser: string; command: string }) {
@@ -110,12 +110,12 @@ function buildManifest({ browser, command }: { browser: string; command: string 
     // key только для `pnpm dev`: стабильный extension id и OAuth redirect в Chrome.
     // В production ZIP для магазина key не включаем — иначе CWS отклоняет загрузку.
     ...getChromeDevKey(browser, command),
-  };
+  }
 }
 
 function configureVite({ mode }: { mode: string }) {
-  const env = loadEnv(mode, import.meta.dirname, '');
-  const releasesUrl = env.RELEASES_URL?.trim() ?? '';
+  const env = loadEnv(mode, import.meta.dirname, '')
+  const releasesUrl = env.RELEASES_URL?.trim() ?? ''
 
   return {
     envPrefix: ['VITE_', 'WXT_', 'YANDEX_', 'RELEASES_'],
@@ -133,7 +133,7 @@ function configureVite({ mode }: { mode: string }) {
     build: {
       modulePreload: { polyfill: false },
     },
-  };
+  }
 }
 
 // noinspection JSUnusedGlobalSymbols
@@ -151,4 +151,4 @@ export default defineConfig({
     sourcesTemplate: 'NmapUploader-{{browser}}_{{version}}-sources.zip',
   },
   manifest: buildManifest,
-});
+})

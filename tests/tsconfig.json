@@ -4,9 +4,7 @@
     "allowImportingTsExtensions": true,
     "baseUrl": "..",
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     },
     "types": ["node", "vitest"],
     "jsx": "react-jsx"

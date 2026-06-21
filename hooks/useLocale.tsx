@@ -6,56 +6,56 @@ import {
   useEffect,
   useMemo,
   useState,
-} from 'react';
-import { browser } from 'wxt/browser';
+} from 'react'
+import { browser } from 'wxt/browser'
 import {
   createTranslator,
   getStoredLocale,
   type Locale,
   setRuntimeLocale,
   type TranslateFn,
-} from '@/lib/i18n';
-import { setStoredLocale } from '@/lib/i18n/locale_storage';
-import { DEFAULT_LOCALE, isLocale, LOCALE_STORAGE_KEY } from '@/lib/i18n/locale';
+} from '@/lib/i18n'
+import { DEFAULT_LOCALE, isLocale, LOCALE_STORAGE_KEY } from '@/lib/i18n/locale'
+import { setStoredLocale } from '@/lib/i18n/locale_storage'
 
 type LocaleContextValue = {
-  locale: Locale;
-  setLocale: (locale: Locale) => void;
-  t: TranslateFn;
-};
+  locale: Locale
+  setLocale: (locale: Locale) => void
+  t: TranslateFn
+}
 
-type StorageChanges = Record<string, { newValue?: unknown }>;
+type StorageChanges = Record<string, { newValue?: unknown }>
 
-type StorageChangeListener = (changes: StorageChanges, area: string) => void;
+type StorageChangeListener = (changes: StorageChanges, area: string) => void
 
-type LocaleSetter = (locale: Locale) => void;
+type LocaleSetter = (locale: Locale) => void
 
-const LocaleContext = createContext<LocaleContextValue | null>(null);
+const LocaleContext = createContext<LocaleContextValue | null>(null)
 
 function applyLocaleChange(nextLocale: Locale, setLocaleState: LocaleSetter): void {
-  setLocaleState(nextLocale);
-  setRuntimeLocale(nextLocale);
+  setLocaleState(nextLocale)
+  setRuntimeLocale(nextLocale)
 }
 
 async function loadStoredLocale(setLocaleState: LocaleSetter): Promise<void> {
-  const storedLocale = await getStoredLocale();
-  applyLocaleChange(storedLocale, setLocaleState);
+  const storedLocale = await getStoredLocale()
+  applyLocaleChange(storedLocale, setLocaleState)
 }
 
 function onStoredLocaleLoadError(error: unknown): void {
-  console.warn('[nmap_uploader] locale load failed:', error);
+  console.warn('[nmap_uploader] locale load failed:', error)
 }
 
 function handleStoredLocaleLoad(task: Promise<void>): void {
-  task.catch(onStoredLocaleLoadError);
+  task.catch(onStoredLocaleLoadError)
 }
 
 function applyLocaleStorageChange(changes: StorageChanges, setLocaleState: LocaleSetter): void {
-  const hasChange = LOCALE_STORAGE_KEY in changes;
+  const hasChange = LOCALE_STORAGE_KEY in changes
   if (hasChange) {
-    const nextLocale = changes[LOCALE_STORAGE_KEY]?.newValue;
+    const nextLocale = changes[LOCALE_STORAGE_KEY]?.newValue
     if (isLocale(nextLocale)) {
-      applyLocaleChange(nextLocale, setLocaleState);
+      applyLocaleChange(nextLocale, setLocaleState)
     }
   }
 }
@@ -66,21 +66,21 @@ function handleLocaleStorageChange(
   area: string,
 ): void {
   if (area === 'local') {
-    applyLocaleStorageChange(changes, setLocaleState);
+    applyLocaleStorageChange(changes, setLocaleState)
   }
 }
 
 function unsubscribeLocaleStorageChanges(listener: StorageChangeListener): void {
-  browser.storage.onChanged.removeListener(listener);
+  browser.storage.onChanged.removeListener(listener)
 }
 
 function subscribeLocaleStorageChanges(setLocaleState: LocaleSetter): () => void {
   const listener = handleLocaleStorageChange.bind(
     undefined,
     setLocaleState,
-  ) as StorageChangeListener;
-  browser.storage.onChanged.addListener(listener);
-  return unsubscribeLocaleStorageChanges.bind(undefined, listener);
+  ) as StorageChangeListener
+  browser.storage.onChanged.addListener(listener)
+  return unsubscribeLocaleStorageChanges.bind(undefined, listener)
 }
 
 function onStoredLocaleSaveComplete(): void {
@@ -88,52 +88,52 @@ function onStoredLocaleSaveComplete(): void {
 }
 
 function handleStoredLocaleSave(task: Promise<void>): void {
-  task.then(onStoredLocaleSaveComplete);
+  task.then(onStoredLocaleSaveComplete)
 }
 
 function createLocaleTranslator(locale: Locale): TranslateFn {
-  return createTranslator(locale);
+  return createTranslator(locale)
 }
 
 export const LocaleProvider = ({ children }: { children: ReactNode }) => {
-  const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
+  const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE)
 
   useEffect(function localeLoadEffect() {
-    const loadTask = loadStoredLocale(setLocaleState);
-    handleStoredLocaleLoad(loadTask);
-  }, []);
+    const loadTask = loadStoredLocale(setLocaleState)
+    handleStoredLocaleLoad(loadTask)
+  }, [])
 
   useEffect(function localeStorageEffect() {
-    return subscribeLocaleStorageChanges(setLocaleState);
-  }, []);
+    return subscribeLocaleStorageChanges(setLocaleState)
+  }, [])
 
   const setLocale = useCallback(function setLocale(nextLocale: Locale) {
-    applyLocaleChange(nextLocale, setLocaleState);
-    const saveTask = setStoredLocale(nextLocale);
-    handleStoredLocaleSave(saveTask);
-  }, []);
+    applyLocaleChange(nextLocale, setLocaleState)
+    const saveTask = setStoredLocale(nextLocale)
+    handleStoredLocaleSave(saveTask)
+  }, [])
 
   const t = useMemo(
     function localeTranslator() {
-      return createLocaleTranslator(locale);
+      return createLocaleTranslator(locale)
     },
     [locale],
-  );
+  )
 
   return (
     <LocaleContext.Provider value={{ locale, setLocale, t }}>{children}</LocaleContext.Provider>
-  );
-};
+  )
+}
 
 export const useLocale = (): LocaleContextValue => {
-  const context = useContext(LocaleContext);
+  const context = useContext(LocaleContext)
   if (!context) {
-    throw new Error('useLocale must be used within LocaleProvider');
+    throw new Error('useLocale must be used within LocaleProvider')
   }
-  return context;
-};
+  return context
+}
 
 export const useTranslate = (): TranslateFn => {
-  const { t } = useLocale();
-  return t;
-};
+  const { t } = useLocale()
+  return t
+}

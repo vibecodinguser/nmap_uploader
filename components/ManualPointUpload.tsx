@@ -1,27 +1,27 @@
-import type { ChangeEvent, SubmitEvent } from 'react';
-import { PointDateField } from '@/components/PointDateField';
-import { POINT_DESCRIPTION_MAX_LENGTH } from '@/lib/point_uploader';
+import type { ChangeEvent, SubmitEvent } from 'react'
+import { PointDateField } from '@/components/PointDateField'
+import { POINT_DESCRIPTION_MAX_LENGTH } from '@/lib/point_uploader'
 
 type ManualPointUploadProps = {
-  isUploading: boolean;
-  description: string;
-  latitude: string;
-  longitude: string;
-  manualDate: string;
-  isManualSubmitDisabled: boolean;
-  manualSubmitButtonText: string;
-  manualHint: string;
-  latitudeLabel: string;
-  longitudeLabel: string;
-  descriptionPlaceholder: string;
-  descriptionAriaLabel: string;
-  sectionAriaLabel: string;
-  onDescriptionChange: (event: ChangeEvent<HTMLTextAreaElement>) => void;
-  onLatitudeChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  onLongitudeChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  onManualDateChange: (date: string) => void;
-  onManualSubmit: (event: SubmitEvent<HTMLFormElement>) => void;
-};
+  isUploading: boolean
+  description: string
+  latitude: string
+  longitude: string
+  manualDate: string
+  isManualSubmitDisabled: boolean
+  manualSubmitButtonText: string
+  manualHint: string
+  latitudeLabel: string
+  longitudeLabel: string
+  descriptionPlaceholder: string
+  descriptionAriaLabel: string
+  sectionAriaLabel: string
+  onDescriptionChange: (event: ChangeEvent<HTMLTextAreaElement>) => void
+  onLatitudeChange: (event: ChangeEvent<HTMLInputElement>) => void
+  onLongitudeChange: (event: ChangeEvent<HTMLInputElement>) => void
+  onManualDateChange: (date: string) => void
+  onManualSubmit: (event: SubmitEvent<HTMLFormElement>) => void
+}
 
 function manualPointUpload({
   isUploading,
@@ -105,7 +105,7 @@ function manualPointUpload({
         </div>
       </form>
     </section>
-  );
+  )
 }
 
-export const ManualPointUpload = manualPointUpload;
+export const ManualPointUpload = manualPointUpload

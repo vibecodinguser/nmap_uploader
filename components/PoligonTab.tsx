@@ -1,4 +1,4 @@
-import { Upload } from 'lucide-react';
+import { Upload } from 'lucide-react'
 import {
   type ChangeEvent,
   type DragEvent,
@@ -8,54 +8,54 @@ import {
   useEffect,
   useRef,
   useState,
-} from 'react';
-import { PointDateField } from '@/components/PointDateField';
-import { UploadProgressRing } from '@/components/UploadProgressRing';
-import { UploadStatusMessage } from '@/components/UploadStatusMessage';
-import type { UploadStatus } from '@/hooks/useFileUpload';
-import { useTranslate } from '@/hooks/useLocale';
-import { ACCEPTED_FORMATS } from '@/lib/formats';
-import { requireAuthBeforeAction } from '@/lib/require_auth';
+} from 'react'
+import { PointDateField } from '@/components/PointDateField'
+import { UploadProgressRing } from '@/components/UploadProgressRing'
+import { UploadStatusMessage } from '@/components/UploadStatusMessage'
+import type { UploadStatus } from '@/hooks/useFileUpload'
+import { useTranslate } from '@/hooks/useLocale'
+import { ACCEPTED_FORMATS } from '@/lib/formats'
+import { requireAuthBeforeAction } from '@/lib/require_auth'
 
 type PoligonTabProps = {
-  isUploading: boolean;
-  progress: number;
-  uploadStatus: UploadStatus | null;
-  isLoggedIn: boolean;
-  onRequireAuth: () => void;
-  onUpload: (input: { file: File; date: string }) => void;
-};
+  isUploading: boolean
+  progress: number
+  uploadStatus: UploadStatus | null
+  isLoggedIn: boolean
+  onRequireAuth: () => void
+  onUpload: (input: { file: File; date: string }) => void
+}
 
 function getDropzoneClassName(isDragOver: boolean, isUploading: boolean): string {
-  const parts = ['upload-dropzone'];
+  const parts = ['upload-dropzone']
   if (isDragOver) {
-    parts.push('is-dragover');
+    parts.push('is-dragover')
   }
   if (isUploading) {
-    parts.push('is-uploading');
+    parts.push('is-uploading')
   }
-  return parts.join(' ');
+  return parts.join(' ')
 }
 
 function getChooseFileButtonText(isUploading: boolean, t: ReturnType<typeof useTranslate>): string {
-  let text: string;
+  let text: string
   if (isUploading) {
-    text = t('common.uploading');
+    text = t('common.uploading')
   } else {
-    text = t('upload.chooseFile');
+    text = t('upload.chooseFile')
   }
-  return text;
+  return text
 }
 
 function getUploadStatusMessage(
   isUploading: boolean,
   uploadStatus: UploadStatus | null,
 ): ReactNode {
-  let message: ReactNode = null;
+  let message: ReactNode = null
   if (!isUploading && uploadStatus) {
-    message = <UploadStatusMessage status={uploadStatus} />;
+    message = <UploadStatusMessage status={uploadStatus} />
   }
-  return message;
+  return message
 }
 
 export const PoligonTab = ({
@@ -66,74 +66,74 @@ export const PoligonTab = ({
   onRequireAuth,
   onUpload,
 }: PoligonTabProps) => {
-  const t = useTranslate();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [polygonDate, setPolygonDate] = useState('');
-  const [isDragOver, setIsDragOver] = useState(false);
-  const [hasUploadSession, setHasUploadSession] = useState(false);
-  const showProgressUi = hasUploadSession || isUploading || uploadStatus !== null;
-  const dropzoneClassName = getDropzoneClassName(isDragOver, isUploading);
-  const chooseFileButtonText = getChooseFileButtonText(isUploading, t);
-  const uploadStatusMessage = getUploadStatusMessage(isUploading, uploadStatus);
+  const t = useTranslate()
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [polygonDate, setPolygonDate] = useState('')
+  const [isDragOver, setIsDragOver] = useState(false)
+  const [hasUploadSession, setHasUploadSession] = useState(false)
+  const showProgressUi = hasUploadSession || isUploading || uploadStatus !== null
+  const dropzoneClassName = getDropzoneClassName(isDragOver, isUploading)
+  const chooseFileButtonText = getChooseFileButtonText(isUploading, t)
+  const uploadStatusMessage = getUploadStatusMessage(isUploading, uploadStatus)
 
   useEffect(
     function trackUploadSession(): void {
       if (isUploading || uploadStatus) {
-        setHasUploadSession(true);
+        setHasUploadSession(true)
       }
     },
     [isUploading, uploadStatus],
-  );
+  )
 
   const ensureAuthenticated = function ensureAuthenticated(): boolean {
-    return requireAuthBeforeAction({ isLoggedIn, onRequireAuth });
-  };
+    return requireAuthBeforeAction({ isLoggedIn, onRequireAuth })
+  }
 
   const handleFile = function handleFile(fileList: FileList | null): void {
     if (ensureAuthenticated()) {
-      const file = fileList?.[0];
+      const file = fileList?.[0]
       if (file) {
-        setHasUploadSession(true);
-        onUpload({ file, date: polygonDate });
+        setHasUploadSession(true)
+        onUpload({ file, date: polygonDate })
       }
     }
-  };
+  }
 
   const handleFileInputActivate = function handleFileInputActivate(event: MouseEvent): void {
     if (!ensureAuthenticated()) {
-      event.preventDefault();
+      event.preventDefault()
     }
-  };
+  }
 
   const handleDragOver = function handleDragOver(event: DragEvent): void {
-    event.preventDefault();
-    setIsDragOver(true);
-  };
+    event.preventDefault()
+    setIsDragOver(true)
+  }
 
   const handleDragLeave = function handleDragLeave(event: DragEvent): void {
-    event.preventDefault();
+    event.preventDefault()
     if (!event.currentTarget.contains(event.relatedTarget as Node)) {
-      setIsDragOver(false);
+      setIsDragOver(false)
     }
-  };
+  }
 
   const handleDrop = function handleDrop(event: DragEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
-    setIsDragOver(false);
-    handleFile(event.dataTransfer.files);
-  };
+    event.preventDefault()
+    event.stopPropagation()
+    setIsDragOver(false)
+    handleFile(event.dataTransfer.files)
+  }
 
   const handleFormSubmit = function handleFormSubmit(event: SubmitEvent<HTMLFormElement>): void {
-    event.preventDefault();
-  };
+    event.preventDefault()
+  }
 
   const handleFileInputChange = function handleFileInputChange(
     event: ChangeEvent<HTMLInputElement>,
   ): void {
-    handleFile(event.target.files);
-    event.target.value = '';
-  };
+    handleFile(event.target.files)
+    event.target.value = ''
+  }
 
   return (
     <div className="tab-panel">
@@ -184,5 +184,5 @@ export const PoligonTab = ({
         )}
       </form>
     </div>
-  );
-};
+  )
+}

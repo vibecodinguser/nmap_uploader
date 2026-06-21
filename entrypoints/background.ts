@@ -1,209 +1,209 @@
-import { browser, type Browser } from 'wxt/browser';
-import { defineBackground } from 'wxt/utils/define-background';
-import { GO_TO_REFRESH_ACTION } from '@/lib/go_to_notify';
-import { createTranslator, syncLocaleFromStorage } from '@/lib/i18n';
-import { collectMapTabIds, isMapTabUrl, MAP_ORIGIN, MAP_TAB_URL_PATTERN } from '@/lib/map_tab';
+import { type Browser, browser } from 'wxt/browser'
+import { defineBackground } from 'wxt/utils/define-background'
+import { detectYandexBrowserInPageContext, isYandexBrowser } from '@/lib/browser'
+import { getErrorMessage } from '@/lib/errors'
+import { GO_TO_REFRESH_ACTION } from '@/lib/go_to_notify'
+import { createTranslator, syncLocaleFromStorage } from '@/lib/i18n'
+import { collectMapTabIds, isMapTabUrl, MAP_ORIGIN, MAP_TAB_URL_PATTERN } from '@/lib/map_tab'
 import {
   isTrustedNmapsOrPanelSender,
   isTrustedPanelSender,
   logRejectedMessage,
   type RuntimeMessageSender,
-} from '@/lib/message_auth';
-import { CLOSE_PANEL_SIDEBAR_ACTION } from '@/lib/panel_sidebar_notify';
-import { reloadMapEditorTabs } from '@/lib/reload_editor_page';
-import { detectYandexBrowserInPageContext, isYandexBrowser } from '@/lib/browser';
-import { getErrorMessage } from '@/lib/errors';
+} from '@/lib/message_auth'
+import { CLOSE_PANEL_SIDEBAR_ACTION } from '@/lib/panel_sidebar_notify'
+import { reloadMapEditorTabs } from '@/lib/reload_editor_page'
 import {
-  uploadProcessedFilesToYandexDisk,
   type ProcessedFileInput,
   type UploadResult,
-} from '@/lib/upload_service';
+  uploadProcessedFilesToYandexDisk,
+} from '@/lib/upload_service'
 import {
+  type AuthPayload,
   buildAuthPayload,
   clearAuth,
   ensureYandexAuth,
   getStoredAuth,
   listExistingDateFolders,
   loadUserAvatarDataUrl,
-  type AuthPayload,
   type YandexUser,
-} from '@/lib/yandex/client';
+} from '@/lib/yandex/client'
 
-const PANEL_PAGE = '/panel.html';
+const PANEL_PAGE = '/panel.html'
 
 type SidePanelApi = {
-  open: (options: { windowId?: number; tabId?: number }) => Promise<void>;
-  setOptions: (options: { path: string; enabled?: boolean }) => Promise<void>;
-};
+  open: (options: { windowId?: number; tabId?: number }) => Promise<void>
+  setOptions: (options: { path: string; enabled?: boolean }) => Promise<void>
+}
 
 const getSidePanelApi = (): SidePanelApi | undefined => {
-  return (browser as typeof browser & { sidePanel?: SidePanelApi }).sidePanel;
-};
+  return (browser as typeof browser & { sidePanel?: SidePanelApi }).sidePanel
+}
 
 type ToolbarActionApi = {
   onClicked: {
-    addListener: (callback: (tab: Browser.tabs.Tab) => void) => void;
-  };
-};
+    addListener: (callback: (tab: Browser.tabs.Tab) => void) => void
+  }
+}
 
 const getToolbarActionApi = (): ToolbarActionApi | undefined => {
-  let result: ToolbarActionApi | undefined;
+  let result: ToolbarActionApi | undefined
   if (browser.action?.onClicked) {
-    result = browser.action;
+    result = browser.action
   } else {
     const browserAction = (browser as typeof browser & { browserAction?: ToolbarActionApi })
-      .browserAction;
+      .browserAction
     if (browserAction?.onClicked) {
-      result = browserAction;
+      result = browserAction
     }
   }
-  return result;
-};
+  return result
+}
 
-const PANEL_SIDEBAR_SCRIPT = '/content-scripts/panel-sidebar.js' as const;
-const MAP_HOME = `${MAP_ORIGIN}/` as const;
-const MAP_URL_PATTERN = MAP_TAB_URL_PATTERN;
-const PANEL_SIDEBAR_REGISTRATION_ID = 'nmap-panel-sidebar' as const;
+const PANEL_SIDEBAR_SCRIPT = '/content-scripts/panel-sidebar.js' as const
+const MAP_HOME = `${MAP_ORIGIN}/` as const
+const MAP_URL_PATTERN = MAP_TAB_URL_PATTERN
+const PANEL_SIDEBAR_REGISTRATION_ID = 'nmap-panel-sidebar' as const
 
 const logBackgroundTaskFailure = (label: string, error: unknown): void => {
-  console.warn(`[nmap_uploader] ${label} failed:`, error);
-};
+  console.warn(`[nmap_uploader] ${label} failed:`, error)
+}
 
-const pendingBackgroundTasks = new Set<Promise<void>>();
+const pendingBackgroundTasks = new Set<Promise<void>>()
 
 const executeBackgroundTask = async (task: Promise<unknown>, label: string): Promise<void> => {
   try {
-    await task;
+    await task
   } catch (error: unknown) {
-    logBackgroundTaskFailure(label, error);
+    logBackgroundTaskFailure(label, error)
   }
-};
+}
 
 const runBackgroundTask = (task: Promise<unknown>, label: string): void => {
-  const execution = executeBackgroundTask(task, label);
-  pendingBackgroundTasks.add(execution);
-};
+  const execution = executeBackgroundTask(task, label)
+  pendingBackgroundTasks.add(execution)
+}
 
 const relayMessageToMapTabs = async (
   sender: RuntimeMessageSender,
   message: Record<string, unknown>,
 ): Promise<void> => {
-  const senderTabId = sender.tab?.id;
+  const senderTabId = sender.tab?.id
   if (senderTabId && isMapTabUrl(sender.tab?.url)) {
-    await browser.tabs.sendMessage(senderTabId, message);
+    await browser.tabs.sendMessage(senderTabId, message)
   } else {
-    const tabIds = await collectMapTabIds();
-    const sendRelayToTab = (tabId: number) => browser.tabs.sendMessage(tabId, message);
-    const promises = tabIds.map(sendRelayToTab);
-    await Promise.allSettled(promises);
+    const tabIds = await collectMapTabIds()
+    const sendRelayToTab = (tabId: number) => browser.tabs.sendMessage(tabId, message)
+    const promises = tabIds.map(sendRelayToTab)
+    await Promise.allSettled(promises)
   }
-};
+}
 
 const persistYandexBrowserFlag = async (): Promise<void> => {
-  const yandexBrowser = isYandexBrowser();
+  const yandexBrowser = isYandexBrowser()
   if (yandexBrowser) {
-    await browser.storage.local.set({ is_yandex_browser: true });
+    await browser.storage.local.set({ is_yandex_browser: true })
   }
-};
+}
 
 const readYandexUaFromTab = async (tabId: number): Promise<boolean> => {
-  let result = false;
+  let result = false
   try {
     const [injection] = await browser.scripting.executeScript({
       target: { tabId },
       func: detectYandexBrowserInPageContext,
-    });
-    result = Boolean(injection?.result);
+    })
+    result = Boolean(injection?.result)
   } catch {
     // ignore errors
   }
-  return result;
-};
+  return result
+}
 
 const resolveIsYandexBrowser = async (): Promise<boolean> => {
-  let isYandex = false;
+  let isYandex = false
 
   if (isYandexBrowser()) {
-    await browser.storage.local.set({ is_yandex_browser: true });
-    isYandex = true;
+    await browser.storage.local.set({ is_yandex_browser: true })
+    isYandex = true
   } else {
-    const stored = await browser.storage.local.get('is_yandex_browser');
+    const stored = await browser.storage.local.get('is_yandex_browser')
     if (true === stored.is_yandex_browser) {
-      isYandex = true;
+      isYandex = true
     } else {
-      const mapTabs = await browser.tabs.query({ url: MAP_URL_PATTERN });
+      const mapTabs = await browser.tabs.query({ url: MAP_URL_PATTERN })
       for (const mapTab of mapTabs) {
         if (!isYandex && mapTab.id) {
-          const tabIsYandex = await readYandexUaFromTab(mapTab.id);
+          const tabIsYandex = await readYandexUaFromTab(mapTab.id)
           if (tabIsYandex) {
-            await browser.storage.local.set({ is_yandex_browser: true });
-            isYandex = true;
+            await browser.storage.local.set({ is_yandex_browser: true })
+            isYandex = true
           }
         }
       }
     }
   }
 
-  return isYandex;
-};
+  return isYandex
+}
 
 const shouldUseNativeSidePanel = async (): Promise<boolean> => {
-  const isYandex = await resolveIsYandexBrowser();
-  const sidePanelApi = getSidePanelApi();
-  let useNative = false;
+  const isYandex = await resolveIsYandexBrowser()
+  const sidePanelApi = getSidePanelApi()
+  let useNative = false
   if (!isYandex && sidePanelApi) {
-    useNative = true;
+    useNative = true
   }
-  return useNative;
-};
+  return useNative
+}
 
 const sleep = (ms: number): Promise<void> => {
   const resolveAfterDelay = (resolve: () => void) => {
-    setTimeout(resolve, ms);
-  };
-  return new Promise<void>(resolveAfterDelay);
-};
+    setTimeout(resolve, ms)
+  }
+  return new Promise<void>(resolveAfterDelay)
+}
 
 const sendTogglePanel = async (tabId: number): Promise<void> => {
-  await browser.tabs.sendMessage(tabId, { action: 'togglePanel' });
-};
+  await browser.tabs.sendMessage(tabId, { action: 'togglePanel' })
+}
 
 const retrySendTogglePanel = async (tabId: number): Promise<boolean> => {
-  let succeeded = false;
-  const maxAttempts = 8;
+  let succeeded = false
+  const maxAttempts = 8
   for (let attempt = 0; attempt < maxAttempts && !succeeded; attempt += 1) {
     try {
-      await sendTogglePanel(tabId);
-      succeeded = true;
+      await sendTogglePanel(tabId)
+      succeeded = true
     } catch {
-      const delay = 150 * (attempt + 1);
-      await sleep(delay);
+      const delay = 150 * (attempt + 1)
+      await sleep(delay)
     }
   }
-  return succeeded;
-};
+  return succeeded
+}
 
 const isPanelSidebarScript = (path: string): boolean => {
-  return path.includes('panel-sidebar');
-};
+  return path.includes('panel-sidebar')
+}
 
 const manifestIncludesPanelSidebar = (): boolean => {
-  const entries = browser.runtime.getManifest().content_scripts ?? [];
+  const entries = browser.runtime.getManifest().content_scripts ?? []
   const entryIncludesPanelSidebar = (entry: { js?: string[] }) =>
-    entry.js?.some(isPanelSidebarScript) ?? false;
-  return entries.some(entryIncludesPanelSidebar);
-};
+    entry.js?.some(isPanelSidebarScript) ?? false
+  return entries.some(entryIncludesPanelSidebar)
+}
 
 const isDuplicateContentScriptIdError = (error: unknown): boolean => {
-  return error instanceof Error && error.message.includes('Duplicate script ID');
-};
+  return error instanceof Error && error.message.includes('Duplicate script ID')
+}
 
 const registerPanelSidebarContentScript = async (): Promise<void> => {
   if (!manifestIncludesPanelSidebar()) {
-    const registered = await browser.scripting.getRegisteredContentScripts();
+    const registered = await browser.scripting.getRegisteredContentScripts()
     const isRegisteredPanelSidebar = (script: { id: string }) =>
-      script.id === PANEL_SIDEBAR_REGISTRATION_ID;
-    const isAlreadyRegistered = registered.some(isRegisteredPanelSidebar);
+      script.id === PANEL_SIDEBAR_REGISTRATION_ID
+    const isAlreadyRegistered = registered.some(isRegisteredPanelSidebar)
     if (!isAlreadyRegistered) {
       try {
         await browser.scripting.registerContentScripts([
@@ -213,142 +213,142 @@ const registerPanelSidebarContentScript = async (): Promise<void> => {
             js: [PANEL_SIDEBAR_SCRIPT],
             runAt: 'document_idle',
           },
-        ]);
+        ])
       } catch (error: unknown) {
         if (!isDuplicateContentScriptIdError(error)) {
-          throw error;
+          throw error
         }
       }
     }
   }
-};
+}
 
-let panelSidebarRegistration: Promise<void> | undefined;
+let panelSidebarRegistration: Promise<void> | undefined
 
 const handleEnsurePanelSidebarError = (error: unknown): void => {
-  panelSidebarRegistration = undefined;
-  console.warn('[nmap_uploader] ensurePanelSidebarRegistered failed:', error);
-};
+  panelSidebarRegistration = undefined
+  console.warn('[nmap_uploader] ensurePanelSidebarRegistered failed:', error)
+}
 
 const registerPanelSidebarSafely = async (): Promise<void> => {
   try {
-    await registerPanelSidebarContentScript();
+    await registerPanelSidebarContentScript()
   } catch (error: unknown) {
-    handleEnsurePanelSidebarError(error);
+    handleEnsurePanelSidebarError(error)
   }
-};
+}
 
 const ensurePanelSidebarRegistered = (): Promise<void> => {
   if (!panelSidebarRegistration) {
-    panelSidebarRegistration = registerPanelSidebarSafely();
+    panelSidebarRegistration = registerPanelSidebarSafely()
   }
-  return panelSidebarRegistration;
-};
+  return panelSidebarRegistration
+}
 
 const getBackgroundTranslator = async () => {
-  const locale = await syncLocaleFromStorage();
-  return createTranslator(locale);
-};
+  const locale = await syncLocaleFromStorage()
+  return createTranslator(locale)
+}
 
 const waitForTabReady = async (tabId: number, maxMs = 15_000): Promise<Browser.tabs.Tab> => {
-  const started = Date.now();
-  const t = await getBackgroundTranslator();
+  const started = Date.now()
+  const t = await getBackgroundTranslator()
 
   while (Date.now() - started < maxMs) {
-    const tab = await browser.tabs.get(tabId);
-    const isReady = 'complete' === tab.status && isMapTabUrl(tab.url);
+    const tab = await browser.tabs.get(tabId)
+    const isReady = 'complete' === tab.status && isMapTabUrl(tab.url)
     if (isReady) {
-      return tab;
+      return tab
     }
-    await sleep(150);
+    await sleep(150)
   }
 
-  const message = t('background.mapPageLoadTimeout');
-  throw new Error(message);
-};
+  const message = t('background.mapPageLoadTimeout')
+  throw new Error(message)
+}
 
 const focusTab = async (tab: Browser.tabs.Tab): Promise<void> => {
   if (tab.id) {
-    await browser.tabs.update(tab.id, { active: true });
+    await browser.tabs.update(tab.id, { active: true })
     if (tab.windowId) {
-      await browser.windows.update(tab.windowId, { focused: true });
+      await browser.windows.update(tab.windowId, { focused: true })
     }
   }
-};
+}
 
-const hasDefinedTabId = (tab: Browser.tabs.Tab): boolean => tab.id !== undefined;
+const hasDefinedTabId = (tab: Browser.tabs.Tab): boolean => tab.id !== undefined
 
 const resolveMapTargetTab = async (clickedTab: Browser.tabs.Tab): Promise<Browser.tabs.Tab> => {
-  let result: Browser.tabs.Tab;
+  let result: Browser.tabs.Tab
 
   if (clickedTab.id && isMapTabUrl(clickedTab.url)) {
-    result = clickedTab;
+    result = clickedTab
   } else {
     const queryOptions = {
       url: MAP_URL_PATTERN,
       ...(clickedTab.windowId !== undefined && { windowId: clickedTab.windowId }),
-    };
-    const tabsInWindow = await browser.tabs.query(queryOptions);
-    const mapTabInWindow = tabsInWindow.find(hasDefinedTabId);
+    }
+    const tabsInWindow = await browser.tabs.query(queryOptions)
+    const mapTabInWindow = tabsInWindow.find(hasDefinedTabId)
     if (mapTabInWindow) {
-      await focusTab(mapTabInWindow);
-      result = mapTabInWindow;
+      await focusTab(mapTabInWindow)
+      result = mapTabInWindow
     } else {
-      const tabsAnywhere = await browser.tabs.query({ url: MAP_URL_PATTERN });
-      const mapTabAnywhere = tabsAnywhere.find(hasDefinedTabId);
+      const tabsAnywhere = await browser.tabs.query({ url: MAP_URL_PATTERN })
+      const mapTabAnywhere = tabsAnywhere.find(hasDefinedTabId)
       if (mapTabAnywhere) {
-        await focusTab(mapTabAnywhere);
-        result = mapTabAnywhere;
+        await focusTab(mapTabAnywhere)
+        result = mapTabAnywhere
       } else {
-        const created = await browser.tabs.create({ url: MAP_HOME, active: true });
+        const created = await browser.tabs.create({ url: MAP_HOME, active: true })
         if (!created.id) {
-          const t = await getBackgroundTranslator();
-          const openMapFailedMessage = t('background.openMapFailed');
-          throw new Error(openMapFailedMessage);
+          const t = await getBackgroundTranslator()
+          const openMapFailedMessage = t('background.openMapFailed')
+          throw new Error(openMapFailedMessage)
         }
-        result = await waitForTabReady(created.id);
+        result = await waitForTabReady(created.id)
       }
     }
   }
 
-  return result;
-};
+  return result
+}
 
 const toggleInjectedSidebar = async (tabId: number, tabUrl?: string): Promise<void> => {
-  let url = tabUrl;
+  let url = tabUrl
   if (!isMapTabUrl(url)) {
-    const tab = await browser.tabs.get(tabId);
-    url = tab.url;
+    const tab = await browser.tabs.get(tabId)
+    url = tab.url
   }
 
   if (isMapTabUrl(url)) {
-    const toggled = await retrySendTogglePanel(tabId);
+    const toggled = await retrySendTogglePanel(tabId)
     if (!toggled) {
       await browser.scripting.executeScript({
         target: { tabId },
         files: [PANEL_SIDEBAR_SCRIPT],
-      });
+      })
 
-      const retried = await retrySendTogglePanel(tabId);
+      const retried = await retrySendTogglePanel(tabId)
       if (!retried) {
-        const t = await getBackgroundTranslator();
-        const openPanelFailedMessage = t('background.openPanelFailed');
-        throw new Error(openPanelFailedMessage);
+        const t = await getBackgroundTranslator()
+        const openPanelFailedMessage = t('background.openPanelFailed')
+        throw new Error(openPanelFailedMessage)
       }
     }
   } else {
-    const t = await getBackgroundTranslator();
-    const openMapAndRetryMessage = t('background.openMapAndRetry');
-    throw new Error(openMapAndRetryMessage);
+    const t = await getBackgroundTranslator()
+    const openMapAndRetryMessage = t('background.openMapAndRetry')
+    throw new Error(openMapAndRetryMessage)
   }
-};
+}
 
 type AuthMessageResponse = {
-  ok: boolean;
-  user: YandexUser | null;
-  avatarDataUrl: string | null;
-  error?: string;
-};
+  ok: boolean
+  user: YandexUser | null
+  avatarDataUrl: string | null
+  error?: string
+}
 
 const handleYandexAuthSuccess = async (
   auth: AuthPayload | null,
@@ -356,38 +356,38 @@ const handleYandexAuthSuccess = async (
   cancelError?: string,
 ): Promise<void> => {
   if (auth?.user) {
-    const avatarDataUrl = await loadUserAvatarDataUrl(auth.user);
+    const avatarDataUrl = await loadUserAvatarDataUrl(auth.user)
     sendResponse({
       ok: true,
       user: auth.user,
       avatarDataUrl,
-    });
+    })
   } else {
     sendResponse({
       ok: false,
       user: null,
       avatarDataUrl: null,
       ...(cancelError && { error: cancelError }),
-    });
+    })
   }
-};
+}
 
 const handleYandexAuthFailure = async (
   error: unknown,
   sendResponse: (response: AuthMessageResponse) => void,
   logLabel: string,
 ): Promise<void> => {
-  console.error(`[nmap_uploader] ${logLabel} failed:`, error);
-  const t = await getBackgroundTranslator();
-  const authErrorFallback = t('auth.authError');
-  const errorMessage = getErrorMessage(error, authErrorFallback);
+  console.error(`[nmap_uploader] ${logLabel} failed:`, error)
+  const t = await getBackgroundTranslator()
+  const authErrorFallback = t('auth.authError')
+  const errorMessage = getErrorMessage(error, authErrorFallback)
   sendResponse({
     ok: false,
     user: null,
     avatarDataUrl: null,
     error: errorMessage,
-  });
-};
+  })
+}
 
 const processYandexAuthMessage = async ({
   interactive,
@@ -395,19 +395,19 @@ const processYandexAuthMessage = async ({
   logLabel,
   cancelError,
 }: {
-  interactive: boolean;
-  sendResponse: (response: AuthMessageResponse) => void;
-  logLabel: string;
-  cancelError?: string;
+  interactive: boolean
+  sendResponse: (response: AuthMessageResponse) => void
+  logLabel: string
+  cancelError?: string
 }): Promise<void> => {
   try {
-    const auth = await ensureYandexAuth({ interactive });
-    const payload = await buildAuthPayload(auth);
-    await handleYandexAuthSuccess(payload, sendResponse, cancelError);
+    const auth = await ensureYandexAuth({ interactive })
+    const payload = await buildAuthPayload(auth)
+    await handleYandexAuthSuccess(payload, sendResponse, cancelError)
   } catch (error: unknown) {
-    await handleYandexAuthFailure(error, sendResponse, logLabel);
+    await handleYandexAuthFailure(error, sendResponse, logLabel)
   }
-};
+}
 
 const handleYandexAuthMessage = ({
   interactive,
@@ -415,102 +415,102 @@ const handleYandexAuthMessage = ({
   logLabel,
   cancelError,
 }: {
-  interactive: boolean;
-  sendResponse: (response: AuthMessageResponse) => void;
-  logLabel: string;
-  cancelError?: string;
+  interactive: boolean
+  sendResponse: (response: AuthMessageResponse) => void
+  logLabel: string
+  cancelError?: string
 }): void => {
-  const authTask = processYandexAuthMessage({ interactive, sendResponse, logLabel, cancelError });
-  runBackgroundTask(authTask, logLabel);
-};
+  const authTask = processYandexAuthMessage({ interactive, sendResponse, logLabel, cancelError })
+  runBackgroundTask(authTask, logLabel)
+}
 
 const openInjectedPanel = async (tab: Browser.tabs.Tab): Promise<void> => {
-  const t = await getBackgroundTranslator();
-  const targetTab = await resolveMapTargetTab(tab);
+  const t = await getBackgroundTranslator()
+  const targetTab = await resolveMapTargetTab(tab)
   if (!targetTab.id) {
-    const message = t('background.tabNotFound');
-    throw new Error(message);
+    const message = t('background.tabNotFound')
+    throw new Error(message)
   }
 
-  const isReady = isMapTabUrl(targetTab.url) && 'complete' === targetTab.status;
+  const isReady = isMapTabUrl(targetTab.url) && 'complete' === targetTab.status
   if (!isReady) {
-    await waitForTabReady(targetTab.id);
+    await waitForTabReady(targetTab.id)
   }
 
-  const readyTab = await browser.tabs.get(targetTab.id);
+  const readyTab = await browser.tabs.get(targetTab.id)
   if (!readyTab.id) {
-    const message = t('background.tabNotFound');
-    throw new Error(message);
+    const message = t('background.tabNotFound')
+    throw new Error(message)
   }
-  await toggleInjectedSidebar(readyTab.id, readyTab.url);
-};
+  await toggleInjectedSidebar(readyTab.id, readyTab.url)
+}
 
 const resolveClickedTab = async (tab: Browser.tabs.Tab): Promise<Browser.tabs.Tab | undefined> => {
-  let result: Browser.tabs.Tab | undefined;
+  let result: Browser.tabs.Tab | undefined
   if (tab.id) {
-    result = tab;
+    result = tab
   } else {
-    const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true });
-    result = activeTab;
+    const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true })
+    result = activeTab
   }
-  return result;
-};
+  return result
+}
 
 const openPanel = async (tab: Browser.tabs.Tab): Promise<void> => {
-  const clickedTab = await resolveClickedTab(tab);
+  const clickedTab = await resolveClickedTab(tab)
   if (clickedTab?.id) {
-    const isYandex = await resolveIsYandexBrowser();
+    const isYandex = await resolveIsYandexBrowser()
     if (isYandex) {
-      await openInjectedPanel(clickedTab);
+      await openInjectedPanel(clickedTab)
     } else {
-      const useNative = await shouldUseNativeSidePanel();
-      let openedNatively = false;
+      const useNative = await shouldUseNativeSidePanel()
+      let openedNatively = false
       if (useNative && clickedTab.windowId) {
-        const sidePanel = getSidePanelApi();
+        const sidePanel = getSidePanelApi()
         try {
           if (sidePanel) {
-            await sidePanel.setOptions({ path: PANEL_PAGE, enabled: true });
-            await sidePanel.open({ windowId: clickedTab.windowId });
-            openedNatively = true;
+            await sidePanel.setOptions({ path: PANEL_PAGE, enabled: true })
+            await sidePanel.open({ windowId: clickedTab.windowId })
+            openedNatively = true
           }
         } catch (error: unknown) {
-          console.warn('[nmap_uploader] native sidePanel.open failed:', error);
+          console.warn('[nmap_uploader] native sidePanel.open failed:', error)
         }
       }
       if (!openedNatively) {
-        await openInjectedPanel(clickedTab);
+        await openInjectedPanel(clickedTab)
       }
     }
   }
-};
+}
 
 const handleToolbarClick = (tab: Browser.tabs.Tab): void => {
-  const panelTask = openPanel(tab);
-  runBackgroundTask(panelTask, 'openPanel');
-};
+  const panelTask = openPanel(tab)
+  runBackgroundTask(panelTask, 'openPanel')
+}
 
 const configureInstalledSidePanel = async (): Promise<void> => {
-  const useNative = await shouldUseNativeSidePanel();
+  const useNative = await shouldUseNativeSidePanel()
   if (useNative) {
-    const sidePanel = getSidePanelApi();
+    const sidePanel = getSidePanelApi()
     try {
-      await sidePanel?.setOptions({ path: PANEL_PAGE, enabled: true });
+      await sidePanel?.setOptions({ path: PANEL_PAGE, enabled: true })
     } catch (error: unknown) {
-      console.warn('[nmap_uploader] sidePanel.setOptions failed:', error);
+      console.warn('[nmap_uploader] sidePanel.setOptions failed:', error)
     }
   }
-};
+}
 
 const handleInstalled = (): void => {
-  const persistTask = persistYandexBrowserFlag();
-  runBackgroundTask(persistTask, 'persistYandexBrowserFlag');
+  const persistTask = persistYandexBrowserFlag()
+  runBackgroundTask(persistTask, 'persistYandexBrowserFlag')
 
-  const registerTask = ensurePanelSidebarRegistered();
-  runBackgroundTask(registerTask, 'ensurePanelSidebarRegistered');
+  const registerTask = ensurePanelSidebarRegistered()
+  runBackgroundTask(registerTask, 'ensurePanelSidebarRegistered')
 
-  const configureTask = configureInstalledSidePanel();
-  runBackgroundTask(configureTask, 'shouldUseNativeSidePanel');
-};
+  const configureTask = configureInstalledSidePanel()
+  runBackgroundTask(configureTask, 'shouldUseNativeSidePanel')
+}
 
 // --- Message Handlers ---
 
@@ -518,113 +518,107 @@ type MessageHandler = (
   message: Record<string, unknown>,
   sender: RuntimeMessageSender,
   sendResponse: (response: any) => void,
-) => boolean;
+) => boolean
 
 const processGetAuth = async (
   sendResponse: (response: AuthPayload | { user: null; avatarDataUrl: null }) => void,
 ): Promise<void> => {
   try {
-    const auth = await getStoredAuth();
-    const payload = await buildAuthPayload(auth);
-    sendResponse(payload);
+    const auth = await getStoredAuth()
+    const payload = await buildAuthPayload(auth)
+    sendResponse(payload)
   } catch {
-    sendResponse({ user: null, avatarDataUrl: null });
+    sendResponse({ user: null, avatarDataUrl: null })
   }
-};
+}
 
 const processLogin = async (
   sendResponse: (response: AuthMessageResponse) => void,
 ): Promise<void> => {
-  const t = await getBackgroundTranslator();
-  const authCancelledMessage = t('auth.authCancelled');
+  const t = await getBackgroundTranslator()
+  const authCancelledMessage = t('auth.authCancelled')
   await processYandexAuthMessage({
     interactive: true,
     sendResponse,
     logLabel: 'login',
     cancelError: authCancelledMessage,
-  });
-};
+  })
+}
 
 const processLoginAccessDenied = async (
   sendResponse: (response: AuthMessageResponse) => void,
 ): Promise<void> => {
-  const t = await getBackgroundTranslator();
-  const accessDeniedMessage = t('common.accessDenied');
+  const t = await getBackgroundTranslator()
+  const accessDeniedMessage = t('common.accessDenied')
   sendResponse({
     ok: false,
     user: null,
     avatarDataUrl: null,
     error: accessDeniedMessage,
-  });
-};
+  })
+}
 
-const processLogout = async (
-  sendResponse: (response: { ok: boolean }) => void,
-): Promise<void> => {
+const processLogout = async (sendResponse: (response: { ok: boolean }) => void): Promise<void> => {
   try {
-    await clearAuth({ explicit: true });
-    sendResponse({ ok: true });
+    await clearAuth({ explicit: true })
+    sendResponse({ ok: true })
   } catch (error: unknown) {
-    console.error('[nmap_uploader] logout failed:', error);
-    sendResponse({ ok: false });
+    console.error('[nmap_uploader] logout failed:', error)
+    sendResponse({ ok: false })
   }
-};
+}
 
 const processListOccupiedDates = async (
-  sendResponse: (response: {
-    ok: boolean;
-    dates: string[];
-    error?: string;
-  }) => void,
+  sendResponse: (response: { ok: boolean; dates: string[]; error?: string }) => void,
 ): Promise<void> => {
   try {
-    const auth = await getStoredAuth();
+    const auth = await getStoredAuth()
     if (auth) {
-      const dates = await listExistingDateFolders({ token: auth.token });
-      sendResponse({ ok: true, dates });
+      const dates = await listExistingDateFolders({ token: auth.token })
+      sendResponse({ ok: true, dates })
     } else {
-      sendResponse({ ok: true, dates: [] });
+      sendResponse({ ok: true, dates: [] })
     }
   } catch (error: unknown) {
-    console.error('[nmap_uploader] listOccupiedDates failed:', error);
-    const t = await getBackgroundTranslator();
-    const folderReadErrorFallback = t('auth.folderReadError');
+    console.error('[nmap_uploader] listOccupiedDates failed:', error)
+    const t = await getBackgroundTranslator()
+    const folderReadErrorFallback = t('auth.folderReadError')
     sendResponse({
       ok: false,
       dates: [],
       error: getErrorMessage(error, folderReadErrorFallback),
-    });
+    })
   }
-};
+}
 
 const getUploadMessagePayload = (
   message: Record<string, unknown>,
 ): { files: ProcessedFileInput[]; targetDate?: string } => {
-  let files: ProcessedFileInput[] = [];
+  let files: ProcessedFileInput[] = []
   if (Array.isArray(message.files)) {
-    files = message.files as ProcessedFileInput[];
+    files = message.files as ProcessedFileInput[]
   }
 
-  let targetDate: string | undefined;
+  let targetDate: string | undefined
   if ('string' === typeof message.targetDate) {
-    targetDate = message.targetDate;
+    targetDate = message.targetDate
   }
 
-  return { files, targetDate };
-};
+  return { files, targetDate }
+}
 
 const processUpload = async (
   message: Record<string, unknown>,
   sendResponse: (response: UploadResult) => void,
 ): Promise<void> => {
   try {
-    const { files, targetDate } = getUploadMessagePayload(message);
-    const result = await uploadProcessedFilesToYandexDisk({ files, targetDate });
-    sendResponse(result);
+    const { files, targetDate } = getUploadMessagePayload(message)
+    const result = await uploadProcessedFilesToYandexDisk({ files, targetDate })
+    sendResponse(result)
   } catch (error: unknown) {
-    console.error('[nmap_uploader] upload failed:', error);
-    const t = await getBackgroundTranslator();
-    const uploadErrorFallback = t('auth.uploadError');
+    console.error('[nmap_uploader] upload failed:', error)
+    const t = await getBackgroundTranslator()
+    const uploadErrorFallback = t('auth.uploadError')
     sendResponse({
       ok: false,
       processedCount: 0,
@@ -636,15 +630,15 @@ const processUpload = async (
           message: getErrorMessage(error, uploadErrorFallback),
         },
       ],
-    });
+    })
   }
-};
+}
 
 const processUploadAccessDenied = async (
   sendResponse: (response: UploadResult) => void,
 ): Promise<void> => {
-  const t = await getBackgroundTranslator();
-  const accessDeniedMessage = t('common.accessDenied');
+  const t = await getBackgroundTranslator()
+  const accessDeniedMessage = t('common.accessDenied')
   sendResponse({
     ok: false,
     processedCount: 0,
@@ -656,21 +650,21 @@ const processUploadAccessDenied = async (
         message: accessDeniedMessage,
       },
     ],
-  });
-};
+  })
+}
 
 const processReloadEditor = async (
   sender: RuntimeMessageSender,
   sendResponse: (response: { ok: boolean }) => void,
 ): Promise<void> => {
   try {
-    const ok = await reloadMapEditorTabs({ preferredTabId: sender.tab?.id });
-    sendResponse({ ok });
+    const ok = await reloadMapEditorTabs({ preferredTabId: sender.tab?.id })
+    sendResponse({ ok })
   } catch (error: unknown) {
-    console.warn('[nmap_uploader] reloadEditorPage failed:', error);
-    sendResponse({ ok: false });
+    console.warn('[nmap_uploader] reloadEditorPage failed:', error)
+    sendResponse({ ok: false })
   }
-};
+}
 
 const processRelayToMapTabs = async (
   sender: RuntimeMessageSender,
@@ -679,24 +673,24 @@ const processRelayToMapTabs = async (
   logLabel: string,
 ): Promise<void> => {
   try {
-    await relayMessageToMapTabs(sender, relayMessage);
-    sendResponse({ ok: true });
+    await relayMessageToMapTabs(sender, relayMessage)
+    sendResponse({ ok: true })
   } catch (error: unknown) {
-    console.warn(`[nmap_uploader] ${logLabel} relay failed:`, error);
-    sendResponse({ ok: false });
+    console.warn(`[nmap_uploader] ${logLabel} relay failed:`, error)
+    sendResponse({ ok: false })
   }
-};
+}
 
 const handleGetAuth: MessageHandler = (_message, sender, sendResponse) => {
   if (isTrustedPanelSender(sender)) {
-    const authTask = processGetAuth(sendResponse);
-    runBackgroundTask(authTask, 'getAuth');
+    const authTask = processGetAuth(sendResponse)
+    runBackgroundTask(authTask, 'getAuth')
   } else {
-    logRejectedMessage('getAuth', sender);
-    sendResponse({ user: null, avatarDataUrl: null });
+    logRejectedMessage('getAuth', sender)
+    sendResponse({ user: null, avatarDataUrl: null })
   }
-  return true;
-};
+  return true
+}
 
 const handleEnsureAuth: MessageHandler = (message, sender, sendResponse) => {
   if (isTrustedPanelSender(sender)) {
@@ -704,114 +698,114 @@ const handleEnsureAuth: MessageHandler = (message, sender, sendResponse) => {
       interactive: Boolean(message.interactive),
       sendResponse,
       logLabel: 'ensureAuth',
-    });
+    })
   } else {
-    logRejectedMessage('ensureAuth', sender);
-    sendResponse({ ok: false, user: null, avatarDataUrl: null });
+    logRejectedMessage('ensureAuth', sender)
+    sendResponse({ ok: false, user: null, avatarDataUrl: null })
   }
-  return true;
-};
+  return true
+}
 
 const handleLogin: MessageHandler = (_message, sender, sendResponse) => {
   if (isTrustedPanelSender(sender)) {
-    const loginTask = processLogin(sendResponse);
-    runBackgroundTask(loginTask, 'login');
+    const loginTask = processLogin(sendResponse)
+    runBackgroundTask(loginTask, 'login')
   } else {
-    logRejectedMessage('login', sender);
-    const accessDeniedTask = processLoginAccessDenied(sendResponse);
-    runBackgroundTask(accessDeniedTask, 'login');
+    logRejectedMessage('login', sender)
+    const accessDeniedTask = processLoginAccessDenied(sendResponse)
+    runBackgroundTask(accessDeniedTask, 'login')
   }
-  return true;
-};
+  return true
+}
 
 const handleLogout: MessageHandler = (_message, sender, sendResponse) => {
   if (isTrustedPanelSender(sender)) {
-    const logoutTask = processLogout(sendResponse);
-    runBackgroundTask(logoutTask, 'logout');
+    const logoutTask = processLogout(sendResponse)
+    runBackgroundTask(logoutTask, 'logout')
   } else {
-    logRejectedMessage('logout', sender);
-    sendResponse({ ok: false });
+    logRejectedMessage('logout', sender)
+    sendResponse({ ok: false })
   }
-  return true;
-};
+  return true
+}
 
 const handleListOccupiedDates: MessageHandler = (_message, sender, sendResponse) => {
   if (isTrustedPanelSender(sender)) {
-    const listDatesTask = processListOccupiedDates(sendResponse);
-    runBackgroundTask(listDatesTask, 'listOccupiedDates');
+    const listDatesTask = processListOccupiedDates(sendResponse)
+    runBackgroundTask(listDatesTask, 'listOccupiedDates')
   } else {
-    logRejectedMessage('listOccupiedDates', sender);
-    sendResponse({ ok: false, dates: [] });
+    logRejectedMessage('listOccupiedDates', sender)
+    sendResponse({ ok: false, dates: [] })
   }
-  return true;
-};
+  return true
+}
 
 const handleUpload: MessageHandler = (message, sender, sendResponse) => {
   if (isTrustedPanelSender(sender)) {
-    const uploadTask = processUpload(message, sendResponse);
-    runBackgroundTask(uploadTask, 'uploadProcessedFiles');
+    const uploadTask = processUpload(message, sendResponse)
+    runBackgroundTask(uploadTask, 'uploadProcessedFiles')
   } else {
-    logRejectedMessage('uploadProcessedFiles', sender);
-    const accessDeniedTask = processUploadAccessDenied(sendResponse);
-    runBackgroundTask(accessDeniedTask, 'uploadProcessedFiles');
+    logRejectedMessage('uploadProcessedFiles', sender)
+    const accessDeniedTask = processUploadAccessDenied(sendResponse)
+    runBackgroundTask(accessDeniedTask, 'uploadProcessedFiles')
   }
-  return true;
-};
+  return true
+}
 
 const handleReloadEditor: MessageHandler = (_message, sender, sendResponse) => {
   if (isTrustedNmapsOrPanelSender(sender)) {
-    const reloadTask = processReloadEditor(sender, sendResponse);
-    runBackgroundTask(reloadTask, 'reloadEditorPage');
+    const reloadTask = processReloadEditor(sender, sendResponse)
+    runBackgroundTask(reloadTask, 'reloadEditorPage')
   } else {
-    logRejectedMessage('reloadEditorPage', sender);
-    sendResponse({ ok: false });
+    logRejectedMessage('reloadEditorPage', sender)
+    sendResponse({ ok: false })
   }
-  return true;
-};
+  return true
+}
 
 const handleGoToRefresh: MessageHandler = (_message, sender, sendResponse) => {
   if (isTrustedNmapsOrPanelSender(sender)) {
-    const relayMessage = { action: GO_TO_REFRESH_ACTION };
-    const relayTask = processRelayToMapTabs(sender, relayMessage, sendResponse, 'refreshGoToMenu');
-    runBackgroundTask(relayTask, GO_TO_REFRESH_ACTION);
+    const relayMessage = { action: GO_TO_REFRESH_ACTION }
+    const relayTask = processRelayToMapTabs(sender, relayMessage, sendResponse, 'refreshGoToMenu')
+    runBackgroundTask(relayTask, GO_TO_REFRESH_ACTION)
   } else {
-    logRejectedMessage(GO_TO_REFRESH_ACTION, sender);
-    sendResponse({ ok: false });
+    logRejectedMessage(GO_TO_REFRESH_ACTION, sender)
+    sendResponse({ ok: false })
   }
-  return true;
-};
+  return true
+}
 
 const handleClosePanel: MessageHandler = (_message, sender, sendResponse) => {
   if (isTrustedNmapsOrPanelSender(sender)) {
-    const relayMessage = { action: CLOSE_PANEL_SIDEBAR_ACTION };
-    const relayTask = processRelayToMapTabs(sender, relayMessage, sendResponse, 'closePanelSidebar');
-    runBackgroundTask(relayTask, CLOSE_PANEL_SIDEBAR_ACTION);
+    const relayMessage = { action: CLOSE_PANEL_SIDEBAR_ACTION }
+    const relayTask = processRelayToMapTabs(sender, relayMessage, sendResponse, 'closePanelSidebar')
+    runBackgroundTask(relayTask, CLOSE_PANEL_SIDEBAR_ACTION)
   } else {
-    logRejectedMessage(CLOSE_PANEL_SIDEBAR_ACTION, sender);
-    sendResponse({ ok: false });
+    logRejectedMessage(CLOSE_PANEL_SIDEBAR_ACTION, sender)
+    sendResponse({ ok: false })
   }
-  return true;
-};
+  return true
+}
 
 const handleApplyStrokeColor: MessageHandler = (message, sender, sendResponse) => {
-  let color = '';
+  let color = ''
   if ('string' === typeof message.color) {
-    color = message.color;
+    color = message.color
   }
-  const canRelay = color && isTrustedNmapsOrPanelSender(sender);
+  const canRelay = color && isTrustedNmapsOrPanelSender(sender)
 
   if (canRelay) {
-    const relayMessage = { action: 'applyStrokeColor', color };
-    const relayTask = processRelayToMapTabs(sender, relayMessage, sendResponse, 'applyStrokeColor');
-    runBackgroundTask(relayTask, 'applyStrokeColor');
+    const relayMessage = { action: 'applyStrokeColor', color }
+    const relayTask = processRelayToMapTabs(sender, relayMessage, sendResponse, 'applyStrokeColor')
+    runBackgroundTask(relayTask, 'applyStrokeColor')
   } else {
     if (color) {
-      logRejectedMessage('applyStrokeColor', sender);
+      logRejectedMessage('applyStrokeColor', sender)
     }
-    sendResponse({ ok: false });
+    sendResponse({ ok: false })
   }
-  return true;
-};
+  return true
+}
 
 const messageHandlers: Record<string, MessageHandler> = {
   getAuth: handleGetAuth,
@@ -824,46 +818,46 @@ const messageHandlers: Record<string, MessageHandler> = {
   [GO_TO_REFRESH_ACTION]: handleGoToRefresh,
   [CLOSE_PANEL_SIDEBAR_ACTION]: handleClosePanel,
   applyStrokeColor: handleApplyStrokeColor,
-};
+}
 
 const onMessageHandler = (
   message: any,
   sender: RuntimeMessageSender,
   sendResponse: (response: any) => void,
 ): boolean | undefined => {
-  const action = message?.action as string | undefined;
-  let handler: MessageHandler | undefined;
+  const action = message?.action as string | undefined
+  let handler: MessageHandler | undefined
   if (action) {
-    handler = messageHandlers[action];
+    handler = messageHandlers[action]
   }
 
-  let result: boolean | undefined;
+  let result: boolean | undefined
   if (handler) {
-    result = handler(message, sender, sendResponse);
+    result = handler(message, sender, sendResponse)
   }
-  return result;
-};
+  return result
+}
 
 const initBackground = (): void => {
-  const persistTask = persistYandexBrowserFlag();
-  runBackgroundTask(persistTask, 'persistYandexBrowserFlag');
+  const persistTask = persistYandexBrowserFlag()
+  runBackgroundTask(persistTask, 'persistYandexBrowserFlag')
 
-  const registerTask = ensurePanelSidebarRegistered();
-  runBackgroundTask(registerTask, 'ensurePanelSidebarRegistered');
+  const registerTask = ensurePanelSidebarRegistered()
+  runBackgroundTask(registerTask, 'ensurePanelSidebarRegistered')
 
-  const localeTask = syncLocaleFromStorage();
-  runBackgroundTask(localeTask, 'syncLocaleFromStorage');
+  const localeTask = syncLocaleFromStorage()
+  runBackgroundTask(localeTask, 'syncLocaleFromStorage')
 
-  const toolbarAction = getToolbarActionApi();
+  const toolbarAction = getToolbarActionApi()
   if (toolbarAction) {
-    toolbarAction.onClicked.addListener(handleToolbarClick);
+    toolbarAction.onClicked.addListener(handleToolbarClick)
   } else {
-    console.error('[nmap_uploader] toolbar action API is unavailable in this browser');
+    console.error('[nmap_uploader] toolbar action API is unavailable in this browser')
   }
 
-  browser.runtime.onInstalled.addListener(handleInstalled);
-  browser.runtime.onMessage.addListener(onMessageHandler);
-};
+  browser.runtime.onInstalled.addListener(handleInstalled)
+  browser.runtime.onMessage.addListener(onMessageHandler)
+}
 
 // noinspection JSUnusedGlobalSymbols
-export default defineBackground(initBackground);
+export default defineBackground(initBackground)

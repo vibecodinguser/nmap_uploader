@@ -14,9 +14,9 @@ export const requestEnsureAuth = async ({
 }: {
   interactive: boolean
 }): Promise<EnsureAuthResponse> => {
-  const response = await browser.runtime.sendMessage({
+  const response = (await browser.runtime.sendMessage({
     action: 'ensureAuth',
     interactive,
-  })
-  return (response ?? { ok: false }) as EnsureAuthResponse
+  })) as EnsureAuthResponse | undefined
+  return response ?? { ok: false }
 }

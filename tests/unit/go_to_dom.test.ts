@@ -137,7 +137,7 @@ describe('showGoToTooltip / hideGoToTooltip', () => {
   })
 
   it('позиционирует тултип сверху относительно якоря', () => {
-    Object.defineProperty(document.body, 'offsetWidth', {
+    Object.defineProperty(document.documentElement, 'offsetWidth', {
       configurable: true,
       value: 2000,
     })

@@ -1,17 +1,17 @@
-import type { ChangeEvent, Ref } from 'react';
-import { PointDateField } from '@/components/PointDateField';
+import type { ChangeEvent, Ref } from 'react'
+import { PointDateField } from '@/components/PointDateField'
 
 type MultipointUploadProps = {
-  isUploading: boolean;
-  listDate: string;
-  multipointButtonText: string;
-  batchHint: string;
-  sectionAriaLabel: string;
-  multipointInputRef: Ref<HTMLInputElement>;
-  onListDateChange: (date: string) => void;
-  onMultipointPick: () => void;
-  onMultipointChange: (event: ChangeEvent<HTMLInputElement>) => void;
-};
+  isUploading: boolean
+  listDate: string
+  multipointButtonText: string
+  batchHint: string
+  sectionAriaLabel: string
+  multipointInputRef: Ref<HTMLInputElement>
+  onListDateChange: (date: string) => void
+  onMultipointPick: () => void
+  onMultipointChange: (event: ChangeEvent<HTMLInputElement>) => void
+}
 
 function multipointUpload({
   isUploading,
@@ -57,7 +57,7 @@ function multipointUpload({
         <p className="points-section-subtitle">{batchHint}</p>
       </div>
     </section>
-  );
+  )
 }
 
-export const MultipointUpload = multipointUpload;
+export const MultipointUpload = multipointUpload

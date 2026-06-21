@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { applyBrowserThemeVars } from '@/lib/browser_theme';
+import { useCallback, useEffect, useState } from 'react'
+import { applyBrowserThemeVars } from '@/lib/browser_theme'
 import {
   getStoredThemeMode,
   getSystemTheme,
@@ -7,67 +7,67 @@ import {
   THEME_STORAGE_KEY,
   type Theme,
   type ThemeMode,
-} from '@/lib/theme';
+} from '@/lib/theme'
 
-export type { Theme, ThemeMode } from '@/lib/theme';
+export type { Theme, ThemeMode } from '@/lib/theme'
 
 function readInitialThemeMode(): ThemeMode {
-  return getStoredThemeMode();
+  return getStoredThemeMode()
 }
 
 function readInitialSystemTheme(): Theme {
-  return getSystemTheme();
+  return getSystemTheme()
 }
 
 function readCurrentSystemTheme(): Theme {
-  return getSystemTheme();
+  return getSystemTheme()
 }
 
 function applyThemeClass(themeTarget: Element | undefined, isDark: boolean): void {
-  const el = themeTarget ?? document.documentElement;
-  el.classList.toggle('dark', isDark);
+  const el = themeTarget ?? document.documentElement
+  el.classList.toggle('dark', isDark)
 
   if (el instanceof HTMLElement) {
-    applyBrowserThemeVars(el, isDark);
+    applyBrowserThemeVars(el, isDark)
   }
 
-  const root = el.getRootNode();
+  const root = el.getRootNode()
   if (root instanceof ShadowRoot && root.host instanceof HTMLElement) {
-    root.host.classList.toggle('dark', isDark);
-    applyBrowserThemeVars(root.host, isDark);
+    root.host.classList.toggle('dark', isDark)
+    applyBrowserThemeVars(root.host, isDark)
   }
 }
 
 function resolveHookTheme(themeMode: ThemeMode, systemTheme: Theme): Theme {
-  let result: Theme;
+  let result: Theme
   if (themeMode === 'system') {
-    result = systemTheme;
+    result = systemTheme
   } else {
-    result = themeMode;
+    result = themeMode
   }
-  return result;
+  return result
 }
 
 function refreshSystemTheme(setSystemTheme: (theme: Theme) => void): void {
-  const nextTheme = readCurrentSystemTheme();
-  setSystemTheme(nextTheme);
+  const nextTheme = readCurrentSystemTheme()
+  setSystemTheme(nextTheme)
 }
 
 function onSystemThemeChange(setSystemTheme: (theme: Theme) => void): void {
-  refreshSystemTheme(setSystemTheme);
+  refreshSystemTheme(setSystemTheme)
 }
 
 function unsubscribeSystemTheme(mediaQuery: MediaQueryList, handler: () => void): void {
-  mediaQuery.removeEventListener('change', handler);
+  mediaQuery.removeEventListener('change', handler)
 }
 
 function subscribeSystemTheme(setSystemTheme: (theme: Theme) => void): () => void {
-  refreshSystemTheme(setSystemTheme);
+  refreshSystemTheme(setSystemTheme)
 
-  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-  const handleChange = onSystemThemeChange.bind(undefined, setSystemTheme);
-  mediaQuery.addEventListener('change', handleChange);
-  return unsubscribeSystemTheme.bind(undefined, mediaQuery, handleChange);
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+  const handleChange = onSystemThemeChange.bind(undefined, setSystemTheme)
+  mediaQuery.addEventListener('change', handleChange)
+  return unsubscribeSystemTheme.bind(undefined, mediaQuery, handleChange)
 }
 
 function noopCleanup(): void {
@@ -78,19 +78,19 @@ function runSystemThemeEffect(
   themeMode: ThemeMode,
   setSystemTheme: (theme: Theme) => void,
 ): () => void {
-  let cleanup: () => void = noopCleanup;
+  let cleanup: () => void = noopCleanup
   if (themeMode === 'system') {
-    cleanup = subscribeSystemTheme(setSystemTheme);
+    cleanup = subscribeSystemTheme(setSystemTheme)
   }
-  return cleanup;
+  return cleanup
 }
 
 function onThemeStorageSyncError(error: unknown): void {
-  console.warn('[nmap_uploader] theme storage sync failed:', error);
+  console.warn('[nmap_uploader] theme storage sync failed:', error)
 }
 
 function handleThemeStorageSyncTask(task: Promise<void>): void {
-  task.catch(onThemeStorageSyncError);
+  task.catch(onThemeStorageSyncError)
 }
 
 function syncThemePreferences(
@@ -98,35 +98,35 @@ function syncThemePreferences(
   themeMode: ThemeMode,
   resolvedTheme: Theme,
 ): void {
-  applyThemeClass(themeTarget, resolvedTheme === 'dark');
-  localStorage.setItem(THEME_STORAGE_KEY, themeMode);
-  const saveTask = setStoredExtensionThemeMode(themeMode);
-  handleThemeStorageSyncTask(saveTask);
+  applyThemeClass(themeTarget, resolvedTheme === 'dark')
+  localStorage.setItem(THEME_STORAGE_KEY, themeMode)
+  const saveTask = setStoredExtensionThemeMode(themeMode)
+  handleThemeStorageSyncTask(saveTask)
 }
 
 export const useTheme = (themeTarget?: Element) => {
-  const [themeMode, setThemeModeState] = useState<ThemeMode>(readInitialThemeMode);
-  const [systemTheme, setSystemTheme] = useState<Theme>(readInitialSystemTheme);
+  const [themeMode, setThemeModeState] = useState<ThemeMode>(readInitialThemeMode)
+  const [systemTheme, setSystemTheme] = useState<Theme>(readInitialSystemTheme)
 
-  const resolvedTheme = resolveHookTheme(themeMode, systemTheme);
+  const resolvedTheme = resolveHookTheme(themeMode, systemTheme)
 
   useEffect(
     function subscribeSystemThemeChanges(): () => void {
-      return runSystemThemeEffect(themeMode, setSystemTheme);
+      return runSystemThemeEffect(themeMode, setSystemTheme)
     },
     [themeMode],
-  );
+  )
 
   useEffect(
     function syncThemeEffect(): void {
-      syncThemePreferences(themeTarget, themeMode, resolvedTheme);
+      syncThemePreferences(themeTarget, themeMode, resolvedTheme)
     },
     [themeMode, resolvedTheme, themeTarget],
-  );
+  )
 
   const setThemeMode = useCallback(function setThemeMode(mode: ThemeMode): void {
-    setThemeModeState(mode);
-  }, []);
+    setThemeModeState(mode)
+  }, [])
 
-  return { themeMode, setThemeMode };
-};
+  return { themeMode, setThemeMode }
+}

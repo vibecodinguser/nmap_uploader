@@ -1,4 +1,4 @@
-import { Calendar } from 'lucide-react';
+import { Calendar } from 'lucide-react'
 import {
   type ChangeEvent,
   type CSSProperties,
@@ -8,166 +8,166 @@ import {
   useId,
   useRef,
   useState,
-} from 'react';
-import { DayPicker, UI } from 'react-day-picker';
-import { enUS, ru } from 'react-day-picker/locale';
-import { useLocale, useTranslate } from '@/hooks/useLocale';
-import { useOccupiedDates } from '@/hooks/useOccupiedDates';
+} from 'react'
+import { DayPicker, UI } from 'react-day-picker'
+import { enUS, ru } from 'react-day-picker/locale'
+import { useLocale, useTranslate } from '@/hooks/useLocale'
+import { useOccupiedDates } from '@/hooks/useOccupiedDates'
 import {
   formatDateDisplay,
   formatDateDisplayInput,
   formatDateIso,
   parseDateDisplay,
-} from '@/lib/date_format';
-import 'react-day-picker/style.css';
+} from '@/lib/date_format'
+import 'react-day-picker/style.css'
 
-const POPOVER_WIDTH = 378;
+const POPOVER_WIDTH = 378
 
 const DAY_PICKER_LOCALES = {
   en: enUS,
   ru,
-} as const;
+} as const
 
 const INPUT_CLASS_NAMES = {
   default: 'point-date-input',
   centered: 'point-date-input point-date-input--center-with-button',
-} as const;
+} as const
 
 function onRefreshOccupiedDatesSettled(): void {
   // refreshOccupiedDates handles errors internally; suppress unhandled rejection.
 }
 
 function handleRefreshOccupiedDatesTask(task: Promise<void>): void {
-  task.catch(onRefreshOccupiedDatesSettled);
+  task.catch(onRefreshOccupiedDatesSettled)
 }
 
 function getDayPickerLocale(locale: 'ru' | 'en') {
-  return DAY_PICKER_LOCALES[locale];
+  return DAY_PICKER_LOCALES[locale]
 }
 
 function getInputClassName(centerPlaceholderWithButton: boolean): string {
-  let classNameKey: keyof typeof INPUT_CLASS_NAMES = 'default';
+  let classNameKey: keyof typeof INPUT_CLASS_NAMES = 'default'
   if (centerPlaceholderWithButton) {
-    classNameKey = 'centered';
+    classNameKey = 'centered'
   }
-  return INPUT_CLASS_NAMES[classNameKey];
+  return INPUT_CLASS_NAMES[classNameKey]
 }
 
 function getCalendarAriaControls(isOpen: boolean, popoverId: string): string | undefined {
-  let result: string | undefined;
+  let result: string | undefined
   if (isOpen) {
-    result = popoverId;
+    result = popoverId
   }
-  return result;
+  return result
 }
 
 function removeLayoutListeners(): void {
-  window.removeEventListener('resize', dispatchLayoutChange);
-  window.removeEventListener('scroll', dispatchLayoutChange, true);
+  window.removeEventListener('resize', dispatchLayoutChange)
+  window.removeEventListener('scroll', dispatchLayoutChange, true)
 }
 
 type LayoutEffectRegistration = {
-  updatePopoverPosition: () => void;
-};
+  updatePopoverPosition: () => void
+}
 
 type PointerDownRegistration = {
-  containerRef: RefObject<HTMLDivElement | null>;
-  closeCalendar: () => void;
-};
+  containerRef: RefObject<HTMLDivElement | null>
+  closeCalendar: () => void
+}
 
-const layoutEffectRegistrations = new Set<LayoutEffectRegistration>();
-const pointerDownRegistrations = new Set<PointerDownRegistration>();
+const layoutEffectRegistrations = new Set<LayoutEffectRegistration>()
+const pointerDownRegistrations = new Set<PointerDownRegistration>()
 
-let layoutGlobalListenersAttached = false;
-let pointerDownGlobalListenerAttached = false;
+let layoutGlobalListenersAttached = false
+let pointerDownGlobalListenerAttached = false
 
 function onLayoutChange(updatePopoverPosition: () => void): void {
-  updatePopoverPosition();
+  updatePopoverPosition()
 }
 
 function dispatchLayoutChange(): void {
   for (const registration of layoutEffectRegistrations) {
-    onLayoutChange(registration.updatePopoverPosition);
+    onLayoutChange(registration.updatePopoverPosition)
   }
 }
 
 function attachLayoutGlobalListeners(): void {
   if (!layoutGlobalListenersAttached) {
-    window.addEventListener('resize', dispatchLayoutChange);
-    window.addEventListener('scroll', dispatchLayoutChange, true);
-    layoutGlobalListenersAttached = true;
+    window.addEventListener('resize', dispatchLayoutChange)
+    window.addEventListener('scroll', dispatchLayoutChange, true)
+    layoutGlobalListenersAttached = true
   }
 }
 
 function detachLayoutGlobalListeners(): void {
   if (layoutGlobalListenersAttached && layoutEffectRegistrations.size === 0) {
-    removeLayoutListeners();
-    layoutGlobalListenersAttached = false;
+    removeLayoutListeners()
+    layoutGlobalListenersAttached = false
   }
 }
 
 function registerLayoutEffect(registration: LayoutEffectRegistration): void {
-  layoutEffectRegistrations.add(registration);
-  attachLayoutGlobalListeners();
+  layoutEffectRegistrations.add(registration)
+  attachLayoutGlobalListeners()
 }
 
 function unregisterLayoutEffect(registration: LayoutEffectRegistration): void {
-  layoutEffectRegistrations.delete(registration);
-  detachLayoutGlobalListeners();
+  layoutEffectRegistrations.delete(registration)
+  detachLayoutGlobalListeners()
 }
 
 function dispatchPointerDown(event: PointerEvent): void {
   for (const registration of pointerDownRegistrations) {
-    onPointerDown(registration.containerRef, registration.closeCalendar, event);
+    onPointerDown(registration.containerRef, registration.closeCalendar, event)
   }
 }
 
 function attachPointerDownGlobalListener(): void {
   if (!pointerDownGlobalListenerAttached) {
-    document.addEventListener('pointerdown', dispatchPointerDown);
-    pointerDownGlobalListenerAttached = true;
+    document.addEventListener('pointerdown', dispatchPointerDown)
+    pointerDownGlobalListenerAttached = true
   }
 }
 
 function detachPointerDownGlobalListener(): void {
   if (pointerDownGlobalListenerAttached && pointerDownRegistrations.size === 0) {
-    document.removeEventListener('pointerdown', dispatchPointerDown);
-    pointerDownGlobalListenerAttached = false;
+    document.removeEventListener('pointerdown', dispatchPointerDown)
+    pointerDownGlobalListenerAttached = false
   }
 }
 
 function registerPointerDown(registration: PointerDownRegistration): void {
-  pointerDownRegistrations.add(registration);
-  attachPointerDownGlobalListener();
+  pointerDownRegistrations.add(registration)
+  attachPointerDownGlobalListener()
 }
 
 function unregisterPointerDown(registration: PointerDownRegistration): void {
-  pointerDownRegistrations.delete(registration);
-  detachPointerDownGlobalListener();
+  pointerDownRegistrations.delete(registration)
+  detachPointerDownGlobalListener()
 }
 
 function runLayoutEffect(
   isOpen: boolean,
   updatePopoverPosition: () => void,
 ): LayoutEffectRegistration | null {
-  let registration: LayoutEffectRegistration | null = null;
+  let registration: LayoutEffectRegistration | null = null
   if (isOpen) {
-    updatePopoverPosition();
-    registration = { updatePopoverPosition };
-    registerLayoutEffect(registration);
+    updatePopoverPosition()
+    registration = { updatePopoverPosition }
+    registerLayoutEffect(registration)
   }
-  return registration;
+  return registration
 }
 
 function cleanupLayoutEffect(registration: LayoutEffectRegistration | null): void {
   if (registration) {
-    unregisterLayoutEffect(registration);
+    unregisterLayoutEffect(registration)
   }
 }
 
 function runStoredLayoutCleanup(registrationRef: RefObject<LayoutEffectRegistration | null>): void {
-  cleanupLayoutEffect(registrationRef.current);
-  registrationRef.current = null;
+  cleanupLayoutEffect(registrationRef.current)
+  registrationRef.current = null
 }
 
 function onPointerDown(
@@ -175,11 +175,11 @@ function onPointerDown(
   closeCalendar: () => void,
   event: PointerEvent,
 ): void {
-  const root = containerRef.current;
-  const eventPath = event.composedPath();
-  const clickedInside = root !== null && eventPath.includes(root);
+  const root = containerRef.current
+  const eventPath = event.composedPath()
+  const clickedInside = root !== null && eventPath.includes(root)
   if (!clickedInside) {
-    closeCalendar();
+    closeCalendar()
   }
 }
 
@@ -188,35 +188,35 @@ function runPointerDownEffect(
   containerRef: RefObject<HTMLDivElement | null>,
   closeCalendar: () => void,
 ): PointerDownRegistration | null {
-  let registration: PointerDownRegistration | null = null;
+  let registration: PointerDownRegistration | null = null
   if (isOpen) {
-    registration = { containerRef, closeCalendar };
-    registerPointerDown(registration);
+    registration = { containerRef, closeCalendar }
+    registerPointerDown(registration)
   }
-  return registration;
+  return registration
 }
 
 function cleanupPointerDownEffect(registration: PointerDownRegistration | null): void {
   if (registration) {
-    unregisterPointerDown(registration);
+    unregisterPointerDown(registration)
   }
 }
 
 function runStoredPointerDownCleanup(
   registrationRef: RefObject<PointerDownRegistration | null>,
 ): void {
-  cleanupPointerDownEffect(registrationRef.current);
-  registrationRef.current = null;
+  cleanupPointerDownEffect(registrationRef.current)
+  registrationRef.current = null
 }
 
 type PointDateFieldProps = {
-  id: string;
-  name?: string;
-  value: string;
-  disabled?: boolean;
-  centerPlaceholderWithButton?: boolean;
-  onChange: (value: string) => void;
-};
+  id: string
+  name?: string
+  value: string
+  disabled?: boolean
+  centerPlaceholderWithButton?: boolean
+  onChange: (value: string) => void
+}
 
 export const PointDateField = ({
   id,
@@ -226,119 +226,115 @@ export const PointDateField = ({
   centerPlaceholderWithButton = false,
   onChange,
 }: PointDateFieldProps) => {
-  const t = useTranslate();
-  const { locale } = useLocale();
-  const dayPickerLocale = getDayPickerLocale(locale);
-  const popoverId = useId();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLDivElement>(null);
-  const [isOpen, setIsOpen] = useState(false);
-  const [popoverStyle, setPopoverStyle] = useState<CSSProperties>({});
-  const { occupiedDates, isLoading, refreshOccupiedDates } = useOccupiedDates();
-  const selectedDate = parseDateDisplay(value);
-  const inputClassName = getInputClassName(centerPlaceholderWithButton);
-  const calendarAriaControls = getCalendarAriaControls(isOpen, popoverId);
-  const layoutRegistrationRef = useRef<LayoutEffectRegistration | null>(null);
-  const pointerDownRegistrationRef = useRef<PointerDownRegistration | null>(null);
+  const t = useTranslate()
+  const { locale } = useLocale()
+  const dayPickerLocale = getDayPickerLocale(locale)
+  const popoverId = useId()
+  const containerRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLDivElement>(null)
+  const [isOpen, setIsOpen] = useState(false)
+  const [popoverStyle, setPopoverStyle] = useState<CSSProperties>({})
+  const { occupiedDates, isLoading, refreshOccupiedDates } = useOccupiedDates()
+  const selectedDate = parseDateDisplay(value)
+  const inputClassName = getInputClassName(centerPlaceholderWithButton)
+  const calendarAriaControls = getCalendarAriaControls(isOpen, popoverId)
+  const layoutRegistrationRef = useRef<LayoutEffectRegistration | null>(null)
+  const pointerDownRegistrationRef = useRef<PointerDownRegistration | null>(null)
 
   const cleanupStoredLayoutEffect = useCallback(function cleanupStoredLayoutEffect(): void {
-    runStoredLayoutCleanup(layoutRegistrationRef);
-  }, []);
+    runStoredLayoutCleanup(layoutRegistrationRef)
+  }, [])
 
   const cleanupStoredPointerDownEffect = useCallback(
     function cleanupStoredPointerDownEffect(): void {
-      runStoredPointerDownCleanup(pointerDownRegistrationRef);
+      runStoredPointerDownCleanup(pointerDownRegistrationRef)
     },
     [],
-  );
+  )
 
   const closeCalendar = useCallback(function closeCalendar(): void {
-    setIsOpen(false);
-  }, []);
+    setIsOpen(false)
+  }, [])
 
   const openCalendar = useCallback(
     function openCalendar(): void {
       if (!disabled) {
-        setIsOpen(true);
-        const refreshTask = refreshOccupiedDates();
-        handleRefreshOccupiedDatesTask(refreshTask);
+        setIsOpen(true)
+        const refreshTask = refreshOccupiedDates()
+        handleRefreshOccupiedDatesTask(refreshTask)
       }
     },
     [disabled, refreshOccupiedDates],
-  );
+  )
 
   const updatePopoverPosition = useCallback(function updatePopoverPosition(): void {
-    const input = inputRef.current;
+    const input = inputRef.current
     if (input) {
-      const rect = input.getBoundingClientRect();
-      const gap = 6;
-      const viewportPadding = 8;
-      const popoverWidth = Math.min(POPOVER_WIDTH, window.innerWidth - viewportPadding * 2);
-      let left = rect.left;
+      const rect = input.getBoundingClientRect()
+      const gap = 6
+      const viewportPadding = 8
+      const popoverWidth = Math.min(POPOVER_WIDTH, window.innerWidth - viewportPadding * 2)
+      let left = rect.left
 
       if (left + popoverWidth > window.innerWidth - viewportPadding) {
-        left = window.innerWidth - viewportPadding - popoverWidth;
+        left = window.innerWidth - viewportPadding - popoverWidth
       }
       if (left < viewportPadding) {
-        left = viewportPadding;
+        left = viewportPadding
       }
 
       setPopoverStyle({
         top: rect.bottom + gap,
         left,
         width: popoverWidth,
-      });
+      })
     }
-  }, []);
+  }, [])
 
   useEffect(
     function subscribeLayout(): () => void {
-      layoutRegistrationRef.current = runLayoutEffect(isOpen, updatePopoverPosition);
-      return cleanupStoredLayoutEffect;
+      layoutRegistrationRef.current = runLayoutEffect(isOpen, updatePopoverPosition)
+      return cleanupStoredLayoutEffect
     },
     [isOpen, updatePopoverPosition, cleanupStoredLayoutEffect],
-  );
+  )
 
   useEffect(
     function subscribePointerDown(): () => void {
-      pointerDownRegistrationRef.current = runPointerDownEffect(
-        isOpen,
-        containerRef,
-        closeCalendar,
-      );
-      return cleanupStoredPointerDownEffect;
+      pointerDownRegistrationRef.current = runPointerDownEffect(isOpen, containerRef, closeCalendar)
+      return cleanupStoredPointerDownEffect
     },
     [isOpen, closeCalendar, cleanupStoredPointerDownEffect],
-  );
+  )
 
   const handleTriggerClick = function handleTriggerClick(): void {
     if (isOpen) {
-      closeCalendar();
+      closeCalendar()
     } else {
-      openCalendar();
+      openCalendar()
     }
-  };
+  }
 
   const handleSelect = function handleSelect(date: Date | undefined): void {
     if (date) {
-      const displayValue = formatDateDisplay(date);
-      onChange(displayValue);
-      closeCalendar();
+      const displayValue = formatDateDisplay(date)
+      onChange(displayValue)
+      closeCalendar()
     }
-  };
+  }
 
   const handleInputChange = function handleInputChange(event: ChangeEvent<HTMLInputElement>): void {
-    const formattedValue = formatDateDisplayInput(event.target.value);
-    onChange(formattedValue);
-  };
+    const formattedValue = formatDateDisplayInput(event.target.value)
+    onChange(formattedValue)
+  }
 
   const isOccupiedDate = useCallback(
     function checkOccupiedDate(date: Date): boolean {
-      const isoDate = formatDateIso(date);
-      return occupiedDates.has(isoDate);
+      const isoDate = formatDateIso(date)
+      return occupiedDates.has(isoDate)
     },
     [occupiedDates],
-  );
+  )
 
   return (
     <div className="coords-field coords-field--date" ref={containerRef}>
@@ -407,5 +403,5 @@ export const PointDateField = ({
         )}
       </div>
     </div>
-  );
-};
+  )
+}

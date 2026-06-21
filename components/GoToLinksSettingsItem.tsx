@@ -1,23 +1,23 @@
-import { ChevronDown, ChevronUp } from 'lucide-react';
-import { memo, type ChangeEvent } from 'react';
-import type { useGoToLinks } from '@/hooks/useGoToLinks';
-import { useLocale, useTranslate } from '@/hooks/useLocale';
-import type { GoToItem } from '@/lib/go_to_settings';
-import { getGoToSourceDisplayName, getGoToSourceIconUrl } from '@/lib/go_to_sources';
+import { ChevronDown, ChevronUp } from 'lucide-react'
+import { type ChangeEvent, memo } from 'react'
+import type { useGoToLinks } from '@/hooks/useGoToLinks'
+import { useLocale, useTranslate } from '@/hooks/useLocale'
+import type { GoToItem } from '@/lib/go_to_settings'
+import { getGoToSourceDisplayName, getGoToSourceIconUrl } from '@/lib/go_to_sources'
 
-const GO_TO_CHEVRON_ICON_SIZE = 16;
+const GO_TO_CHEVRON_ICON_SIZE = 16
 
-type GoToLinksSettingsItemProps = {
-  item: GoToItem;
-  index: number;
-  totalItems: number;
-  isLoaded: boolean;
-  setItemActive: ReturnType<typeof useGoToLinks>['setItemActive'];
-  moveItemUp: ReturnType<typeof useGoToLinks>['moveItemUp'];
-  moveItemDown: ReturnType<typeof useGoToLinks>['moveItemDown'];
-};
+type GoToLinksSettingsItemProps = Readonly<{
+  item: GoToItem
+  index: number
+  totalItems: number
+  isLoaded: boolean
+  setItemActive: ReturnType<typeof useGoToLinks>['setItemActive']
+  moveItemUp: ReturnType<typeof useGoToLinks>['moveItemUp']
+  moveItemDown: ReturnType<typeof useGoToLinks>['moveItemDown']
+}>
 
-function goToLinksSettingsItem({
+function GoToLinksSettingsItemBase({
   item,
   index,
   totalItems,
@@ -26,24 +26,24 @@ function goToLinksSettingsItem({
   moveItemUp,
   moveItemDown,
 }: GoToLinksSettingsItemProps) {
-  const t = useTranslate();
-  const { locale } = useLocale();
-  const displayName = getGoToSourceDisplayName(item.name, locale);
-  const iconUrl = getGoToSourceIconUrl(item.name);
-  const isMoveUpEnabled = isLoaded && index > 0;
-  const isMoveDownEnabled = isLoaded && index < totalItems - 1;
+  const t = useTranslate()
+  const { locale } = useLocale()
+  const displayName = getGoToSourceDisplayName(item.name, locale)
+  const iconUrl = getGoToSourceIconUrl(item.name)
+  const isMoveUpEnabled = isLoaded && index > 0
+  const isMoveDownEnabled = isLoaded && index < totalItems - 1
 
   const handleActiveChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setItemActive(item.name, event.target.checked);
-  };
+    setItemActive(item.name, event.target.checked)
+  }
 
   const handleMoveUpClick = () => {
-    moveItemUp(item.name);
-  };
+    moveItemUp(item.name)
+  }
 
   const handleMoveDownClick = () => {
-    moveItemDown(item.name);
-  };
+    moveItemDown(item.name)
+  }
 
   return (
     <li className="settings-go-to-item">
@@ -94,7 +94,7 @@ function goToLinksSettingsItem({
         </button>
       </div>
     </li>
-  );
+  )
 }
 
-export const GoToLinksSettingsItem = memo(goToLinksSettingsItem);
+export const GoToLinksSettingsItem = memo(GoToLinksSettingsItemBase)

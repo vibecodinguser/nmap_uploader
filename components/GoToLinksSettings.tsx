@@ -1,26 +1,26 @@
-import { ChevronRight } from 'lucide-react';
-import { type ChangeEvent, type ReactNode, useState } from 'react';
-import { GoToLinksSettingsItem } from '@/components/GoToLinksSettingsItem';
-import type { useGoToLinks } from '@/hooks/useGoToLinks';
-import { useTranslate } from '@/hooks/useLocale';
-import type { GoToItem } from '@/lib/go_to_settings';
+import { ChevronRight } from 'lucide-react'
+import { type ChangeEvent, type ReactNode, useState } from 'react'
+import { GoToLinksSettingsItem } from '@/components/GoToLinksSettingsItem'
+import type { useGoToLinks } from '@/hooks/useGoToLinks'
+import { useTranslate } from '@/hooks/useLocale'
+import type { GoToItem } from '@/lib/go_to_settings'
 
-const GO_TO_CHEVRON_ICON_SIZE = 16;
+const GO_TO_CHEVRON_ICON_SIZE = 16
 
 function isActiveGoToItem(item: GoToItem): boolean {
-  return item.active;
+  return item.active
 }
 
 function getToggledListExpanded(isExpanded: boolean): boolean {
-  return !isExpanded;
+  return !isExpanded
 }
 
 function getGoToToggleIconClassName(isExpanded: boolean): string | undefined {
-  let className: string | undefined;
+  let className: string | undefined
   if (isExpanded) {
-    className = 'settings-go-to-toggle-icon--expanded';
+    className = 'settings-go-to-toggle-icon--expanded'
   }
-  return className;
+  return className
 }
 
 type GoToLinksSettingsProps = Pick<
@@ -32,31 +32,31 @@ type GoToLinksSettingsProps = Pick<
   | 'setItemActive'
   | 'moveItemUp'
   | 'moveItemDown'
->;
+>
 
 type GoToLinksListRenderContext = {
-  totalItems: number;
-  isLoaded: boolean;
-  setItemActive: GoToLinksSettingsProps['setItemActive'];
-  moveItemUp: GoToLinksSettingsProps['moveItemUp'];
-  moveItemDown: GoToLinksSettingsProps['moveItemDown'];
-};
+  totalItems: number
+  isLoaded: boolean
+  setItemActive: GoToLinksSettingsProps['setItemActive']
+  moveItemUp: GoToLinksSettingsProps['moveItemUp']
+  moveItemDown: GoToLinksSettingsProps['moveItemDown']
+}
 
 type ExpandedGoToListProps = {
-  isListExpanded: boolean;
-  items: GoToItem[];
-  listContext: GoToLinksListRenderContext;
-  listHint: string;
-  listAriaLabel: string;
-};
+  isListExpanded: boolean
+  items: GoToItem[]
+  listContext: GoToLinksListRenderContext
+  listHint: string
+  listAriaLabel: string
+}
 
 function buildGoToLinksListItems(
   items: GoToItem[],
   context: GoToLinksListRenderContext,
 ): ReactNode[] {
-  const renderedItems: ReactNode[] = [];
+  const renderedItems: ReactNode[] = []
   for (let index = 0; index < items.length; index += 1) {
-    const item = items[index];
+    const item = items[index]
     renderedItems.push(
       <GoToLinksSettingsItem
         key={item.name}
@@ -68,15 +68,15 @@ function buildGoToLinksListItems(
         moveItemUp={context.moveItemUp}
         moveItemDown={context.moveItemDown}
       />,
-    );
+    )
   }
-  return renderedItems;
+  return renderedItems
 }
 
 function renderExpandedGoToList(props: ExpandedGoToListProps) {
-  let panel: ReactNode = null;
+  let panel: ReactNode = null
   if (props.isListExpanded) {
-    const listItems = buildGoToLinksListItems(props.items, props.listContext);
+    const listItems = buildGoToLinksListItems(props.items, props.listContext)
     panel = (
       <div id="settings-go-to-list" className="settings-go-to-panel">
         <p className="settings-go-to-hint">{props.listHint}</p>
@@ -85,9 +85,9 @@ function renderExpandedGoToList(props: ExpandedGoToListProps) {
           {listItems}
         </ul>
       </div>
-    );
+    )
   }
-  return panel;
+  return panel
 }
 
 export const GoToLinksSettings = ({
@@ -99,17 +99,17 @@ export const GoToLinksSettings = ({
   moveItemUp,
   moveItemDown,
 }: GoToLinksSettingsProps) => {
-  const t = useTranslate();
-  const [isListExpanded, setIsListExpanded] = useState(false);
-  const activeCount = items.filter(isActiveGoToItem).length;
+  const t = useTranslate()
+  const [isListExpanded, setIsListExpanded] = useState(false)
+  const activeCount = items.filter(isActiveGoToItem).length
 
   const handleToggleList = () => {
-    setIsListExpanded(getToggledListExpanded);
-  };
+    setIsListExpanded(getToggledListExpanded)
+  }
 
   const handleMenuEnabledChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setIsMenuEnabled(event.target.checked);
-  };
+    setIsMenuEnabled(event.target.checked)
+  }
 
   const listContext: GoToLinksListRenderContext = {
     totalItems: items.length,
@@ -117,7 +117,7 @@ export const GoToLinksSettings = ({
     setItemActive,
     moveItemUp,
     moveItemDown,
-  };
+  }
 
   return (
     <section className="settings-section" aria-labelledby="settings-go-to-heading">
@@ -170,5 +170,5 @@ export const GoToLinksSettings = ({
         listAriaLabel: t('settings.goToListAria'),
       })}
     </section>
-  );
-};
+  )
+}

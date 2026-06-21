@@ -1,123 +1,123 @@
-import type { Dispatch, SetStateAction } from 'react';
-import { useCallback, useRef, useState } from 'react';
-import { browser } from 'wxt/browser';
-import { useTranslate } from '@/hooks/useLocale';
-import { normalizeDisplayTargetDate } from '@/lib/date_format';
-import type { TranslateFn } from '@/lib/i18n';
-import { invalidateOccupiedDatesCache } from '@/lib/occupied_dates_cache';
+import type { Dispatch, SetStateAction } from 'react'
+import { useCallback, useRef, useState } from 'react'
+import { browser } from 'wxt/browser'
+import { useTranslate } from '@/hooks/useLocale'
+import { normalizeDisplayTargetDate } from '@/lib/date_format'
+import type { TranslateFn } from '@/lib/i18n'
+import { invalidateOccupiedDatesCache } from '@/lib/occupied_dates_cache'
 import {
   areCoordinatesValid,
   createPointIndex,
   processMultipointContent,
-} from '@/lib/point_uploader';
+} from '@/lib/point_uploader'
 import {
   resolveReloadAfterUploadPreference,
   triggerEditorReloadIfNeeded,
-} from '@/lib/reload_after_upload';
+} from '@/lib/reload_after_upload'
 import {
   buildExpiredSessionLogs,
   ensureUploadAuth,
   hasUploadAuthError,
   prepareUploadLocale,
-} from '@/lib/upload_auth_flow';
-import { createUploadLog, deriveUploadStatus, type UploadStatus } from '@/lib/upload_logs';
-import type { UploadLogEntry } from '@/lib/upload_service';
-import { beginUploadSession, endUploadSession } from '@/lib/upload_session';
+} from '@/lib/upload_auth_flow'
+import { createUploadLog, deriveUploadStatus, type UploadStatus } from '@/lib/upload_logs'
+import type { UploadLogEntry } from '@/lib/upload_service'
+import { beginUploadSession, endUploadSession } from '@/lib/upload_session'
 
-export type PointUploadStatus = UploadStatus;
+export type PointUploadStatus = UploadStatus
 
 export type ManualPointInput = {
-  description: string;
-  latitude: string;
-  longitude: string;
-  date: string;
-};
+  description: string
+  latitude: string
+  longitude: string
+  date: string
+}
 
-type UploadingRef = { current: boolean };
+type UploadingRef = { current: boolean }
 
-type NullableUploadStatusSetter = Dispatch<SetStateAction<UploadStatus | null>>;
+type NullableUploadStatusSetter = Dispatch<SetStateAction<UploadStatus | null>>
 
 type ApplyPointUploadLogsParams = {
-  priorLogs: UploadLogEntry[];
-  uploadLogs: UploadLogEntry[];
-  setUploadStatus: NullableUploadStatusSetter;
-};
+  priorLogs: UploadLogEntry[]
+  uploadLogs: UploadLogEntry[]
+  setUploadStatus: NullableUploadStatusSetter
+}
 
 type UploadPointDataParams = {
-  files: Array<{ name: string; result: ReturnType<typeof createPointIndex> }>;
-  targetDate?: string;
-};
+  files: Array<{ name: string; result: ReturnType<typeof createPointIndex> }>
+  targetDate?: string
+}
 
 type PointUploadExecuteResult = {
-  priorLogs: UploadLogEntry[];
-  uploadLogs: UploadLogEntry[];
-  uploadOk: boolean | undefined;
-} | null;
+  priorLogs: UploadLogEntry[]
+  uploadLogs: UploadLogEntry[]
+  uploadOk: boolean | undefined
+} | null
 
 type RunPointUploadParams = {
-  defaultErrorMessage: string;
-  execute: (reloadAfterUpload: boolean) => Promise<PointUploadExecuteResult>;
-  onAuthenticated?: () => void;
-  isUploadingRef: UploadingRef;
-  setIsUploading: Dispatch<SetStateAction<boolean>>;
-  setUploadStatus: NullableUploadStatusSetter;
-};
+  defaultErrorMessage: string
+  execute: (reloadAfterUpload: boolean) => Promise<PointUploadExecuteResult>
+  onAuthenticated?: () => void
+  isUploadingRef: UploadingRef
+  setIsUploading: Dispatch<SetStateAction<boolean>>
+  setUploadStatus: NullableUploadStatusSetter
+}
 
 type ManualPointUploadParams = ManualPointInput & {
-  t: TranslateFn;
+  t: TranslateFn
   runPointUpload: (
     params: Pick<RunPointUploadParams, 'defaultErrorMessage' | 'execute'>,
-  ) => Promise<void>;
-  setUploadStatus: NullableUploadStatusSetter;
-};
+  ) => Promise<void>
+  setUploadStatus: NullableUploadStatusSetter
+}
 
 type MultipointUploadParams = {
-  files: File[];
-  date: string;
-  t: TranslateFn;
+  files: File[]
+  date: string
+  t: TranslateFn
   runPointUpload: (
     params: Pick<RunPointUploadParams, 'defaultErrorMessage' | 'execute'>,
-  ) => Promise<void>;
-  setUploadStatus: NullableUploadStatusSetter;
-};
+  ) => Promise<void>
+  setUploadStatus: NullableUploadStatusSetter
+}
 
 type ManualPointUploadExecutionParams = {
-  lat: number;
-  lon: number;
-  description: string;
-  targetDate: string | undefined;
-  t: TranslateFn;
-};
+  lat: number
+  lon: number
+  description: string
+  targetDate: string | undefined
+  t: TranslateFn
+}
 
 type MultipointUploadExecutionParams = {
-  files: File[];
-  targetDate: string | undefined;
-  t: TranslateFn;
-  setUploadStatus: NullableUploadStatusSetter;
-};
+  files: File[]
+  targetDate: string | undefined
+  t: TranslateFn
+  setUploadStatus: NullableUploadStatusSetter
+}
 
 type ProcessedMultipointFile = {
-  name: string;
-  result: ReturnType<typeof processMultipointContent>;
-};
+  name: string
+  result: ReturnType<typeof processMultipointContent>
+}
 
-const normalizeTargetDate = normalizeDisplayTargetDate;
+const normalizeTargetDate = normalizeDisplayTargetDate
 
 function appendUploadLog(
   logs: UploadLogEntry[],
   level: UploadLogEntry['level'],
   message: string,
 ): void {
-  const entry = createUploadLog(level, message);
-  logs.push(entry);
+  const entry = createUploadLog(level, message)
+  logs.push(entry)
 }
 
 function getUploadErrorMessage(error: unknown, defaultErrorMessage: string): string {
-  let message = defaultErrorMessage;
+  let message = defaultErrorMessage
   if (error instanceof Error) {
-    message = error.message;
+    message = error.message
   }
-  return message;
+  return message
 }
 
 async function uploadPointData({ files, targetDate }: UploadPointDataParams) {
@@ -125,7 +125,7 @@ async function uploadPointData({ files, targetDate }: UploadPointDataParams) {
     action: 'uploadProcessedFiles',
     files,
     targetDate,
-  })) as { logs?: UploadLogEntry[]; ok?: boolean };
+  })) as { logs?: UploadLogEntry[]; ok?: boolean }
 }
 
 async function applyPointUploadLogs({
@@ -133,14 +133,14 @@ async function applyPointUploadLogs({
   uploadLogs,
   setUploadStatus,
 }: ApplyPointUploadLogsParams) {
-  let logs: UploadLogEntry[];
+  let logs: UploadLogEntry[]
   if (hasUploadAuthError(uploadLogs)) {
-    logs = await buildExpiredSessionLogs({ priorLogs, uploadLogs });
+    logs = await buildExpiredSessionLogs({ priorLogs, uploadLogs })
   } else {
-    logs = [...priorLogs, ...uploadLogs];
+    logs = [...priorLogs, ...uploadLogs]
   }
-  const status = deriveUploadStatus(logs);
-  setUploadStatus(status);
+  const status = deriveUploadStatus(logs)
+  setUploadStatus(status)
 }
 
 function resolveUploadTargetDate(
@@ -148,25 +148,25 @@ function resolveUploadTargetDate(
   t: TranslateFn,
   setUploadStatus: NullableUploadStatusSetter,
 ): string | undefined {
-  let targetDate: string | undefined;
+  let targetDate: string | undefined
   try {
-    targetDate = normalizeTargetDate(date);
+    targetDate = normalizeTargetDate(date)
   } catch {
-    const invalidDateMessage = t('common.invalidDateFormat');
-    setUploadStatus({ level: 'error', message: invalidDateMessage });
-    targetDate = undefined;
+    const invalidDateMessage = t('common.invalidDateFormat')
+    setUploadStatus({ level: 'error', message: invalidDateMessage })
+    targetDate = undefined
   }
-  return targetDate;
+  return targetDate
 }
 
 function parseCoordinate(value: string): number {
-  const trimmed = value.trim();
-  return Number.parseFloat(trimmed);
+  const trimmed = value.trim()
+  return Number.parseFloat(trimmed)
 }
 
 function isTxtFile(file: File): boolean {
-  const lowerName = file.name.toLowerCase();
-  return lowerName.endsWith('.txt');
+  const lowerName = file.name.toLowerCase()
+  return lowerName.endsWith('.txt')
 }
 
 function createBeginUploadHandler({
@@ -174,17 +174,17 @@ function createBeginUploadHandler({
   setUploadStatus,
 }: Pick<RunPointUploadParams, 'setIsUploading' | 'setUploadStatus'>) {
   return function handleBeginUpload() {
-    setIsUploading(true);
-    setUploadStatus(null);
-  };
+    setIsUploading(true)
+    setUploadStatus(null)
+  }
 }
 
 function createFinishUploadHandler({
   setIsUploading,
 }: Pick<RunPointUploadParams, 'setIsUploading'>) {
   return function handleEndUpload() {
-    setIsUploading(false);
-  };
+    setIsUploading(false)
+  }
 }
 
 async function processMultipointFile(
@@ -192,41 +192,41 @@ async function processMultipointFile(
   priorLogs: UploadLogEntry[],
   t: TranslateFn,
 ): Promise<ProcessedMultipointFile> {
-  const processingMessage = t('upload.processing', { file: file.name });
-  appendUploadLog(priorLogs, 'info', processingMessage);
+  const processingMessage = t('upload.processing', { file: file.name })
+  appendUploadLog(priorLogs, 'info', processingMessage)
 
-  const content = await file.text();
-  const result = processMultipointContent(content);
-  const pointKeys = Object.keys(result.points);
-  const pointCount = pointKeys.length;
+  const content = await file.text()
+  const result = processMultipointContent(content)
+  const pointKeys = Object.keys(result.points)
+  const pointCount = pointKeys.length
 
   if (pointCount === 0) {
-    const notFoundMessage = t('points.pointsNotFound', { file: file.name });
-    appendUploadLog(priorLogs, 'error', `✗ ${notFoundMessage}`);
+    const notFoundMessage = t('points.pointsNotFound', { file: file.name })
+    appendUploadLog(priorLogs, 'error', `✗ ${notFoundMessage}`)
   } else {
-    const countMessage = t('points.pointsCount', { file: file.name, count: pointCount });
-    appendUploadLog(priorLogs, 'success', `✓ ${countMessage}`);
+    const countMessage = t('points.pointsCount', { file: file.name, count: pointCount })
+    appendUploadLog(priorLogs, 'success', `✓ ${countMessage}`)
   }
 
-  return { name: file.name, result };
+  return { name: file.name, result }
 }
 
 function hasValidPoints(file: ProcessedMultipointFile): boolean {
-  const pointKeys = Object.keys(file.result.points);
-  return pointKeys.length > 0;
+  const pointKeys = Object.keys(file.result.points)
+  return pointKeys.length > 0
 }
 
 function findInvalidMultipointFile(files: File[]): File | undefined {
-  let invalidFile: File | undefined;
+  let invalidFile: File | undefined
   for (const file of files) {
     if (invalidFile === undefined) {
-      const isValidFormat = isTxtFile(file);
+      const isValidFormat = isTxtFile(file)
       if (!isValidFormat) {
-        invalidFile = file;
+        invalidFile = file
       }
     }
   }
-  return invalidFile;
+  return invalidFile
 }
 
 async function processAllMultipointFiles(
@@ -234,12 +234,12 @@ async function processAllMultipointFiles(
   priorLogs: UploadLogEntry[],
   t: TranslateFn,
 ): Promise<ProcessedMultipointFile[]> {
-  const processedFiles: ProcessedMultipointFile[] = [];
+  const processedFiles: ProcessedMultipointFile[] = []
   for (const file of files) {
-    const processed = await processMultipointFile(file, priorLogs, t);
-    processedFiles.push(processed);
+    const processed = await processMultipointFile(file, priorLogs, t)
+    processedFiles.push(processed)
   }
-  return processedFiles;
+  return processedFiles
 }
 
 async function executeManualPointUpload({
@@ -249,40 +249,40 @@ async function executeManualPointUpload({
   targetDate,
   t,
 }: ManualPointUploadExecutionParams): Promise<PointUploadExecuteResult> {
-  const preparingMessage = t('points.preparingPoint');
-  const priorLogs = [createUploadLog('info', preparingMessage)];
-  const trimmedDescription = description.trim();
+  const preparingMessage = t('points.preparingPoint')
+  const priorLogs = [createUploadLog('info', preparingMessage)]
+  const trimmedDescription = description.trim()
   const pointData = createPointIndex({
     latitude: lat,
     longitude: lon,
     description: trimmedDescription,
-  });
+  })
   const response = await uploadPointData({
     files: [{ name: 'manual-point', result: pointData }],
     targetDate,
-  });
+  })
 
   return {
     priorLogs,
     uploadLogs: response.logs ?? [],
     uploadOk: response.ok,
-  };
+  }
 }
 
 function bindManualPointUploadExecutor(params: ManualPointUploadExecutionParams) {
   return async function executeManualPointUploadBound(
     _reloadAfterUpload: boolean,
   ): Promise<PointUploadExecuteResult> {
-    return executeManualPointUpload(params);
-  };
+    return executeManualPointUpload(params)
+  }
 }
 
 function bindMultipointUploadExecutor(params: MultipointUploadExecutionParams) {
   return async function executeMultipointUploadBound(
     _reloadAfterUpload: boolean,
   ): Promise<PointUploadExecuteResult> {
-    return executeMultipointUpload(params);
-  };
+    return executeMultipointUpload(params)
+  }
 }
 
 async function executeMultipointUpload({
@@ -291,23 +291,23 @@ async function executeMultipointUpload({
   t,
   setUploadStatus,
 }: MultipointUploadExecutionParams): Promise<PointUploadExecuteResult> {
-  const priorLogs: UploadLogEntry[] = [];
-  const processedFiles = await processAllMultipointFiles(files, priorLogs, t);
-  const validFiles = processedFiles.filter(hasValidPoints);
+  const priorLogs: UploadLogEntry[] = []
+  const processedFiles = await processAllMultipointFiles(files, priorLogs, t)
+  const validFiles = processedFiles.filter(hasValidPoints)
 
-  let result: PointUploadExecuteResult = null;
+  let result: PointUploadExecuteResult = null
   if (validFiles.length === 0) {
-    const noPointsMessage = t('points.noPointsInFiles');
-    setUploadStatus({ level: 'error', message: noPointsMessage });
+    const noPointsMessage = t('points.noPointsInFiles')
+    setUploadStatus({ level: 'error', message: noPointsMessage })
   } else {
-    const response = await uploadPointData({ files: validFiles, targetDate });
+    const response = await uploadPointData({ files: validFiles, targetDate })
     result = {
       priorLogs,
       uploadLogs: response.logs ?? [],
       uploadOk: response.ok,
-    };
+    }
   }
-  return result;
+  return result
 }
 
 async function runPointUpload({
@@ -318,39 +318,39 @@ async function runPointUpload({
   setIsUploading,
   setUploadStatus,
 }: RunPointUploadParams) {
-  await prepareUploadLocale();
+  await prepareUploadLocale()
 
-  const onBegin = createBeginUploadHandler({ setIsUploading, setUploadStatus });
-  const started = await beginUploadSession({ isUploadingRef, onBegin });
+  const onBegin = createBeginUploadHandler({ setIsUploading, setUploadStatus })
+  const started = await beginUploadSession({ isUploadingRef, onBegin })
   if (started) {
     try {
-      const auth = await ensureUploadAuth({ onAuthenticated });
+      const auth = await ensureUploadAuth({ onAuthenticated })
       if (auth.ok) {
-        const reloadAfterUpload = await resolveReloadAfterUploadPreference();
-        const result = await execute(reloadAfterUpload);
+        const reloadAfterUpload = await resolveReloadAfterUploadPreference()
+        const result = await execute(reloadAfterUpload)
         if (result) {
           await applyPointUploadLogs({
             priorLogs: result.priorLogs,
             uploadLogs: result.uploadLogs,
             setUploadStatus,
-          });
+          })
           if (result.uploadOk) {
-            invalidateOccupiedDatesCache();
+            invalidateOccupiedDatesCache()
           }
           await triggerEditorReloadIfNeeded({
             reloadAfterUpload,
             uploadOk: result.uploadOk,
-          });
+          })
         }
       } else {
-        setUploadStatus({ level: 'error', message: auth.message });
+        setUploadStatus({ level: 'error', message: auth.message })
       }
     } catch (error) {
-      const message = getUploadErrorMessage(error, defaultErrorMessage);
-      setUploadStatus({ level: 'error', message });
+      const message = getUploadErrorMessage(error, defaultErrorMessage)
+      setUploadStatus({ level: 'error', message })
     } finally {
-      const onEnd = createFinishUploadHandler({ setIsUploading });
-      endUploadSession({ isUploadingRef, onEnd });
+      const onEnd = createFinishUploadHandler({ setIsUploading })
+      endUploadSession({ isUploadingRef, onEnd })
     }
   }
 }
@@ -364,27 +364,27 @@ async function performManualPointUpload({
   runPointUpload: runUpload,
   setUploadStatus,
 }: ManualPointUploadParams) {
-  const lat = parseCoordinate(latitude);
-  const lon = parseCoordinate(longitude);
+  const lat = parseCoordinate(latitude)
+  const lon = parseCoordinate(longitude)
 
   if (Number.isNaN(lat) || Number.isNaN(lon)) {
-    const coordinatesMissingMessage = t('points.coordinatesMissing');
-    setUploadStatus({ level: 'error', message: coordinatesMissingMessage });
+    const coordinatesMissingMessage = t('points.coordinatesMissing')
+    setUploadStatus({ level: 'error', message: coordinatesMissingMessage })
   } else if (!areCoordinatesValid({ latitude: lat, longitude: lon })) {
-    const outOfRangeMessage = t('points.coordinatesOutOfRange');
-    setUploadStatus({ level: 'error', message: outOfRangeMessage });
+    const outOfRangeMessage = t('points.coordinatesOutOfRange')
+    setUploadStatus({ level: 'error', message: outOfRangeMessage })
   } else {
-    const targetDate = resolveUploadTargetDate(date, t, setUploadStatus);
+    const targetDate = resolveUploadTargetDate(date, t, setUploadStatus)
     if (targetDate !== undefined) {
-      const defaultErrorMessage = t('points.pointUploadError');
+      const defaultErrorMessage = t('points.pointUploadError')
       const execute = bindManualPointUploadExecutor({
         lat,
         lon,
         description,
         targetDate,
         t,
-      });
-      await runUpload({ defaultErrorMessage, execute });
+      })
+      await runUpload({ defaultErrorMessage, execute })
     }
   }
 }
@@ -397,34 +397,34 @@ async function performMultipointUpload({
   setUploadStatus,
 }: MultipointUploadParams) {
   if (files.length === 0) {
-    const noFilesMessage = t('points.noFilesSelected');
-    setUploadStatus({ level: 'error', message: noFilesMessage });
+    const noFilesMessage = t('points.noFilesSelected')
+    setUploadStatus({ level: 'error', message: noFilesMessage })
   } else {
-    const invalidFile = findInvalidMultipointFile(files);
+    const invalidFile = findInvalidMultipointFile(files)
     if (invalidFile) {
-      const onlyTxtMessage = t('points.onlyTxtAllowed');
-      setUploadStatus({ level: 'error', message: onlyTxtMessage });
+      const onlyTxtMessage = t('points.onlyTxtAllowed')
+      setUploadStatus({ level: 'error', message: onlyTxtMessage })
     } else {
-      const targetDate = resolveUploadTargetDate(date, t, setUploadStatus);
+      const targetDate = resolveUploadTargetDate(date, t, setUploadStatus)
       if (targetDate !== undefined) {
-        const defaultErrorMessage = t('points.pointsUploadError');
+        const defaultErrorMessage = t('points.pointsUploadError')
         const execute = bindMultipointUploadExecutor({
           files,
           targetDate,
           t,
           setUploadStatus,
-        });
-        await runUpload({ defaultErrorMessage, execute });
+        })
+        await runUpload({ defaultErrorMessage, execute })
       }
     }
   }
 }
 
 export const usePointUpload = ({ onAuthenticated }: { onAuthenticated?: () => void }) => {
-  const t = useTranslate();
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState<PointUploadStatus | null>(null);
-  const isUploadingRef = useRef(false);
+  const t = useTranslate()
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadStatus, setUploadStatus] = useState<PointUploadStatus | null>(null)
+  const isUploadingRef = useRef(false)
 
   const boundRunPointUpload = useCallback(
     function boundRunPointUpload(
@@ -436,10 +436,10 @@ export const usePointUpload = ({ onAuthenticated }: { onAuthenticated?: () => vo
         isUploadingRef,
         setIsUploading,
         setUploadStatus,
-      });
+      })
     },
     [onAuthenticated],
-  );
+  )
 
   const boundPerformManualUpload = useCallback(
     function boundPerformManualUpload(input: ManualPointInput) {
@@ -448,10 +448,10 @@ export const usePointUpload = ({ onAuthenticated }: { onAuthenticated?: () => vo
         t,
         runPointUpload: boundRunPointUpload,
         setUploadStatus,
-      });
+      })
     },
     [boundRunPointUpload, t],
-  );
+  )
 
   const boundPerformMultipointUpload = useCallback(
     function boundPerformMultipointUpload({ files, date }: { files: File[]; date: string }) {
@@ -461,15 +461,15 @@ export const usePointUpload = ({ onAuthenticated }: { onAuthenticated?: () => vo
         t,
         runPointUpload: boundRunPointUpload,
         setUploadStatus,
-      });
+      })
     },
     [boundRunPointUpload, t],
-  );
+  )
 
   return {
     isUploading,
     uploadStatus,
     performManualUpload: boundPerformManualUpload,
     performMultipointUpload: boundPerformMultipointUpload,
-  };
-};
+  }
+}

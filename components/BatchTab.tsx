@@ -1,14 +1,14 @@
-import { type ChangeEvent, type RefObject, useCallback, useRef, useState } from 'react';
-import { MultipointUpload } from '@/components/MultipointUpload';
-import { useTranslate } from '@/hooks/useLocale';
-import { requireAuthBeforeAction } from '@/lib/require_auth';
+import { type ChangeEvent, type RefObject, useCallback, useRef, useState } from 'react'
+import { MultipointUpload } from '@/components/MultipointUpload'
+import { useTranslate } from '@/hooks/useLocale'
+import { requireAuthBeforeAction } from '@/lib/require_auth'
 
 type BatchTabProps = {
-  isUploading: boolean;
-  isLoggedIn: boolean;
-  onRequireAuth: () => void;
-  onMultipointUpload: (input: { files: File[]; date: string }) => void;
-};
+  isUploading: boolean
+  isLoggedIn: boolean
+  onRequireAuth: () => void
+  onMultipointUpload: (input: { files: File[]; date: string }) => void
+}
 
 function handleMultipointPick(
   isLoggedIn: boolean,
@@ -16,7 +16,7 @@ function handleMultipointPick(
   multipointInputRef: RefObject<HTMLInputElement | null>,
 ) {
   if (requireAuthBeforeAction({ isLoggedIn, onRequireAuth })) {
-    multipointInputRef.current?.click();
+    multipointInputRef.current?.click()
   }
 }
 
@@ -25,10 +25,10 @@ function handleMultipointChange(
   listDate: string,
   onMultipointUpload: (input: { files: File[]; date: string }) => void,
 ) {
-  const selectedFiles = Array.from(event.target.files ?? []);
-  event.target.value = '';
+  const selectedFiles = Array.from(event.target.files ?? [])
+  event.target.value = ''
   if (selectedFiles.length > 0) {
-    onMultipointUpload({ files: selectedFiles, date: listDate });
+    onMultipointUpload({ files: selectedFiles, date: listDate })
   }
 }
 
@@ -38,30 +38,30 @@ export const BatchTab = function batchTab({
   onRequireAuth,
   onMultipointUpload,
 }: BatchTabProps) {
-  const t = useTranslate();
-  const [listDate, setListDate] = useState('');
-  const multipointInputRef = useRef<HTMLInputElement>(null);
+  const t = useTranslate()
+  const [listDate, setListDate] = useState('')
+  const multipointInputRef = useRef<HTMLInputElement>(null)
 
-  let multipointButtonText: string;
+  let multipointButtonText: string
   if (isUploading) {
-    multipointButtonText = t('common.uploading');
+    multipointButtonText = t('common.uploading')
   } else {
-    multipointButtonText = t('common.upload');
+    multipointButtonText = t('common.upload')
   }
 
   const onMultipointPick = useCallback(
     function onMultipointPick() {
-      handleMultipointPick(isLoggedIn, onRequireAuth, multipointInputRef);
+      handleMultipointPick(isLoggedIn, onRequireAuth, multipointInputRef)
     },
     [isLoggedIn, onRequireAuth],
-  );
+  )
 
   const onMultipointChange = useCallback(
     function onMultipointChange(event: ChangeEvent<HTMLInputElement>) {
-      handleMultipointChange(event, listDate, onMultipointUpload);
+      handleMultipointChange(event, listDate, onMultipointUpload)
     },
     [listDate, onMultipointUpload],
-  );
+  )
 
   return (
     <MultipointUpload
@@ -75,5 +75,5 @@ export const BatchTab = function batchTab({
       onMultipointPick={onMultipointPick}
       onMultipointChange={onMultipointChange}
     />
-  );
-};
+  )
+}

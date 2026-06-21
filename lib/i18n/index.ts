@@ -1,6 +1,12 @@
-export type { InterpolationParams, Locale, MessageKey, Messages, TranslateFn } from '@/lib/i18n/types'
 export { getRuntimeLocale, setRuntimeLocale } from '@/lib/i18n/locale_state'
 export { getStoredLocale, setStoredLocale, syncLocaleFromStorage } from '@/lib/i18n/locale_storage'
 export { createTranslator, getGoToSourceDisplayName } from '@/lib/i18n/translate'
-export { getUploadCompletePrefixes, isUploadCompleteMessage } from '@/lib/i18n/upload_complete'
+export type {
+  InterpolationParams,
+  Locale,
+  MessageKey,
+  Messages,
+  TranslateFn,
+} from '@/lib/i18n/types'
 export { hasUploadAuthErrorInLogs, sessionInvalidMarkers } from '@/lib/i18n/upload_auth_logs'
+export { getUploadCompletePrefixes, isUploadCompleteMessage } from '@/lib/i18n/upload_complete'

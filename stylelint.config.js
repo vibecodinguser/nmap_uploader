@@ -65,4 +65,4 @@ export default {
 
     'media-feature-range-notation': 'context',
   },
-};
+}

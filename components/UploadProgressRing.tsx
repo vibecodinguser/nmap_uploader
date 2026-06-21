@@ -1,45 +1,45 @@
-import { useTranslate } from '@/hooks/useLocale';
+import { useTranslate } from '@/hooks/useLocale'
 
-const progressRadius = 52;
-const progressSize = 120;
-const progressStroke = 6;
-const progressCenter = progressSize / 2;
-const progressCircumference = 2 * Math.PI * progressRadius;
+const progressRadius = 52
+const progressSize = 120
+const progressStroke = 6
+const progressCenter = progressSize / 2
+const progressCircumference = 2 * Math.PI * progressRadius
 
 type UploadProgressRingProps = {
-  progress: number;
-  isActive: boolean;
-};
+  progress: number
+  isActive: boolean
+}
 
 function clampProgress(value: number): number {
-  let result = value;
+  let result = value
   if (result < 0) {
-    result = 0;
+    result = 0
   }
   if (result > 100) {
-    result = 100;
+    result = 100
   }
-  return result;
+  return result
 }
 
 function getProgressRingClassName(isActive: boolean): string {
-  let className = 'upload-progress-ring';
+  let className = 'upload-progress-ring'
   if (isActive) {
-    className += ' is-active';
+    className += ' is-active'
   }
-  return className;
+  return className
 }
 
 function getStrokeOffset(progress: number): number {
-  const progressRatio = progress / 100;
-  return progressCircumference * (1 - progressRatio);
+  const progressRatio = progress / 100
+  return progressCircumference * (1 - progressRatio)
 }
 
 export const UploadProgressRing = ({ progress, isActive }: UploadProgressRingProps) => {
-  const t = useTranslate();
-  const clampedProgress = clampProgress(progress);
-  const strokeOffset = getStrokeOffset(clampedProgress);
-  const roundedProgress = Math.round(clampedProgress);
+  const t = useTranslate()
+  const clampedProgress = clampProgress(progress)
+  const strokeOffset = getStrokeOffset(clampedProgress)
+  const roundedProgress = Math.round(clampedProgress)
 
   return (
     <div
@@ -82,5 +82,5 @@ export const UploadProgressRing = ({ progress, isActive }: UploadProgressRingPro
         {roundedProgress}%
       </span>
     </div>
-  );
-};
+  )
+}

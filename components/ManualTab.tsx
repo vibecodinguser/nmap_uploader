@@ -1,69 +1,64 @@
-import { type ChangeEvent, type SubmitEvent, useCallback, useState } from 'react';
-import { ManualPointUpload } from '@/components/ManualPointUpload';
-import { useTranslate } from '@/hooks/useLocale';
-import { requireAuthBeforeAction } from '@/lib/require_auth';
+import { type ChangeEvent, type SubmitEvent, useCallback, useState } from 'react'
+import { ManualPointUpload } from '@/components/ManualPointUpload'
+import { useTranslate } from '@/hooks/useLocale'
+import { requireAuthBeforeAction } from '@/lib/require_auth'
 
 type ManualTabProps = {
-  isUploading: boolean;
-  isLoggedIn: boolean;
-  onRequireAuth: () => void;
+  isUploading: boolean
+  isLoggedIn: boolean
+  onRequireAuth: () => void
   onManualUpload: (input: {
-    description: string;
-    latitude: string;
-    longitude: string;
-    date: string;
-  }) => void;
-};
+    description: string
+    latitude: string
+    longitude: string
+    date: string
+  }) => void
+}
 
-export const ManualTab = function manualTab({
+export const ManualTab = function ManualTab({
   isUploading,
   isLoggedIn,
   onRequireAuth,
   onManualUpload,
 }: ManualTabProps) {
-  const t = useTranslate();
-  const [description, setDescription] = useState('');
-  const [latitude, setLatitude] = useState('');
-  const [longitude, setLongitude] = useState('');
-  const [manualDate, setManualDate] = useState('');
+  const t = useTranslate()
+  const [description, setDescription] = useState('')
+  const [latitude, setLatitude] = useState('')
+  const [longitude, setLongitude] = useState('')
+  const [manualDate, setManualDate] = useState('')
 
-  const isManualSubmitDisabled = isUploading || !latitude.trim() || !longitude.trim();
+  const isManualSubmitDisabled = isUploading || !latitude.trim() || !longitude.trim()
 
-  let manualSubmitButtonText;
-  if (isUploading) {
-    manualSubmitButtonText = t('common.sending');
-  } else {
-    manualSubmitButtonText = t('common.upload');
-  }
+  const manualSubmitButtonText = isUploading ? t('common.sending') : t('common.upload')
 
   const handleDescriptionChange = useCallback(function handleDescriptionChange(
     event: ChangeEvent<HTMLTextAreaElement>,
   ) {
-    setDescription(event.currentTarget.value);
-  }, []);
+    setDescription(event.currentTarget.value)
+  }, [])
 
   const handleLatitudeChange = useCallback(function handleLatitudeChange(
     event: ChangeEvent<HTMLInputElement>,
   ) {
-    setLatitude(event.target.value);
-  }, []);
+    setLatitude(event.target.value)
+  }, [])
 
   const handleLongitudeChange = useCallback(function handleLongitudeChange(
     event: ChangeEvent<HTMLInputElement>,
   ) {
-    setLongitude(event.target.value);
-  }, []);
+    setLongitude(event.target.value)
+  }, [])
 
   const handleManualSubmit = useCallback(
     function handleManualSubmit(event: SubmitEvent<HTMLFormElement>) {
-      event.preventDefault();
+      event.preventDefault()
       if (!isManualSubmitDisabled && requireAuthBeforeAction({ isLoggedIn, onRequireAuth })) {
         onManualUpload({
           description,
           latitude,
           longitude,
           date: manualDate,
-        });
+        })
       }
     },
     [
@@ -76,7 +71,7 @@ export const ManualTab = function manualTab({
       longitude,
       manualDate,
     ],
-  );
+  )
 
   return (
     <ManualPointUpload
@@ -99,5 +94,5 @@ export const ManualTab = function manualTab({
       onManualDateChange={setManualDate}
       onManualSubmit={handleManualSubmit}
     />
-  );
-};
+  )
+}

@@ -1,36 +1,62 @@
-import { DOMParser as XmlDomParser } from '@xmldom/xmldom';
-import { setupServer } from 'msw/node';
-import { afterAll, afterEach, beforeAll, beforeEach, expect } from 'vitest';
-import * as axeMatchers from 'vitest-axe/matchers';
-import { resetBrowserMocks } from './browser_mock';
-import { resetYandexMockState, yandexHandlers } from './yandex_handlers';
+import { DOMParser as XmlDomParser } from '@xmldom/xmldom'
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, beforeEach, expect } from 'vitest'
+import * as axeMatchers from 'vitest-axe/matchers'
+import { resetBrowserMocks } from './browser_mock'
+import { resetYandexMockState, yandexHandlers } from './yandex_handlers'
 
-if (typeof globalThis.DOMParser === 'undefined') {
-  globalThis.DOMParser = XmlDomParser as unknown as typeof DOMParser;
-}
+globalThis.DOMParser ??= class MockDOMParser {
+  parseFromString(str: string, type: string): Document {
+    let hasError = false
+    const parser = new XmlDomParser({
+      onError: () => {
+        hasError = true
+      },
+    })
+    let doc: any
+    try {
+      doc = parser.parseFromString(str, type)
+    } catch {
+      return new XmlDomParser().parseFromString(
+        '<error><parsererror/></error>',
+        type,
+      ) as unknown as Document
+    }
 
-expect.extend(axeMatchers);
+    if (hasError) {
+      const errorNode = doc.createElement('parsererror')
+      if (doc.documentElement) {
+        doc.documentElement.appendChild(errorNode)
+      } else {
+        doc.appendChild(errorNode)
+      }
+    }
+    return doc
+  }
+} as any
 
-export const server = setupServer(...yandexHandlers);
+expect.extend(axeMatchers)
+
+export const server = setupServer(...yandexHandlers)
 
 function startMockServer(): void {
-  server.listen({ onUnhandledRequest: 'error' });
+  server.listen({ onUnhandledRequest: 'error' })
 }
 
 function resetMockServerHandlers(): void {
-  server.resetHandlers();
-  resetYandexMockState();
+  server.resetHandlers()
+  resetYandexMockState()
 }
 
 function stopMockServer(): void {
-  server.close();
+  server.close()
 }
 
 async function resetMocksBeforeTest(): Promise<void> {
-  await resetBrowserMocks();
+  await resetBrowserMocks()
 }
 
-beforeAll(startMockServer);
-afterEach(resetMockServerHandlers);
-afterAll(stopMockServer);
-beforeEach(resetMocksBeforeTest);
+beforeAll(startMockServer)
+afterEach(resetMockServerHandlers)
+afterAll(stopMockServer)
+beforeEach(resetMocksBeforeTest)

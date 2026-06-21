@@ -95,8 +95,8 @@ describe('a11y: Header', () => {
         user={{
           id: '1',
           login: 'tester',
-          display_name: 'Тестер',
-          real_name: 'Тестер',
+          displayName: 'Тестер',
+          realName: 'Тестер',
         }}
         avatarDataUrl="data:image/png;base64,iVBORw0KGgo="
         isLoggingIn={false}

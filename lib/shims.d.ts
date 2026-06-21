@@ -1,19 +1,3 @@
-declare module 'wxt/browser' {
-  export interface Browser {
-    storage: {
-      local: {
-        get(keys: string | string[] | Record<string, unknown> | null): Promise<Record<string, unknown>>
-        set(items: Record<string, unknown>): Promise<void>
-      }
-    }
-    i18n: {
-      getUILanguage(): string
-    }
-  }
-
-  export const browser: Browser
-}
-
 declare module '@/lib/i18n/locale' {
   import type { Locale, LocaleOption } from '@/lib/i18n/locale.types'
 
@@ -57,14 +41,6 @@ declare module '@/lib/i18n/locale_state' {
   export function setRuntimeLocale(locale: Locale): void
 }
 
-declare module '@/lib/i18n/locale_storage' {
-  import type { Locale } from '@/lib/i18n/locale.types'
-
-  export function getStoredLocale(): Promise<Locale>
-  export function setStoredLocale(locale: Locale): Promise<void>
-  export function syncLocaleFromStorage(): Promise<Locale>
-}
-
 declare module 'shpjs' {
   import type { FeatureCollection } from 'geojson'
 
@@ -78,10 +54,10 @@ declare module '*.svg' {
 }
 
 declare module 'topojson-client' {
-  import type { Feature, FeatureCollection } from 'geojson';
-  import type { Topology } from 'topojson-specification';
+  import type { Feature, FeatureCollection } from 'geojson'
+  import type { Topology } from 'topojson-specification'
 
-  type TopoJsonObject = Topology['objects'][string];
+  type TopoJsonObject = Topology['objects'][string]
 
-  export function feature(topology: Topology, object: TopoJsonObject): Feature | FeatureCollection;
+  export function feature(topology: Topology, object: TopoJsonObject): Feature | FeatureCollection
 }

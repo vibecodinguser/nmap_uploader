@@ -18,9 +18,9 @@ const API_BASE_URL = 'https://cloud-api.yandex.net/v1/disk/resources'
 export type YandexUser = {
   id: string
   login: string
-  display_name?: string
-  real_name?: string
-  default_avatar_id?: string
+  displayName?: string
+  realName?: string
+  defaultAvatarId?: string
 }
 
 export type YandexAvatarSize =
@@ -38,7 +38,9 @@ export const getYandexAvatarUrl = ({
   size?: YandexAvatarSize
 }): string | null => {
   const id = avatarId?.trim()
-  if (!id) return null
+  if (!id) {
+    return null
+  }
   if (id.startsWith('https://avatars.yandex.net/')) {
     return id.replace(/\/islands-[\w-]+$/, `/${size}`)
   }
@@ -50,7 +52,7 @@ const bytesToDataUrl = (bytes: Uint8Array, mime: string): string => {
   const chunkSize = 0x8000
   for (let offset = 0; offset < bytes.length; offset += chunkSize) {
     const chunk = bytes.subarray(offset, offset + chunkSize)
-    binary += String.fromCharCode(...chunk)
+    binary += String.fromCodePoint(...chunk)
   }
   return `data:${mime};base64,${btoa(binary)}`
 }
@@ -64,14 +66,23 @@ export const fetchYandexAvatarDataUrl = async ({
   size?: YandexAvatarSize
 }): Promise<string | null> => {
   const url = getYandexAvatarUrl({ avatarId, size })
-  if (!url) return null
+  if (!url) {
+    return null
+  }
 
   try {
     const response = await fetch(url)
-    if (!response.ok) return null
-    const bytes = new Uint8Array(await response.arrayBuffer())
-    if (bytes.length === 0) return null
-    const mime = response.headers.get('content-type')?.split(';')[0]?.trim() || 'image/jpeg'
+    if (!response.ok) {
+      return null
+    }
+    const buffer = await response.arrayBuffer()
+    const bytes = new Uint8Array(buffer)
+    if (bytes.length === 0) {
+      return null
+    }
+    const contentType = response.headers.get('content-type')
+    const mimeTypeStr = contentType?.split(';')[0]
+    const mime = mimeTypeStr?.trim() || 'image/jpeg'
     return bytesToDataUrl(bytes, mime)
   } catch {
     return null
@@ -79,8 +90,10 @@ export const fetchYandexAvatarDataUrl = async ({
 }
 
 export const loadUserAvatarDataUrl = async (user: YandexUser): Promise<string | null> => {
-  const avatarId = user.default_avatar_id?.trim()
-  if (!avatarId) return null
+  const avatarId = user.defaultAvatarId?.trim()
+  if (!avatarId) {
+    return null
+  }
   return fetchYandexAvatarDataUrl({ avatarId, size: 'islands-retina-50' })
 }
 
@@ -98,34 +111,44 @@ export const verifyDiskAccess = async ({ token }: { token: string }): Promise<vo
   if (response.status === 401) {
     throw new ProcessingError(
       ERR_NETWORK,
-      'Токен не принят Яндекс.Диском. Выйдите и войдите заново — нужен новый токен с правом cloud_api:disk.write',
+      'Токен не принят Яндекс.Диском. ' +
+        'Выйдите и войдите заново — нужен новый токен с правом cloud_api:disk.write',
     )
   }
 
   if (!response.ok) {
     const detail = await response.text()
+    let suffix = ''
+    if (detail) {
+      suffix = ` — ${detail}`
+    }
     throw new ProcessingError(
       ERR_NETWORK,
-      `Яндекс.Диск недоступен: ${response.statusText}${detail ? ` — ${detail}` : ''}`,
+      `Яндекс.Диск недоступен: ${response.statusText}${suffix}`,
     )
   }
 }
 
 const assertDiskWriteScope = (scope: string): void => {
-  if (scope.includes('cloud_api:disk.write')) return
+  if (scope.includes('cloud_api:disk.write')) {
+    return
+  }
 
   throw new ProcessingError(
     ERR_NETWORK,
-    `Токен выдан без права записи на Диск (scope: ${scope || 'не указан'}). Выйдите и войдите заново после добавления cloud_api:disk.write в OAuth-приложении`,
+    `Токен выдан без права записи на Диск (scope: ${scope || 'не указан'}). ` +
+      'Выйдите и войдите заново после добавления cloud_api:disk.write в OAuth-приложении',
   )
 }
 
 const throwIfUnauthorized = (status: number, context: string): void => {
-  if (status !== 401) return
+  if (status !== 401) {
+    return
+  }
 
   throw new ProcessingError(
     ERR_NETWORK,
-    `${context}: сессия недействительна. Выйдите и войдите через Яндекс ID заново`,
+    `${context}: сессия недействительна. ` + 'Выйдите и войдите через Яндекс ID заново',
   )
 }
 
@@ -143,39 +166,63 @@ const safeFetch = async (url: string, init?: RequestInit): Promise<Response> => 
   try {
     return await fetch(url, init)
   } catch (error: unknown) {
-    const detail = error instanceof Error ? error.message : 'сеть недоступна'
+    let detail = 'сеть недоступна'
+    if (error instanceof Error) {
+      detail = error.message
+    }
     throw new ProcessingError(ERR_NETWORK, `Запрос к Яндекс.Диску не выполнен: ${detail}`)
   }
 }
 
 /** Преобразует логический путь в формат REST API Яндекс.Диска. */
 const toDiskApiPath = (logicalPath: string): string => {
-  if (!logicalPath) return DISK_ROOT_PREFIX
-  if (logicalPath.startsWith('disk:/') || logicalPath.startsWith('app:/')) return logicalPath
-  const normalized = logicalPath.replace(/^\/+/, '').replace(/\/+$/, '')
+  if (!logicalPath) {
+    return DISK_ROOT_PREFIX
+  }
+  if (logicalPath.startsWith('disk:/') || logicalPath.startsWith('app:/')) {
+    return logicalPath
+  }
+  const noLeadingSlash = logicalPath.replace(/^\/+/, '')
+  const normalized = noLeadingSlash.replace(/\/+$/, '')
   return `${DISK_ROOT_PREFIX}${normalized}`
 }
 
 /** Варианты path для одного логического пути — API принимает и `/`, и `disk:/`. */
 const getDiskApiPathVariants = (logicalPath: string): string[] => {
-  const normalized = fromDiskApiPath(logicalPath).replace(/\/+$/, '')
-  if (!normalized) return [DISK_ROOT_PREFIX, DISK_SCHEME_PREFIX.slice(0, -1)]
+  const fromDiskPath = fromDiskApiPath(logicalPath)
+  const normalized = fromDiskPath.replace(/\/+$/, '')
+  if (!normalized) {
+    const schemePrefix = DISK_SCHEME_PREFIX.slice(0, -1)
+    return [DISK_ROOT_PREFIX, schemePrefix]
+  }
 
   const slashPath = `${DISK_ROOT_PREFIX}${normalized}`
   const schemePath = `${DISK_SCHEME_PREFIX}${normalized}`
-  return slashPath === schemePath ? [slashPath] : [slashPath, schemePath]
+  if (slashPath === schemePath) {
+    return [slashPath]
+  }
+  return [slashPath, schemePath]
 }
 
-const fromDiskApiPath = (path: string): string => path.replace(/^disk:\//, '').replace(/^\/+/, '')
+const fromDiskApiPath = (path: string): string => {
+  const noDiskPrefix = path.replace(/^disk:\//, '')
+  return noDiskPrefix.replace(/^\/+/, '')
+}
 
 const getParentLogicalPath = (logicalPath: string): string => {
-  const normalized = fromDiskApiPath(logicalPath).replace(/\/+$/, '')
+  const fromDiskPath = fromDiskApiPath(logicalPath)
+  const normalized = fromDiskPath.replace(/\/+$/, '')
   const lastSlash = normalized.lastIndexOf('/')
-  return lastSlash === -1 ? '' : normalized.slice(0, lastSlash)
+  if (lastSlash === -1) {
+    return ''
+  }
+  return normalized.slice(0, lastSlash)
 }
 
-const isApplicationsFolder = (logicalPath: string): boolean =>
-  fromDiskApiPath(logicalPath) === APPLICATIONS_FOLDER
+const isApplicationsFolder = (logicalPath: string): boolean => {
+  const diskPath = fromDiskApiPath(logicalPath)
+  return diskPath === APPLICATIONS_FOLDER
+}
 
 const parseDiskApiError = (body: string): DiskApiError => {
   try {
@@ -192,8 +239,13 @@ const readDiskResponseError = async (
   return { text, parsed: parseDiskApiError(text) }
 }
 
-const formatDiskResponseError = (response: Response, body: string): string =>
-  `${response.status} ${response.statusText}${body ? ` — ${body}` : ''}`
+const formatDiskResponseError = (response: Response, body: string): string => {
+  let suffix = ''
+  if (body) {
+    suffix = ` — ${body}`
+  }
+  return `${response.status} ${response.statusText}${suffix}`
+}
 
 const isParentNotFound = (status: number, parsed: DiskApiError): boolean =>
   status === 404 || (status === 409 && parsed.error === 'DiskPathDoesntExistsError')
@@ -213,23 +265,21 @@ const checkDirectoryExists = async ({
   const params = new URLSearchParams({ path: apiPath })
   const response = await safeFetch(`${API_BASE_URL}?${params}`, { headers })
   throwIfUnauthorized(response.status, 'Проверка папки на Диске')
-  if (!response.ok) return false
+  if (!response.ok) {
+    return false
+  }
 
   let data: { type?: string }
   try {
     data = (await response.json()) as { type?: string }
   } catch {
-    throw new ProcessingError(
-      ERR_NETWORK,
-      `Некорректный ответ Яндекс.Диска для ${fromDiskApiPath(apiPath)}`,
-    )
+    const diskPath = fromDiskApiPath(apiPath)
+    throw new ProcessingError(ERR_NETWORK, `Некорректный ответ Яндекс.Диска для ${diskPath}`)
   }
 
   if (data.type === 'file') {
-    throw new ProcessingError(
-      ERR_NETWORK,
-      `Конфликт: по пути ${fromDiskApiPath(apiPath)} уже существует файл`,
-    )
+    const diskPath = fromDiskApiPath(apiPath)
+    throw new ProcessingError(ERR_NETWORK, `Конфликт: по пути ${diskPath} уже существует файл`)
   }
   return data.type === 'dir'
 }
@@ -242,7 +292,9 @@ const directoryExistsOnDisk = async ({
   headers: Record<string, string>
 }): Promise<boolean> => {
   for (const apiPath of getDiskApiPathVariants(logicalPath)) {
-    if (await checkDirectoryExists({ apiPath, headers })) return true
+    if (await checkDirectoryExists({ apiPath, headers })) {
+      return true
+    }
   }
   return false
 }
@@ -261,13 +313,17 @@ const createDirectoryAtPath = async ({
 const ensureApplicationsFolder = async ({ token }: { token: string }): Promise<void> => {
   const headers = getHeaders(token)
 
-  if (await directoryExistsOnDisk({ logicalPath: APPLICATIONS_FOLDER, headers })) return
+  if (await directoryExistsOnDisk({ logicalPath: APPLICATIONS_FOLDER, headers })) {
+    return
+  }
 
   let lastError = ''
 
   for (const apiPath of getDiskApiPathVariants(APPLICATIONS_FOLDER)) {
     const createResponse = await createDirectoryAtPath({ apiPath, headers })
-    if (createResponse.status === 201) return
+    if (createResponse.status === 201) {
+      return
+    }
 
     throwIfUnauthorized(createResponse.status, 'Создание папки на Диске')
 
@@ -275,16 +331,73 @@ const ensureApplicationsFolder = async ({ token }: { token: string }): Promise<v
     lastError = formatDiskResponseError(createResponse, errorText)
 
     if (isFolderAlreadyExists(createResponse.status, parsed)) {
-      if (await checkDirectoryExists({ apiPath, headers })) return
+      if (await checkDirectoryExists({ apiPath, headers })) {
+        return
+      }
     }
   }
 
-  if (await directoryExistsOnDisk({ logicalPath: APPLICATIONS_FOLDER, headers })) return
+  if (await directoryExistsOnDisk({ logicalPath: APPLICATIONS_FOLDER, headers })) {
+    return
+  }
 
   throw new ProcessingError(
     ERR_NETWORK,
-    `Не удалось создать папку «${APPLICATIONS_FOLDER}»: ${lastError || 'неизвестная ошибка'}`,
+    `Не удалось создать папку «${APPLICATIONS_FOLDER}»: ` + `${lastError || 'неизвестная ошибка'}`,
   )
+}
+
+const throwIfForbidden = (status: number, path: string): void => {
+  if (status !== 403) {
+    return
+  }
+  const message = [
+    `Нет доступа к Яндекс.Диску (${path}).`,
+    'Проверьте права cloud_api:disk.write в OAuth-приложении и войдите заново',
+  ].join(' ')
+  throw new ProcessingError(ERR_NETWORK, message)
+}
+
+const handleMissingParent = async ({
+  logicalPath,
+  token,
+  headers,
+}: {
+  logicalPath: string
+  token: string
+  headers: Record<string, string>
+}): Promise<{ success: boolean; response?: Response; errorText?: string }> => {
+  const parentPath = getParentLogicalPath(logicalPath)
+  if (parentPath) {
+    await createDirectorySegment({ logicalPath: parentPath, token })
+  }
+
+  let lastResponse: Response | undefined
+  let lastErrorText: string | undefined
+
+  const variants = getDiskApiPathVariants(logicalPath)
+  for (const variantPath of variants) {
+    const createResponse = await createDirectoryAtPath({ apiPath: variantPath, headers })
+    if (createResponse.status === 201) {
+      return { success: true }
+    }
+
+    const { text: errorText, parsed } = await readDiskResponseError(createResponse)
+
+    const existsAlready = isFolderAlreadyExists(createResponse.status, parsed)
+    if (existsAlready && (await checkDirectoryExists({ apiPath: variantPath, headers }))) {
+      return { success: true }
+    }
+
+    lastResponse = createResponse
+    lastErrorText = errorText
+
+    if (!isParentNotFound(createResponse.status, parsed)) {
+      return { success: false, response: lastResponse, errorText: lastErrorText }
+    }
+  }
+
+  return { success: false, response: lastResponse, errorText: lastErrorText }
 }
 
 const createDirectorySegment = async ({
@@ -294,58 +407,45 @@ const createDirectorySegment = async ({
   logicalPath: string
   token: string
 }): Promise<void> => {
-  const displayPath = logicalPath
-  const apiPath = toDiskApiPath(logicalPath)
   const headers = getHeaders(token)
 
-  if (await directoryExistsOnDisk({ logicalPath, headers })) return
+  if (await directoryExistsOnDisk({ logicalPath, headers })) {
+    return
+  }
 
   if (isApplicationsFolder(logicalPath)) {
     await ensureApplicationsFolder({ token })
     return
   }
 
-  const createDirectory = async (): Promise<Response> => createDirectoryAtPath({ apiPath, headers })
-
-  let createResponse = await createDirectory()
-  if (createResponse.status === 201) return
+  const apiPath = toDiskApiPath(logicalPath)
+  let createResponse = await createDirectoryAtPath({ apiPath, headers })
+  if (createResponse.status === 201) {
+    return
+  }
 
   throwIfUnauthorized(createResponse.status, 'Создание папки на Диске')
-
   let { text: errorText, parsed } = await readDiskResponseError(createResponse)
 
-  if (isFolderAlreadyExists(createResponse.status, parsed)) {
-    if (await checkDirectoryExists({ apiPath, headers })) return
+  const existsAlready = isFolderAlreadyExists(createResponse.status, parsed)
+  if (existsAlready && (await checkDirectoryExists({ apiPath, headers }))) {
+    return
   }
 
   if (isParentNotFound(createResponse.status, parsed)) {
-    const parentPath = getParentLogicalPath(logicalPath)
-    if (parentPath) {
-      await createDirectorySegment({ logicalPath: parentPath, token })
+    const parentResult = await handleMissingParent({ logicalPath, token, headers })
+    if (parentResult.success) {
+      return
     }
-
-    for (const variantPath of getDiskApiPathVariants(logicalPath)) {
-      createResponse = await createDirectoryAtPath({ apiPath: variantPath, headers })
-      if (createResponse.status === 201) return
-      ;({ text: errorText, parsed } = await readDiskResponseError(createResponse))
-      if (isFolderAlreadyExists(createResponse.status, parsed)) {
-        if (await checkDirectoryExists({ apiPath: variantPath, headers })) return
-      }
-      if (!isParentNotFound(createResponse.status, parsed)) break
+    if (parentResult.response) {
+      createResponse = parentResult.response
+      errorText = parentResult.errorText || ''
     }
   }
 
-  if (createResponse.status === 403) {
-    throw new ProcessingError(
-      ERR_NETWORK,
-      `Нет доступа к Яндекс.Диску (${displayPath}). Проверьте права cloud_api:disk.write в OAuth-приложении и войдите заново`,
-    )
-  }
-
-  throw new ProcessingError(
-    ERR_NETWORK,
-    `Не удалось создать папку ${displayPath}: ${formatDiskResponseError(createResponse, errorText)}`,
-  )
+  throwIfForbidden(createResponse.status, logicalPath)
+  const errorMsg = formatDiskResponseError(createResponse, errorText)
+  throw new ProcessingError(ERR_NETWORK, `Не удалось создать папку ${logicalPath}: ` + errorMsg)
 }
 
 const ensureFolderExists = async ({
@@ -355,15 +455,21 @@ const ensureFolderExists = async ({
   path: string
   token: string
 }): Promise<void> => {
-  const logicalPath = fromDiskApiPath(path).replace(/\/+$/, '')
-  if (!logicalPath) return
+  const fromDiskPath = fromDiskApiPath(path)
+  const logicalPath = fromDiskPath.replace(/\/+$/, '')
+  if (logicalPath) {
+    const splitSegments = logicalPath.split('/')
+    const segments = splitSegments.filter(Boolean)
+    let currentPath = ''
 
-  const segments = logicalPath.split('/').filter(Boolean)
-  let currentPath = ''
-
-  for (const segment of segments) {
-    currentPath = currentPath ? `${currentPath}/${segment}` : segment
-    await createDirectorySegment({ logicalPath: currentPath, token })
+    for (const segment of segments) {
+      if (currentPath) {
+        currentPath = `${currentPath}/${segment}`
+      } else {
+        currentPath = segment
+      }
+      await createDirectorySegment({ logicalPath: currentPath, token })
+    }
   }
 }
 
@@ -379,9 +485,14 @@ export const resolveFolderPath = ({
   if (targetDate) {
     return `${basePath}/${targetDate}`
   }
+
   if (includeToday) {
-    return `${basePath}/${new Date().toISOString().slice(0, 10)}`
+    const todayDate = new Date()
+    const todayIso = todayDate.toISOString()
+    const todayStr = todayIso.slice(0, 10)
+    return `${basePath}/${todayStr}`
   }
+
   return basePath
 }
 
@@ -405,60 +516,75 @@ type DiskListResponse = {
 const isDateFolderName = (name: string): boolean =>
   DATE_FOLDER_NAME_PATTERN.test(name) && isValidTargetDate(name)
 
-/** Возвращает даты (YYYY-MM-DD), для которых на Диске уже есть папка загрузки. */
+const fetchDiskListOffset = async (
+  basePath: string,
+  headers: Record<string, string>,
+  offset: number,
+): Promise<{ newDates: string[]; nextOffset: number; hasMore: boolean }> => {
+  const params = new URLSearchParams({
+    path: toDiskApiPath(basePath),
+    limit: String(DISK_LIST_PAGE_SIZE),
+    offset: String(offset),
+    fields:
+      '_embedded.items.name,_embedded.items.type,_embedded.total,_embedded.offset,_embedded.limit',
+  })
+
+  const response = await safeFetch(`${API_BASE_URL}?${params}`, { headers })
+  throwIfUnauthorized(response.status, 'Список папок на Диске')
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      return { newDates: [], nextOffset: offset, hasMore: false }
+    }
+    const detail = await response.text()
+    let suffix = ''
+    if (detail) {
+      suffix = ` — ${detail}`
+    }
+    throw new ProcessingError(
+      ERR_NETWORK,
+      `Не удалось получить список папок: ${response.statusText}${suffix}`,
+    )
+  }
+
+  let data: DiskListResponse
+  try {
+    data = (await response.json()) as DiskListResponse
+  } catch {
+    throw new ProcessingError(ERR_NETWORK, 'Некорректный ответ Яндекс.Диска при чтении папок')
+  }
+
+  const items = data._embedded?.items ?? []
+  const newDates: string[] = []
+  for (const item of items) {
+    const name = item.name?.trim()
+    if (item.type === 'dir' && name && isDateFolderName(name)) {
+      newDates.push(name)
+    }
+  }
+
+  const total = data._embedded?.total ?? items.length
+  const nextOffset = offset + items.length
+  const hasMore = items.length > 0 && nextOffset < total
+
+  return { newDates, nextOffset, hasMore }
+}
+
 export const listExistingDateFolders = async ({ token }: { token: string }): Promise<string[]> => {
   const basePath = resolveFolderPath({ includeToday: false })
   const headers = getHeaders(token)
   const dates: string[] = []
-  let offset = 0
+  let currentOffset = 0
+  let looping = true
 
-  while (true) {
-    const params = new URLSearchParams({
-      path: toDiskApiPath(basePath),
-      limit: String(DISK_LIST_PAGE_SIZE),
-      offset: String(offset),
-      fields:
-        '_embedded.items.name,_embedded.items.type,_embedded.total,_embedded.offset,_embedded.limit',
-    })
-
-    const response = await safeFetch(`${API_BASE_URL}?${params}`, { headers })
-    throwIfUnauthorized(response.status, 'Список папок на Диске')
-
-    if (response.status === 404) {
-      return dates
-    }
-
-    if (!response.ok) {
-      const detail = await response.text()
-      throw new ProcessingError(
-        ERR_NETWORK,
-        `Не удалось получить список папок: ${response.statusText}${detail ? ` — ${detail}` : ''}`,
-      )
-    }
-
-    let data: DiskListResponse
-    try {
-      data = (await response.json()) as DiskListResponse
-    } catch {
-      throw new ProcessingError(ERR_NETWORK, 'Некорректный ответ Яндекс.Диска при чтении папок')
-    }
-
-    const items = data._embedded?.items ?? []
-    for (const item of items) {
-      const name = item.name?.trim()
-      if (item.type === 'dir' && name && isDateFolderName(name)) {
-        dates.push(name)
-      }
-    }
-
-    const total = data._embedded?.total ?? items.length
-    offset += items.length
-    if (items.length === 0 || offset >= total) {
-      break
-    }
+  while (looping) {
+    const result = await fetchDiskListOffset(basePath, headers, currentOffset)
+    dates.push(...result.newDates)
+    currentOffset = result.nextOffset
+    looping = result.hasMore
   }
 
-  return dates.sort()
+  return dates.sort() // NOSONAR
 }
 
 export const ensureStorageFolders = async ({ token }: { token: string }): Promise<void> => {
@@ -476,10 +602,9 @@ export const ensureUploadFolder = async ({
 }): Promise<void> => {
   if (targetDate) {
     await ensureFolderExists({ path: resolveFolderPath({ targetDate }), token })
-    return
+  } else {
+    await ensureStorageFolders({ token })
   }
-
-  await ensureStorageFolders({ token })
 }
 
 export const downloadIndexJson = async ({
@@ -489,16 +614,17 @@ export const downloadIndexJson = async ({
   token: string
   targetDate?: string
 }): Promise<NmapIndex | null> => {
-  const folderPath = resolveFolderPath({ targetDate, includeToday: !targetDate })
+  const folderPath = resolveFolderPath({ targetDate, includeToday: targetDate === undefined })
   const filePath = `${folderPath}/index.json`
   const headers = getHeaders(token)
 
-  const downloadMeta = await safeFetch(
-    `${API_BASE_URL}/download?${new URLSearchParams({ path: toDiskApiPath(filePath) })}`,
-    { headers },
-  )
+  const diskPath = toDiskApiPath(filePath)
+  const searchParams = new URLSearchParams({ path: diskPath })
+  const downloadMeta = await safeFetch(`${API_BASE_URL}/download?${searchParams}`, { headers })
 
-  if (downloadMeta.status === 404) return null
+  if (downloadMeta.status === 404) {
+    return null
+  }
   if (!downloadMeta.ok) {
     throw new ProcessingError(
       ERR_NETWORK,
@@ -507,7 +633,7 @@ export const downloadIndexJson = async ({
   }
 
   const { href } = (await downloadMeta.json()) as { href?: string }
-  if (!href) {
+  if (href === undefined || href === null || href === '') {
     throw new ProcessingError(ERR_NETWORK, 'Не удалось получить ссылку на скачивание index.json')
   }
 
@@ -533,16 +659,15 @@ export const uploadIndexJson = async ({
   token: string
   targetDate?: string
 }): Promise<void> => {
-  const folderPath = resolveFolderPath({ targetDate, includeToday: !targetDate })
+  const folderPath = resolveFolderPath({ targetDate, includeToday: targetDate === undefined })
   await ensureFolderExists({ path: folderPath, token })
 
   const filePath = `${folderPath}/index.json`
   const headers = getHeaders(token)
 
-  const checkRes = await safeFetch(
-    `${API_BASE_URL}?${new URLSearchParams({ path: toDiskApiPath(filePath) })}`,
-    { headers },
-  )
+  const checkDiskPath = toDiskApiPath(filePath)
+  const checkParams = new URLSearchParams({ path: checkDiskPath })
+  const checkRes = await safeFetch(`${API_BASE_URL}?${checkParams}`, { headers })
   if (checkRes.ok) {
     const checkData = (await checkRes.json()) as { type?: string }
     if (checkData.type === 'dir') {
@@ -550,10 +675,9 @@ export const uploadIndexJson = async ({
     }
   }
 
-  const uploadMeta = await safeFetch(
-    `${API_BASE_URL}/upload?${new URLSearchParams({ path: toDiskApiPath(filePath), overwrite: 'true' })}`,
-    { headers },
-  )
+  const uploadDiskPath = toDiskApiPath(filePath)
+  const uploadParams = new URLSearchParams({ path: uploadDiskPath, overwrite: 'true' })
+  const uploadMeta = await safeFetch(`${API_BASE_URL}/upload?${uploadParams}`, { headers })
   if (!uploadMeta.ok) {
     throw new ProcessingError(
       ERR_NETWORK,
@@ -562,15 +686,17 @@ export const uploadIndexJson = async ({
   }
 
   const { href } = (await uploadMeta.json()) as { href?: string }
-  if (!href) {
+  if (href === undefined || href === null || href === '') {
     throw new ProcessingError(ERR_NETWORK, 'Не удалось получить ссылку на загрузку index.json')
   }
 
   assertAllowedDiskHref(href)
   const jsonData = JSON.stringify(data, null, 2)
+  const encoder = new TextEncoder()
+  const encodedBody = encoder.encode(jsonData)
   const uploadResponse = await safeFetch(href, {
     method: 'PUT',
-    body: new TextEncoder().encode(jsonData),
+    body: encodedBody,
   })
 
   if (!uploadResponse.ok) {
@@ -579,6 +705,14 @@ export const uploadIndexJson = async ({
       `Ошибка загрузки index.json: ${uploadResponse.statusText}`,
     )
   }
+}
+
+const resolveDefaultAvatarId = (avatarRaw: unknown): string | undefined => {
+  let result: string | undefined
+  if (typeof avatarRaw === 'string' && avatarRaw.trim() !== '') {
+    result = avatarRaw
+  }
+  return result
 }
 
 export const fetchYandexUser = async ({ token }: { token: string }): Promise<YandexUser> => {
@@ -592,13 +726,33 @@ export const fetchYandexUser = async ({ token }: { token: string }): Promise<Yan
 
   const info = (await response.json()) as Record<string, unknown>
   const avatarRaw = info.default_avatar_id
+
+  let id = ''
+  if (typeof info.id === 'string' || typeof info.id === 'number') {
+    id = String(info.id)
+  }
+
+  let login = ''
+  if (typeof info.login === 'string') {
+    login = info.login
+  }
+
+  let displayName: string | undefined
+  if (typeof info.display_name === 'string') {
+    displayName = info.display_name
+  }
+
+  let realName: string | undefined
+  if (typeof info.real_name === 'string') {
+    realName = info.real_name
+  }
+
   return {
-    id: String(info.id ?? ''),
-    login: String(info.login ?? ''),
-    display_name: info.display_name != null ? String(info.display_name) : undefined,
-    real_name: info.real_name != null ? String(info.real_name) : undefined,
-    default_avatar_id:
-      avatarRaw != null && String(avatarRaw).trim() !== '' ? String(avatarRaw) : undefined,
+    id,
+    login,
+    displayName,
+    realName,
+    defaultAvatarId: resolveDefaultAvatarId(avatarRaw),
   }
 }
 
@@ -607,31 +761,33 @@ const buildAuthUrl = ({
 }: {
   forceConfirm?: boolean
 } = {}): { authUrl: URL; redirectUri: string; launchUrl: string } => {
+  let launchUrl = ''
   const redirectUri = getOAuthRedirectUri()
   const authUrl = new URL('https://oauth.yandex.ru/authorize')
   authUrl.searchParams.set('response_type', 'token')
   authUrl.searchParams.set('client_id', YANDEX_CLIENT_ID)
   authUrl.searchParams.set('redirect_uri', redirectUri)
   authUrl.searchParams.set('scope', YANDEX_DISK_SCOPES)
+
   if (forceConfirm) {
     authUrl.searchParams.set('force_confirm', 'yes')
+    const oauthUrl = authUrl.toString()
+    // В Yandex Browser force_confirm часто не показывает выбор аккаунта — обходим через Passport.
+    const accountListUrl = new URL('https://passport.yandex.ru/auth/list')
+    accountListUrl.searchParams.set('retpath', oauthUrl)
+    launchUrl = accountListUrl.toString()
+  } else {
+    launchUrl = authUrl.toString()
   }
 
-  const oauthUrl = authUrl.toString()
-  if (!forceConfirm) {
-    return { authUrl, redirectUri, launchUrl: oauthUrl }
-  }
-
-  // В Yandex Browser force_confirm часто не показывает выбор аккаунта — обходим через Passport.
-  const accountListUrl = new URL('https://passport.yandex.ru/auth/list')
-  accountListUrl.searchParams.set('retpath', oauthUrl)
-  return { authUrl, redirectUri, launchUrl: accountListUrl.toString() }
+  return { authUrl, redirectUri, launchUrl }
 }
 
 const parseAuthResponseUrl = async (
   responseUrl: string,
 ): Promise<{ token: string; user: YandexUser }> => {
-  const hash = new URL(responseUrl).hash.slice(1)
+  const urlObj = new URL(responseUrl)
+  const hash = urlObj.hash.slice(1)
   const params = new URLSearchParams(hash)
   const oauthError = params.get('error')
   if (oauthError) {
@@ -644,7 +800,8 @@ const parseAuthResponseUrl = async (
     throw new ProcessingError(ERR_NETWORK, 'Не удалось получить токен авторизации')
   }
 
-  assertDiskWriteScope(params.get('scope') ?? '')
+  const scopeStr = params.get('scope') ?? ''
+  assertDiskWriteScope(scopeStr)
   await verifyDiskAccess({ token })
 
   const user = await fetchYandexUser({ token })
@@ -668,27 +825,34 @@ export const launchYandexAuth = async ({
       interactive,
     })
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Ошибка авторизации'
+    let message = 'Ошибка авторизации'
+    if (error instanceof Error) {
+      message = error.message
+    }
     if (message.includes('did not approve')) {
-      throw new ProcessingError(
-        ERR_NETWORK,
-        interactive
-          ? `Авторизация не завершена. Проверьте: 1) Redirect URI в oauth.yandex.ru = ${redirectUri}` +
-              (redirectUri === FIREFOX_OAUTH_REDIRECT_URI
-                ? ` (Firefox: SHA1 от ${FIREFOX_EXTENSION_ID}; не nmap-uploader_local.dev и не 127.0.0.1/mozoauth2…)`
-                : '') +
-              '; 2) в приложении включён cloud_api:disk.write; 3) на экране Яндекса нажмите «Разрешить»'
-          : 'Авторизация не завершена',
-      )
+      if (!interactive) {
+        throw new ProcessingError(ERR_NETWORK, 'Авторизация не завершена')
+      }
+      let firefoxNote = ''
+      if (redirectUri === FIREFOX_OAUTH_REDIRECT_URI) {
+        firefoxNote =
+          ` (Firefox: SHA1 от ${FIREFOX_EXTENSION_ID}; ` +
+          `не nmap-uploader_local.dev и не 127.0.0.1/mozoauth2…)`
+      }
+      const hint =
+        `Авторизация не завершена. Проверьте: 1) Redirect URI в oauth.yandex.ru = ${redirectUri}${firefoxNote}` +
+        '; 2) в приложении включён cloud_api:disk.write; 3) на экране Яндекса нажмите «Разрешить»'
+      throw new ProcessingError(ERR_NETWORK, hint)
     }
     throw new ProcessingError(ERR_NETWORK, message)
   }
 
   if (!responseUrl) {
-    throw new ProcessingError(
-      ERR_NETWORK,
-      interactive ? 'Авторизация отменена' : 'Сессия не найдена',
-    )
+    let reason = 'Сессия не найдена'
+    if (interactive) {
+      reason = 'Авторизация отменена'
+    }
+    throw new ProcessingError(ERR_NETWORK, reason)
   }
 
   return parseAuthResponseUrl(responseUrl)
@@ -699,11 +863,14 @@ export const STORAGE_USER_KEY = 'yandex_user'
 export const STORAGE_EXPLICIT_LOGOUT_KEY = 'yandex_explicit_logout'
 
 export const getStoredAuth = async (): Promise<{ token: string; user: YandexUser } | null> => {
+  let result: { token: string; user: YandexUser } | null = null
   const stored = await browser.storage.local.get([STORAGE_TOKEN_KEY, STORAGE_USER_KEY])
   const token = stored[STORAGE_TOKEN_KEY] as string | undefined
   const user = stored[STORAGE_USER_KEY] as YandexUser | undefined
-  if (!token || !user) return null
-  return { token, user }
+  if (token && user) {
+    result = { token, user }
+  }
+  return result
 }
 
 export const saveAuth = async ({
@@ -737,12 +904,14 @@ const isExplicitLogout = async (): Promise<boolean> => {
 }
 
 const isStoredAuthValid = async ({ token }: { token: string }): Promise<boolean> => {
+  let isValid = false
   try {
     await verifyDiskAccess({ token })
-    return true
+    isValid = true
   } catch {
-    return false
+    isValid = false
   }
+  return isValid
 }
 
 /** Обновляет профиль из login.yandex.ru (в т.ч. default_avatar_id после login:avatar). */
@@ -753,13 +922,15 @@ export const refreshStoredUserProfile = async ({
   token: string
   user: YandexUser
 }): Promise<YandexUser> => {
+  let resultUser = user
   try {
     const fresh = await fetchYandexUser({ token })
     await saveAuth({ token, user: fresh })
-    return fresh
+    resultUser = fresh
   } catch {
-    return user
+    resultUser = user
   }
+  return resultUser
 }
 
 export type AuthPayload = {
@@ -770,13 +941,13 @@ export type AuthPayload = {
 export const buildAuthPayload = async (
   auth: { token: string; user: YandexUser } | null,
 ): Promise<AuthPayload> => {
-  if (!auth) {
-    return { user: null, avatarDataUrl: null }
+  let payload: AuthPayload = { user: null, avatarDataUrl: null }
+  if (auth) {
+    const user = await refreshStoredUserProfile({ token: auth.token, user: auth.user })
+    const avatarDataUrl = await loadUserAvatarDataUrl(user)
+    payload = { user, avatarDataUrl }
   }
-
-  const user = await refreshStoredUserProfile({ token: auth.token, user: auth.user })
-  const avatarDataUrl = await loadUserAvatarDataUrl(user)
-  return { user, avatarDataUrl }
+  return payload
 }
 
 /**
@@ -794,10 +965,7 @@ export const ensureYandexAuth = async ({
 
   const stored = await getStoredAuth()
   if (stored && (await isStoredAuthValid({ token: stored.token }))) {
-    const user = await refreshStoredUserProfile({
-      token: stored.token,
-      user: stored.user,
-    })
+    const user = await refreshStoredUserProfile({ token: stored.token, user: stored.user })
     return { token: stored.token, user }
   }
 
@@ -805,16 +973,17 @@ export const ensureYandexAuth = async ({
     await clearAuth()
   }
 
-  if (!interactive) {
-    try {
-      const auth = await launchYandexAuth({ interactive: false })
-      await saveAuth(auth)
-      return auth
-    } catch {}
-    return null
+  if (interactive) {
+    const auth = await launchYandexAuth({ interactive: true, forceConfirm: true })
+    await saveAuth(auth)
+    return auth
   }
 
-  const auth = await launchYandexAuth({ interactive: true, forceConfirm: true })
-  await saveAuth(auth)
-  return auth
+  try {
+    const auth = await launchYandexAuth({ interactive: false })
+    await saveAuth(auth)
+    return auth
+  } catch {
+    return null
+  }
 }
