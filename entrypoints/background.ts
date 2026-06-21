@@ -12,6 +12,7 @@ import {
   type RuntimeMessageSender,
 } from '@/lib/message_auth'
 import { CLOSE_PANEL_SIDEBAR_ACTION } from '@/lib/panel_sidebar_notify'
+import { START_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
 import { reloadMapEditorTabs } from '@/lib/reload_editor_page'
 import {
   type ProcessedFileInput,
@@ -787,6 +788,19 @@ const handleClosePanel: MessageHandler = (_message, sender, sendResponse) => {
   return true
 }
 
+const handleStartPointPicking: MessageHandler = (message, sender, sendResponse) => {
+  if (isTrustedNmapsOrPanelSender(sender)) {
+    const geomType = typeof message.geomType === 'string' ? message.geomType : 'Point'
+    const relayMessage = { action: START_POINT_PICKING_ACTION, geomType }
+    const relayTask = processRelayToMapTabs(sender, relayMessage, sendResponse, 'startPointPicking')
+    runBackgroundTask(relayTask, START_POINT_PICKING_ACTION)
+  } else {
+    logRejectedMessage(START_POINT_PICKING_ACTION, sender)
+    sendResponse({ ok: false })
+  }
+  return true
+}
+
 const handleApplyStrokeColor: MessageHandler = (message, sender, sendResponse) => {
   let color = ''
   if ('string' === typeof message.color) {
@@ -817,6 +831,7 @@ const messageHandlers: Record<string, MessageHandler> = {
   reloadEditorPage: handleReloadEditor,
   [GO_TO_REFRESH_ACTION]: handleGoToRefresh,
   [CLOSE_PANEL_SIDEBAR_ACTION]: handleClosePanel,
+  [START_POINT_PICKING_ACTION]: handleStartPointPicking,
   applyStrokeColor: handleApplyStrokeColor,
 }
 

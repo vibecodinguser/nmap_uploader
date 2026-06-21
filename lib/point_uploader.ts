@@ -1,4 +1,4 @@
-import { createNmapOutputTemplate, type NmapIndex } from '@/lib/nmap_index'
+import { createNmapOutputTemplate, type NmapIndex, type NmapPoint } from '@/lib/nmap_index'
 
 export const MIN_LAT = -90
 export const MAX_LAT = 90
@@ -26,25 +26,46 @@ export const isValidTargetDate = (date: string): boolean => {
   return !Number.isNaN(parsed.getTime())
 }
 
-/** Создаёт index.json с одной точкой. */
-export const createPointIndex = ({
-  latitude,
-  longitude,
+import { getPointForGeometry } from './geometry'
+
+/** Создаёт index.json с одной фигурой (точкой, линией или полигоном). */
+export const createGeometryIndex = ({
+  coords,
+  geomType,
   description,
+  note_time,
+  note_desc,
 }: {
-  latitude: number
-  longitude: number
+  coords: number[][]
+  geomType: string
   description: string
+  note_time?: string
+  note_desc?: string
 }): NmapIndex => {
-  const pointUuid = crypto.randomUUID()
+  const sharedUuid = crypto.randomUUID()
+  const pointCoords = getPointForGeometry(geomType, coords)
+  const safeDesc = description.slice(0, POINT_DESCRIPTION_MAX_LENGTH)
+  
+  const points: Record<string, NmapPoint> = {}
+  if (pointCoords) {
+     const ptData: NmapPoint = { coords: pointCoords, desc: safeDesc }
+     if (note_time) {
+        ptData.note_time = note_time
+     }
+     if (note_desc) {
+        ptData.note_desc = note_desc
+     }
+     points[sharedUuid] = ptData
+  }
+
+  const paths: Record<string, number[][]> = {}
+  if (geomType !== 'Point' && coords.length > 1) {
+     paths[sharedUuid] = coords
+  }
+
   return {
-    paths: {},
-    points: {
-      [pointUuid]: {
-        coords: [longitude, latitude],
-        desc: description.slice(0, POINT_DESCRIPTION_MAX_LENGTH),
-      },
-    },
+    paths,
+    points,
   }
 }
 

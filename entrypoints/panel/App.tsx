@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { TabBar } from '@/components/TabBar'
 import '@/assets/styles/uploader.css'
 import { Header } from '@/components/Header'
+import { NotesTab } from '@/components/NotesTab'
 import { PointsTab } from '@/components/PointsTab'
 import { PoligonTab } from '@/components/PoligonTab'
 import { SettingsTab } from '@/components/SettingsTab'
@@ -21,7 +22,7 @@ type AppProps = {
   themeTarget?: Element
 }
 
-type MainTab = 'upload' | 'manual'
+type MainTab = 'upload' | 'manual' | 'notes'
 type AppView = 'main' | 'settings'
 
 export const App = ({ themeTarget }: AppProps) => {
@@ -50,6 +51,7 @@ export const App = ({ themeTarget }: AppProps) => {
       return [
         { id: 'upload' as const, label: t('tabs.polygons') },
         { id: 'manual' as const, label: t('tabs.points') },
+        { id: 'notes' as const, label: 'Заметки' },
       ]
     },
     [t],
@@ -125,6 +127,15 @@ export const App = ({ themeTarget }: AppProps) => {
                   onRequireAuth={handleRequireAuth}
                   onManualUpload={performManualUpload}
                   onMultipointUpload={performMultipointUpload}
+                />
+              )}
+
+              {activeTab === 'notes' && (
+                <NotesTab
+                  isUploading={isPointUploading}
+                  isLoggedIn={isLoggedIn}
+                  onRequireAuth={handleRequireAuth}
+                  onManualUpload={performManualUpload}
                 />
               )}
             </>

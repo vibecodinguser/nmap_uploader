@@ -7,7 +7,7 @@ import type { TranslateFn } from '@/lib/i18n'
 import { invalidateOccupiedDatesCache } from '@/lib/occupied_dates_cache'
 import {
   areCoordinatesValid,
-  createPointIndex,
+  createGeometryIndex,
   processMultipointContent,
 } from '@/lib/point_uploader'
 import {
@@ -28,9 +28,11 @@ export type PointUploadStatus = UploadStatus
 
 export type ManualPointInput = {
   description: string
-  latitude: string
-  longitude: string
+  coords: number[][]
+  geomType: string
   date: string
+  note_time?: string
+  note_desc?: string
 }
 
 type UploadingRef = { current: boolean }
@@ -44,7 +46,7 @@ type ApplyPointUploadLogsParams = {
 }
 
 type UploadPointDataParams = {
-  files: Array<{ name: string; result: ReturnType<typeof createPointIndex> }>
+  files: Array<{ name: string; result: ReturnType<typeof createGeometryIndex> }>
   targetDate?: string
 }
 
@@ -82,10 +84,12 @@ type MultipointUploadParams = {
 }
 
 type ManualPointUploadExecutionParams = {
-  lat: number
-  lon: number
+  coords: number[][]
+  geomType: string
   description: string
   targetDate: string | undefined
+  note_time?: string
+  note_desc?: string
   t: TranslateFn
 }
 
@@ -243,19 +247,23 @@ async function processAllMultipointFiles(
 }
 
 async function executeManualPointUpload({
-  lat,
-  lon,
+  coords,
+  geomType,
   description,
   targetDate,
+  note_time,
+  note_desc,
   t,
 }: ManualPointUploadExecutionParams): Promise<PointUploadExecuteResult> {
   const preparingMessage = t('points.preparingPoint')
   const priorLogs = [createUploadLog('info', preparingMessage)]
   const trimmedDescription = description.trim()
-  const pointData = createPointIndex({
-    latitude: lat,
-    longitude: lon,
+  const pointData = createGeometryIndex({
+    coords,
+    geomType,
     description: trimmedDescription,
+    note_time,
+    note_desc,
   })
   const response = await uploadPointData({
     files: [{ name: 'manual-point', result: pointData }],
@@ -357,20 +365,19 @@ async function runPointUpload({
 
 async function performManualPointUpload({
   description,
-  latitude,
-  longitude,
+  coords,
+  geomType,
   date,
+  note_time,
+  note_desc,
   t,
   runPointUpload: runUpload,
   setUploadStatus,
 }: ManualPointUploadParams) {
-  const lat = parseCoordinate(latitude)
-  const lon = parseCoordinate(longitude)
-
-  if (Number.isNaN(lat) || Number.isNaN(lon)) {
+  if (!Array.isArray(coords) || coords.length === 0) {
     const coordinatesMissingMessage = t('points.coordinatesMissing')
     setUploadStatus({ level: 'error', message: coordinatesMissingMessage })
-  } else if (!areCoordinatesValid({ latitude: lat, longitude: lon })) {
+  } else if (!coords.every(c => areCoordinatesValid({ latitude: c[1], longitude: c[0] }))) {
     const outOfRangeMessage = t('points.coordinatesOutOfRange')
     setUploadStatus({ level: 'error', message: outOfRangeMessage })
   } else {
@@ -378,9 +385,11 @@ async function performManualPointUpload({
     if (targetDate !== undefined) {
       const defaultErrorMessage = t('points.pointUploadError')
       const execute = bindManualPointUploadExecutor({
-        lat,
-        lon,
+        coords,
+        geomType,
         description,
+        note_time,
+        note_desc,
         targetDate,
         t,
       })

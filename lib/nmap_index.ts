@@ -1,6 +1,8 @@
 export type NmapPoint = {
   coords: [number, number]
   desc: string
+  note_time?: string
+  note_desc?: string
 }
 
 export type NmapIndex = {

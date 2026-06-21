@@ -9,6 +9,12 @@ import {
   PANEL_SIDEBAR_WRAPPER_ID,
   removePanelSidebarFromDom,
 } from '@/lib/panel_sidebar_notify'
+import { POINT_PICKED_ACTION, START_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
+import {
+  NMAPS_POINT_PICKED_EVENT,
+  notifyStartPickPoint,
+  parsePointPickedEvent,
+} from '@/lib/nmaps_pick_point_notify'
 
 const PANEL_PAGE = '/panel.html' as const
 const PANEL_WIDTH = 425
@@ -180,9 +186,24 @@ export default defineContentScript({
         closePanelIfOpen()
       } else if (TOGGLE_PANEL_ACTION === message?.action) {
         startTogglePanel()
+      } else if (START_POINT_PICKING_ACTION === message?.action) {
+        const geomType = typeof message.geomType === 'string' ? message.geomType : 'Point'
+        notifyStartPickPoint(geomType)
       }
     }
 
+    const handlePointPicked = (event: Event): void => {
+      const parsed = parsePointPickedEvent(event)
+      if (parsed) {
+        browser.runtime.sendMessage({
+          action: POINT_PICKED_ACTION,
+          coords: parsed.coords,
+          geomType: parsed.geomType,
+        }).catch(reportTogglePanelError)
+      }
+    }
+
+    document.addEventListener(NMAPS_POINT_PICKED_EVENT, handlePointPicked)
     browser.runtime.onMessage.addListener(handleRuntimeMessage)
   },
 })

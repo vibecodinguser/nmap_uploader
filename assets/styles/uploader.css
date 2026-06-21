@@ -381,8 +381,7 @@ body {
 }
 
 .tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
   padding: 4px;
   background-color: var(--muted);
   color: var(--muted-foreground);
@@ -390,6 +389,7 @@ body {
 }
 
 .tab-btn {
+  flex: 1;
   border-radius: 9999px;
   padding: 6px 8px;
   font-size: var(--text-sm);
