@@ -1621,3 +1621,44 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+.yandex-tooltip-wrapper {
+  position: relative;
+  display: block;
+}
+
+.yandex-tooltip-wrapper[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  background-color: #ffffff;
+  color: #000000;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: "YS Text", Arial, sans-serif;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  z-index: 1000;
+  animation: tooltipFadeIn 0.2s ease-out forwards;
+}
+
+.dark .yandex-tooltip-wrapper[data-tooltip]:hover::after {
+  background-color: #32333d;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-8px);
+  }
+}

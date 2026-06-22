@@ -509,14 +509,21 @@ export const NotesTab = ({
       </div>
 
       <div className="notes-actions">
-        <button
-          type="button"
-          className="submit-btn--outline"
-          disabled={isUploading || isPicking || !selectedDate || pendingCoords !== null || geomType === null}
-          onClick={handleStartPicking}
+        <span 
+          className={geomType === null ? "yandex-tooltip-wrapper" : ""}
+          data-tooltip={geomType === null ? 'Для добавления выберите тип заметки' : undefined}
+          style={{ display: 'block', width: '100%' }}
         >
-          {isPicking ? 'Нарисуйте на карте...' : 'Добавить заметку'}
-        </button>
+          <button
+            type="button"
+            className="submit-btn--outline"
+            disabled={isUploading || isPicking || !selectedDate || pendingCoords !== null || geomType === null}
+            style={geomType === null ? { pointerEvents: 'none' } : {}}
+            onClick={handleStartPicking}
+          >
+            {isPicking ? 'Нарисуйте на карте...' : 'Добавить заметку'}
+          </button>
+        </span>
       </div>
 
       {isLoadingNotes && (
