@@ -243,7 +243,7 @@ export const NotesTab = ({
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lon: number }[] | null>(null)
   const [pendingName, setPendingName] = useState('')
   const [pendingDesc, setPendingDesc] = useState('')
-  const [geomType, setGeomType] = useState('Point')
+  const [geomType, setGeomType] = useState<string | null>(null)
   const [editingPointId, setEditingPointId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
   const [editingDesc, setEditingDesc] = useState('')
@@ -370,7 +370,7 @@ export const NotesTab = ({
   }, [])
 
   const handleSaveNote = () => {
-    if (pendingCoords && pendingCoords.length > 0 && pendingName.trim()) {
+    if (pendingCoords && pendingCoords.length > 0 && pendingName.trim() && geomType) {
       const name = pendingName.trim()
       const firstCoord = pendingCoords[0]
       const now = new Date()
@@ -478,26 +478,41 @@ export const NotesTab = ({
         </div>
       </div>
 
-      <div className="notes-geom-type-container">
-        <label htmlFor="geomTypeSelect" className="notes-geom-type-label">Тип фигуры:</label>
-        <select
-          id="geomTypeSelect"
-          value={geomType}
-          onChange={(e) => setGeomType(e.target.value)}
+      <div className="notes-geom-type-container" style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+        <button
+          type="button"
+          className="submit-btn--outline"
+          style={geomType === 'Point' ? { backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)', borderColor: 'var(--primary)' } : {}}
+          onClick={() => setGeomType('Point')}
           disabled={isUploading || isPicking || pendingCoords !== null}
-          className="notes-geom-type-select"
         >
-          <option value="Point">Точка</option>
-          <option value="LineString">Линия</option>
-          <option value="Polygon">Полигон</option>
-        </select>
+          Точка
+        </button>
+        <button
+          type="button"
+          className="submit-btn--outline"
+          style={geomType === 'LineString' ? { backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)', borderColor: 'var(--primary)' } : {}}
+          onClick={() => setGeomType('LineString')}
+          disabled={isUploading || isPicking || pendingCoords !== null}
+        >
+          Линия
+        </button>
+        <button
+          type="button"
+          className="submit-btn--outline"
+          style={geomType === 'Polygon' ? { backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)', borderColor: 'var(--primary)' } : {}}
+          onClick={() => setGeomType('Polygon')}
+          disabled={isUploading || isPicking || pendingCoords !== null}
+        >
+          Полигон
+        </button>
       </div>
 
       <div className="notes-actions">
         <button
           type="button"
           className="submit-btn--outline"
-          disabled={isUploading || isPicking || !selectedDate || pendingCoords !== null}
+          disabled={isUploading || isPicking || !selectedDate || pendingCoords !== null || geomType === null}
           onClick={handleStartPicking}
         >
           {isPicking ? 'Нарисуйте на карте...' : 'Добавить заметку'}

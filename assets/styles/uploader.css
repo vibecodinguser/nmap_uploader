@@ -376,6 +376,7 @@ body {
   padding: 1rem 1rem 4.5rem;
   gap: 1rem;
   overflow-y: auto;
+  overflow-x: hidden;
   scrollbar-gutter: stable;
   flex: 1;
 }
@@ -674,9 +675,15 @@ body {
 
 .notes-list-item {
   margin-bottom: 8px;
-  padding: 8px;
-  border: 1px solid var(--nmap-border);
-  border-radius: 4px;
+  padding: 8px 0 8px 16px;
+  width: calc(100% + 16px);
+  margin-left: -16px;
+  border-top: 1px solid var(--nmap-border);
+  border-bottom: 1px solid var(--nmap-border);
+  border-left: none;
+  border-right: none;
+  border-radius: 0;
+  box-sizing: border-box;
 }
 
 .notes-list-item-edit-form {
@@ -717,9 +724,10 @@ body {
 
 .notes-list-item-actions-wrapper {
   display: flex;
-  gap: 4px;
+  gap: 2px;
   flex-shrink: 0;
   align-self: center;
+  margin-left: auto;
 }
 
 .notes-list-item-actions-wrapper--expanded {
@@ -755,10 +763,32 @@ body {
 
 .notes-geom-type-select {
   width: 100%;
-  padding: 8px;
-  border: 1px solid var(--nmap-border);
-  border-radius: 4px;
-  background: var(--nmap-bg-secondary);
+  height: 40px;
+  padding: 0 1rem;
+  font-size: var(--text-sm);
+  color: var(--foreground);
+  border: 1px solid var(--input);
+  background-color: transparent;
+  border-radius: var(--radius);
+  font-family: var(--font-family), sans-serif;
+  transition:
+    box-shadow var(--transition-ui),
+    border-color var(--transition-ui);
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 16px;
+}
+
+.dark .notes-geom-type-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+.notes-geom-type-select:focus {
+  border-color: var(--ring);
+  box-shadow: var(--input-focus-shadow);
 }
 
 .notes-loading {
