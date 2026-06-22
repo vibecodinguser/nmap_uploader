@@ -70,8 +70,6 @@ const logBackgroundTaskFailure = (label: string, error: unknown): void => {
   console.warn(`[nmap_uploader] ${label} failed:`, error)
 }
 
-const pendingBackgroundTasks = new Set<Promise<void>>()
-
 const executeBackgroundTask = async (task: Promise<unknown>, label: string): Promise<void> => {
   try {
     await task
@@ -81,8 +79,10 @@ const executeBackgroundTask = async (task: Promise<unknown>, label: string): Pro
 }
 
 const runBackgroundTask = (task: Promise<unknown>, label: string): void => {
+  // Promise is intentionally not awaited to run in background.
+  // execution variable is kept to avoid unhandled promise rejection warnings.
   const execution = executeBackgroundTask(task, label)
-  pendingBackgroundTasks.add(execution)
+  void execution
 }
 
 const relayMessageToMapTabs = async (
@@ -121,31 +121,37 @@ const readYandexUaFromTab = async (tabId: number): Promise<boolean> => {
   return result
 }
 
-const resolveIsYandexBrowser = async (): Promise<boolean> => {
-  let isYandex = false
-
-  if (isYandexBrowser()) {
-    await browser.storage.local.set({ is_yandex_browser: true })
-    isYandex = true
-  } else {
-    const stored = await browser.storage.local.get('is_yandex_browser')
-    if (true === stored.is_yandex_browser) {
-      isYandex = true
-    } else {
-      const mapTabs = await browser.tabs.query({ url: MAP_URL_PATTERN })
-      for (const mapTab of mapTabs) {
-        if (!isYandex && mapTab.id) {
-          const tabIsYandex = await readYandexUaFromTab(mapTab.id)
-          if (tabIsYandex) {
-            await browser.storage.local.set({ is_yandex_browser: true })
-            isYandex = true
-          }
-        }
+const checkTabsForYandexBrowser = async (): Promise<boolean> => {
+  const mapTabs = await browser.tabs.query({ url: MAP_URL_PATTERN })
+  for (const mapTab of mapTabs) {
+    if (mapTab.id) {
+      const tabIsYandex = await readYandexUaFromTab(mapTab.id)
+      if (tabIsYandex) {
+        return true
       }
     }
   }
+  return false
+}
 
-  return isYandex
+const resolveIsYandexBrowser = async (): Promise<boolean> => {
+  if (isYandexBrowser()) {
+    await browser.storage.local.set({ is_yandex_browser: true })
+    return true
+  }
+
+  const stored = await browser.storage.local.get('is_yandex_browser')
+  if (true === stored.is_yandex_browser) {
+    return true
+  }
+
+  const foundInTabs = await checkTabsForYandexBrowser()
+  if (foundInTabs) {
+    await browser.storage.local.set({ is_yandex_browser: true })
+    return true
+  }
+
+  return false
 }
 
 const shouldUseNativeSidePanel = async (): Promise<boolean> => {
@@ -240,9 +246,7 @@ const registerPanelSidebarSafely = async (): Promise<void> => {
 }
 
 const ensurePanelSidebarRegistered = (): Promise<void> => {
-  if (!panelSidebarRegistration) {
-    panelSidebarRegistration = registerPanelSidebarSafely()
-  }
+  panelSidebarRegistration ??= registerPanelSidebarSafely()
   return panelSidebarRegistration
 }
 
@@ -457,31 +461,37 @@ const resolveClickedTab = async (tab: Browser.tabs.Tab): Promise<Browser.tabs.Ta
   return result
 }
 
+const tryOpenNativeSidePanel = async (clickedTab: Browser.tabs.Tab): Promise<boolean> => {
+  const useNative = await shouldUseNativeSidePanel()
+  let openedNatively = false
+  if (useNative && clickedTab.windowId) {
+    const sidePanel = getSidePanelApi()
+    try {
+      if (sidePanel) {
+        await sidePanel.setOptions({ path: PANEL_PAGE, enabled: true })
+        await sidePanel.open({ windowId: clickedTab.windowId })
+        openedNatively = true
+      }
+    } catch (error: unknown) {
+      console.warn('[nmap_uploader] native sidePanel.open failed:', error)
+    }
+  }
+  return openedNatively
+}
+
 const openPanel = async (tab: Browser.tabs.Tab): Promise<void> => {
   const clickedTab = await resolveClickedTab(tab)
-  if (clickedTab?.id) {
-    const isYandex = await resolveIsYandexBrowser()
-    if (isYandex) {
-      await openInjectedPanel(clickedTab)
-    } else {
-      const useNative = await shouldUseNativeSidePanel()
-      let openedNatively = false
-      if (useNative && clickedTab.windowId) {
-        const sidePanel = getSidePanelApi()
-        try {
-          if (sidePanel) {
-            await sidePanel.setOptions({ path: PANEL_PAGE, enabled: true })
-            await sidePanel.open({ windowId: clickedTab.windowId })
-            openedNatively = true
-          }
-        } catch (error: unknown) {
-          console.warn('[nmap_uploader] native sidePanel.open failed:', error)
-        }
-      }
-      if (!openedNatively) {
-        await openInjectedPanel(clickedTab)
-      }
-    }
+  if (!clickedTab?.id) return
+
+  const isYandex = await resolveIsYandexBrowser()
+  if (isYandex) {
+    await openInjectedPanel(clickedTab)
+    return
+  }
+
+  const openedNatively = await tryOpenNativeSidePanel(clickedTab)
+  if (!openedNatively) {
+    await openInjectedPanel(clickedTab)
   }
 }
 
@@ -821,6 +831,18 @@ const handleApplyStrokeColor: MessageHandler = (message, sender, sendResponse) =
   return true
 }
 
+const handleCenterMap: MessageHandler = (message, sender, sendResponse) => {
+  if (isTrustedNmapsOrPanelSender(sender)) {
+    const relayMessage = { action: 'centerMap', latitude: message.latitude, longitude: message.longitude, zoom: message.zoom, bbox: message.bbox }
+    const relayTask = processRelayToMapTabs(sender, relayMessage, sendResponse, 'centerMap')
+    runBackgroundTask(relayTask, 'centerMap')
+  } else {
+    logRejectedMessage('centerMap', sender)
+    sendResponse({ ok: false })
+  }
+  return true
+}
+
 const messageHandlers: Record<string, MessageHandler> = {
   getAuth: handleGetAuth,
   ensureAuth: handleEnsureAuth,
@@ -833,6 +855,7 @@ const messageHandlers: Record<string, MessageHandler> = {
   [CLOSE_PANEL_SIDEBAR_ACTION]: handleClosePanel,
   [START_POINT_PICKING_ACTION]: handleStartPointPicking,
   applyStrokeColor: handleApplyStrokeColor,
+  centerMap: handleCenterMap,
 }
 
 const onMessageHandler = (

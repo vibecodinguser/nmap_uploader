@@ -27,9 +27,7 @@ type SidebarUi = {
   remove: () => void
 }
 
-type RuntimeMessage = {
-  action?: string
-}
+type RuntimeMessage = Record<string, unknown>
 
 const persistYandexBrowserFlag = async (): Promise<void> => {
   if (isYandexBrowser()) {
@@ -189,6 +187,50 @@ export default defineContentScript({
       } else if (START_POINT_PICKING_ACTION === message?.action) {
         const geomType = typeof message.geomType === 'string' ? message.geomType : 'Point'
         notifyStartPickPoint(geomType)
+      } else if ('centerMap' === message?.action) {
+        const lat = Number(message.latitude)
+        const lon = Number(message.longitude)
+        if (!isNaN(lat) && !isNaN(lon)) {
+          let zoom = typeof message.zoom === 'number' ? message.zoom : 18
+          
+          if (Array.isArray(message.bbox) && message.bbox.length === 4) {
+            const [minLon, minLat, maxLon, maxLat] = message.bbox
+            const width = window.innerWidth - 425 - 40 // 425 is PANEL_WIDTH, 40 margin
+            const height = window.innerHeight - 80 // 80 margin
+            
+            let zoomX = 18
+            let zoomY = 18
+
+            if (width > 0 && height > 0) {
+              const lonDiff = maxLon - minLon
+              if (lonDiff > 0) {
+                zoomX = Math.log2((width * 360) / (256 * lonDiff))
+              }
+
+              const latToMercatorY = (l: number) => {
+                const rad = l * Math.PI / 180
+                return Math.log(Math.tan(Math.PI / 4 + rad / 2))
+              }
+              const yDiff = Math.abs(latToMercatorY(maxLat) - latToMercatorY(minLat))
+              if (yDiff > 0) {
+                zoomY = Math.log2((height * 2 * Math.PI) / (256 * yDiff))
+              }
+              
+              const rawZoom = Math.min(zoomX, zoomY, 18)
+              zoom = Math.floor(rawZoom)
+              // Даем padding, отнимая 1 от зума, но не меньше 2
+              zoom = Math.max(zoom - 1, 2)
+            }
+          }
+
+          document.dispatchEvent(
+            new CustomEvent('nmaps:centerMap', {
+              detail: { latitude: lat, longitude: lon, zoom },
+            })
+          )
+        } else {
+          console.error('[nmap_uploader panel] Invalid coordinates for centerMap', message)
+        }
       }
     }
 

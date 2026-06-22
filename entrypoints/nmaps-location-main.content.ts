@@ -289,6 +289,45 @@ export default defineContentScript({
 
     document.addEventListener(NMAPS_MAP_RESIZE_EVENT, requestMapRepaint)
 
+    document.addEventListener('nmaps:centerMap', (event: Event) => {
+      const customEvent = event as CustomEvent
+      const { latitude, longitude, zoom } = customEvent.detail ?? {}
+      const lat = Number(latitude)
+      const lon = Number(longitude)
+      const z = Number(zoom) || 18
+
+      if (!isNaN(lat) && !isNaN(lon)) {
+        const map = globalActiveMapInstance ?? findActiveMap()
+        if (map) {
+          try {
+            // Ищем подходящий метод
+            const centerMethod = ['setCenter', 'panTo', 'moveTo'].find(m => typeof (map as any)[m] === 'function')
+            
+            if (centerMethod) {
+              ;(map as any)[centerMethod]([lon, lat], z, { duration: 300 })
+              return
+            }
+          } catch (e) {
+            // Игнорируем
+          }
+        }
+        
+        const newHash = `#!/?z=${z}&ll=${lon},${lat}`
+        
+        try {
+          // Создаем и кликаем скрытую ссылку, чтобы SPA-роутер Яндекса перехватил переход
+          const a = document.createElement('a')
+          a.href = newHash
+          a.style.display = 'none'
+          document.body.appendChild(a)
+          a.click()
+          a.remove()
+        } catch (e) {
+           window.location.hash = newHash
+        }
+      }
+    })
+
     let isPickingPoint = false
     document.addEventListener(NMAPS_START_PICK_POINT_EVENT, (event: Event) => {
       if (isPickingPoint) return

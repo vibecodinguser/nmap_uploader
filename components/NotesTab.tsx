@@ -1,4 +1,4 @@
-import { Trash2, MapPin, Waypoints, Hexagon, Pencil } from 'lucide-react'
+import { Trash2, MapPin, Waypoints, Hexagon, Pencil, LocateFixed } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { browser } from 'wxt/browser'
 import { PointDateField } from '@/components/PointDateField'
@@ -28,6 +28,7 @@ type NotePoint = {
   noteTime?: string
   noteDesc?: string
   geomType: 'Point' | 'LineString' | 'Polygon'
+  geomCoords?: [number, number][]
 }
 
 type NoteListItemProps = {
@@ -137,6 +138,30 @@ const NoteItemActions = ({
   if (!p.id) return null
   return (
     <div className={`notes-list-item-actions-wrapper ${isExpanded ? 'notes-list-item-actions-wrapper--expanded' : ''}`}>
+      <button
+        type="button"
+        title="Показать на карте"
+        onClick={() => {
+          if (isUploading || isPicking) return;
+          let bbox: [number, number, number, number] | undefined
+          if (p.geomCoords && p.geomCoords.length > 1) {
+            const lons = p.geomCoords.map(c => c[0])
+            const lats = p.geomCoords.map(c => c[1])
+            bbox = [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)]
+          }
+          browser.runtime.sendMessage({
+            action: 'centerMap',
+            latitude: p.latitude,
+            longitude: p.longitude,
+            bbox,
+            zoom: 18,
+          }).catch(console.error)
+        }}
+        disabled={isUploading || isPicking}
+        className="notes-list-action-btn"
+      >
+        <LocateFixed size={16} />
+      </button>
       <button
         type="button"
         title="Редактировать"
@@ -296,6 +321,7 @@ export const NotesTab = ({
               noteTime: pt.note_time,
               noteDesc: pt.note_desc,
               geomType,
+              geomCoords: nmapIndex.paths?.[id] || [pt.coords],
             }
           })
           setPoints(remotePoints)
