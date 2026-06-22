@@ -6,6 +6,7 @@ import { PoligonTab } from '@/components/PoligonTab'
 import { SettingsTab } from '@/components/SettingsTab'
 import { TabBar } from '@/components/TabBar'
 import { UploadStatusMessage } from '@/components/UploadStatusMessage'
+import { NotesTab } from '@/components/NotesTab'
 import { cleanupA11y, expectNoA11yViolations, renderA11y } from '@/tests/setup/a11y'
 
 const noop = () => {}
@@ -145,6 +146,21 @@ describe('a11y: UploadStatusMessage', () => {
   it('без нарушений для статуса ошибки', async () => {
     const { container } = renderA11y(
       <UploadStatusMessage status={{ level: 'error', message: 'Ошибка загрузки' }} />,
+    )
+
+    await expectNoA11yViolations(container)
+  })
+})
+
+describe('a11y: NotesTab', () => {
+  it('без нарушений в дефолтном состоянии', async () => {
+    const { container } = renderA11y(
+      <NotesTab
+        isUploading={false}
+        isLoggedIn={false}
+        onRequireAuth={noop}
+        onManualUpload={noop}
+      />,
     )
 
     await expectNoA11yViolations(container)
