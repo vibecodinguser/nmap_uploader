@@ -8,7 +8,6 @@ import { invalidateOccupiedDatesCache } from '@/lib/occupied_dates_cache'
 import {
   areCoordinatesValid,
   createGeometryIndex,
-  processMultipointContent,
 } from '@/lib/point_uploader'
 import {
   resolveReloadAfterUploadPreference,
@@ -73,15 +72,6 @@ type ManualPointUploadParams = ManualPointInput & {
   setUploadStatus: NullableUploadStatusSetter
 }
 
-type MultipointUploadParams = {
-  files: File[]
-  date: string
-  t: TranslateFn
-  runPointUpload: (
-    params: Pick<RunPointUploadParams, 'defaultErrorMessage' | 'execute'>,
-  ) => Promise<void>
-  setUploadStatus: NullableUploadStatusSetter
-}
 
 type ManualPointUploadExecutionParams = {
   coords: number[][]
@@ -93,17 +83,6 @@ type ManualPointUploadExecutionParams = {
   t: TranslateFn
 }
 
-type MultipointUploadExecutionParams = {
-  files: File[]
-  targetDate: string | undefined
-  t: TranslateFn
-  setUploadStatus: NullableUploadStatusSetter
-}
-
-type ProcessedMultipointFile = {
-  name: string
-  result: ReturnType<typeof processMultipointContent>
-}
 
 const normalizeTargetDate = normalizeDisplayTargetDate
 
@@ -168,10 +147,6 @@ function parseCoordinate(value: string): number {
   return Number.parseFloat(trimmed)
 }
 
-function isTxtFile(file: File): boolean {
-  const lowerName = file.name.toLowerCase()
-  return lowerName.endsWith('.txt')
-}
 
 function createBeginUploadHandler({
   setIsUploading,
@@ -191,60 +166,6 @@ function createFinishUploadHandler({
   }
 }
 
-async function processMultipointFile(
-  file: File,
-  priorLogs: UploadLogEntry[],
-  t: TranslateFn,
-): Promise<ProcessedMultipointFile> {
-  const processingMessage = t('upload.processing', { file: file.name })
-  appendUploadLog(priorLogs, 'info', processingMessage)
-
-  const content = await file.text()
-  const result = processMultipointContent(content)
-  const pointKeys = Object.keys(result.points)
-  const pointCount = pointKeys.length
-
-  if (pointCount === 0) {
-    const notFoundMessage = t('points.pointsNotFound', { file: file.name })
-    appendUploadLog(priorLogs, 'error', `✗ ${notFoundMessage}`)
-  } else {
-    const countMessage = t('points.pointsCount', { file: file.name, count: pointCount })
-    appendUploadLog(priorLogs, 'success', `✓ ${countMessage}`)
-  }
-
-  return { name: file.name, result }
-}
-
-function hasValidPoints(file: ProcessedMultipointFile): boolean {
-  const pointKeys = Object.keys(file.result.points)
-  return pointKeys.length > 0
-}
-
-function findInvalidMultipointFile(files: File[]): File | undefined {
-  let invalidFile: File | undefined
-  for (const file of files) {
-    if (invalidFile === undefined) {
-      const isValidFormat = isTxtFile(file)
-      if (!isValidFormat) {
-        invalidFile = file
-      }
-    }
-  }
-  return invalidFile
-}
-
-async function processAllMultipointFiles(
-  files: File[],
-  priorLogs: UploadLogEntry[],
-  t: TranslateFn,
-): Promise<ProcessedMultipointFile[]> {
-  const processedFiles: ProcessedMultipointFile[] = []
-  for (const file of files) {
-    const processed = await processMultipointFile(file, priorLogs, t)
-    processedFiles.push(processed)
-  }
-  return processedFiles
-}
 
 async function executeManualPointUpload({
   coords,
@@ -285,38 +206,6 @@ function bindManualPointUploadExecutor(params: ManualPointUploadExecutionParams)
   }
 }
 
-function bindMultipointUploadExecutor(params: MultipointUploadExecutionParams) {
-  return async function executeMultipointUploadBound(
-    _reloadAfterUpload: boolean,
-  ): Promise<PointUploadExecuteResult> {
-    return executeMultipointUpload(params)
-  }
-}
-
-async function executeMultipointUpload({
-  files,
-  targetDate,
-  t,
-  setUploadStatus,
-}: MultipointUploadExecutionParams): Promise<PointUploadExecuteResult> {
-  const priorLogs: UploadLogEntry[] = []
-  const processedFiles = await processAllMultipointFiles(files, priorLogs, t)
-  const validFiles = processedFiles.filter(hasValidPoints)
-
-  let result: PointUploadExecuteResult = null
-  if (validFiles.length === 0) {
-    const noPointsMessage = t('points.noPointsInFiles')
-    setUploadStatus({ level: 'error', message: noPointsMessage })
-  } else {
-    const response = await uploadPointData({ files: validFiles, targetDate })
-    result = {
-      priorLogs,
-      uploadLogs: response.logs ?? [],
-      uploadOk: response.ok,
-    }
-  }
-  return result
-}
 
 async function runPointUpload({
   defaultErrorMessage,
@@ -398,36 +287,6 @@ async function performManualPointUpload({
   }
 }
 
-async function performMultipointUpload({
-  files,
-  date,
-  t,
-  runPointUpload: runUpload,
-  setUploadStatus,
-}: MultipointUploadParams) {
-  if (files.length === 0) {
-    const noFilesMessage = t('points.noFilesSelected')
-    setUploadStatus({ level: 'error', message: noFilesMessage })
-  } else {
-    const invalidFile = findInvalidMultipointFile(files)
-    if (invalidFile) {
-      const onlyTxtMessage = t('points.onlyTxtAllowed')
-      setUploadStatus({ level: 'error', message: onlyTxtMessage })
-    } else {
-      const targetDate = resolveUploadTargetDate(date, t, setUploadStatus)
-      if (targetDate !== undefined) {
-        const defaultErrorMessage = t('points.pointsUploadError')
-        const execute = bindMultipointUploadExecutor({
-          files,
-          targetDate,
-          t,
-          setUploadStatus,
-        })
-        await runUpload({ defaultErrorMessage, execute })
-      }
-    }
-  }
-}
 
 export const usePointUpload = ({ onAuthenticated }: { onAuthenticated?: () => void }) => {
   const t = useTranslate()
@@ -462,23 +321,10 @@ export const usePointUpload = ({ onAuthenticated }: { onAuthenticated?: () => vo
     [boundRunPointUpload, t],
   )
 
-  const boundPerformMultipointUpload = useCallback(
-    function boundPerformMultipointUpload({ files, date }: { files: File[]; date: string }) {
-      return performMultipointUpload({
-        files,
-        date,
-        t,
-        runPointUpload: boundRunPointUpload,
-        setUploadStatus,
-      })
-    },
-    [boundRunPointUpload, t],
-  )
 
   return {
     isUploading,
     uploadStatus,
     performManualUpload: boundPerformManualUpload,
-    performMultipointUpload: boundPerformMultipointUpload,
   }
 }

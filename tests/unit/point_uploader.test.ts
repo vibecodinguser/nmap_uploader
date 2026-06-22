@@ -1,16 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
   areCoordinatesValid,
-  createPointIndex,
+  createGeometryIndex,
   isValidTargetDate,
-  processMultipointContent,
 } from '@/lib/point_uploader'
 
-describe('createPointIndex', () => {
+describe('createGeometryIndex', () => {
   it('создаёт точку с координатами [lon, lat]', () => {
-    const result = createPointIndex({
-      latitude: 55.7558,
-      longitude: 37.6176,
+    const result = createGeometryIndex({
+      coords: [[37.6176, 55.7558]],
+      geomType: 'Point',
       description: 'Кремль',
     })
 
@@ -21,9 +20,9 @@ describe('createPointIndex', () => {
   })
 
   it('обрезает описание до 150 символов', () => {
-    const result = createPointIndex({
-      latitude: 55,
-      longitude: 37,
+    const result = createGeometryIndex({
+      coords: [[37, 55]],
+      geomType: 'Point',
       description: 'x'.repeat(200),
     })
 
@@ -32,24 +31,6 @@ describe('createPointIndex', () => {
   })
 })
 
-describe('processMultipointContent', () => {
-  it('парсит строки с кавычками и без', () => {
-    const content = ['"Моя точка", 55.123456, 37.123456;', 'Точка 2, 56.1, 38.2'].join('\n')
-
-    const result = processMultipointContent(content)
-    const points = Object.values(result.points)
-
-    expect(points).toHaveLength(2)
-    expect(points[0]?.desc).toBe('Моя точка')
-    expect(points[0]?.coords).toEqual([37.123456, 55.123456])
-    expect(points[1]?.desc).toBe('Точка 2')
-  })
-
-  it('пропускает строки с некорректными координатами', () => {
-    const result = processMultipointContent('"Bad", 999, 37.1')
-    expect(Object.keys(result.points)).toHaveLength(0)
-  })
-})
 
 describe('areCoordinatesValid', () => {
   it('принимает допустимые координаты', () => {

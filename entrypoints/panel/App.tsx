@@ -4,7 +4,6 @@ import { TabBar } from '@/components/TabBar'
 import '@/assets/styles/uploader.css'
 import { Header } from '@/components/Header'
 import { NotesTab } from '@/components/NotesTab'
-import { PointsTab } from '@/components/PointsTab'
 import { PoligonTab } from '@/components/PoligonTab'
 import { SettingsTab } from '@/components/SettingsTab'
 import { useAuth } from '@/hooks/useAuth'
@@ -22,7 +21,7 @@ type AppProps = {
   themeTarget?: Element
 }
 
-type MainTab = 'upload' | 'manual' | 'notes'
+type MainTab = 'upload' | 'notes'
 type AppView = 'main' | 'settings'
 
 export const App = ({ themeTarget }: AppProps) => {
@@ -39,9 +38,7 @@ export const App = ({ themeTarget }: AppProps) => {
   })
   const {
     isUploading: isPointUploading,
-    uploadStatus: pointUploadStatus,
     performManualUpload,
-    performMultipointUpload,
   } = usePointUpload({ onAuthenticated: refreshUser })
   const [activeTab, setActiveTab] = useState<MainTab>('upload')
   const [activeView, setActiveView] = useState<AppView>('main')
@@ -50,7 +47,6 @@ export const App = ({ themeTarget }: AppProps) => {
     function buildMainTabs() {
       return [
         { id: 'upload' as const, label: t('tabs.polygons') },
-        { id: 'manual' as const, label: t('tabs.points') },
         { id: 'notes' as const, label: 'Заметки' },
       ]
     },
@@ -116,17 +112,6 @@ export const App = ({ themeTarget }: AppProps) => {
                   isLoggedIn={isLoggedIn}
                   onRequireAuth={handleRequireAuth}
                   onUpload={performUpload}
-                />
-              )}
-
-              {activeTab === 'manual' && (
-                <PointsTab
-                  isUploading={isPointUploading}
-                  uploadStatus={pointUploadStatus}
-                  isLoggedIn={isLoggedIn}
-                  onRequireAuth={handleRequireAuth}
-                  onManualUpload={performManualUpload}
-                  onMultipointUpload={performMultipointUpload}
                 />
               )}
 

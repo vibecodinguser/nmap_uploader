@@ -605,6 +605,208 @@ body {
   margin-bottom: 0.25rem;
 }
 
+.notes-list-item-btn {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.notes-list-item-btn:not(:disabled) {
+  cursor: pointer;
+}
+
+.notes-list-item-btn--expanded {
+  align-items: flex-start;
+  flex-wrap: wrap;
+  overflow: visible;
+}
+
+.notes-list-item-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+.notes-list-item-btn--expanded .notes-list-item-title {
+  white-space: pre-wrap;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.notes-list-item-desc {
+  color: var(--nmap-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  flex: 0 1 auto;
+}
+
+.notes-list-item-btn--expanded .notes-list-item-desc {
+  align-items: flex-start;
+  overflow: visible;
+  flex: 1 1 100%;
+}
+
+.notes-list-item-desc-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notes-list-item-btn--expanded .notes-list-item-desc-text {
+  white-space: pre-wrap;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.notes-list-item {
+  margin-bottom: 8px;
+  padding: 8px;
+  border: 1px solid var(--nmap-border);
+  border-radius: 4px;
+}
+
+.notes-list-item-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notes-list-item-edit-input {
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.notes-list-item-edit-textarea {
+  resize: vertical;
+}
+
+.notes-list-item-edit-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.notes-list-item-edit-actions > button {
+  flex: 1;
+}
+
+.notes-list-item-view {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.notes-list-item-view--expanded {
+  align-items: flex-start;
+}
+
+.notes-list-item-actions-wrapper {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.notes-list-item-actions-wrapper--expanded {
+  align-self: flex-start;
+}
+
+.notes-list-action-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--nmap-accent, #1a73e8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notes-list-action-btn:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.notes-geom-type-container {
+  margin-bottom: 16px;
+}
+
+.notes-geom-type-label {
+  display: block;
+  font-size: 12px;
+  color: var(--nmap-text-secondary);
+  margin-bottom: 4px;
+}
+
+.notes-geom-type-select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--nmap-border);
+  border-radius: 4px;
+  background: var(--nmap-bg-secondary);
+}
+
+.notes-loading {
+  margin-top: 16px;
+  font-size: 14px;
+  color: var(--nmap-text-secondary);
+}
+
+.notes-list-container {
+  margin-top: 16px;
+}
+
+.notes-list-ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.notes-manual-upload {
+  margin-top: 16px;
+  padding: 16px;
+  background-color: var(--muted);
+  border-radius: var(--radius);
+}
+
+.notes-manual-upload-info {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin-bottom: 8px;
+}
+
+.notes-manual-upload-input {
+  margin-bottom: 12px;
+}
+
+.notes-manual-upload-textarea {
+  resize: vertical;
+}
+
+.notes-manual-upload-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.notes-manual-upload-actions > button {
+  flex: 1;
+}
+
 .points-section {
   gap: 0;
 }

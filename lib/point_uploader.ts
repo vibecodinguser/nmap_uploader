@@ -6,8 +6,6 @@ export const MIN_LON = -180
 export const MAX_LON = 180
 export const POINT_DESCRIPTION_MAX_LENGTH = 150
 
-const QUOTED_POINT_PATTERN = /"(.*?)"[,\s;]+\s*([-\d.]+)[,\s;]+\s*([-\d.]+)/
-const UNQUOTED_POINT_PATTERN = /^(.*?)[,\s;]+\s*([-\d.]+)[,\s;]+\s*([-\d.]+)\s*$/
 
 /** Проверяет, что координаты в допустимых диапазонах. */
 export const areCoordinatesValid = ({
@@ -69,42 +67,3 @@ export const createGeometryIndex = ({
   }
 }
 
-const parsePointLine = (
-  lineContent: string,
-): { desc: string; latitude: number; longitude: number } | null => {
-  const match = QUOTED_POINT_PATTERN.exec(lineContent) ?? UNQUOTED_POINT_PATTERN.exec(lineContent)
-  if (!match) return null
-
-  let desc = match[1].trim()
-  if (desc.startsWith('"') && desc.endsWith('"')) {
-    desc = desc.slice(1, -1)
-  }
-
-  const latitude = Number.parseFloat(match[2])
-  const longitude = Number.parseFloat(match[3])
-  if (Number.isNaN(latitude) || Number.isNaN(longitude)) return null
-  if (!areCoordinatesValid({ latitude, longitude })) return null
-
-  return { desc, latitude, longitude }
-}
-
-/** Парсит текстовый файл со списком точек. */
-export const processMultipointContent = (content: string): NmapIndex => {
-  const data = createNmapOutputTemplate()
-
-  for (const rawLine of content.split(/\r?\n/u)) {
-    const lineContent = rawLine.trim()
-    if (!lineContent) continue
-
-    const parsed = parsePointLine(lineContent)
-    if (!parsed) continue
-
-    const pointUuid = crypto.randomUUID()
-    data.points[pointUuid] = {
-      coords: [parsed.longitude, parsed.latitude],
-      desc: parsed.desc,
-    }
-  }
-
-  return data
-}

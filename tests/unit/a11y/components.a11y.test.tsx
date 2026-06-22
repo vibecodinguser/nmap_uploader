@@ -2,7 +2,6 @@
 
 import { afterEach, describe, it, vi } from 'vitest'
 import { Header } from '@/components/Header'
-import { PointsTab } from '@/components/PointsTab'
 import { PoligonTab } from '@/components/PoligonTab'
 import { SettingsTab } from '@/components/SettingsTab'
 import { TabBar } from '@/components/TabBar'
@@ -119,23 +118,6 @@ describe('a11y: PoligonTab', () => {
         isLoggedIn={false}
         onRequireAuth={noop}
         onUpload={noop}
-      />,
-    )
-
-    await expectNoA11yViolations(container)
-  })
-})
-
-describe('a11y: PointsTab', () => {
-  it('без нарушений на вкладке ручного ввода', async () => {
-    const { container } = renderA11y(
-      <PointsTab
-        isUploading={false}
-        uploadStatus={null}
-        isLoggedIn={false}
-        onRequireAuth={noop}
-        onManualUpload={noop}
-        onMultipointUpload={noop}
       />,
     )
 
