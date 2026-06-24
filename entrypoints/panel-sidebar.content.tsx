@@ -190,7 +190,7 @@ export default defineContentScript({
       } else if ('centerMap' === message?.action) {
         const lat = Number(message.latitude)
         const lon = Number(message.longitude)
-        if (!isNaN(lat) && !isNaN(lon)) {
+        if (!Number.isNaN(lat) && !Number.isNaN(lon)) {
           let zoom = typeof message.zoom === 'number' ? message.zoom : 18
 
           if (Array.isArray(message.bbox) && message.bbox.length === 4) {

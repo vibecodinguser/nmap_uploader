@@ -4,6 +4,7 @@ export type MapLocation = {
   longitude: number
   latitude: number
   zoom: number
+  layer?: string
 }
 
 const MERCATOR_RADIUS = 6_378_137
@@ -61,10 +62,13 @@ const parseMapLocationFromSearchParams = (params: URLSearchParams): MapLocation 
     return null
   }
 
+  const layer = params.get('l') || undefined
+
   return {
     longitude,
     latitude: clampLatitude(latitude),
     zoom,
+    layer,
   }
 }
 

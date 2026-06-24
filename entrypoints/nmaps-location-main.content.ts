@@ -61,13 +61,16 @@ const isYmapsMapLike = (value: unknown): value is YmapsMapLike => {
 }
 
 const findMapInElement = (element: Element): YmapsMapLike | null => {
-  const record = element as unknown as Record<string, unknown>
-  const keys = Object.keys(record)
   let map: YmapsMapLike | null = null
-  for (let index = 0; index < keys.length && map === null; index += 1) {
-    const value = record[keys[index]]
-    if (isYmapsMapLike(value)) {
-      map = value
+  for (const key in element) {
+    try {
+      const value = (element as any)[key]
+      if (isYmapsMapLike(value)) {
+        map = value
+        break
+      }
+    } catch {
+      // Ignored cross-origin or illegal invocation errors
     }
   }
   return map
@@ -85,21 +88,24 @@ const findMapInSelector = (selector: string): YmapsMapLike | null => {
   return map
 }
 
-/** Ищет экземпляр ymaps-карты через DOM-сканирование контейнеров. */
 const findMapInstanceFromDom = (): YmapsMapLike | null => {
   const selectors = [
     "[class*='ymaps-2'][class*='-map']",
     "[class*='ymaps'][class*='map']",
     '.ymaps-map',
+    '.nk-map *', // scan all descendants of nk-map
+    '[class*="ymaps"]', // scan any element with ymaps in its class
   ]
 
   let map: YmapsMapLike | null = null
   for (let index = 0; index < selectors.length && map === null; index += 1) {
+    const _elements = document.querySelectorAll(selectors[index])
     const candidate = findMapInSelector(selectors[index])
     if (candidate) {
       map = candidate
     }
   }
+
   return map
 }
 
@@ -115,26 +121,97 @@ const findMapFromGlobalYmaps = (): YmapsMapLike | null => {
 }
 
 const dispatchWindowResize = (): void => {
-  const resizeEvent = new Event('resize')
-  window.dispatchEvent(resizeEvent)
+  // Имитируем изменение размера окна на 1px, чтобы обмануть React-компоненты,
+  // которые проверяют (prevWidth === window.innerWidth) перед тем как обновить карту.
+  // Держим поддельное значение 1 секунду и периодически спамим resize,
+  // чтобы пробить любой throttle/debounce внутри Яндекса.
+  const w = window.innerWidth
+  const h = window.innerHeight
+
+  Object.defineProperty(window, 'innerWidth', { value: w + 1, configurable: true })
+  Object.defineProperty(window, 'innerHeight', { value: h + 1, configurable: true })
+
+  // Спамим событиями resize каждую 100мс
+  const intervals = [0, 100, 200, 300, 500, 800]
+  intervals.forEach((delay) => {
+    if (delay === 0) {
+      window.dispatchEvent(new Event('resize'))
+    } else {
+      setTimeout(() => window.dispatchEvent(new Event('resize')), delay)
+    }
+  })
+
+  // Через 1 секунду возвращаем как было
+  setTimeout(() => {
+    delete (window as any).innerWidth
+    delete (window as any).innerHeight
+    window.dispatchEvent(new Event('resize'))
+  }, 1000)
 }
 
 const findActiveMap = (): YmapsMapLike | null => {
   return findMapFromGlobalYmaps() ?? findMapInstanceFromDom()
 }
 
-/** Пересчитывает размер карты после изменения layout страницы. */
-const requestMapRepaint = (): void => {
+/** Пересчитывает размер карты после изменения layout страницы и сохраняет центр. */
+const requestMapRepaint = (event?: Event): void => {
   dispatchWindowResize()
 
-  const map = findActiveMap()
-  if (map) {
-    try {
-      const container = (map as unknown as YmapsMapWithContainer).container
-      container?.fitToViewport?.()
-    } catch {
-      // Объект карты мог быть уничтожен
+  const map = globalActiveMapInstance ?? findActiveMap()
+  if (!map) {
+    return
+  }
+
+  try {
+    const detailRaw = (event as CustomEvent)?.detail
+    let detail: any = detailRaw
+    if (typeof detailRaw === 'string') {
+      try {
+        detail = JSON.parse(detailRaw)
+      } catch {
+        /* ignore */
+      }
     }
+
+    let center: [number, number] | undefined
+    let zoom: number | undefined
+
+    if (detail && typeof detail.latitude === 'number' && typeof detail.longitude === 'number') {
+      const center = [detail.longitude, detail.latitude]
+      const zoom = detail.zoom
+
+      setTimeout(() => {
+        const map = globalActiveMapInstance ?? findActiveMap()
+        if (map && center && zoom && typeof (map as any).setCenter === 'function') {
+          try {
+            ;(map as any).setCenter(center, zoom, { duration: 0 })
+          } catch (_e) {
+            // ignore
+          }
+        }
+      }, 200)
+    } else {
+      try {
+        center = map.getCenter()
+        zoom = map.getZoom()
+      } catch {
+        // ignore
+      }
+    }
+
+    const container = (map as unknown as YmapsMapWithContainer).container
+    container?.fitToViewport?.()
+
+    if (center && zoom !== undefined) {
+      const centerMethod = ['setCenter', 'panTo', 'moveTo'].find(
+        (m) => typeof (map as any)[m] === 'function',
+      )
+      if (centerMethod) {
+        ;(map as any)[centerMethod](center, zoom, { duration: 0 })
+      }
+    }
+  } catch (_err) {
+    // ignore
   }
 }
 
@@ -175,6 +252,76 @@ const subscribeToMapEvents = (map: YmapsMapLike): void => {
 }
 
 let globalActiveMapInstance: YmapsMapLike | null = null
+
+// Перехватываем создание экземпляра Яндекс.Карт, чтобы 100% найти карту
+const interceptYmaps = () => {
+  if (typeof window === 'undefined' || !(window as any).ymaps) return
+  const ymaps = (window as any).ymaps
+
+  if (ymaps.__mapInterceptSetupDone) return
+  ymaps.__mapInterceptSetupDone = true
+
+  let _Map = ymaps.Map
+  if (_Map && !_Map.__intercepted) {
+    const OriginalMap = _Map
+    ymaps.Map = (...args: any[]) => {
+      const instance = new OriginalMap(...args)
+      globalActiveMapInstance = instance as YmapsMapLike
+      return instance
+    }
+    ymaps.Map.__intercepted = true
+    ymaps.Map.prototype = OriginalMap.prototype
+  } else if (!_Map) {
+    Object.defineProperty(ymaps, 'Map', {
+      get: () => _Map,
+      set: (val) => {
+        if (val && !val.__intercepted) {
+          const OriginalMap = val
+          _Map = (...args: any[]) => {
+            const instance = new OriginalMap(...args)
+            globalActiveMapInstance = instance as YmapsMapLike
+            return instance
+          }
+          _Map.__intercepted = true
+          _Map.prototype = OriginalMap.prototype
+        } else {
+          _Map = val
+        }
+      },
+      configurable: true,
+    })
+  }
+}
+
+// Запускаем перехват как можно раньше, перехватывая само присвоение window.ymaps
+const setupInterceptor = () => {
+  if (typeof window === 'undefined') return
+
+  let _ymaps: any = (window as any).ymaps
+  if (_ymaps) {
+    interceptYmaps()
+  } else {
+    Object.defineProperty(window, 'ymaps', {
+      get: () => _ymaps,
+      set: (val) => {
+        _ymaps = val
+        if (val) {
+          interceptYmaps()
+        }
+      },
+      configurable: true,
+    })
+  }
+
+  // На всякий случай оставляем поллинг
+  const interval = setInterval(() => {
+    if (typeof window !== 'undefined' && _ymaps) {
+      interceptYmaps()
+    }
+  }, 50)
+  setTimeout(() => clearInterval(interval), 10000)
+}
+setupInterceptor()
 
 /** Запускает поиск ymaps-карты с retry и таймаутом. */
 const startMapDiscovery = (): void => {
@@ -254,7 +401,7 @@ function getCoordsFromUrlClick(clientX: number, clientY: number): number[] | nul
   if (!zStr || !llStr) return null
   const z = parseFloat(zStr)
   const [lon, lat] = llStr.split(',').map(parseFloat)
-  if (isNaN(z) || isNaN(lon) || isNaN(lat)) return null
+  if (Number.isNaN(z) || Number.isNaN(lon) || Number.isNaN(lat)) return null
 
   const EQUATOR = 40075016.685578488
   const worldSize = 256 * 2 ** z
@@ -290,31 +437,41 @@ export default defineContentScript({
 
     document.addEventListener('nmaps:centerMap', (event: Event) => {
       const customEvent = event as CustomEvent
-      const { latitude, longitude, zoom } = customEvent.detail ?? {}
+      let detail = customEvent.detail
+      if (typeof detail === 'string') {
+        try {
+          detail = JSON.parse(detail)
+        } catch {
+          /* ignore */
+        }
+      }
+      const { latitude, longitude, zoom } = detail ?? {}
       const lat = Number(latitude)
       const lon = Number(longitude)
       const z = Number(zoom) || 18
 
-      if (!isNaN(lat) && !isNaN(lon)) {
+      if (!Number.isNaN(lat) && !Number.isNaN(lon)) {
         const map = globalActiveMapInstance ?? findActiveMap()
         if (map) {
           try {
-            // Ищем подходящий метод
+            // Ищем подходящий метод. Nmaps использует longlat для URL, но для API это может быть [lat, lon]
             const centerMethod = ['setCenter', 'panTo', 'moveTo'].find(
               (m) => typeof (map as any)[m] === 'function',
             )
 
             if (centerMethod) {
-              ;(map as any)[centerMethod]([lon, lat], z, { duration: 300 })
+              const duration =
+                typeof customEvent.detail?.duration === 'number' ? customEvent.detail.duration : 0
+              // Yandex Maps API 2.1 по умолчанию использует [lat, lon]. Попробуем так, если не сработает - поменяем на [lon, lat]
+              ;(map as any)[centerMethod]([lon, lat], z, { duration })
               return
             }
-          } catch (e) {
-            // Игнорируем
+          } catch (_e) {
+            // fallback
           }
         }
 
         const newHash = `#!/?z=${z}&ll=${lon},${lat}`
-
         try {
           // Создаем и кликаем скрытую ссылку, чтобы SPA-роутер Яндекса перехватил переход
           const a = document.createElement('a')
@@ -323,7 +480,7 @@ export default defineContentScript({
           document.body.appendChild(a)
           a.click()
           a.remove()
-        } catch (e) {
+        } catch (_e) {
           window.location.hash = newHash
         }
       }
@@ -408,9 +565,7 @@ export default defineContentScript({
         try {
           notifyPointPicked(accumulatedCoords, geomType)
         } catch (error) {
-          showError(
-            'Ошибка завершения: ' + (error instanceof Error ? error.message : String(error)),
-          )
+          showError(`Ошибка завершения: ${error instanceof Error ? error.message : String(error)}`)
         } finally {
           cleanup()
         }

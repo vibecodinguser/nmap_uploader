@@ -569,8 +569,11 @@ export const teardownSplitView = (): void => {
   nakarteLocation = null
   lastPolledUrlLocation = null
 
+  const _location = readNmapsLocation()
+
   clearSplitLayout()
   scheduleNmapsMapResize()
+
   isOpen = false
   updateSplitButtonState()
 }

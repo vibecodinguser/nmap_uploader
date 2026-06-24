@@ -1,4 +1,4 @@
-import { createNmapOutputTemplate, type NmapIndex, type NmapPoint } from '@/lib/nmap_index'
+import type { NmapIndex, NmapPoint } from '@/lib/nmap_index'
 
 export const MIN_LAT = -90
 export const MAX_LAT = 90

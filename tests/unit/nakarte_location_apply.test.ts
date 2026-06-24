@@ -13,7 +13,7 @@ describe('parseSetLocationMessage', () => {
     expect(location).toEqual({
       longitude: 37.6,
       latitude: 55.7,
-      zoom: 15,
+      zoom: 14.8,
     })
   })
 

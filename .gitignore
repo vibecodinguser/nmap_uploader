@@ -68,3 +68,4 @@ stats-*.json
 #Проектные файлы
 GEMINI.md
 TASK.md
+docs/*

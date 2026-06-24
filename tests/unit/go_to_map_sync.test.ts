@@ -30,14 +30,14 @@ describe('getMapLocationFromNakarteUrl', () => {
 describe('buildNakarteUrl', () => {
   it('собирает https-ссылку nakarte', () => {
     const url = buildNakarteUrl({ longitude: 37.6, latitude: 55.7, zoom: 12 })
-    expect(url).toBe('https://nakarte.me/#m=12/55.7/37.6&l=S/K')
+    expect(url).toBe('https://nakarte.me/#m=12/55.7000000/37.6000000&l=S/K')
   })
 })
 
 describe('buildNakarteHash', () => {
   it('форматирует координаты с точностью nakarte', () => {
     expect(buildNakarteHash({ longitude: 37.6123456, latitude: 55.7123456, zoom: 12 })).toBe(
-      'm=12/55.71235/37.61235&l=S/K',
+      'm=12/55.7123456/37.6123456&l=S/K',
     )
   })
 })
@@ -56,8 +56,8 @@ describe('buildNmapsUrlFromLocation', () => {
 })
 
 describe('normalizeMapZoom', () => {
-  it('округляет и ограничивает зум', () => {
-    expect(normalizeMapZoom(14.6)).toBe(15)
+  it('ограничивает зум, но сохраняет дроби', () => {
+    expect(normalizeMapZoom(14.6)).toBe(14.6)
     expect(normalizeMapZoom(-1)).toBe(0)
     expect(normalizeMapZoom(40)).toBe(32)
   })
@@ -68,7 +68,7 @@ describe('normalizeMapLocation', () => {
     expect(normalizeMapLocation({ longitude: 37.6, latitude: 55.7, zoom: 14.8 })).toEqual({
       longitude: 37.6,
       latitude: 55.7,
-      zoom: 15,
+      zoom: 14.8,
     })
   })
 })

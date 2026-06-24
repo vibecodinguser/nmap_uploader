@@ -349,8 +349,8 @@ export const NotesTab = ({
               const path = nmapIndex.paths[id]
               if (
                 path.length > 2 &&
-                path[0][0] === path.at(-1)![0] &&
-                path[0][1] === path.at(-1)![1]
+                path[0][0] === path.at(-1)?.[0] &&
+                path[0][1] === path.at(-1)?.[1]
               ) {
                 geomType = 'Polygon'
               } else {

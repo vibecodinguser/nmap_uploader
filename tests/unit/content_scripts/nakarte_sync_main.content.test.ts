@@ -59,7 +59,7 @@ describe('nakarte-sync-main.content', () => {
       }),
     )
 
-    expect(window.location.hash).toBe('#m=12/55.71235/37.61235&l=S/K')
+    expect(window.location.hash).toBe('#m=12/55.7123456/37.6123456&l=S/K')
   })
 
   it('игнорирует сообщения с чужим origin', () => {

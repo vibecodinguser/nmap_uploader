@@ -1,6 +1,4 @@
 import type { MapLocation } from '@/lib/go_to_link'
-import { buildGoToLink } from '@/lib/go_to_link'
-import { GO_TO_SOURCES } from '@/lib/go_to_sources'
 
 export const NMAP_UPLOADER_MSG_SOURCE = 'nmap_uploader' as const
 export const NAKARTE_SYNC_MSG_SOURCE = 'nakarte_sync' as const
@@ -33,11 +31,22 @@ export const getMapLocationFromNakarteUrl = (href: string): MapLocation | null =
   }
 }
 
+export const mapNmapsLayerToNakarte = (layer?: string): string => {
+  if (!layer) return 'S/K'
+  if (layer.includes('map')) {
+    return 'Y'
+  }
+  if (layer.includes('sat')) {
+    return 'S/K'
+  }
+  return 'S/K'
+}
+
 /** Собирает URL nakarte для текущего вида карты. */
 export const buildNakarteUrl = (location: MapLocation): string => {
-  const link = buildGoToLink(GO_TO_SOURCES.Nakarte, location)
-  if (!link) return NAKARTE_DEFAULT_URL
-  return link.replace(/^http:\/\//u, 'https://')
+  const nakarteLayer = mapNmapsLayerToNakarte(location.layer)
+  const hash = buildNakarteHash(location, nakarteLayer)
+  return `${NAKARTE_DEFAULT_URL}#${hash}`
 }
 
 /** Обновляет ll/z в hash-URL редактора НЯК, сохраняя остальные параметры. */
@@ -59,7 +68,7 @@ export const buildNmapsUrlFromLocation = (location: MapLocation, currentHref: st
 
 export const locationsEqual = (a: MapLocation | null, b: MapLocation | null): boolean => {
   if (!a || !b) return false
-  const epsilon = 1e-6
+  const epsilon = 1.1e-5
   return (
     Math.abs(a.longitude - b.longitude) < epsilon &&
     Math.abs(a.latitude - b.latitude) < epsilon &&
@@ -67,10 +76,9 @@ export const locationsEqual = (a: MapLocation | null, b: MapLocation | null): bo
   )
 }
 
-/** Нормализует зум для nakarte (целое значение 0–32). */
+/** Нормализует зум для nakarte (может быть дробным). */
 export const normalizeMapZoom = (zoom: number): number => {
-  const rounded = Math.round(zoom)
-  return Math.max(0, Math.min(32, rounded))
+  return Math.max(0, Math.min(32, zoom))
 }
 
 /** Приводит координаты к формату, ожидаемому nakarte. */
@@ -78,9 +86,10 @@ export const normalizeMapLocation = (location: MapLocation): MapLocation => ({
   longitude: location.longitude,
   latitude: location.latitude,
   zoom: normalizeMapZoom(location.zoom),
+  layer: location.layer,
 })
 
-const NAKARTE_COORD_PRECISION = 5
+const NAKARTE_COORD_PRECISION = 7
 
 /** Собирает hash nakarte (#m=z/lat/lon&l=...) в формате редактора. */
 export const buildNakarteHash = (location: MapLocation, layers = 'S/K'): string => {

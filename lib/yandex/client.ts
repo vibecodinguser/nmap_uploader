@@ -148,7 +148,7 @@ const throwIfUnauthorized = (status: number, context: string): void => {
 
   throw new ProcessingError(
     ERR_NETWORK,
-    `${context}: сессия недействительна. ` + 'Выйдите и войдите через Яндекс ID заново',
+    `${context}: сессия недействительна. Выйдите и войдите через Яндекс ID заново`,
   )
 }
 
@@ -445,7 +445,7 @@ const createDirectorySegment = async ({
 
   throwIfForbidden(createResponse.status, logicalPath)
   const errorMsg = formatDiskResponseError(createResponse, errorText)
-  throw new ProcessingError(ERR_NETWORK, `Не удалось создать папку ${logicalPath}: ` + errorMsg)
+  throw new ProcessingError(ERR_NETWORK, `Не удалось создать папку ${logicalPath}: ${errorMsg}`)
 }
 
 const ensureFolderExists = async ({

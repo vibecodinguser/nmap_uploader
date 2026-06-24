@@ -81,7 +81,7 @@ type ManualPointUploadExecutionParams = {
 
 const normalizeTargetDate = normalizeDisplayTargetDate
 
-function appendUploadLog(
+function _appendUploadLog(
   logs: UploadLogEntry[],
   level: UploadLogEntry['level'],
   message: string,
@@ -137,7 +137,7 @@ function resolveUploadTargetDate(
   return targetDate
 }
 
-function parseCoordinate(value: string): number {
+function _parseCoordinate(value: string): number {
   const trimmed = value.trim()
   return Number.parseFloat(trimmed)
 }

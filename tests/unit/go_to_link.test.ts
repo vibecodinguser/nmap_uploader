@@ -12,6 +12,7 @@ describe('getMapLocationFromUrl', () => {
       longitude: 39.187968,
       latitude: 44.969538,
       zoom: 14,
+      layer: 'nk',
     })
   })
 
@@ -26,6 +27,7 @@ describe('getMapLocationFromUrl', () => {
       longitude: 37.6,
       latitude: 55.7,
       zoom: 12,
+      layer: 'nk',
     })
   })
 })
