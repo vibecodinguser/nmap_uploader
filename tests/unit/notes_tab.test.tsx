@@ -1,16 +1,33 @@
 // @vitest-environment happy-dom
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
-import { NotesTab } from '@/components/NotesTab'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { browser } from 'wxt/browser'
+import { NotesTab } from '@/components/NotesTab'
+import { LocaleProvider } from '@/hooks/useLocale'
+import { OccupiedDatesProvider } from '@/hooks/useOccupiedDates'
 
 vi.mock('wxt/browser', () => ({
   browser: {
     storage: {
       local: {
-        get: vi.fn(),
-        set: vi.fn(),
+        get: vi.fn(() => Promise.resolve({})),
+        set: vi.fn(() => Promise.resolve()),
+      },
+      onChanged: {
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+      },
+    },
+    i18n: {
+      getUILanguage: vi.fn(() => 'ru'),
+      getMessage: vi.fn((key) => key),
+    },
+    runtime: {
+      sendMessage: vi.fn(() => Promise.resolve()),
+      onMessage: {
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
       },
     },
   },
@@ -22,18 +39,26 @@ describe('NotesTab', () => {
     ;(browser.storage.local.get as any).mockResolvedValue({})
   })
 
+  afterEach(() => {
+    cleanup()
+  })
+
   it('рендрит кнопки выбора типа фигуры и дизейблит отправку', async () => {
     render(
-      <NotesTab
-        isUploading={false}
-        isLoggedIn={true}
-        onRequireAuth={() => {}}
-        onManualUpload={() => {}}
-      />
+      <LocaleProvider>
+        <OccupiedDatesProvider isLoggedIn={true}>
+          <NotesTab
+            isUploading={false}
+            isLoggedIn={true}
+            onRequireAuth={() => {}}
+            onManualUpload={() => {}}
+          />
+        </OccupiedDatesProvider>
+      </LocaleProvider>,
     )
 
     // Кнопки типов геометрии
-    expect(screen.getByText('Точка')).toBeDefined()
+    expect(await screen.findByText('Точка')).toBeDefined()
     expect(screen.getByText('Линия')).toBeDefined()
     expect(screen.getByText('Полигон')).toBeDefined()
 
@@ -49,18 +74,22 @@ describe('NotesTab', () => {
     })
 
     render(
-      <NotesTab
-        isUploading={false}
-        isLoggedIn={true}
-        onRequireAuth={() => {}}
-        onManualUpload={() => {}}
-      />
+      <LocaleProvider>
+        <OccupiedDatesProvider isLoggedIn={true}>
+          <NotesTab
+            isUploading={false}
+            isLoggedIn={true}
+            onRequireAuth={() => {}}
+            onManualUpload={() => {}}
+          />
+        </OccupiedDatesProvider>
+      </LocaleProvider>,
     )
 
     // Ждем загрузки стейта из storage
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
-    const pointBtn = screen.getByText('Точка')
+    const pointBtn = await screen.findByText('Точка')
     fireEvent.click(pointBtn)
 
     const submitBtn = screen.getByText('Добавить заметку') as HTMLButtonElement

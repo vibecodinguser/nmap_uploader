@@ -1,7 +1,8 @@
-import { Trash2, MapPin, Waypoints, Hexagon, Pencil, LocateFixed } from 'lucide-react'
+import { Hexagon, LocateFixed, MapPin, Pencil, Trash2, Waypoints } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { browser } from 'wxt/browser'
 import { PointDateField } from '@/components/PointDateField'
+import type { ManualPointInput } from '@/hooks/usePointUpload'
 import { displayToIso } from '@/lib/date_format'
 import { POINT_PICKED_ACTION, START_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
 import { requireAuthBeforeAction } from '@/lib/require_auth'
@@ -11,12 +12,7 @@ type NotesTabProps = {
   isUploading: boolean
   isLoggedIn: boolean
   onRequireAuth: () => void
-  onManualUpload: (input: {
-    description: string
-    latitude: string
-    longitude: string
-    date: string
-  }) => void
+  onManualUpload: (input: ManualPointInput) => void
 }
 
 type NotePoint = {
@@ -62,7 +58,17 @@ const NoteListItemEdit = ({
   setEditingDesc,
   handleSaveEdit,
   setEditingPointId,
-}: Pick<NoteListItemProps, 'p' | 'editingName' | 'editingDesc' | 'isSavingEdit' | 'setEditingName' | 'setEditingDesc' | 'handleSaveEdit' | 'setEditingPointId'>) => (
+}: Pick<
+  NoteListItemProps,
+  | 'p'
+  | 'editingName'
+  | 'editingDesc'
+  | 'isSavingEdit'
+  | 'setEditingName'
+  | 'setEditingDesc'
+  | 'handleSaveEdit'
+  | 'setEditingPointId'
+>) => (
   <div className="notes-list-item-edit-form">
     <input
       type="text"
@@ -82,6 +88,7 @@ const NoteListItemEdit = ({
     />
     <div className="notes-list-item-edit-actions">
       <button
+        type="button"
         className="submit-btn--outline"
         disabled={isSavingEdit || !editingName.trim()}
         onClick={() => handleSaveEdit(p.id!)}
@@ -89,6 +96,7 @@ const NoteListItemEdit = ({
         Сохранить
       </button>
       <button
+        type="button"
         className="submit-btn--outline"
         disabled={isSavingEdit}
         onClick={() => setEditingPointId(null)}
@@ -104,16 +112,22 @@ const NoteItemContent = ({
   isExpanded,
   toggleExpand,
 }: Pick<NoteListItemProps, 'p' | 'isExpanded' | 'toggleExpand'>) => (
-  <button 
+  <button
     type="button"
     onClick={() => toggleExpand(p.id)}
     disabled={!p.id}
     className={`notes-list-item-btn ${isExpanded ? 'notes-list-item-btn--expanded' : ''}`}
   >
     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-      {p.geomType === 'Point' && <MapPin size={16} style={{ color: 'var(--nmap-text-secondary)' }} />}
-      {p.geomType === 'LineString' && <Waypoints size={16} style={{ color: 'var(--nmap-text-secondary)' }} />}
-      {p.geomType === 'Polygon' && <Hexagon size={16} style={{ color: 'var(--nmap-text-secondary)' }} />}
+      {p.geomType === 'Point' && (
+        <MapPin size={16} style={{ color: 'var(--nmap-text-secondary)' }} />
+      )}
+      {p.geomType === 'LineString' && (
+        <Waypoints size={16} style={{ color: 'var(--nmap-text-secondary)' }} />
+      )}
+      {p.geomType === 'Polygon' && (
+        <Hexagon size={16} style={{ color: 'var(--nmap-text-secondary)' }} />
+      )}
     </div>
     <strong className="notes-list-item-title">{p.name}</strong>
     {p.noteDesc && (
@@ -134,28 +148,43 @@ const NoteItemActions = ({
   setEditingName,
   setEditingDesc,
   handleDeleteNote,
-}: Pick<NoteListItemProps, 'p' | 'isExpanded' | 'isUploading' | 'isPicking' | 'isDeletingId' | 'setEditingPointId' | 'setEditingName' | 'setEditingDesc' | 'handleDeleteNote'>) => {
+}: Pick<
+  NoteListItemProps,
+  | 'p'
+  | 'isExpanded'
+  | 'isUploading'
+  | 'isPicking'
+  | 'isDeletingId'
+  | 'setEditingPointId'
+  | 'setEditingName'
+  | 'setEditingDesc'
+  | 'handleDeleteNote'
+>) => {
   if (!p.id) return null
   return (
-    <div className={`notes-list-item-actions-wrapper ${isExpanded ? 'notes-list-item-actions-wrapper--expanded' : ''}`}>
+    <div
+      className={`notes-list-item-actions-wrapper ${isExpanded ? 'notes-list-item-actions-wrapper--expanded' : ''}`}
+    >
       <button
         type="button"
         title="Показать на карте"
         onClick={() => {
-          if (isUploading || isPicking) return;
+          if (isUploading || isPicking) return
           let bbox: [number, number, number, number] | undefined
           if (p.geomCoords && p.geomCoords.length > 1) {
-            const lons = p.geomCoords.map(c => c[0])
-            const lats = p.geomCoords.map(c => c[1])
+            const lons = p.geomCoords.map((c) => c[0])
+            const lats = p.geomCoords.map((c) => c[1])
             bbox = [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)]
           }
-          browser.runtime.sendMessage({
-            action: 'centerMap',
-            latitude: p.latitude,
-            longitude: p.longitude,
-            bbox,
-            zoom: 18,
-          }).catch(console.error)
+          browser.runtime
+            .sendMessage({
+              action: 'centerMap',
+              latitude: p.latitude,
+              longitude: p.longitude,
+              bbox,
+              zoom: 18,
+            })
+            .catch(console.error)
         }}
         disabled={isUploading || isPicking}
         className="notes-list-action-btn"
@@ -166,7 +195,7 @@ const NoteItemActions = ({
         type="button"
         title="Редактировать"
         onClick={() => {
-          if (isUploading || isPicking) return;
+          if (isUploading || isPicking) return
           setEditingPointId(p.id!)
           setEditingName(p.name)
           setEditingDesc(p.noteDesc || '')
@@ -180,7 +209,7 @@ const NoteItemActions = ({
         type="button"
         title="Удалить"
         onClick={() => {
-          if (isUploading || isPicking || isDeletingId === p.id) return;
+          if (isUploading || isPicking || isDeletingId === p.id) return
           handleDeleteNote(p.id!)
         }}
         disabled={isUploading || isPicking || isDeletingId === p.id}
@@ -203,19 +232,31 @@ const NoteListItemView = ({
   setEditingName,
   setEditingDesc,
   handleDeleteNote,
-}: Pick<NoteListItemProps, 'p' | 'isExpanded' | 'isUploading' | 'isPicking' | 'isDeletingId' | 'toggleExpand' | 'setEditingPointId' | 'setEditingName' | 'setEditingDesc' | 'handleDeleteNote'>) => (
+}: Pick<
+  NoteListItemProps,
+  | 'p'
+  | 'isExpanded'
+  | 'isUploading'
+  | 'isPicking'
+  | 'isDeletingId'
+  | 'toggleExpand'
+  | 'setEditingPointId'
+  | 'setEditingName'
+  | 'setEditingDesc'
+  | 'handleDeleteNote'
+>) => (
   <div className={`notes-list-item-view ${isExpanded ? 'notes-list-item-view--expanded' : ''}`}>
     <NoteItemContent p={p} isExpanded={isExpanded} toggleExpand={toggleExpand} />
-    <NoteItemActions 
-      p={p} 
-      isExpanded={isExpanded} 
-      isUploading={isUploading} 
-      isPicking={isPicking} 
-      isDeletingId={isDeletingId} 
-      setEditingPointId={setEditingPointId} 
-      setEditingName={setEditingName} 
-      setEditingDesc={setEditingDesc} 
-      handleDeleteNote={handleDeleteNote} 
+    <NoteItemActions
+      p={p}
+      isExpanded={isExpanded}
+      isUploading={isUploading}
+      isPicking={isPicking}
+      isDeletingId={isDeletingId}
+      setEditingPointId={setEditingPointId}
+      setEditingName={setEditingName}
+      setEditingDesc={setEditingDesc}
+      handleDeleteNote={handleDeleteNote}
     />
   </div>
 )
@@ -253,7 +294,7 @@ export const NotesTab = ({
 
   const toggleExpand = (id?: string) => {
     if (!id) return
-    setExpandedNoteIds(prev => {
+    setExpandedNoteIds((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
       else next.add(id)
@@ -272,7 +313,7 @@ export const NotesTab = ({
 
   useEffect(() => {
     if (!isInitialized) return
-    browser.storage.local.set({ notes_selected_date: selectedDate }).catch(() => { })
+    browser.storage.local.set({ notes_selected_date: selectedDate }).catch(() => {})
   }, [selectedDate, isInitialized])
 
   useEffect(() => {
@@ -306,7 +347,11 @@ export const NotesTab = ({
             let geomType: 'Point' | 'LineString' | 'Polygon' = 'Point'
             if (nmapIndex.paths?.[id]) {
               const path = nmapIndex.paths[id]
-              if (path.length > 2 && path[0][0] === path.at(-1)![0] && path[0][1] === path.at(-1)![1]) {
+              if (
+                path.length > 2 &&
+                path[0][0] === path.at(-1)![0] &&
+                path[0][1] === path.at(-1)![1]
+              ) {
                 geomType = 'Polygon'
               } else {
                 geomType = 'LineString'
@@ -321,7 +366,9 @@ export const NotesTab = ({
               noteTime: pt.note_time,
               noteDesc: pt.note_desc,
               geomType,
-              geomCoords: nmapIndex.paths?.[id] || [pt.coords],
+              geomCoords: (nmapIndex.paths?.[id] as [number, number][]) || [
+                pt.coords as [number, number],
+              ],
             }
           })
           setPoints(remotePoints)
@@ -377,10 +424,21 @@ export const NotesTab = ({
       const noteTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
       const desc = pendingDesc.trim()
 
-      setPoints((prev) => [...prev, { name, latitude: firstCoord.lat, longitude: firstCoord.lon, date: selectedDate, noteTime, noteDesc: desc, geomType: geomType as 'Point' | 'LineString' | 'Polygon' }])
+      setPoints((prev) => [
+        ...prev,
+        {
+          name,
+          latitude: firstCoord.lat,
+          longitude: firstCoord.lon,
+          date: selectedDate,
+          noteTime,
+          noteDesc: desc,
+          geomType: geomType as 'Point' | 'LineString' | 'Polygon',
+        },
+      ])
 
       // Преобразуем формат для загрузчика
-      const formattedCoords = pendingCoords.map(c => [c.lon, c.lat])
+      const formattedCoords = pendingCoords.map((c) => [c.lon, c.lat])
 
       onManualUpload({
         description: name,
@@ -389,7 +447,7 @@ export const NotesTab = ({
         date: selectedDate,
         note_time: noteTime,
         note_desc: desc,
-      } as any)
+      })
 
       setPendingCoords(null)
       setPendingName('')
@@ -422,7 +480,9 @@ export const NotesTab = ({
       index.points[id].note_desc = editingDesc.trim()
       await uploadIndexJson({ token: auth.token, targetDate: isoDate, data: index })
 
-      setPoints(prev => prev.map(p => p.id === id ? { ...p, name: newName, noteDesc: editingDesc.trim() } : p))
+      setPoints((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, name: newName, noteDesc: editingDesc.trim() } : p)),
+      )
       setEditingPointId(null)
     } catch (e) {
       console.error('Failed to edit point:', e)
@@ -432,13 +492,13 @@ export const NotesTab = ({
   }
 
   const handleDeleteNote = async (id: string) => {
-    if (!globalThis.confirm('Вы уверены, что хотите удалить эту заметку?')) return;
-    
+    if (!globalThis.confirm('Вы уверены, что хотите удалить эту заметку?')) return
+
     setIsDeletingId(id)
     try {
       const auth = await getStoredAuth()
       if (!auth) throw new Error('No auth')
-      
+
       const isoDate = displayToIso(selectedDate)
       if (!isoDate) throw new Error('Invalid date')
 
@@ -446,10 +506,10 @@ export const NotesTab = ({
       if (!index?.points) throw new Error('Index not found')
 
       delete index.points[id]
-      
+
       await uploadIndexJson({ token: auth.token, targetDate: isoDate, data: index })
 
-      setPoints(prev => prev.filter(p => p.id !== id))
+      setPoints((prev) => prev.filter((p) => p.id !== id))
     } catch (e) {
       console.error('Failed to delete point:', e)
     } finally {
@@ -478,11 +538,22 @@ export const NotesTab = ({
         </div>
       </div>
 
-      <div className="notes-geom-type-container" style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+      <div
+        className="notes-geom-type-container"
+        style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}
+      >
         <button
           type="button"
           className="submit-btn--outline"
-          style={geomType === 'Point' ? { backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)', borderColor: 'var(--primary)' } : {}}
+          style={
+            geomType === 'Point'
+              ? {
+                  backgroundColor: 'var(--primary)',
+                  color: 'var(--primary-foreground)',
+                  borderColor: 'var(--primary)',
+                }
+              : {}
+          }
           onClick={() => setGeomType('Point')}
           disabled={isUploading || isPicking || pendingCoords !== null}
         >
@@ -491,7 +562,15 @@ export const NotesTab = ({
         <button
           type="button"
           className="submit-btn--outline"
-          style={geomType === 'LineString' ? { backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)', borderColor: 'var(--primary)' } : {}}
+          style={
+            geomType === 'LineString'
+              ? {
+                  backgroundColor: 'var(--primary)',
+                  color: 'var(--primary-foreground)',
+                  borderColor: 'var(--primary)',
+                }
+              : {}
+          }
           onClick={() => setGeomType('LineString')}
           disabled={isUploading || isPicking || pendingCoords !== null}
         >
@@ -500,7 +579,15 @@ export const NotesTab = ({
         <button
           type="button"
           className="submit-btn--outline"
-          style={geomType === 'Polygon' ? { backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)', borderColor: 'var(--primary)' } : {}}
+          style={
+            geomType === 'Polygon'
+              ? {
+                  backgroundColor: 'var(--primary)',
+                  color: 'var(--primary-foreground)',
+                  borderColor: 'var(--primary)',
+                }
+              : {}
+          }
           onClick={() => setGeomType('Polygon')}
           disabled={isUploading || isPicking || pendingCoords !== null}
         >
@@ -509,15 +596,21 @@ export const NotesTab = ({
       </div>
 
       <div className="notes-actions">
-        <span 
-          className={geomType === null ? "yandex-tooltip-wrapper" : ""}
+        <span
+          className={geomType === null ? 'yandex-tooltip-wrapper' : ''}
           data-tooltip={geomType === null ? 'Для добавления выберите тип заметки' : undefined}
           style={{ display: 'block', width: '100%' }}
         >
           <button
             type="button"
             className="submit-btn--outline"
-            disabled={isUploading || isPicking || !selectedDate || pendingCoords !== null || geomType === null}
+            disabled={
+              isUploading ||
+              isPicking ||
+              !selectedDate ||
+              pendingCoords !== null ||
+              geomType === null
+            }
             style={geomType === null ? { pointerEvents: 'none' } : {}}
             onClick={handleStartPicking}
           >
@@ -526,11 +619,7 @@ export const NotesTab = ({
         </span>
       </div>
 
-      {isLoadingNotes && (
-        <div className="notes-loading">
-          Загрузка заметок...
-        </div>
-      )}
+      {isLoadingNotes && <div className="notes-loading">Загрузка заметок...</div>}
 
       {!isLoadingNotes && currentPoints.length > 0 && (
         <div className="notes-list notes-list-container">
@@ -538,25 +627,26 @@ export const NotesTab = ({
             {currentPoints.map((p, idx) => {
               const isExpanded = p.id ? expandedNoteIds.has(p.id) : false
               return (
-              <NoteListItem
-                key={p.id || idx}
-                p={p}
-                isExpanded={isExpanded}
-                editingPointId={editingPointId}
-                editingName={editingName}
-                editingDesc={editingDesc}
-                isSavingEdit={isSavingEdit}
-                isUploading={isUploading}
-                isPicking={isPicking}
-                isDeletingId={isDeletingId}
-                toggleExpand={toggleExpand}
-                setEditingPointId={setEditingPointId}
-                setEditingName={setEditingName}
-                setEditingDesc={setEditingDesc}
-                handleSaveEdit={handleSaveEdit}
-                handleDeleteNote={handleDeleteNote}
-              />
-            )})}
+                <NoteListItem
+                  key={p.id || idx}
+                  p={p}
+                  isExpanded={isExpanded}
+                  editingPointId={editingPointId}
+                  editingName={editingName}
+                  editingDesc={editingDesc}
+                  isSavingEdit={isSavingEdit}
+                  isUploading={isUploading}
+                  isPicking={isPicking}
+                  isDeletingId={isDeletingId}
+                  toggleExpand={toggleExpand}
+                  setEditingPointId={setEditingPointId}
+                  setEditingName={setEditingName}
+                  setEditingDesc={setEditingDesc}
+                  handleSaveEdit={handleSaveEdit}
+                  handleDeleteNote={handleDeleteNote}
+                />
+              )
+            })}
           </ul>
         </div>
       )}
@@ -566,8 +656,7 @@ export const NotesTab = ({
           <div className="notes-manual-upload-info">
             {geomType === 'Point'
               ? `Координаты: ${pendingCoords[0].lat.toFixed(5)}, ${pendingCoords[0].lon.toFixed(5)}`
-              : `Фигура из ${pendingCoords.length} точек`
-            }
+              : `Фигура из ${pendingCoords.length} точек`}
           </div>
           <input
             type="text"

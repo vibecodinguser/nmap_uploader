@@ -5,10 +5,7 @@ import { useTranslate } from '@/hooks/useLocale'
 import { normalizeDisplayTargetDate } from '@/lib/date_format'
 import type { TranslateFn } from '@/lib/i18n'
 import { invalidateOccupiedDatesCache } from '@/lib/occupied_dates_cache'
-import {
-  areCoordinatesValid,
-  createGeometryIndex,
-} from '@/lib/point_uploader'
+import { areCoordinatesValid, createGeometryIndex } from '@/lib/point_uploader'
 import {
   resolveReloadAfterUploadPreference,
   triggerEditorReloadIfNeeded,
@@ -72,7 +69,6 @@ type ManualPointUploadParams = ManualPointInput & {
   setUploadStatus: NullableUploadStatusSetter
 }
 
-
 type ManualPointUploadExecutionParams = {
   coords: number[][]
   geomType: string
@@ -82,7 +78,6 @@ type ManualPointUploadExecutionParams = {
   note_desc?: string
   t: TranslateFn
 }
-
 
 const normalizeTargetDate = normalizeDisplayTargetDate
 
@@ -147,7 +142,6 @@ function parseCoordinate(value: string): number {
   return Number.parseFloat(trimmed)
 }
 
-
 function createBeginUploadHandler({
   setIsUploading,
   setUploadStatus,
@@ -165,7 +159,6 @@ function createFinishUploadHandler({
     setIsUploading(false)
   }
 }
-
 
 async function executeManualPointUpload({
   coords,
@@ -205,7 +198,6 @@ function bindManualPointUploadExecutor(params: ManualPointUploadExecutionParams)
     return executeManualPointUpload(params)
   }
 }
-
 
 async function runPointUpload({
   defaultErrorMessage,
@@ -266,7 +258,7 @@ async function performManualPointUpload({
   if (!Array.isArray(coords) || coords.length === 0) {
     const coordinatesMissingMessage = t('points.coordinatesMissing')
     setUploadStatus({ level: 'error', message: coordinatesMissingMessage })
-  } else if (!coords.every(c => areCoordinatesValid({ latitude: c[1], longitude: c[0] }))) {
+  } else if (!coords.every((c) => areCoordinatesValid({ latitude: c[1], longitude: c[0] }))) {
     const outOfRangeMessage = t('points.coordinatesOutOfRange')
     setUploadStatus({ level: 'error', message: outOfRangeMessage })
   } else {
@@ -286,7 +278,6 @@ async function performManualPointUpload({
     }
   }
 }
-
 
 export const usePointUpload = ({ onAuthenticated }: { onAuthenticated?: () => void }) => {
   const t = useTranslate()
@@ -320,7 +311,6 @@ export const usePointUpload = ({ onAuthenticated }: { onAuthenticated?: () => vo
     },
     [boundRunPointUpload, t],
   )
-
 
   return {
     isUploading,

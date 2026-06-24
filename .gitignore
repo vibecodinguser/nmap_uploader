@@ -64,3 +64,7 @@ coverage/
 # Аналитика сборки (Vite bundle analyzer)
 stats.html
 stats-*.json
+
+#Проектные файлы
+GEMINI.md
+TASK.md

@@ -36,10 +36,9 @@ export const App = ({ themeTarget }: AppProps) => {
   const { isUploading, progress, uploadStatus, performUpload } = useFileUpload({
     onAuthenticated: refreshUser,
   })
-  const {
-    isUploading: isPointUploading,
-    performManualUpload,
-  } = usePointUpload({ onAuthenticated: refreshUser })
+  const { isUploading: isPointUploading, performManualUpload } = usePointUpload({
+    onAuthenticated: refreshUser,
+  })
   const [activeTab, setActiveTab] = useState<MainTab>('upload')
   const [activeView, setActiveView] = useState<AppView>('main')
 

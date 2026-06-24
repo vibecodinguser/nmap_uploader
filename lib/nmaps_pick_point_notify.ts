@@ -2,7 +2,9 @@ export const NMAPS_START_PICK_POINT_EVENT = 'nmap-uploader-start-pick-point' as 
 export const NMAPS_POINT_PICKED_EVENT = 'nmap-uploader-point-picked' as const
 
 export const notifyStartPickPoint = (geomType: string): void => {
-  document.dispatchEvent(new CustomEvent(NMAPS_START_PICK_POINT_EVENT, { bubbles: true, detail: { geomType } }))
+  document.dispatchEvent(
+    new CustomEvent(NMAPS_START_PICK_POINT_EVENT, { bubbles: true, detail: { geomType } }),
+  )
 }
 
 export const notifyPointPicked = (coords: number[][], geomType: string): void => {
@@ -14,12 +16,12 @@ export const notifyPointPicked = (coords: number[][], geomType: string): void =>
   )
 }
 
-export const parsePointPickedEvent = (event: Event): { coords: number[][]; geomType: string } | null => {
+export const parsePointPickedEvent = (
+  event: Event,
+): { coords: number[][]; geomType: string } | null => {
   if (!(event instanceof CustomEvent)) return null
 
-  const detail = event.detail as
-    | { coords?: unknown; geomType?: string }
-    | undefined
+  const detail = event.detail as { coords?: unknown; geomType?: string } | undefined
   if (!detail) return null
 
   const { coords, geomType } = detail
@@ -28,7 +30,8 @@ export const parsePointPickedEvent = (event: Event): { coords: number[][]; geomT
   }
 
   const validCoords = coords.filter(
-    (c): c is [number, number] => Array.isArray(c) && typeof c[0] === 'number' && typeof c[1] === 'number'
+    (c): c is [number, number] =>
+      Array.isArray(c) && typeof c[0] === 'number' && typeof c[1] === 'number',
   )
 
   if (validCoords.length === 0) {

@@ -2,11 +2,11 @@
 
 import { afterEach, describe, it, vi } from 'vitest'
 import { Header } from '@/components/Header'
+import { NotesTab } from '@/components/NotesTab'
 import { PoligonTab } from '@/components/PoligonTab'
 import { SettingsTab } from '@/components/SettingsTab'
 import { TabBar } from '@/components/TabBar'
 import { UploadStatusMessage } from '@/components/UploadStatusMessage'
-import { NotesTab } from '@/components/NotesTab'
 import { cleanupA11y, expectNoA11yViolations, renderA11y } from '@/tests/setup/a11y'
 
 const noop = () => {}

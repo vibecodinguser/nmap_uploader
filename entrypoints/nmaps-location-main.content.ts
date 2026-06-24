@@ -1,10 +1,7 @@
 import { defineContentScript } from 'wxt/utils/define-content-script'
 import { notifyNmapsBoundsChange } from '@/lib/nmaps_bounds_notify'
 import { NMAPS_MAP_RESIZE_EVENT } from '@/lib/nmaps_map_resize_notify'
-import {
-  NMAPS_START_PICK_POINT_EVENT,
-  notifyPointPicked,
-} from '@/lib/nmaps_pick_point_notify'
+import { NMAPS_START_PICK_POINT_EVENT, notifyPointPicked } from '@/lib/nmaps_pick_point_notify'
 import { notifyNmapsUrlChange } from '@/lib/nmaps_url_notify'
 
 const MAP_DISCOVERY_POLL_MS = 500
@@ -218,31 +215,33 @@ const wrapHistoryMethod = (method: 'pushState' | 'replaceState', onChange: () =>
   }
 }
 
-const R = 6378137.0;
-const e = 0.0818191908426;
+const R = 6378137.0
+const e = 0.0818191908426
 
 function latLonToMercator(lat: number, lon: number) {
-    const lonRad = lon * Math.PI / 180;
-    const latRad = lat * Math.PI / 180;
-    const sinLat = Math.sin(latRad);
-    const x = R * lonRad;
-    const y = R * Math.log(Math.tan(Math.PI / 4 + latRad / 2) * Math.pow((1 - e * sinLat) / (1 + e * sinLat), e / 2));
-    return { x, y };
+  const lonRad = (lon * Math.PI) / 180
+  const latRad = (lat * Math.PI) / 180
+  const sinLat = Math.sin(latRad)
+  const x = R * lonRad
+  const y =
+    R *
+    Math.log(Math.tan(Math.PI / 4 + latRad / 2) * ((1 - e * sinLat) / (1 + e * sinLat)) ** (e / 2))
+  return { x, y }
 }
 
 function mercatorToLatLon(x: number, y: number) {
-    const lon = x * 180 / (R * Math.PI);
-    const ts = Math.exp(-y / R);
-    let phi = Math.PI / 2 - 2 * Math.atan(ts);
-    let dphi = 1.0;
-    for (let i = 0; i < 15 && dphi > 1e-15; i++) {
-        const con = e * Math.sin(phi);
-        const newPhi = Math.PI / 2 - 2 * Math.atan(ts * Math.pow((1 - con) / (1 + con), e / 2));
-        dphi = Math.abs(newPhi - phi);
-        phi = newPhi;
-    }
-    const lat = phi * 180 / Math.PI;
-    return { lat, lon };
+  const lon = (x * 180) / (R * Math.PI)
+  const ts = Math.exp(-y / R)
+  let phi = Math.PI / 2 - 2 * Math.atan(ts)
+  let dphi = 1.0
+  for (let i = 0; i < 15 && dphi > 1e-15; i++) {
+    const con = e * Math.sin(phi)
+    const newPhi = Math.PI / 2 - 2 * Math.atan(ts * ((1 - con) / (1 + con)) ** (e / 2))
+    dphi = Math.abs(newPhi - phi)
+    phi = newPhi
+  }
+  const lat = (phi * 180) / Math.PI
+  return { lat, lon }
 }
 
 function getCoordsFromUrlClick(clientX: number, clientY: number): number[] | null {
@@ -257,19 +256,19 @@ function getCoordsFromUrlClick(clientX: number, clientY: number): number[] | nul
   const [lon, lat] = llStr.split(',').map(parseFloat)
   if (isNaN(z) || isNaN(lon) || isNaN(lat)) return null
 
-  const EQUATOR = 40075016.685578488;
-  const worldSize = 256 * Math.pow(2, z);
-  const mpp = EQUATOR / worldSize;
+  const EQUATOR = 40075016.685578488
+  const worldSize = 256 * 2 ** z
+  const mpp = EQUATOR / worldSize
 
-  const centerMerc = latLonToMercator(lat, lon);
-  const dxPx = clientX - window.innerWidth / 2;
-  const dyPx = clientY - window.innerHeight / 2;
+  const centerMerc = latLonToMercator(lat, lon)
+  const dxPx = clientX - window.innerWidth / 2
+  const dyPx = clientY - window.innerHeight / 2
 
-  const targetX = centerMerc.x + dxPx * mpp;
-  const targetY = centerMerc.y - dyPx * mpp;
+  const targetX = centerMerc.x + dxPx * mpp
+  const targetY = centerMerc.y - dyPx * mpp
 
-  const result = mercatorToLatLon(targetX, targetY);
-  return [result.lat, result.lon];
+  const result = mercatorToLatLon(targetX, targetY)
+  return [result.lat, result.lon]
 }
 
 // noinspection JSUnusedGlobalSymbols
@@ -301,8 +300,10 @@ export default defineContentScript({
         if (map) {
           try {
             // Ищем подходящий метод
-            const centerMethod = ['setCenter', 'panTo', 'moveTo'].find(m => typeof (map as any)[m] === 'function')
-            
+            const centerMethod = ['setCenter', 'panTo', 'moveTo'].find(
+              (m) => typeof (map as any)[m] === 'function',
+            )
+
             if (centerMethod) {
               ;(map as any)[centerMethod]([lon, lat], z, { duration: 300 })
               return
@@ -311,9 +312,9 @@ export default defineContentScript({
             // Игнорируем
           }
         }
-        
+
         const newHash = `#!/?z=${z}&ll=${lon},${lat}`
-        
+
         try {
           // Создаем и кликаем скрытую ссылку, чтобы SPA-роутер Яндекса перехватил переход
           const a = document.createElement('a')
@@ -323,7 +324,7 @@ export default defineContentScript({
           a.click()
           a.remove()
         } catch (e) {
-           window.location.hash = newHash
+          window.location.hash = newHash
         }
       }
     })
@@ -345,7 +346,7 @@ export default defineContentScript({
       overlay.style.height = '100vh'
       overlay.style.zIndex = '2147483647'
       overlay.style.cursor = 'crosshair'
-      
+
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
       svg.style.width = '100%'
       svg.style.height = '100%'
@@ -360,32 +361,32 @@ export default defineContentScript({
         svg.innerHTML = ''
         if (accumulatedPixels.length > 0) {
           const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline')
-          const pointsStr = accumulatedPixels.map(p => `${p.x},${p.y}`).join(' ')
-          
+          const pointsStr = accumulatedPixels.map((p) => `${p.x},${p.y}`).join(' ')
+
           if (geomType === 'Polygon' && accumulatedPixels.length > 2) {
-             const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon')
-             polygon.setAttribute('points', pointsStr)
-             polygon.setAttribute('fill', 'rgba(0, 120, 255, 0.3)')
-             polygon.setAttribute('stroke', 'rgba(0, 120, 255, 0.8)')
-             polygon.setAttribute('stroke-width', '2')
-             svg.appendChild(polygon)
+            const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon')
+            polygon.setAttribute('points', pointsStr)
+            polygon.setAttribute('fill', 'rgba(0, 120, 255, 0.3)')
+            polygon.setAttribute('stroke', 'rgba(0, 120, 255, 0.8)')
+            polygon.setAttribute('stroke-width', '2')
+            svg.appendChild(polygon)
           } else {
-             polyline.setAttribute('points', pointsStr)
-             polyline.setAttribute('fill', 'none')
-             polyline.setAttribute('stroke', 'rgba(0, 120, 255, 0.8)')
-             polyline.setAttribute('stroke-width', '2')
-             svg.appendChild(polyline)
+            polyline.setAttribute('points', pointsStr)
+            polyline.setAttribute('fill', 'none')
+            polyline.setAttribute('stroke', 'rgba(0, 120, 255, 0.8)')
+            polyline.setAttribute('stroke-width', '2')
+            svg.appendChild(polyline)
           }
 
-          accumulatedPixels.forEach(p => {
-             const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
-             circle.setAttribute('cx', String(p.x))
-             circle.setAttribute('cy', String(p.y))
-             circle.setAttribute('r', '4')
-             circle.setAttribute('fill', '#ffffff')
-             circle.setAttribute('stroke', 'rgba(0, 120, 255, 0.8)')
-             circle.setAttribute('stroke-width', '2')
-             svg.appendChild(circle)
+          accumulatedPixels.forEach((p) => {
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+            circle.setAttribute('cx', String(p.x))
+            circle.setAttribute('cy', String(p.y))
+            circle.setAttribute('r', '4')
+            circle.setAttribute('fill', '#ffffff')
+            circle.setAttribute('stroke', 'rgba(0, 120, 255, 0.8)')
+            circle.setAttribute('stroke-width', '2')
+            svg.appendChild(circle)
           })
         }
       }
@@ -397,19 +398,21 @@ export default defineContentScript({
         }
 
         if (geomType === 'Polygon' && accumulatedCoords.length > 2) {
-           const first = accumulatedCoords[0]
-           const last = accumulatedCoords[accumulatedCoords.length - 1]
-           if (first[0] !== last[0] || first[1] !== last[1]) {
-             accumulatedCoords.push([...first])
-           }
+          const first = accumulatedCoords[0]
+          const last = accumulatedCoords[accumulatedCoords.length - 1]
+          if (first[0] !== last[0] || first[1] !== last[1]) {
+            accumulatedCoords.push([...first])
+          }
         }
 
         try {
-           notifyPointPicked(accumulatedCoords, geomType)
+          notifyPointPicked(accumulatedCoords, geomType)
         } catch (error) {
-           showError('Ошибка завершения: ' + (error instanceof Error ? error.message : String(error)))
+          showError(
+            'Ошибка завершения: ' + (error instanceof Error ? error.message : String(error)),
+          )
         } finally {
-           cleanup()
+          cleanup()
         }
       }
 
@@ -437,11 +440,11 @@ export default defineContentScript({
       const handleOverlayClick = (event: MouseEvent) => {
         event.preventDefault()
         event.stopPropagation()
-        
+
         try {
           const map = globalActiveMapInstance ?? findActiveMap()
           let coords: number[] | null = null
-          
+
           if (map) {
             const m = map as any
             if (m.converter && m.options) {
@@ -452,41 +455,44 @@ export default defineContentScript({
               coords = m.getCenter()
             }
           }
-          
+
           if (!coords) {
-             coords = getCoordsFromUrlClick(event.clientX, event.clientY)
+            coords = getCoordsFromUrlClick(event.clientX, event.clientY)
           }
 
           if (Array.isArray(coords) && coords.length === 2) {
-             accumulatedCoords.push([coords[0], coords[1]])
-             accumulatedPixels.push({ x: event.clientX, y: event.clientY })
-             
-             if (geomType === 'Point') {
-               finishPicking()
-             } else {
-               redrawSvg()
-             }
+            accumulatedCoords.push([coords[0], coords[1]])
+            accumulatedPixels.push({ x: event.clientX, y: event.clientY })
+
+            if (geomType === 'Point') {
+              finishPicking()
+            } else {
+              redrawSvg()
+            }
           } else {
             throw new Error('Не удалось получить координаты ни через API, ни через URL')
           }
         } catch (error) {
-          showError('Ошибка получения координат: ' + (error instanceof Error ? error.message : String(error)))
+          showError(
+            'Ошибка получения координат: ' +
+              (error instanceof Error ? error.message : String(error)),
+          )
           cleanup()
         }
       }
 
       const handleKeyDown = (event: KeyboardEvent) => {
-         if (event.key === 'Enter' || event.key === 'Escape') {
-            event.preventDefault()
-            finishPicking()
-         }
+        if (event.key === 'Enter' || event.key === 'Escape') {
+          event.preventDefault()
+          finishPicking()
+        }
       }
 
       overlay.addEventListener('mousedown', handleOverlayClick)
       overlay.addEventListener('dblclick', (e) => {
-         e.preventDefault()
-         e.stopPropagation()
-         finishPicking()
+        e.preventDefault()
+        e.stopPropagation()
+        finishPicking()
       })
       document.addEventListener('keydown', handleKeyDown)
     })

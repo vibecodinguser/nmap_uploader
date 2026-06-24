@@ -4,17 +4,17 @@ import { defineContentScript } from 'wxt/utils/define-content-script'
 import { isYandexBrowser } from '@/lib/browser'
 import { buildNkUserBarCssVars, readNkUserBarTypography } from '@/lib/nk_user_bar_typography'
 import {
+  NMAPS_POINT_PICKED_EVENT,
+  notifyStartPickPoint,
+  parsePointPickedEvent,
+} from '@/lib/nmaps_pick_point_notify'
+import {
   CLOSE_PANEL_SIDEBAR_ACTION,
   isPanelSidebarMountedInDom,
   PANEL_SIDEBAR_WRAPPER_ID,
   removePanelSidebarFromDom,
 } from '@/lib/panel_sidebar_notify'
 import { POINT_PICKED_ACTION, START_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
-import {
-  NMAPS_POINT_PICKED_EVENT,
-  notifyStartPickPoint,
-  parsePointPickedEvent,
-} from '@/lib/nmaps_pick_point_notify'
 
 const PANEL_PAGE = '/panel.html' as const
 const PANEL_WIDTH = 425
@@ -192,12 +192,12 @@ export default defineContentScript({
         const lon = Number(message.longitude)
         if (!isNaN(lat) && !isNaN(lon)) {
           let zoom = typeof message.zoom === 'number' ? message.zoom : 18
-          
+
           if (Array.isArray(message.bbox) && message.bbox.length === 4) {
             const [minLon, minLat, maxLon, maxLat] = message.bbox
             const width = window.innerWidth - 425 - 40 // 425 is PANEL_WIDTH, 40 margin
             const height = window.innerHeight - 80 // 80 margin
-            
+
             let zoomX = 18
             let zoomY = 18
 
@@ -208,14 +208,14 @@ export default defineContentScript({
               }
 
               const latToMercatorY = (l: number) => {
-                const rad = l * Math.PI / 180
+                const rad = (l * Math.PI) / 180
                 return Math.log(Math.tan(Math.PI / 4 + rad / 2))
               }
               const yDiff = Math.abs(latToMercatorY(maxLat) - latToMercatorY(minLat))
               if (yDiff > 0) {
                 zoomY = Math.log2((height * 2 * Math.PI) / (256 * yDiff))
               }
-              
+
               const rawZoom = Math.min(zoomX, zoomY, 18)
               zoom = Math.floor(rawZoom)
               // Даем padding, отнимая 1 от зума, но не меньше 2
@@ -226,7 +226,7 @@ export default defineContentScript({
           document.dispatchEvent(
             new CustomEvent('nmaps:centerMap', {
               detail: { latitude: lat, longitude: lon, zoom },
-            })
+            }),
           )
         } else {
           console.error('[nmap_uploader panel] Invalid coordinates for centerMap', message)
@@ -237,11 +237,13 @@ export default defineContentScript({
     const handlePointPicked = (event: Event): void => {
       const parsed = parsePointPickedEvent(event)
       if (parsed) {
-        browser.runtime.sendMessage({
-          action: POINT_PICKED_ACTION,
-          coords: parsed.coords,
-          geomType: parsed.geomType,
-        }).catch(reportTogglePanelError)
+        browser.runtime
+          .sendMessage({
+            action: POINT_PICKED_ACTION,
+            coords: parsed.coords,
+            geomType: parsed.geomType,
+          })
+          .catch(reportTogglePanelError)
       }
     }
 

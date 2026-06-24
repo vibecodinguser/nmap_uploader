@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  areCoordinatesValid,
-  createGeometryIndex,
-  isValidTargetDate,
-} from '@/lib/point_uploader'
+import { areCoordinatesValid, createGeometryIndex, isValidTargetDate } from '@/lib/point_uploader'
 
 describe('createGeometryIndex', () => {
   it('создаёт точку с координатами [lon, lat]', () => {
@@ -30,7 +26,6 @@ describe('createGeometryIndex', () => {
     expect(point.desc).toHaveLength(150)
   })
 })
-
 
 describe('areCoordinatesValid', () => {
   it('принимает допустимые координаты', () => {

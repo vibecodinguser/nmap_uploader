@@ -6,7 +6,6 @@ export const MIN_LON = -180
 export const MAX_LON = 180
 export const POINT_DESCRIPTION_MAX_LENGTH = 150
 
-
 /** Проверяет, что координаты в допустимых диапазонах. */
 export const areCoordinatesValid = ({
   latitude,
@@ -43,22 +42,22 @@ export const createGeometryIndex = ({
   const sharedUuid = crypto.randomUUID()
   const pointCoords = getPointForGeometry(geomType, coords)
   const safeDesc = description.slice(0, POINT_DESCRIPTION_MAX_LENGTH)
-  
+
   const points: Record<string, NmapPoint> = {}
   if (pointCoords) {
-     const ptData: NmapPoint = { coords: pointCoords, desc: safeDesc }
-     if (note_time) {
-        ptData.note_time = note_time
-     }
-     if (note_desc) {
-        ptData.note_desc = note_desc
-     }
-     points[sharedUuid] = ptData
+    const ptData: NmapPoint = { coords: pointCoords, desc: safeDesc }
+    if (note_time) {
+      ptData.note_time = note_time
+    }
+    if (note_desc) {
+      ptData.note_desc = note_desc
+    }
+    points[sharedUuid] = ptData
   }
 
   const paths: Record<string, number[][]> = {}
   if (geomType !== 'Point' && coords.length > 1) {
-     paths[sharedUuid] = coords
+    paths[sharedUuid] = coords
   }
 
   return {
@@ -66,4 +65,3 @@ export const createGeometryIndex = ({
     points,
   }
 }
-

@@ -833,7 +833,13 @@ const handleApplyStrokeColor: MessageHandler = (message, sender, sendResponse) =
 
 const handleCenterMap: MessageHandler = (message, sender, sendResponse) => {
   if (isTrustedNmapsOrPanelSender(sender)) {
-    const relayMessage = { action: 'centerMap', latitude: message.latitude, longitude: message.longitude, zoom: message.zoom, bbox: message.bbox }
+    const relayMessage = {
+      action: 'centerMap',
+      latitude: message.latitude,
+      longitude: message.longitude,
+      zoom: message.zoom,
+      bbox: message.bbox,
+    }
     const relayTask = processRelayToMapTabs(sender, relayMessage, sendResponse, 'centerMap')
     runBackgroundTask(relayTask, 'centerMap')
   } else {

@@ -375,8 +375,7 @@ body {
 .sidepanel-main {
   padding: 1rem 1rem 4.5rem;
   gap: 1rem;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden auto;
   scrollbar-gutter: stable;
   flex: 1;
 }
