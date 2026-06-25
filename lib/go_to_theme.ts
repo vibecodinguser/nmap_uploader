@@ -151,7 +151,7 @@ export const observeGoToTheme = (): (() => void) => {
     clearTimeout(themeSyncTimer)
     themeSyncTimer = undefined
     mediaQuery.removeEventListener('change', onSystemThemeChange)
-    browser.storage.onChanged.removeListener(onStorageChange)
+    browser?.storage?.onChanged?.removeListener(onStorageChange)
   }
 
   browser.storage.onChanged.addListener(onStorageChange)

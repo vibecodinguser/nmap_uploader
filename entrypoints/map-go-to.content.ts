@@ -717,11 +717,19 @@ let goToContentScriptTeardownContext: GoToContentScriptTeardownContext | undefin
 const teardownGoToContentScript = (): void => {
   const context = goToContentScriptTeardownContext
   if (context) {
-    context.cleanupThemeObserver()
+    try {
+      context.cleanupThemeObserver()
+    } catch (e) {
+      // Ignore extension context invalidated errors
+    }
     document.removeEventListener('visibilitychange', context.handleVisibilityChange)
     window.removeEventListener('pageshow', context.handlePageShow)
-    context.storageOnChanged.removeListener(context.handleStorageChange)
-    context.runtimeOnMessage.removeListener(context.handleRuntimeMessage)
+    try {
+      context.storageOnChanged.removeListener(context.handleStorageChange)
+      context.runtimeOnMessage.removeListener(context.handleRuntimeMessage)
+    } catch (e) {
+      // Ignore extension context invalidated errors
+    }
     removeButtonAndMenu()
   }
 }

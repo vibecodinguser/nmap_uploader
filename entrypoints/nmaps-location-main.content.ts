@@ -264,8 +264,8 @@ const interceptYmaps = () => {
   let _Map = ymaps.Map
   if (_Map && !_Map.__intercepted) {
     const OriginalMap = _Map
-    ymaps.Map = (...args: any[]) => {
-      const instance = new OriginalMap(...args)
+    ymaps.Map = function (this: any, ...args: any[]) {
+      const instance = new (OriginalMap as any)(...args)
       globalActiveMapInstance = instance as YmapsMapLike
       return instance
     }
@@ -277,8 +277,8 @@ const interceptYmaps = () => {
       set: (val) => {
         if (val && !val.__intercepted) {
           const OriginalMap = val
-          _Map = (...args: any[]) => {
-            const instance = new OriginalMap(...args)
+          _Map = function (this: any, ...args: any[]) {
+            const instance = new (OriginalMap as any)(...args)
             globalActiveMapInstance = instance as YmapsMapLike
             return instance
           }
