@@ -95,4 +95,30 @@ describe('NotesTab', () => {
     const submitBtn = screen.getByText('Добавить заметку') as HTMLButtonElement
     expect(submitBtn.disabled).toBe(false)
   })
+
+  it('корректно подтягивает дату из слоя трекеров', async () => {
+    // Подменим sendMessage, чтобы он вернул дату в формате Яндекса
+    ;(browser.runtime.sendMessage as any).mockResolvedValue({ date: 'дата 17.06.2026 г.' })
+    // Storage вернет другую дату, чтобы убедиться, что приоритет у трекера
+    ;(browser.storage.local.get as any).mockResolvedValue({
+      notes_selected_date: '2025-01-01',
+    })
+
+    render(
+      <LocaleProvider>
+        <OccupiedDatesProvider isLoggedIn={true}>
+          <NotesTab
+            isUploading={false}
+            isLoggedIn={true}
+            onRequireAuth={() => {}}
+            onManualUpload={() => {}}
+          />
+        </OccupiedDatesProvider>
+      </LocaleProvider>,
+    )
+
+    // В дата-пикере должно быть 17-06-2026
+    const dateInput = await screen.findByDisplayValue('17-06-2026')
+    expect(dateInput).toBeDefined()
+  })
 })

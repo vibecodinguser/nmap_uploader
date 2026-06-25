@@ -303,12 +303,39 @@ export const NotesTab = ({
   }
 
   useEffect(() => {
-    browser.storage.local.get(['notes_selected_date']).then((res) => {
-      if (typeof res.notes_selected_date === 'string') {
-        setSelectedDate(res.notes_selected_date)
+    const initializeDate = async () => {
+      try {
+        const response = await browser.runtime.sendMessage({ action: 'getTrackerDate' })
+        let initialDate = response?.date
+
+        if (initialDate && typeof initialDate === 'string') {
+          // Ищем паттерн DD.MM.YYYY в строке, даже если там есть лишний текст
+          const match = initialDate.match(/(\d{2})\.(\d{2})\.(\d{4})/)
+          if (match) {
+            initialDate = `${match[1]}-${match[2]}-${match[3]}`
+          } else {
+            initialDate = null
+          }
+        }
+
+        if (!initialDate) {
+          const res = await browser.storage.local.get(['notes_selected_date'])
+          if (typeof res.notes_selected_date === 'string') {
+            initialDate = res.notes_selected_date
+          }
+        }
+
+        if (initialDate) {
+          setSelectedDate(initialDate)
+        }
+      } catch (error) {
+        console.error('[nmap_uploader] Failed to initialize notes date:', error)
+      } finally {
+        setIsInitialized(true)
       }
-      setIsInitialized(true)
-    })
+    }
+
+    initializeDate()
   }, [])
 
   useEffect(() => {

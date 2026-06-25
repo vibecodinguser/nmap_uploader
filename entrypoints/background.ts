@@ -849,6 +849,51 @@ const handleCenterMap: MessageHandler = (message, sender, sendResponse) => {
   return true
 }
 
+const handleGetTrackerDate: MessageHandler = (message, sender, sendResponse) => {
+  if (isTrustedPanelSender(sender)) {
+    const processGetTrackerDate = async () => {
+      const targetTab = await resolveClickedTab(sender.tab)
+      if (targetTab?.id) {
+        try {
+          const injection = await browser.scripting.executeScript({
+            target: { tabId: targetTab.id },
+            func: () => {
+              // Ищем активный слой трекеров
+              const el = document.querySelector(
+                '.nk-map-layers-control-view__layer_id_tracker.nk-menu-item_checked',
+              )
+              if (el) {
+                // Панель настроек трекеров (где лежит кнопка с датой) рендерится отдельно (вне пункта меню).
+                // Поэтому ищем кнопку по всему документу.
+                const btns = document.querySelectorAll('.nk-button__text')
+                for (const btn of btns) {
+                  const txt = btn.textContent?.trim() || ''
+                  if (/\d{2}\.\d{2}\.\d{4}/.test(txt)) {
+                    return txt
+                  }
+                }
+              }
+              return null
+            },
+          })
+          const result = injection[0]?.result
+          sendResponse({ date: result || null })
+        } catch (error) {
+          sendResponse({ date: null })
+        }
+      } else {
+        sendResponse({ date: null })
+      }
+    }
+    const task = processGetTrackerDate()
+    runBackgroundTask(task, 'getTrackerDate')
+  } else {
+    logRejectedMessage('getTrackerDate', sender)
+    sendResponse({ date: null })
+  }
+  return true
+}
+
 const messageHandlers: Record<string, MessageHandler> = {
   getAuth: handleGetAuth,
   ensureAuth: handleEnsureAuth,
@@ -862,6 +907,7 @@ const messageHandlers: Record<string, MessageHandler> = {
   [START_POINT_PICKING_ACTION]: handleStartPointPicking,
   applyStrokeColor: handleApplyStrokeColor,
   centerMap: handleCenterMap,
+  getTrackerDate: handleGetTrackerDate,
 }
 
 const onMessageHandler = (
