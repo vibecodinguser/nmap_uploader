@@ -24,15 +24,15 @@ export const UserInfo = ({ user, avatarDataUrl, onLogout }: UserInfoProps) => {
           decoding="async"
         />
       )}
-      <span className="user-info-name nk-user-bar-view__user-name" title={user.login}>
+      <span className="user-info-name nk-user-bar-view__user-name yandex-tooltip-wrapper yandex-tooltip-wrapper--bottom" data-tooltip={user.login}>
         {displayName}
       </span>
       <button
         type="button"
-        className="btn-icon"
+        className="btn-icon yandex-tooltip-wrapper yandex-tooltip-wrapper--bottom"
         onClick={onLogout}
         aria-label={t('header.logout')}
-        title={t('header.logout')}
+        data-tooltip={t('header.logout')}
       >
         <LogOut size={16} />
       </button>

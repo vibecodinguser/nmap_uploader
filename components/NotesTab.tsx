@@ -174,7 +174,7 @@ const NoteItemActions = ({
     >
       <button
         type="button"
-        title={t('notes.showOnMap')}
+        data-tooltip={t('notes.showOnMap')}
         onClick={() => {
           if (isUploading || isPicking) return
           let bbox: [number, number, number, number] | undefined
@@ -194,13 +194,13 @@ const NoteItemActions = ({
             .catch(console.error)
         }}
         disabled={isUploading || isPicking}
-        className="notes-list-action-btn"
+        className="notes-list-action-btn yandex-tooltip-wrapper"
       >
         <LocateFixed size={16} />
       </button>
       <button
         type="button"
-        title={t('notes.edit')}
+        data-tooltip={t('notes.edit')}
         onClick={() => {
           if (isUploading || isPicking) return
           if (p.id) setEditingPointId(p.id)
@@ -208,19 +208,19 @@ const NoteItemActions = ({
           setEditingDesc(p.noteDesc || '')
         }}
         disabled={isUploading || isPicking}
-        className="notes-list-action-btn"
+        className="notes-list-action-btn yandex-tooltip-wrapper"
       >
         <Pencil size={16} />
       </button>
       <button
         type="button"
-        title={t('notes.delete')}
+        data-tooltip={t('notes.delete')}
         onClick={() => {
           if (isUploading || isPicking || isDeletingId === p.id) return
           if (p.id) handleDeleteNote(p.id)
         }}
         disabled={isUploading || isPicking || isDeletingId === p.id}
-        className="notes-list-action-btn"
+        className="notes-list-action-btn yandex-tooltip-wrapper"
       >
         <Trash2 size={16} />
       </button>

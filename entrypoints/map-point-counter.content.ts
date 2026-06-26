@@ -1,5 +1,5 @@
 import { defineContentScript } from 'wxt/utils/define-content-script'
-import { createTranslator, getStoredLocale } from '@/lib/i18n'
+import { createTranslator } from '@/lib/i18n'
 
 let t = createTranslator('ru')
 
@@ -122,8 +122,11 @@ export default defineContentScript({
   world: 'MAIN',
 
   async main() {
-    const locale = await getStoredLocale()
-    t = createTranslator(locale)
+    // In MAIN world, browser.storage is unavailable.
+    // Use HTML lang attribute as a fallback to detect language.
+    const pageLang = document.documentElement.lang || navigator.language || 'ru'
+    const locale = pageLang.toLowerCase().startsWith('en') ? 'en' : 'ru'
+    t = createTranslator(locale as 'ru' | 'en')
 
     createCounterUi()
 
