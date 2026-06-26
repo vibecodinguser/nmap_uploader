@@ -247,6 +247,35 @@ export default defineContentScript({
       }
     }
 
+    let lastTrackerDate = ''
+    const checkTrackerDate = () => {
+      const btns = document.querySelectorAll('.nk-button__text')
+      for (const btn of btns) {
+        const txt = btn.textContent?.trim() || ''
+        if (/\d{2}\.\d{2}\.\d{4}/.test(txt)) {
+          if (txt !== lastTrackerDate) {
+            lastTrackerDate = txt
+            const panelIframe = document.querySelector(
+              `#${PANEL_SIDEBAR_WRAPPER_ID} iframe`,
+            ) as HTMLIFrameElement | null
+            if (panelIframe?.contentWindow) {
+              panelIframe.contentWindow.postMessage(
+                { action: 'TRACKER_DATE_CHANGED', date: txt },
+                '*',
+              )
+            }
+            browser.runtime
+              .sendMessage({ action: 'TRACKER_DATE_CHANGED', date: txt })
+              .catch(() => {}) // Ignore errors if no one is listening
+          }
+          break
+        }
+      }
+    }
+
+    setInterval(checkTrackerDate, 1000)
+    checkTrackerDate()
+
     document.addEventListener(NMAPS_POINT_PICKED_EVENT, handlePointPicked)
     browser.runtime.onMessage.addListener(handleRuntimeMessage)
   },

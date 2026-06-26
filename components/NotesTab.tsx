@@ -90,8 +90,10 @@ const NoteListItemEdit = ({
       <button
         type="button"
         className="submit-btn--outline"
-        disabled={isSavingEdit || !editingName.trim()}
-        onClick={() => handleSaveEdit(p.id!)}
+        disabled={isSavingEdit || !editingName.trim() || !p.id}
+        onClick={() => {
+          if (p.id) handleSaveEdit(p.id)
+        }}
       >
         Сохранить
       </button>
@@ -196,7 +198,7 @@ const NoteItemActions = ({
         title="Редактировать"
         onClick={() => {
           if (isUploading || isPicking) return
-          setEditingPointId(p.id!)
+          if (p.id) setEditingPointId(p.id)
           setEditingName(p.name)
           setEditingDesc(p.noteDesc || '')
         }}
@@ -210,7 +212,7 @@ const NoteItemActions = ({
         title="Удалить"
         onClick={() => {
           if (isUploading || isPicking || isDeletingId === p.id) return
-          handleDeleteNote(p.id!)
+          if (p.id) handleDeleteNote(p.id)
         }}
         disabled={isUploading || isPicking || isDeletingId === p.id}
         className="notes-list-action-btn"
@@ -426,7 +428,7 @@ export const NotesTab = ({
   }
 
   useEffect(() => {
-    const handleMessage = (message: any) => {
+    const handleRuntimeMessage = (message: any) => {
       if (message?.action === POINT_PICKED_ACTION) {
         setIsPicking(false)
         if (Array.isArray(message.coords)) {
@@ -434,12 +436,34 @@ export const NotesTab = ({
           setPendingCoords(coordsArr)
           setPendingName('')
         }
+      } else if (message?.action === 'TRACKER_DATE_CHANGED' && message.date) {
+        let initialDate = message.date
+        const match = initialDate.match(/(\d{2})\.(\d{2})\.(\d{4})/)
+        if (match) {
+          initialDate = `${match[1]}-${match[2]}-${match[3]}`
+          setSelectedDate(initialDate)
+        }
       }
     }
 
-    browser.runtime.onMessage.addListener(handleMessage)
+    const handleWindowMessage = (event: MessageEvent) => {
+      const message = event.data
+      if (message?.action === 'TRACKER_DATE_CHANGED' && message.date) {
+        let initialDate = message.date
+        const match = initialDate.match(/(\d{2})\.(\d{2})\.(\d{4})/)
+        if (match) {
+          initialDate = `${match[1]}-${match[2]}-${match[3]}`
+          setSelectedDate(initialDate)
+        }
+      }
+    }
+
+    browser.runtime.onMessage.addListener(handleRuntimeMessage)
+    window.addEventListener('message', handleWindowMessage)
+
     return () => {
-      browser.runtime.onMessage.removeListener(handleMessage)
+      browser.runtime.onMessage.removeListener(handleRuntimeMessage)
+      window.removeEventListener('message', handleWindowMessage)
     }
   }, [])
 

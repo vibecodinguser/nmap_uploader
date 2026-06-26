@@ -121,10 +121,32 @@ export default defineContentScript({
   main() {
     createCounterUi()
 
+    let lastMapInteractionTime = Date.now()
+
+    document.addEventListener(
+      'pointerdown',
+      (e) => {
+        const target = e.target as HTMLElement | null
+        // Если клик был по самой карте или canvas
+        if (
+          target &&
+          (target.closest('ymaps') ||
+            target.tagName.toLowerCase() === 'canvas' ||
+            target.tagName.toLowerCase() === 'svg')
+        ) {
+          lastMapInteractionTime = Date.now()
+        }
+      },
+      true, // capture phase
+    )
+
     const candidatePaths = new Map<Element, number>()
     let activePath: Element | null = null
 
     const processElementAdded = (el: Element) => {
+      // Игнорируем рендеры, если пользователь давно не взаимодействовал с картой (программная отрисовка трека)
+      if (Date.now() - lastMapInteractionTime > 5000) return
+
       let points = -1
       const tag = el.tagName.toLowerCase()
 
@@ -188,6 +210,8 @@ export default defineContentScript({
             }
 
             if (points >= 0) {
+              if (Date.now() - lastMapInteractionTime > 5000) return
+
               const isCandidate = candidatePaths.has(el)
               const prevPoints = isCandidate ? candidatePaths.get(el) || 0 : -1
 
@@ -198,6 +222,16 @@ export default defineContentScript({
                   showCounter(points)
                 }
               } else if (isCandidate) {
+                // Если количество точек подскочило больше чем на 2 за раз, это не ручное рисование, а рендер готового трека
+                if (points - prevPoints > 2) {
+                  candidatePaths.delete(el)
+                  if (activePath === el) {
+                    activePath = null
+                    hideCounter()
+                  }
+                  return
+                }
+
                 candidatePaths.set(el, points)
 
                 if (points !== prevPoints || activePath === el) {
@@ -290,6 +324,10 @@ export default defineContentScript({
         }
 
         proto.stroke = function (this: CanvasRenderingContext2D, ...args: any[]) {
+          if (Date.now() - lastMapInteractionTime > 5000) {
+            return originalStroke.apply(this, args as any)
+          }
+
           const strokeStyle = this.strokeStyle
 
           if (currentPoints > 0) {
@@ -313,7 +351,15 @@ export default defineContentScript({
               if (!resetTimeout) {
                 resetTimeout = window.setTimeout(() => {
                   if (maxPointsForColor >= 1 && maxPointsForColor !== canvasLastShownPoints) {
-                    if (maxPointsForColor === 2 && canvasLastShownPoints > 2) {
+                    const isJumpFromZero = canvasLastShownPoints === 0 && maxPointsForColor > 5
+                    const isBigJump =
+                      canvasLastShownPoints > 0 && maxPointsForColor - canvasLastShownPoints > 2
+
+                    if (isJumpFromZero || isBigJump) {
+                      // Это программный рендер трека (например, при выборе даты), игнорируем
+                      hideCounter()
+                      canvasLastShownPoints = 0
+                    } else if (maxPointsForColor === 2 && canvasLastShownPoints > 2) {
                       // Игнорируем скачок вниз до 2
                     } else {
                       showCounter(maxPointsForColor)
