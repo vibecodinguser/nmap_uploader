@@ -142,6 +142,33 @@ export type Messages = {
     openPanelFailed: string
     tabNotFound: string
   }
+  notes: {
+    namePlaceholder: string
+    descPlaceholder: string
+    save: string
+    cancel: string
+    showOnMap: string
+    edit: string
+    delete: string
+    deleteConfirm: string
+    typePoint: string
+    typeLine: string
+    typePolygon: string
+    selectTypeTooltip: string
+    drawOnMap: string
+    addNote: string
+    loadingNotes: string
+    coordsLabel: string
+    figureOfPoints: string
+    noteDescPlaceholder: string
+    noteExtendedDescPlaceholder: string
+  }
+  mapPointCounter: {
+    points: string
+    pointsLeft: string
+    keyPressed: string
+    doubleClick: string
+  }
 }
 
 export type MessageKey = {

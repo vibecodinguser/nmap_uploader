@@ -7,6 +7,7 @@ import { displayToIso } from '@/lib/date_format'
 import { POINT_PICKED_ACTION, START_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
 import { requireAuthBeforeAction } from '@/lib/require_auth'
 import { downloadIndexJson, getStoredAuth, uploadIndexJson } from '@/lib/yandex/client'
+import { useLocale } from '@/hooks/useLocale'
 
 type NotesTabProps = {
   isUploading: boolean
@@ -68,46 +69,49 @@ const NoteListItemEdit = ({
   | 'setEditingDesc'
   | 'handleSaveEdit'
   | 'setEditingPointId'
->) => (
-  <div className="notes-list-item-edit-form">
-    <input
-      type="text"
-      value={editingName}
-      onChange={(e) => setEditingName(e.target.value)}
-      disabled={isSavingEdit}
-      className="point-description-input notes-list-item-edit-input"
-      placeholder="Название"
-    />
-    <textarea
-      value={editingDesc}
-      onChange={(e) => setEditingDesc(e.target.value)}
-      disabled={isSavingEdit}
-      className="point-description-input notes-list-item-edit-input notes-list-item-edit-textarea"
-      placeholder="Расширенное описание (необязательно)"
-      rows={3}
-    />
-    <div className="notes-list-item-edit-actions">
-      <button
-        type="button"
-        className="submit-btn--outline"
-        disabled={isSavingEdit || !editingName.trim() || !p.id}
-        onClick={() => {
-          if (p.id) handleSaveEdit(p.id)
-        }}
-      >
-        Сохранить
-      </button>
-      <button
-        type="button"
-        className="submit-btn--outline"
+>) => {
+  const { t } = useLocale()
+  return (
+    <div className="notes-list-item-edit-form">
+      <input
+        type="text"
+        value={editingName}
+        onChange={(e) => setEditingName(e.target.value)}
         disabled={isSavingEdit}
-        onClick={() => setEditingPointId(null)}
-      >
-        Отмена
-      </button>
+        className="point-description-input notes-list-item-edit-input"
+        placeholder={t('notes.namePlaceholder')}
+      />
+      <textarea
+        value={editingDesc}
+        onChange={(e) => setEditingDesc(e.target.value)}
+        disabled={isSavingEdit}
+        className="point-description-input notes-list-item-edit-input notes-list-item-edit-textarea"
+        placeholder={t('notes.descPlaceholder')}
+        rows={3}
+      />
+      <div className="notes-list-item-edit-actions">
+        <button
+          type="button"
+          className="submit-btn--outline"
+          disabled={isSavingEdit || !editingName.trim() || !p.id}
+          onClick={() => {
+            if (p.id) handleSaveEdit(p.id)
+          }}
+        >
+          {t('notes.save')}
+        </button>
+        <button
+          type="button"
+          className="submit-btn--outline"
+          disabled={isSavingEdit}
+          onClick={() => setEditingPointId(null)}
+        >
+          {t('notes.cancel')}
+        </button>
+      </div>
     </div>
-  </div>
-)
+  )
+}
 
 const NoteItemContent = ({
   p,
@@ -163,13 +167,14 @@ const NoteItemActions = ({
   | 'handleDeleteNote'
 >) => {
   if (!p.id) return null
+  const { t } = useLocale()
   return (
     <div
       className={`notes-list-item-actions-wrapper ${isExpanded ? 'notes-list-item-actions-wrapper--expanded' : ''}`}
     >
       <button
         type="button"
-        title="Показать на карте"
+        title={t('notes.showOnMap')}
         onClick={() => {
           if (isUploading || isPicking) return
           let bbox: [number, number, number, number] | undefined
@@ -195,7 +200,7 @@ const NoteItemActions = ({
       </button>
       <button
         type="button"
-        title="Редактировать"
+        title={t('notes.edit')}
         onClick={() => {
           if (isUploading || isPicking) return
           if (p.id) setEditingPointId(p.id)
@@ -209,7 +214,7 @@ const NoteItemActions = ({
       </button>
       <button
         type="button"
-        title="Удалить"
+        title={t('notes.delete')}
         onClick={() => {
           if (isUploading || isPicking || isDeletingId === p.id) return
           if (p.id) handleDeleteNote(p.id)
@@ -278,6 +283,7 @@ export const NotesTab = ({
   onRequireAuth,
   onManualUpload,
 }: NotesTabProps) => {
+  const { t } = useLocale()
   const [selectedDate, setSelectedDate] = useState('')
   const [points, setPoints] = useState<NotePoint[]>([])
   const [isInitialized, setIsInitialized] = useState(false)
@@ -543,7 +549,7 @@ export const NotesTab = ({
   }
 
   const handleDeleteNote = async (id: string) => {
-    if (!globalThis.confirm('Вы уверены, что хотите удалить эту заметку?')) return
+    if (!globalThis.confirm(t('notes.deleteConfirm'))) return
 
     setIsDeletingId(id)
     try {
@@ -608,7 +614,7 @@ export const NotesTab = ({
           onClick={() => setGeomType('Point')}
           disabled={isUploading || isPicking || pendingCoords !== null}
         >
-          Точка
+          {t('notes.typePoint')}
         </button>
         <button
           type="button"
@@ -625,7 +631,7 @@ export const NotesTab = ({
           onClick={() => setGeomType('LineString')}
           disabled={isUploading || isPicking || pendingCoords !== null}
         >
-          Линия
+          {t('notes.typeLine')}
         </button>
         <button
           type="button"
@@ -642,14 +648,14 @@ export const NotesTab = ({
           onClick={() => setGeomType('Polygon')}
           disabled={isUploading || isPicking || pendingCoords !== null}
         >
-          Полигон
+          {t('notes.typePolygon')}
         </button>
       </div>
 
       <div className="notes-actions">
         <span
           className={geomType === null ? 'yandex-tooltip-wrapper' : ''}
-          data-tooltip={geomType === null ? 'Для добавления выберите тип заметки' : undefined}
+          data-tooltip={geomType === null ? t('notes.selectTypeTooltip') : undefined}
           style={{ display: 'block', width: '100%' }}
         >
           <button
@@ -665,12 +671,12 @@ export const NotesTab = ({
             style={geomType === null ? { pointerEvents: 'none' } : {}}
             onClick={handleStartPicking}
           >
-            {isPicking ? 'Нарисуйте на карте...' : 'Добавить заметку'}
+            {isPicking ? t('notes.drawOnMap') : t('notes.addNote')}
           </button>
         </span>
       </div>
 
-      {isLoadingNotes && <div className="notes-loading">Загрузка заметок...</div>}
+      {isLoadingNotes && <div className="notes-loading">{t('notes.loadingNotes')}</div>}
 
       {!isLoadingNotes && currentPoints.length > 0 && (
         <div className="notes-list notes-list-container">
@@ -706,20 +712,23 @@ export const NotesTab = ({
         <div className="manual-upload-container notes-manual-upload">
           <div className="notes-manual-upload-info">
             {geomType === 'Point'
-              ? `Координаты: ${pendingCoords[0].lat.toFixed(5)}, ${pendingCoords[0].lon.toFixed(5)}`
-              : `Фигура из ${pendingCoords.length} точек`}
+              ? t('notes.coordsLabel', {
+                  lat: pendingCoords[0].lat.toFixed(5),
+                  lon: pendingCoords[0].lon.toFixed(5),
+                })
+              : t('notes.figureOfPoints', { count: pendingCoords.length })}
           </div>
           <input
             type="text"
             className="point-description-input notes-manual-upload-input"
-            placeholder="Описание заметки"
+            placeholder={t('notes.noteDescPlaceholder')}
             value={pendingName}
             onChange={(e) => setPendingName(e.target.value)}
             disabled={isUploading}
           />
           <textarea
             className="point-description-input notes-manual-upload-input notes-manual-upload-textarea"
-            placeholder="Расширенное описание заметки (необязательно)"
+            placeholder={t('notes.noteExtendedDescPlaceholder')}
             value={pendingDesc}
             onChange={(e) => setPendingDesc(e.target.value)}
             disabled={isUploading}
@@ -732,7 +741,7 @@ export const NotesTab = ({
               disabled={isUploading || !pendingName.trim()}
               onClick={handleSaveNote}
             >
-              Сохранить
+              {t('notes.save')}
             </button>
             <button
               type="button"
@@ -740,7 +749,7 @@ export const NotesTab = ({
               disabled={isUploading}
               onClick={handleCancelNote}
             >
-              Отмена
+              {t('notes.cancel')}
             </button>
           </div>
         </div>

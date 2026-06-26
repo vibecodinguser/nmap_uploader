@@ -1,4 +1,7 @@
 import { defineContentScript } from 'wxt/utils/define-content-script'
+import { createTranslator, getStoredLocale } from '@/lib/i18n'
+
+let t = createTranslator('ru')
 
 const UI_WRAPPER_ID = 'nmap-point-counter-wrapper'
 
@@ -32,7 +35,7 @@ const createCounterUi = () => {
   `
 
   counterText = document.createElement('span')
-  counterText.textContent = 'Точек: 0'
+  counterText.textContent = t('mapPointCounter.points', { count: 0 })
   counterWrapper.appendChild(counterText)
 
   document.body.appendChild(counterWrapper)
@@ -74,7 +77,7 @@ const showCounter = (count: number) => {
   const limit = 500
   const remaining = limit - count
 
-  counterText.textContent = `Точек осталось: ${remaining}`
+  counterText.textContent = t('mapPointCounter.pointsLeft', { count: remaining })
 
   // Меняем цвет плашки в зависимости от количества оставшихся точек
   if (remaining <= 50) {
@@ -118,7 +121,10 @@ export default defineContentScript({
   runAt: 'document_idle',
   world: 'MAIN',
 
-  main() {
+  async main() {
+    const locale = await getStoredLocale()
+    t = createTranslator(locale)
+
     createCounterUi()
 
     let lastMapInteractionTime = Date.now()
@@ -260,12 +266,12 @@ export default defineContentScript({
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === 'Escape') {
-        resetCounter(`Нажата клавиша ${e.key}`)
+        resetCounter(t('mapPointCounter.keyPressed', { key: e.key }))
       }
     })
 
     document.addEventListener('dblclick', () => {
-      resetCounter('Двойной клик')
+      resetCounter(t('mapPointCounter.doubleClick'))
     })
 
     // Скрываем счетчик при клике по боковой панели или кнопкам интерфейса (например, "Сохранить")

@@ -794,6 +794,7 @@ body {
   margin-top: 16px;
   font-size: 14px;
   color: var(--nmap-text-secondary);
+  text-align: center;
 }
 
 .notes-list-container {
