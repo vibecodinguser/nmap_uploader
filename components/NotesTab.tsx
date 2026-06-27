@@ -1,13 +1,13 @@
-import { Hexagon, LocateFixed, MapPin, Pencil, Trash2, Waypoints } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Hexagon, LocateFixed, MapPin, MoreVertical, Pencil, Trash2, Waypoints } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { browser } from 'wxt/browser'
 import { PointDateField } from '@/components/PointDateField'
+import { useLocale } from '@/hooks/useLocale'
 import type { ManualPointInput } from '@/hooks/usePointUpload'
 import { displayToIso } from '@/lib/date_format'
 import { POINT_PICKED_ACTION, START_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
 import { requireAuthBeforeAction } from '@/lib/require_auth'
 import { downloadIndexJson, getStoredAuth, uploadIndexJson } from '@/lib/yandex/client'
-import { useLocale } from '@/hooks/useLocale'
 
 type NotesTabProps = {
   isUploading: boolean
@@ -168,8 +168,22 @@ const NoteItemActions = ({
   | 'setEditingDesc'
   | 'handleDeleteNote'
 >) => {
-  if (!p.id) return null
   const { t } = useLocale()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuOpen && menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [menuOpen])
+
+  if (!p.id) return null
+
   return (
     <div
       className={`notes-list-item-actions-wrapper ${isExpanded ? 'notes-list-item-actions-wrapper--expanded' : ''}`}
@@ -200,32 +214,54 @@ const NoteItemActions = ({
       >
         <LocateFixed size={16} />
       </button>
-      <button
-        type="button"
-        data-tooltip={t('notes.edit')}
-        onClick={() => {
-          if (isUploading || isPicking) return
-          if (p.id) setEditingPointId(p.id)
-          setEditingName(p.name)
-          setEditingDesc(p.noteDesc || '')
-        }}
-        disabled={isUploading || isPicking}
-        className="notes-list-action-btn yandex-tooltip-wrapper"
-      >
-        <Pencil size={16} />
-      </button>
-      <button
-        type="button"
-        data-tooltip={t('notes.delete')}
-        onClick={() => {
-          if (isUploading || isPicking || isDeletingId === p.id) return
-          if (p.id) handleDeleteNote(p.id)
-        }}
-        disabled={isUploading || isPicking || isDeletingId === p.id}
-        className="notes-list-action-btn yandex-tooltip-wrapper"
-      >
-        <Trash2 size={16} />
-      </button>
+
+      <div ref={menuRef} style={{ position: 'relative', display: 'flex' }}>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            setMenuOpen(!menuOpen)
+          }}
+          disabled={isUploading || isPicking}
+          className="notes-list-action-btn"
+        >
+          <MoreVertical size={16} />
+        </button>
+        {menuOpen && (
+          <div className="notes-list-item-menu">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                setMenuOpen(false)
+                if (isUploading || isPicking) return
+                if (p.id) setEditingPointId(p.id)
+                setEditingName(p.name)
+                setEditingDesc(p.noteDesc || '')
+              }}
+              disabled={isUploading || isPicking}
+              className="notes-list-item-menu-btn"
+            >
+              <Pencil size={14} />
+              {t('notes.edit')}
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                setMenuOpen(false)
+                if (isUploading || isPicking || isDeletingId === p.id) return
+                if (p.id) handleDeleteNote(p.id)
+              }}
+              disabled={isUploading || isPicking || isDeletingId === p.id}
+              className="notes-list-item-menu-btn notes-list-item-menu-btn--danger"
+            >
+              <Trash2 size={14} />
+              {t('notes.delete')}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

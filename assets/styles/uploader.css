@@ -1683,3 +1683,64 @@ body {
     transform: translateX(-50%) translateY(8px);
   }
 }
+
+.notes-list-item-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background-color: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--elevation-sm);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  overflow: hidden;
+  padding: 4px;
+}
+
+.dark .notes-list-item-menu {
+  box-shadow: var(--elevation-tab-active-dark);
+}
+
+.notes-list-item-menu-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  border-radius: calc(var(--radius) - 2px);
+  text-align: left;
+  font-size: var(--text-sm);
+  color: var(--foreground);
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+
+.notes-list-item-menu-btn:hover:not(:disabled) {
+  background-color: var(--muted);
+}
+
+.dark .notes-list-item-menu-btn:hover:not(:disabled) {
+  background-color: var(--surface-hover);
+}
+
+.notes-list-item-menu-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.notes-list-item-menu-btn--danger {
+  color: var(--error);
+}
+
+.notes-list-item-menu-btn--danger:hover:not(:disabled) {
+  background-color: var(--error);
+  color: #fff;
+}

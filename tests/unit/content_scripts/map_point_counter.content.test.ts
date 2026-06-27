@@ -9,6 +9,7 @@ describe('map-point-counter.content', () => {
 
   beforeEach(() => {
     ctx = createContentScriptContext()
+    document.documentElement.lang = 'ru'
   })
 
   afterEach(() => {
