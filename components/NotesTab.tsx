@@ -124,18 +124,20 @@ const NoteItemContent = ({
     disabled={!p.id}
     className={`notes-list-item-btn ${isExpanded ? 'notes-list-item-btn--expanded' : ''}`}
   >
-    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-      {p.geomType === 'Point' && (
-        <MapPin size={16} style={{ color: 'var(--nmap-text-secondary)' }} />
-      )}
-      {p.geomType === 'LineString' && (
-        <Waypoints size={16} style={{ color: 'var(--nmap-text-secondary)' }} />
-      )}
-      {p.geomType === 'Polygon' && (
-        <Hexagon size={16} style={{ color: 'var(--nmap-text-secondary)' }} />
-      )}
+    <div className="notes-list-item-header">
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+        {p.geomType === 'Point' && (
+          <MapPin size={16} style={{ color: 'var(--nmap-text-secondary)' }} />
+        )}
+        {p.geomType === 'LineString' && (
+          <Waypoints size={16} style={{ color: 'var(--nmap-text-secondary)' }} />
+        )}
+        {p.geomType === 'Polygon' && (
+          <Hexagon size={16} style={{ color: 'var(--nmap-text-secondary)' }} />
+        )}
+      </div>
+      <strong className="notes-list-item-title">{p.name}</strong>
     </div>
-    <strong className="notes-list-item-title">{p.name}</strong>
     {p.noteDesc && (
       <div className="notes-list-item-desc">
         <span className="notes-list-item-desc-text">{p.noteDesc}</span>

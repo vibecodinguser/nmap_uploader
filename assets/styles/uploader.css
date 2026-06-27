@@ -631,17 +631,19 @@ body {
   overflow: visible;
 }
 
+.notes-list-item-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 .notes-list-item-title {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex-shrink: 0;
-}
-
-.notes-list-item-btn--expanded .notes-list-item-title {
-  white-space: pre-wrap;
-  overflow: visible;
-  text-overflow: clip;
+  flex-shrink: 1;
 }
 
 .notes-list-item-desc {
@@ -652,12 +654,14 @@ body {
   min-width: 0;
   overflow: hidden;
   flex: 0 1 auto;
+  max-width: 60%;
 }
 
 .notes-list-item-btn--expanded .notes-list-item-desc {
   align-items: flex-start;
   overflow: visible;
   flex: 1 1 100%;
+  max-width: 100%;
 }
 
 .notes-list-item-desc-text {
