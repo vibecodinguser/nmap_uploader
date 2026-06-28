@@ -1,4 +1,13 @@
-import { Hexagon, LocateFixed, MapPin, MoreVertical, Pencil, Trash2, Waypoints } from 'lucide-react'
+import {
+  Hexagon,
+  Loader2,
+  LocateFixed,
+  MapPin,
+  MoreVertical,
+  Pencil,
+  Trash2,
+  Waypoints,
+} from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { browser } from 'wxt/browser'
 import { PointDateField } from '@/components/PointDateField'
@@ -182,8 +191,6 @@ const NoteItemActions = ({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [menuOpen])
 
-  if (!p.id) return null
-
   return (
     <div
       className={`notes-list-item-actions-wrapper ${isExpanded ? 'notes-list-item-actions-wrapper--expanded' : ''}`}
@@ -234,12 +241,12 @@ const NoteItemActions = ({
               onClick={(e) => {
                 e.stopPropagation()
                 setMenuOpen(false)
-                if (isUploading || isPicking) return
-                if (p.id) setEditingPointId(p.id)
+                if (isUploading || isPicking || !p.id) return
+                setEditingPointId(p.id)
                 setEditingName(p.name)
                 setEditingDesc(p.noteDesc || '')
               }}
-              disabled={isUploading || isPicking}
+              disabled={isUploading || isPicking || !p.id}
               className="notes-list-item-menu-btn"
             >
               <Pencil size={14} />
@@ -250,13 +257,17 @@ const NoteItemActions = ({
               onClick={(e) => {
                 e.stopPropagation()
                 setMenuOpen(false)
-                if (isUploading || isPicking || isDeletingId === p.id) return
-                if (p.id) handleDeleteNote(p.id)
+                if (isUploading || isPicking || !p.id) return
+                handleDeleteNote(p.id)
               }}
-              disabled={isUploading || isPicking || isDeletingId === p.id}
+              disabled={isUploading || isPicking || !p.id || isDeletingId === p.id}
               className="notes-list-item-menu-btn notes-list-item-menu-btn--danger"
             >
-              <Trash2 size={14} />
+              {isDeletingId === p.id ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Trash2 size={14} />
+              )}
               {t('notes.delete')}
             </button>
           </div>
@@ -519,6 +530,9 @@ export const NotesTab = ({
       const noteTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
       const desc = pendingDesc.trim()
 
+      // Преобразуем формат
+      const formattedCoords = pendingCoords.map((c) => [c.lon, c.lat])
+
       setPoints((prev) => [
         ...prev,
         {
@@ -529,11 +543,9 @@ export const NotesTab = ({
           noteTime,
           noteDesc: desc,
           geomType: geomType as 'Point' | 'LineString' | 'Polygon',
+          geomCoords: formattedCoords as [number, number][],
         },
       ])
-
-      // Преобразуем формат для загрузчика
-      const formattedCoords = pendingCoords.map((c) => [c.lon, c.lat])
 
       onManualUpload({
         description: name,
@@ -601,6 +613,9 @@ export const NotesTab = ({
       if (!index?.points) throw new Error('Index not found')
 
       delete index.points[id]
+      if (index.paths?.[id]) {
+        delete index.paths[id]
+      }
 
       await uploadIndexJson({ token: auth.token, targetDate: isoDate, data: index })
 
@@ -612,7 +627,30 @@ export const NotesTab = ({
     }
   }
 
-  const currentPoints = points.filter((p) => p.date === selectedDate)
+  const currentPoints = [...points].filter((p) => p.date === selectedDate).reverse()
+
+  useEffect(() => {
+    if (!isInitialized) return
+    const pts = points.filter((p) => p.date === selectedDate)
+
+    // Пробуем отправить событие напрямую в текущий документ (если мы отрендерены в той же вкладке)
+    try {
+      console.log('[NMAP_DEBUG] NotesTab: dispatching nmaps:drawObjects directly', pts)
+      document.dispatchEvent(
+        new CustomEvent('nmaps:drawObjects', {
+          detail: JSON.stringify({ points: pts }),
+        }),
+      )
+    } catch (e) {
+      console.error('[NMAP_DEBUG] NotesTab: error dispatching direct event', e)
+    }
+
+    // И отправляем через фоновый скрипт (для нативной боковой панели)
+    console.log('[NMAP_DEBUG] NotesTab: sending DRAW_MAP_OBJECTS via runtime message', pts)
+    browser.runtime.sendMessage({ action: 'DRAW_MAP_OBJECTS', points: pts }).catch((e) => {
+      console.error('[NMAP_DEBUG] NotesTab: runtime message error', e)
+    })
+  }, [points, selectedDate, isInitialized])
 
   if (!isInitialized) {
     return null
@@ -716,43 +754,13 @@ export const NotesTab = ({
 
       {isLoadingNotes && <div className="notes-loading">{t('notes.loadingNotes')}</div>}
 
-      {!isLoadingNotes && currentPoints.length > 0 && (
-        <div className="notes-list notes-list-container">
-          <ul className="notes-list-ul">
-            {currentPoints.map((p, idx) => {
-              const isExpanded = p.id ? expandedNoteIds.has(p.id) : false
-              return (
-                <NoteListItem
-                  key={p.id || idx}
-                  p={p}
-                  isExpanded={isExpanded}
-                  editingPointId={editingPointId}
-                  editingName={editingName}
-                  editingDesc={editingDesc}
-                  isSavingEdit={isSavingEdit}
-                  isUploading={isUploading}
-                  isPicking={isPicking}
-                  isDeletingId={isDeletingId}
-                  toggleExpand={toggleExpand}
-                  setEditingPointId={setEditingPointId}
-                  setEditingName={setEditingName}
-                  setEditingDesc={setEditingDesc}
-                  handleSaveEdit={handleSaveEdit}
-                  handleDeleteNote={handleDeleteNote}
-                />
-              )
-            })}
-          </ul>
-        </div>
-      )}
-
       {pendingCoords && (
         <div className="manual-upload-container notes-manual-upload">
           <div className="notes-manual-upload-info">
             {geomType === 'Point'
               ? t('notes.coordsLabel', {
-                  lat: pendingCoords[0].lat.toFixed(5),
-                  lon: pendingCoords[0].lon.toFixed(5),
+                  lat: pendingCoords[0].lat.toFixed(6),
+                  lon: pendingCoords[0].lon.toFixed(6),
                 })
               : t('notes.figureOfPoints', { count: pendingCoords.length })}
           </div>
@@ -790,6 +798,36 @@ export const NotesTab = ({
               {t('notes.cancel')}
             </button>
           </div>
+        </div>
+      )}
+
+      {!isLoadingNotes && currentPoints.length > 0 && (
+        <div className="notes-list notes-list-container">
+          <ul className="notes-list-ul">
+            {currentPoints.map((p, idx) => {
+              const isExpanded = p.id ? expandedNoteIds.has(p.id) : false
+              return (
+                <NoteListItem
+                  key={p.id || idx}
+                  p={p}
+                  isExpanded={isExpanded}
+                  editingPointId={editingPointId}
+                  editingName={editingName}
+                  editingDesc={editingDesc}
+                  isSavingEdit={isSavingEdit}
+                  isUploading={isUploading}
+                  isPicking={isPicking}
+                  isDeletingId={isDeletingId}
+                  toggleExpand={toggleExpand}
+                  setEditingPointId={setEditingPointId}
+                  setEditingName={setEditingName}
+                  setEditingDesc={setEditingDesc}
+                  handleSaveEdit={handleSaveEdit}
+                  handleDeleteNote={handleDeleteNote}
+                />
+              )
+            })}
+          </ul>
         </div>
       )}
     </div>

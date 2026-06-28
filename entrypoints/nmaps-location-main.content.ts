@@ -363,7 +363,7 @@ const wrapHistoryMethod = (method: 'pushState' | 'replaceState', onChange: () =>
 }
 
 const R = 6378137.0
-const e = 0.0818191908426
+const e = 0
 
 function latLonToMercator(lat: number, lon: number) {
   const lonRad = (lon * Math.PI) / 180
@@ -408,15 +408,46 @@ function getCoordsFromUrlClick(clientX: number, clientY: number): number[] | nul
   const mpp = EQUATOR / worldSize
 
   const centerMerc = latLonToMercator(lat, lon)
-  const dxPx = clientX - window.innerWidth / 2
-  const dyPx = clientY - window.innerHeight / 2
+
+  let cx = window.innerWidth / 2
+  let cy = window.innerHeight / 2
+
+  let centerMethod = 'window'
+  // 1. Try to find crosshair element directly
+  const crosshair = document.querySelector(
+    '.nk-map-crosshair, [class*="crosshair"], .ymaps-map-crosshair',
+  )
+  if (crosshair) {
+    const rect = crosshair.getBoundingClientRect()
+    cx = rect.left + rect.width / 2
+    cy = rect.top + rect.height / 2
+    centerMethod = 'crosshair'
+  } else {
+    // 2. Fallback to map container
+    const mapContainer =
+      document.querySelector('.nk-map') ||
+      document.querySelector('.ymaps-map') ||
+      document.querySelector('[class*="map"]')
+    if (mapContainer) {
+      const rect = mapContainer.getBoundingClientRect()
+      cx = rect.left + rect.width / 2
+      cy = rect.top + rect.height / 2
+      centerMethod = 'mapContainer'
+    }
+  }
+
+  const dxPx = clientX - cx
+  const dyPx = clientY - cy
 
   const targetX = centerMerc.x + dxPx * mpp
   const targetY = centerMerc.y - dyPx * mpp
 
   const result = mercatorToLatLon(targetX, targetY)
+
   return [result.lat, result.lon]
 }
+
+let customCollection: any = null
 
 // noinspection JSUnusedGlobalSymbols
 export default defineContentScript({
@@ -434,6 +465,75 @@ export default defineContentScript({
     startMapDiscovery()
 
     document.addEventListener(NMAPS_MAP_RESIZE_EVENT, requestMapRepaint)
+
+    document.addEventListener('nmaps:drawObjects', (event: Event) => {
+      const customEvent = event as CustomEvent
+      let detail = customEvent.detail
+      console.log('[NMAP_DEBUG] main-script: nmaps:drawObjects received. Raw detail:', detail)
+
+      if (typeof detail === 'string') {
+        try {
+          detail = JSON.parse(detail)
+        } catch (e) {
+          console.error('[NMAP_DEBUG] main-script: error parsing detail as JSON:', detail)
+        }
+      }
+
+      const points = detail?.points
+      if (!Array.isArray(points)) return
+
+      const ymaps = (window as any).ymaps
+      if (!ymaps) {
+        console.error('[NMAP_NATIVE] window.ymaps is not available!')
+        return
+      }
+
+      const map = globalActiveMapInstance ?? findActiveMap()
+      if (!map) {
+        console.warn('[NMAP_NATIVE] Map instance not found in globals.')
+        return
+      }
+
+      if (!customCollection) {
+        customCollection = new ymaps.GeoObjectCollection(
+          {},
+          {
+            strokeColor: '#0078FF',
+            strokeWidth: 3,
+            fillColor: 'rgba(0, 120, 255, 0.25)',
+          },
+        )
+        ;(map as any).geoObjects.add(customCollection)
+      }
+
+      customCollection.removeAll()
+
+      points.forEach((p: any) => {
+        if (p.geomType === 'Polygon' && p.geomCoords) {
+          const polygon = new ymaps.Polygon(
+            [p.geomCoords],
+            {
+              hintContent: p.name || p.noteDesc,
+            },
+            {
+              fill: !p.id, // Отключаем заливку, если объект загружен из index.json (есть id)
+            },
+          )
+          customCollection.add(polygon)
+        } else if (p.geomType === 'LineString' && p.geomCoords) {
+          const polyline = new ymaps.Polyline(p.geomCoords, {
+            hintContent: p.name || p.noteDesc,
+          })
+          customCollection.add(polyline)
+        } else {
+          const placemark = new ymaps.Placemark([p.longitude, p.latitude], {
+            hintContent: p.name || p.noteDesc,
+          })
+          customCollection.add(placemark)
+        }
+      })
+      console.log('[NMAP_NATIVE] Successfully drew ' + points.length + ' native objects')
+    })
 
     document.addEventListener('nmaps:centerMap', (event: Event) => {
       const customEvent = event as CustomEvent
@@ -598,25 +698,32 @@ export default defineContentScript({
 
         try {
           const map = globalActiveMapInstance ?? findActiveMap()
-          let coords: number[] | null = null
+          let apiCoords: number[] | null = null
 
           if (map) {
             const m = map as any
             if (m.converter && m.options) {
               const projection = m.options.get('projection')
               const globalPixels = m.converter.pageToGlobal([event.clientX, event.clientY])
-              coords = projection.fromGlobalPixels(globalPixels, m.getZoom())
+              apiCoords = projection.fromGlobalPixels(globalPixels, m.getZoom())
             } else {
-              coords = m.getCenter()
+              apiCoords = m.getCenter()
             }
           }
 
-          if (!coords) {
-            coords = getCoordsFromUrlClick(event.clientX, event.clientY)
-          }
+          const urlCoords = getCoordsFromUrlClick(event.clientX, event.clientY)
+
+          // FORCE using urlCoords because API coords seem to have a 1.5m systematic offset
+          const coords = urlCoords || apiCoords
 
           if (Array.isArray(coords) && coords.length === 2) {
-            accumulatedCoords.push([coords[0], coords[1]])
+            if (coords === urlCoords) {
+              accumulatedCoords.push([coords[0], coords[1]])
+            } else if (coords === apiCoords) {
+              // API coords are [lon, lat], we must swap them to [lat, lon] for NotesTab
+              accumulatedCoords.push([coords[1], coords[0]])
+            }
+
             accumulatedPixels.push({ x: event.clientX, y: event.clientY })
 
             if (geomType === 'Point') {
@@ -628,6 +735,7 @@ export default defineContentScript({
             throw new Error('Не удалось получить координаты ни через API, ни через URL')
           }
         } catch (error) {
+          console.error('[NMap Uploader] Overlay click error:', error)
           showError(
             'Ошибка получения координат: ' +
               (error instanceof Error ? error.message : String(error)),

@@ -231,6 +231,16 @@ export default defineContentScript({
         } else {
           console.error('[nmap_uploader panel] Invalid coordinates for centerMap', message)
         }
+      } else if ('DRAW_MAP_OBJECTS' === message?.action) {
+        console.log(
+          '[NMAP_DEBUG] panel-sidebar: received DRAW_MAP_OBJECTS, dispatching nmaps:drawObjects',
+          message.points,
+        )
+        document.dispatchEvent(
+          new CustomEvent('nmaps:drawObjects', {
+            detail: JSON.stringify({ points: message.points }),
+          }),
+        )
       }
     }
 

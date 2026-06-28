@@ -1,5 +1,5 @@
 import { Settings } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { TabBar } from '@/components/TabBar'
 import '@/assets/styles/uploader.css'
 import { Header } from '@/components/Header'
@@ -41,6 +41,14 @@ export const App = ({ themeTarget }: AppProps) => {
   })
   const [activeTab, setActiveTab] = useState<MainTab>('upload')
   const [activeView, setActiveView] = useState<AppView>('main')
+
+  useEffect(() => {
+    const handlePointerDown = () => {
+      window.parent.postMessage({ action: 'RESET_POINT_COUNTER' }, '*')
+    }
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => document.removeEventListener('pointerdown', handlePointerDown)
+  }, [])
 
   const mainTabs = useMemo(
     function buildMainTabs() {

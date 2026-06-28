@@ -42,18 +42,20 @@ describe('map-point-counter.content', () => {
 
     const wrapper = document.getElementById('nmap-point-counter-wrapper')
 
-    // Имитируем добавление линии
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-    path.setAttribute('d', 'M0 0 L10 10 L20 20') // 3 точки
+    path.setAttribute('d', 'M0 0') // 1 точка
     svg.appendChild(path)
     document.body.appendChild(svg)
+
+    // Trigger interaction so lastMapInteractionTime is recent
+    svg.dispatchEvent(new Event('pointerdown', { bubbles: true }))
 
     // Даем MutationObserver отработать
     await new Promise((r) => setTimeout(r, 0))
 
-    // Изменяем путь, чтобы сработал счетчик
-    path.setAttribute('d', 'M0 0 L10 10 L20 20 L30 30') // 4 точки
+    // Изменяем путь, чтобы сработал счетчик (скачок не > 2)
+    path.setAttribute('d', 'M0 0 L10 10 L20 20') // 3 точки
     await new Promise((r) => setTimeout(r, 0))
 
     // Поскольку выбрано здание, счетчик должен остаться скрытым
@@ -66,20 +68,22 @@ describe('map-point-counter.content', () => {
     const wrapper = document.getElementById('nmap-point-counter-wrapper')
     const textSpan = wrapper?.querySelector('span')
 
-    // Имитируем добавление линии (кандидат <= 3 точек)
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-    path.setAttribute('d', 'M0 0 L10 10') // 2 точки
+    path.setAttribute('d', 'M0 0') // 1 точка
     svg.appendChild(path)
     document.body.appendChild(svg)
 
+    // Trigger interaction so lastMapInteractionTime is recent
+    svg.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+
     await new Promise((r) => setTimeout(r, 0))
 
-    // Добавляем еще точки
-    path.setAttribute('d', 'M0 0 L10 10 L20 20 L30 30') // 4 точки
+    // Добавляем еще точки (скачок не должен быть > 2)
+    path.setAttribute('d', 'M0 0 L10 10 L20 20') // 3 точки
     await new Promise((r) => setTimeout(r, 0))
 
     expect(wrapper?.style.display).toBe('block')
-    expect(textSpan?.textContent).toBe('Точек осталось: 496')
+    expect(textSpan?.textContent).toBe('Точек осталось: 497')
   })
 })

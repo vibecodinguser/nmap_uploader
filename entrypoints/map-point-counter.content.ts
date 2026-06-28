@@ -130,7 +130,7 @@ export default defineContentScript({
 
     createCounterUi()
 
-    let lastMapInteractionTime = Date.now()
+    let lastMapInteractionTime = 0
 
     document.addEventListener(
       'pointerdown',
@@ -167,7 +167,7 @@ export default defineContentScript({
         if (pts) points = countPointsInPolyline(pts)
       }
 
-      if (points >= 0 && points <= 3) {
+      if (points >= 0 && points <= 1) {
         candidatePaths.set(el, points)
       }
     }
@@ -224,7 +224,7 @@ export default defineContentScript({
               const isCandidate = candidatePaths.has(el)
               const prevPoints = isCandidate ? candidatePaths.get(el) || 0 : -1
 
-              if (!isCandidate && points <= 3) {
+              if (!isCandidate && points <= 1) {
                 candidatePaths.set(el, points)
                 if (points > 0) {
                   activePath = el
@@ -275,6 +275,13 @@ export default defineContentScript({
 
     document.addEventListener('dblclick', () => {
       resetCounter(t('mapPointCounter.doubleClick'))
+    })
+
+    window.addEventListener('message', (event) => {
+      if (event.data?.action === 'RESET_POINT_COUNTER') {
+        resetCounter('Action from iframe')
+        lastMapInteractionTime = 0
+      }
     })
 
     // Скрываем счетчик при клике по боковой панели или кнопкам интерфейса (например, "Сохранить")
@@ -360,7 +367,7 @@ export default defineContentScript({
               if (!resetTimeout) {
                 resetTimeout = window.setTimeout(() => {
                   if (maxPointsForColor >= 1 && maxPointsForColor !== canvasLastShownPoints) {
-                    const isJumpFromZero = canvasLastShownPoints === 0 && maxPointsForColor > 5
+                    const isJumpFromZero = canvasLastShownPoints === 0 && maxPointsForColor > 1
                     const isBigJump =
                       canvasLastShownPoints > 0 && maxPointsForColor - canvasLastShownPoints > 2
 

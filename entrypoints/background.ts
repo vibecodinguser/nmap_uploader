@@ -894,6 +894,21 @@ const handleGetTrackerDate: MessageHandler = (message, sender, sendResponse) => 
   return true
 }
 
+const handleDrawMapObjects: MessageHandler = (message, sender, sendResponse) => {
+  if (isTrustedNmapsOrPanelSender(sender)) {
+    const relayMessage = {
+      action: 'DRAW_MAP_OBJECTS',
+      points: message.points,
+    }
+    const relayTask = processRelayToMapTabs(sender, relayMessage, sendResponse, 'DRAW_MAP_OBJECTS')
+    runBackgroundTask(relayTask, 'DRAW_MAP_OBJECTS')
+  } else {
+    logRejectedMessage('DRAW_MAP_OBJECTS', sender)
+    sendResponse({ ok: false })
+  }
+  return true
+}
+
 const messageHandlers: Record<string, MessageHandler> = {
   getAuth: handleGetAuth,
   ensureAuth: handleEnsureAuth,
@@ -908,6 +923,7 @@ const messageHandlers: Record<string, MessageHandler> = {
   applyStrokeColor: handleApplyStrokeColor,
   centerMap: handleCenterMap,
   getTrackerDate: handleGetTrackerDate,
+  DRAW_MAP_OBJECTS: handleDrawMapObjects,
 }
 
 const onMessageHandler = (
