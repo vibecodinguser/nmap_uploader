@@ -607,8 +607,8 @@ body {
 
 .notes-list-item-btn {
   display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
+  flex-direction: column;
+  align-items: stretch;
   gap: 4px;
   min-width: 0;
   overflow: hidden;
@@ -626,54 +626,51 @@ body {
 }
 
 .notes-list-item-btn--expanded {
-  align-items: flex-start;
-  flex-wrap: wrap;
   overflow: visible;
 }
 
 .notes-list-item-header {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   min-width: 0;
-  flex: 1 1 auto;
+  width: 100%;
+}
+
+.notes-list-item-chevron {
+  flex-shrink: 0;
+  color: var(--muted-foreground);
+  transition: transform var(--transition-ui);
+}
+
+.notes-list-item-chevron--expanded {
+  transform: rotate(90deg);
 }
 
 .notes-list-item-title {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex-shrink: 1;
+  flex: 1;
+  font-size: var(--text-sm);
 }
 
 .notes-list-item-desc {
+  display: none;
   color: var(--nmap-text-primary);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
-  overflow: hidden;
-  flex: 0 1 auto;
-  max-width: 60%;
+  font-size: var(--text-sm);
+  padding-left: 48px;
+  line-height: 1.4;
+  margin-top: 2px;
 }
 
 .notes-list-item-btn--expanded .notes-list-item-desc {
-  align-items: flex-start;
-  overflow: visible;
-  flex: 1 1 100%;
-  max-width: 100%;
+  display: block;
 }
 
 .notes-list-item-desc-text {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.notes-list-item-btn--expanded .notes-list-item-desc-text {
   white-space: pre-wrap;
-  overflow: visible;
-  text-overflow: clip;
+  word-break: break-word;
 }
 
 .notes-list-item {

@@ -1,4 +1,5 @@
 import {
+  ChevronRight,
   Hexagon,
   Loader2,
   LocateFixed,
@@ -134,6 +135,10 @@ const NoteItemContent = ({
     className={`notes-list-item-btn ${isExpanded ? 'notes-list-item-btn--expanded' : ''}`}
   >
     <div className="notes-list-item-header">
+      <ChevronRight
+        size={16}
+        className={`notes-list-item-chevron ${isExpanded ? 'notes-list-item-chevron--expanded' : ''}`}
+      />
       <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
         {p.geomType === 'Point' && (
           <MapPin size={16} style={{ color: 'var(--nmap-text-secondary)' }} />
