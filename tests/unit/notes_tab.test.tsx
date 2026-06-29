@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { browser } from 'wxt/browser'
 import { NotesTab } from '@/components/NotesTab'
@@ -43,31 +43,7 @@ describe('NotesTab', () => {
     cleanup()
   })
 
-  it('рендрит кнопки выбора типа фигуры и дизейблит отправку', async () => {
-    render(
-      <LocaleProvider>
-        <OccupiedDatesProvider isLoggedIn={true}>
-          <NotesTab
-            isUploading={false}
-            isLoggedIn={true}
-            onRequireAuth={() => {}}
-            onManualUpload={() => {}}
-          />
-        </OccupiedDatesProvider>
-      </LocaleProvider>,
-    )
-
-    // Кнопки типов геометрии
-    expect(await screen.findByText('Точка')).toBeDefined()
-    expect(screen.getByText('Линия')).toBeDefined()
-    expect(screen.getByText('Полигон')).toBeDefined()
-
-    // Изначально фигура не выбрана, кнопка заблокирована
-    const submitBtn = screen.getByText('Добавить заметку') as HTMLButtonElement
-    expect(submitBtn.disabled).toBe(true)
-  })
-
-  it('активирует кнопку после выбора типа фигуры', async () => {
+  it('рендрит кнопки выбора типа фигуры и отправляет сообщение при клике', async () => {
     // Подменим storage так, чтобы selectedDate было валидным
     ;(browser.storage.local.get as any).mockResolvedValue({
       notes_selected_date: '2025-01-01',
@@ -86,14 +62,65 @@ describe('NotesTab', () => {
       </LocaleProvider>,
     )
 
-    // Ждем загрузки стейта из storage
-    await new Promise((resolve) => setTimeout(resolve, 0))
-
+    // Кнопки типов геометрии
     const pointBtn = await screen.findByText('Точка')
+    expect(pointBtn).toBeDefined()
+    expect(screen.getByText('Линия')).toBeDefined()
+    expect(screen.getByText('Полигон')).toBeDefined()
+
+    // Клик по кнопке "Точка"
     fireEvent.click(pointBtn)
 
-    const submitBtn = screen.getByText('Добавить заметку') as HTMLButtonElement
-    expect(submitBtn.disabled).toBe(false)
+    // Должно отправиться сообщение о начале выбора точки на карте
+    expect(browser.runtime.sendMessage).toHaveBeenCalledWith({
+      action: 'startPointPicking',
+      geomType: 'Point',
+    })
+  })
+
+  it('показывает форму сохранения после выбора координат на карте', async () => {
+    // Подменим storage так, чтобы selectedDate было валидным
+    ;(browser.storage.local.get as any).mockResolvedValue({
+      notes_selected_date: '2025-01-01',
+    })
+
+    let runtimeMessageListener: any = null
+    ;(browser.runtime.onMessage.addListener as any).mockImplementation((listener: any) => {
+      runtimeMessageListener = listener
+    })
+
+    render(
+      <LocaleProvider>
+        <OccupiedDatesProvider isLoggedIn={true}>
+          <NotesTab
+            isUploading={false}
+            isLoggedIn={true}
+            onRequireAuth={() => {}}
+            onManualUpload={() => {}}
+          />
+        </OccupiedDatesProvider>
+      </LocaleProvider>,
+    )
+
+    // Ждем загрузки стейта из storage
+    await screen.findByText('Точка')
+
+    // Эмулируем получение координат от content скрипта
+    expect(runtimeMessageListener).not.toBeNull()
+    if (runtimeMessageListener) {
+      act(() => {
+        runtimeMessageListener({
+          action: 'pointPicked',
+          coords: [[37.6173, 55.7558]],
+        })
+      })
+    }
+
+    // Форма сохранения должна появиться
+    const saveBtn = await screen.findByText('Сохранить') as HTMLButtonElement
+    expect(saveBtn).toBeDefined()
+    // Кнопка сохранения заблокирована, пока не введено название
+    expect(saveBtn.disabled).toBe(true)
   })
 
   it('корректно подтягивает дату из слоя трекеров', async () => {

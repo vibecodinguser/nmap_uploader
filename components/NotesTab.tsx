@@ -410,13 +410,13 @@ export const NotesTab = ({
 
   useEffect(() => {
     if (!isInitialized || !selectedDate) {
-      setPoints([])
+      setPoints((prev) => (prev.length === 0 ? prev : []))
       return
     }
 
     const isoDate = displayToIso(selectedDate)
     if (!isoDate) {
-      setPoints([])
+      setPoints((prev) => (prev.length === 0 ? prev : []))
       return
     }
 
@@ -463,11 +463,11 @@ export const NotesTab = ({
           })
           setPoints(remotePoints)
         } else {
-          setPoints([])
+          setPoints((prev) => (prev.length === 0 ? prev : []))
         }
       })
       .catch(() => {
-        if (isMounted) setPoints([])
+        if (isMounted) setPoints((prev) => (prev.length === 0 ? prev : []))
       })
       .finally(() => {
         if (isMounted) setIsLoadingNotes(false)
@@ -637,26 +637,28 @@ export const NotesTab = ({
 
   const currentPoints = [...points].filter((p) => p.date === selectedDate).reverse()
 
+  const lastDispatchedRef = useRef<string | null>(null)
+
   useEffect(() => {
     if (!isInitialized) { return }
     const pts = points.filter((p) => p.date === selectedDate)
+    const ptsString = JSON.stringify(pts)
+
+    if (lastDispatchedRef.current === ptsString) {
+      return
+    }
+    lastDispatchedRef.current = ptsString
 
     // Пробуем отправить событие напрямую в текущий документ (если мы отрендерены в той же вкладке)
-    try {
-      console.log('[NMAP_DEBUG] NotesTab: dispatching nmaps:drawObjects directly', pts)
-      document.dispatchEvent(
-        new CustomEvent('nmaps:drawObjects', {
-          detail: JSON.stringify({ points: pts }),
-        }),
-      )
-    } catch (e) {
-      console.error('[NMAP_DEBUG] NotesTab: error dispatching direct event', e)
-    }
+    document.dispatchEvent(
+      new CustomEvent('nmaps:drawObjects', {
+        detail: JSON.stringify({ points: pts }),
+      }),
+    )
 
     // И отправляем через фоновый скрипт (для нативной боковой панели)
-    console.log('[NMAP_DEBUG] NotesTab: sending DRAW_MAP_OBJECTS via runtime message', pts)
-    browser.runtime.sendMessage({ action: 'DRAW_MAP_OBJECTS', points: pts }).catch((e) => {
-      console.error('[NMAP_DEBUG] NotesTab: runtime message error', e)
+    browser.runtime.sendMessage({ action: 'DRAW_MAP_OBJECTS', points: pts }).catch(() => {
+      // Игнорируем ошибку отправки
     })
   }, [points, selectedDate, isInitialized])
 
