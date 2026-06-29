@@ -712,26 +712,18 @@ body {
 
 .notes-list-item-view {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
   min-width: 0;
-}
-
-.notes-list-item-view--expanded {
-  align-items: flex-start;
 }
 
 .notes-list-item-actions-wrapper {
   display: flex;
   gap: 2px;
   flex-shrink: 0;
-  align-self: center;
-  margin-left: auto;
-}
-
-.notes-list-item-actions-wrapper--expanded {
   align-self: flex-start;
+  margin-left: auto;
 }
 
 .notes-list-action-btn {

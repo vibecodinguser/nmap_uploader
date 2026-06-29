@@ -28,6 +28,7 @@ type NotesTabProps = {
 
 type NotePoint = {
   id?: string
+  localId?: string
   name: string
   latitude: number
   longitude: number
@@ -127,13 +128,15 @@ const NoteItemContent = ({
   p,
   isExpanded,
   toggleExpand,
-}: Pick<NoteListItemProps, 'p' | 'isExpanded' | 'toggleExpand'>) => (
-  <button
-    type="button"
-    onClick={() => toggleExpand(p.id)}
-    disabled={!p.id}
-    className={`notes-list-item-btn ${isExpanded ? 'notes-list-item-btn--expanded' : ''}`}
-  >
+}: Pick<NoteListItemProps, 'p' | 'isExpanded' | 'toggleExpand'>) => {
+  const expandId = p.id || p.localId
+  return (
+    <button
+      type="button"
+      onClick={() => toggleExpand(expandId)}
+      disabled={!expandId}
+      className={`notes-list-item-btn ${isExpanded ? 'notes-list-item-btn--expanded' : ''}`}
+    >
     <div className="notes-list-item-header">
       <ChevronRight
         size={16}
@@ -158,8 +161,7 @@ const NoteItemContent = ({
       </div>
     )}
   </button>
-)
-
+)}
 const NoteItemActions = ({
   p,
   isExpanded,
@@ -197,9 +199,7 @@ const NoteItemActions = ({
   }, [menuOpen])
 
   return (
-    <div
-      className={`notes-list-item-actions-wrapper ${isExpanded ? 'notes-list-item-actions-wrapper--expanded' : ''}`}
-    >
+    <div className="notes-list-item-actions-wrapper">
       <button
         type="button"
         data-tooltip={t('notes.showOnMap')}
@@ -306,7 +306,7 @@ const NoteListItemView = ({
   | 'setEditingDesc'
   | 'handleDeleteNote'
 >) => (
-  <div className={`notes-list-item-view ${isExpanded ? 'notes-list-item-view--expanded' : ''}`}>
+  <div className="notes-list-item-view">
     <NoteItemContent p={p} isExpanded={isExpanded} toggleExpand={toggleExpand} />
     <NoteItemActions
       p={p}
@@ -477,12 +477,13 @@ export const NotesTab = ({
     }
   }, [selectedDate, isInitialized])
 
-  const handleStartPicking = () => {
+  const handleStartPicking = (type: 'Point' | 'LineString' | 'Polygon') => {
     if (!requireAuthBeforeAction({ isLoggedIn, onRequireAuth })) {
       return
     }
+    setGeomType(type)
     setIsPicking(true)
-    browser.runtime.sendMessage({ action: START_POINT_PICKING_ACTION, geomType }).catch(() => {
+    browser.runtime.sendMessage({ action: START_POINT_PICKING_ACTION, geomType: type }).catch(() => {
       setIsPicking(false)
     })
   }
@@ -541,6 +542,7 @@ export const NotesTab = ({
       setPoints((prev) => [
         ...prev,
         {
+          localId: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           name,
           latitude: firstCoord.lat,
           longitude: firstCoord.lon,
@@ -684,7 +686,7 @@ export const NotesTab = ({
           type="button"
           className="submit-btn--outline"
           style={
-            geomType === 'Point'
+            isPicking && geomType === 'Point'
               ? {
                   backgroundColor: 'var(--primary)',
                   color: 'var(--primary-foreground)',
@@ -692,8 +694,8 @@ export const NotesTab = ({
                 }
               : {}
           }
-          onClick={() => setGeomType('Point')}
-          disabled={isUploading || isPicking || pendingCoords !== null}
+          onClick={() => handleStartPicking('Point')}
+          disabled={isUploading || isPicking || !selectedDate || pendingCoords !== null}
         >
           {t('notes.typePoint')}
         </button>
@@ -701,7 +703,7 @@ export const NotesTab = ({
           type="button"
           className="submit-btn--outline"
           style={
-            geomType === 'LineString'
+            isPicking && geomType === 'LineString'
               ? {
                   backgroundColor: 'var(--primary)',
                   color: 'var(--primary-foreground)',
@@ -709,8 +711,8 @@ export const NotesTab = ({
                 }
               : {}
           }
-          onClick={() => setGeomType('LineString')}
-          disabled={isUploading || isPicking || pendingCoords !== null}
+          onClick={() => handleStartPicking('LineString')}
+          disabled={isUploading || isPicking || !selectedDate || pendingCoords !== null}
         >
           {t('notes.typeLine')}
         </button>
@@ -718,7 +720,7 @@ export const NotesTab = ({
           type="button"
           className="submit-btn--outline"
           style={
-            geomType === 'Polygon'
+            isPicking && geomType === 'Polygon'
               ? {
                   backgroundColor: 'var(--primary)',
                   color: 'var(--primary-foreground)',
@@ -726,36 +728,13 @@ export const NotesTab = ({
                 }
               : {}
           }
-          onClick={() => setGeomType('Polygon')}
-          disabled={isUploading || isPicking || pendingCoords !== null}
+          onClick={() => handleStartPicking('Polygon')}
+          disabled={isUploading || isPicking || !selectedDate || pendingCoords !== null}
         >
           {t('notes.typePolygon')}
         </button>
       </div>
 
-      <div className="notes-actions">
-        <span
-          className={geomType === null ? 'yandex-tooltip-wrapper' : ''}
-          data-tooltip={geomType === null ? t('notes.selectTypeTooltip') : undefined}
-          style={{ display: 'block', width: '100%' }}
-        >
-          <button
-            type="button"
-            className="submit-btn--outline"
-            disabled={
-              isUploading ||
-              isPicking ||
-              !selectedDate ||
-              pendingCoords !== null ||
-              geomType === null
-            }
-            style={geomType === null ? { pointerEvents: 'none' } : {}}
-            onClick={handleStartPicking}
-          >
-            {isPicking ? t('notes.drawOnMap') : t('notes.addNote')}
-          </button>
-        </span>
-      </div>
 
       {isLoadingNotes && <div className="notes-loading">{t('notes.loadingNotes')}</div>}
 
@@ -810,10 +789,11 @@ export const NotesTab = ({
         <div className="notes-list notes-list-container">
           <ul className="notes-list-ul">
             {currentPoints.map((p, idx) => {
-              const isExpanded = p.id ? expandedNoteIds.has(p.id) : false
+              const expandId = p.id || p.localId
+              const isExpanded = expandId ? expandedNoteIds.has(expandId) : false
               return (
                 <NoteListItem
-                  key={p.id || idx}
+                  key={expandId || idx}
                   p={p}
                   isExpanded={isExpanded}
                   editingPointId={editingPointId}
