@@ -1,7 +1,11 @@
 import { defineContentScript } from 'wxt/utils/define-content-script'
 import { notifyNmapsBoundsChange } from '@/lib/nmaps_bounds_notify'
 import { NMAPS_MAP_RESIZE_EVENT } from '@/lib/nmaps_map_resize_notify'
-import { NMAPS_START_PICK_POINT_EVENT, notifyPointPicked } from '@/lib/nmaps_pick_point_notify'
+import {
+  NMAPS_CANCEL_PICK_POINT_EVENT,
+  NMAPS_START_PICK_POINT_EVENT,
+  notifyPointPicked,
+} from '@/lib/nmaps_pick_point_notify'
 import { notifyNmapsUrlChange } from '@/lib/nmaps_url_notify'
 
 const MAP_DISCOVERY_POLL_MS = 500
@@ -111,7 +115,7 @@ const findMapInstanceFromDom = (): YmapsMapLike | null => {
 
 /** Находит карту через глобальный ymaps API (если доступен). */
 const findMapFromGlobalYmaps = (): YmapsMapLike | null => {
-  const windowRecord = window as unknown as Record<string, unknown>
+  const windowRecord = globalThis as unknown as Record<string, unknown>
   const ymaps = windowRecord.ymaps as YmapsGlobal | undefined
   let map: YmapsMapLike | null = null
   if (ymaps) {
@@ -122,30 +126,30 @@ const findMapFromGlobalYmaps = (): YmapsMapLike | null => {
 
 const dispatchWindowResize = (): void => {
   // Имитируем изменение размера окна на 1px, чтобы обмануть React-компоненты,
-  // которые проверяют (prevWidth === window.innerWidth) перед тем как обновить карту.
+  // которые проверяют (prevWidth === globalThis.innerWidth) перед тем как обновить карту.
   // Держим поддельное значение 1 секунду и периодически спамим resize,
   // чтобы пробить любой throttle/debounce внутри Яндекса.
-  const w = window.innerWidth
-  const h = window.innerHeight
+  const w = globalThis.innerWidth
+  const h = globalThis.innerHeight
 
-  Object.defineProperty(window, 'innerWidth', { value: w + 1, configurable: true })
-  Object.defineProperty(window, 'innerHeight', { value: h + 1, configurable: true })
+  Object.defineProperty(globalThis, 'innerWidth', { value: w + 1, configurable: true })
+  Object.defineProperty(globalThis, 'innerHeight', { value: h + 1, configurable: true })
 
   // Спамим событиями resize каждую 100мс
   const intervals = [0, 100, 200, 300, 500, 800]
   intervals.forEach((delay) => {
     if (delay === 0) {
-      window.dispatchEvent(new Event('resize'))
+      globalThis.dispatchEvent(new Event('resize'))
     } else {
-      setTimeout(() => window.dispatchEvent(new Event('resize')), delay)
+      setTimeout(() => globalThis.dispatchEvent(new Event('resize')), delay)
     }
   })
 
   // Через 1 секунду возвращаем как было
   setTimeout(() => {
-    delete (window as any).innerWidth
-    delete (window as any).innerHeight
-    window.dispatchEvent(new Event('resize'))
+    delete (globalThis as any).innerWidth
+    delete (globalThis as any).innerHeight
+    globalThis.dispatchEvent(new Event('resize'))
   }, 1000)
 }
 
@@ -168,8 +172,8 @@ const requestMapRepaint = (event?: Event): void => {
     if (typeof detailRaw === 'string') {
       try {
         detail = JSON.parse(detailRaw)
-      } catch {
-        /* ignore */
+      } catch (e: any) {
+        console.debug(e)
       }
     }
 
@@ -185,8 +189,8 @@ const requestMapRepaint = (event?: Event): void => {
         if (map && center && zoom && typeof (map as any).setCenter === 'function') {
           try {
             ;(map as any).setCenter(center, zoom, { duration: 0 })
-          } catch (_e) {
-            // ignore
+          } catch (e: any) {
+            console.debug(e)
           }
         }
       }, 200)
@@ -194,8 +198,8 @@ const requestMapRepaint = (event?: Event): void => {
       try {
         center = map.getCenter()
         zoom = map.getZoom()
-      } catch {
-        // ignore
+      } catch (e: any) {
+        console.debug(e)
       }
     }
 
@@ -210,8 +214,8 @@ const requestMapRepaint = (event?: Event): void => {
         ;(map as any)[centerMethod](center, zoom, { duration: 0 })
       }
     }
-  } catch (_err) {
-    // ignore
+  } catch (_err: any) {
+    console.debug(_err)
   }
 }
 
@@ -242,8 +246,9 @@ const subscribeToMapEvents = (map: YmapsMapLike): void => {
           zoom,
         })
       }
-    } catch {
+    } catch (e: any) {
       // Объект карты мог быть уничтожен
+      console.debug(e)
     }
   }
 
@@ -255,8 +260,8 @@ let globalActiveMapInstance: YmapsMapLike | null = null
 
 // Перехватываем создание экземпляра Яндекс.Карт, чтобы 100% найти карту
 const interceptYmaps = () => {
-  if (typeof window === 'undefined' || !(window as any).ymaps) return
-  const ymaps = (window as any).ymaps
+  if (typeof globalThis === 'undefined' || !(globalThis as any).ymaps) return
+  const ymaps = (globalThis as any).ymaps
 
   if (ymaps.__mapInterceptSetupDone) return
   ymaps.__mapInterceptSetupDone = true
@@ -265,7 +270,7 @@ const interceptYmaps = () => {
   if (_Map && !_Map.__intercepted) {
     const OriginalMap = _Map
     ymaps.Map = function (this: any, ...args: any[]) {
-      const instance = new (OriginalMap as any)(...args)
+      const instance = new OriginalMap(...args)
       globalActiveMapInstance = instance as YmapsMapLike
       return instance
     }
@@ -278,7 +283,7 @@ const interceptYmaps = () => {
         if (val && !val.__intercepted) {
           const OriginalMap = val
           _Map = function (this: any, ...args: any[]) {
-            const instance = new (OriginalMap as any)(...args)
+            const instance = new OriginalMap(...args)
             globalActiveMapInstance = instance as YmapsMapLike
             return instance
           }
@@ -293,15 +298,15 @@ const interceptYmaps = () => {
   }
 }
 
-// Запускаем перехват как можно раньше, перехватывая само присвоение window.ymaps
+// Запускаем перехват как можно раньше, перехватывая само присвоение globalThis.window.ymaps
 const setupInterceptor = () => {
-  if (typeof window === 'undefined') return
+  if (typeof globalThis === 'undefined') return
 
-  let _ymaps: any = (window as any).ymaps
+  let _ymaps: any = (globalThis as any).ymaps
   if (_ymaps) {
     interceptYmaps()
   } else {
-    Object.defineProperty(window, 'ymaps', {
+    Object.defineProperty(globalThis, 'ymaps', {
       get: () => _ymaps,
       set: (val) => {
         _ymaps = val
@@ -315,7 +320,7 @@ const setupInterceptor = () => {
 
   // На всякий случай оставляем поллинг
   const interval = setInterval(() => {
-    if (typeof window !== 'undefined' && _ymaps) {
+    if (typeof globalThis !== 'undefined' && _ymaps) {
       interceptYmaps()
     }
   }, 50)
@@ -362,7 +367,7 @@ const wrapHistoryMethod = (method: 'pushState' | 'replaceState', onChange: () =>
   }
 }
 
-const R = 6378137.0
+const R = 6378137
 const e = 0
 
 function latLonToMercator(lat: number, lon: number) {
@@ -380,7 +385,7 @@ function mercatorToLatLon(x: number, y: number) {
   const lon = (x * 180) / (R * Math.PI)
   const ts = Math.exp(-y / R)
   let phi = Math.PI / 2 - 2 * Math.atan(ts)
-  let dphi = 1.0
+  let dphi = 1
   for (let i = 0; i < 15 && dphi > 1e-15; i++) {
     const con = e * Math.sin(phi)
     const newPhi = Math.PI / 2 - 2 * Math.atan(ts * ((1 - con) / (1 + con)) ** (e / 2))
@@ -392,15 +397,15 @@ function mercatorToLatLon(x: number, y: number) {
 }
 
 function getCoordsFromUrlClick(clientX: number, clientY: number): number[] | null {
-  const hash = window.location.hash
+  const hash = globalThis.location.hash
   const paramsStr = hash.split('?')[1]
   if (!paramsStr) return null
   const params = new URLSearchParams(paramsStr)
   const zStr = params.get('z')
   const llStr = params.get('ll')
   if (!zStr || !llStr) return null
-  const z = parseFloat(zStr)
-  const [lon, lat] = llStr.split(',').map(parseFloat)
+  const z = Number.parseFloat(zStr)
+  const [lon, lat] = llStr.split(',').map(Number.parseFloat)
   if (Number.isNaN(z) || Number.isNaN(lon) || Number.isNaN(lat)) return null
 
   const EQUATOR = 40075016.685578488
@@ -409,10 +414,9 @@ function getCoordsFromUrlClick(clientX: number, clientY: number): number[] | nul
 
   const centerMerc = latLonToMercator(lat, lon)
 
-  let cx = window.innerWidth / 2
-  let cy = window.innerHeight / 2
+  let cx = globalThis.innerWidth / 2
+  let cy = globalThis.innerHeight / 2
 
-  let centerMethod = 'window'
   // 1. Try to find crosshair element directly
   const crosshair = document.querySelector(
     '.nk-map-crosshair, [class*="crosshair"], .ymaps-map-crosshair',
@@ -421,7 +425,6 @@ function getCoordsFromUrlClick(clientX: number, clientY: number): number[] | nul
     const rect = crosshair.getBoundingClientRect()
     cx = rect.left + rect.width / 2
     cy = rect.top + rect.height / 2
-    centerMethod = 'crosshair'
   } else {
     // 2. Fallback to map container
     const mapContainer =
@@ -432,7 +435,6 @@ function getCoordsFromUrlClick(clientX: number, clientY: number): number[] | nul
       const rect = mapContainer.getBoundingClientRect()
       cx = rect.left + rect.width / 2
       cy = rect.top + rect.height / 2
-      centerMethod = 'mapContainer'
     }
   }
 
@@ -456,8 +458,8 @@ export default defineContentScript({
   world: 'MAIN',
 
   main() {
-    window.addEventListener('hashchange', notifyNmapsUrlChange)
-    window.addEventListener('popstate', notifyNmapsUrlChange)
+    globalThis.addEventListener('hashchange', notifyNmapsUrlChange)
+    globalThis.addEventListener('popstate', notifyNmapsUrlChange)
 
     wrapHistoryMethod('pushState', notifyNmapsUrlChange)
     wrapHistoryMethod('replaceState', notifyNmapsUrlChange)
@@ -469,28 +471,24 @@ export default defineContentScript({
     document.addEventListener('nmaps:drawObjects', (event: Event) => {
       const customEvent = event as CustomEvent
       let detail = customEvent.detail
-      console.log('[NMAP_DEBUG] main-script: nmaps:drawObjects received. Raw detail:', detail)
-
       if (typeof detail === 'string') {
         try {
           detail = JSON.parse(detail)
-        } catch (e) {
-          console.error('[NMAP_DEBUG] main-script: error parsing detail as JSON:', detail)
+        } catch (e: any) {
+          console.debug(e)
         }
       }
 
       const points = detail?.points
       if (!Array.isArray(points)) return
 
-      const ymaps = (window as any).ymaps
+      const ymaps = (globalThis as any).ymaps
       if (!ymaps) {
-        console.error('[NMAP_NATIVE] window.ymaps is not available!')
         return
       }
 
       const map = globalActiveMapInstance ?? findActiveMap()
       if (!map) {
-        console.warn('[NMAP_NATIVE] Map instance not found in globals.')
         return
       }
 
@@ -532,61 +530,89 @@ export default defineContentScript({
           customCollection.add(placemark)
         }
       })
-      console.log('[NMAP_NATIVE] Successfully drew ' + points.length + ' native objects')
     })
 
-    document.addEventListener('nmaps:centerMap', (event: Event) => {
-      const customEvent = event as CustomEvent
-      let detail = customEvent.detail
+    const applyFallbackRouting = (z: number, lon: number, lat: number) => {
+      const newHash = `#!/?z=${z}&ll=${lon},${lat}`
+      try {
+        const a = document.createElement('a')
+        a.href = newHash
+        a.style.display = 'none'
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+      } catch (e: any) {
+        console.debug(e)
+        globalThis.location.hash = newHash
+      }
+    }
+
+    const getApiCoords = (event: MouseEvent): number[] | null => {
+      const map = globalActiveMapInstance ?? findActiveMap()
+      if (!map) return null
+      const m = map as any
+      if (m.converter && m.options) {
+        const projection = m.options.get('projection')
+        const globalPixels = m.converter.pageToGlobal([event.clientX, event.clientY])
+        return projection.fromGlobalPixels(globalPixels, m.getZoom())
+      }
+      return m.getCenter()
+    }
+
+    const parseCenterDetail = (detailRaw: unknown) => {
+      let detail = detailRaw
       if (typeof detail === 'string') {
         try {
           detail = JSON.parse(detail)
-        } catch {
-          /* ignore */
+        } catch (e: any) {
+          console.debug(e)
         }
       }
-      const { latitude, longitude, zoom } = detail ?? {}
+      return detail as any
+    }
+
+    const handleCenterMapApi = (lat: number, lon: number, z: number, duration: number): boolean => {
+      const map = globalActiveMapInstance ?? findActiveMap()
+      if (!map) return false
+      try {
+        const centerMethod = ['setCenter', 'panTo', 'moveTo'].find(
+          (m) => typeof (map as any)[m] === 'function',
+        )
+        if (centerMethod) {
+          ;(map as any)[centerMethod]([lon, lat], z, { duration })
+          return true
+        }
+      } catch (e: any) {
+        console.debug(e)
+      }
+      return false
+    }
+
+    document.addEventListener('nmaps:centerMap', (event: Event) => {
+      const customEvent = event as CustomEvent
+      const detail = parseCenterDetail(customEvent.detail)
+      const { latitude, longitude, zoom, duration } = detail ?? {}
       const lat = Number(latitude)
       const lon = Number(longitude)
       const z = Number(zoom) || 18
+      const dur = typeof duration === 'number' ? duration : 0
 
       if (!Number.isNaN(lat) && !Number.isNaN(lon)) {
-        const map = globalActiveMapInstance ?? findActiveMap()
-        if (map) {
-          try {
-            // Ищем подходящий метод. Nmaps использует longlat для URL, но для API это может быть [lat, lon]
-            const centerMethod = ['setCenter', 'panTo', 'moveTo'].find(
-              (m) => typeof (map as any)[m] === 'function',
-            )
-
-            if (centerMethod) {
-              const duration =
-                typeof customEvent.detail?.duration === 'number' ? customEvent.detail.duration : 0
-              // Yandex Maps API 2.1 по умолчанию использует [lat, lon]. Попробуем так, если не сработает - поменяем на [lon, lat]
-              ;(map as any)[centerMethod]([lon, lat], z, { duration })
-              return
-            }
-          } catch (_e) {
-            // fallback
-          }
-        }
-
-        const newHash = `#!/?z=${z}&ll=${lon},${lat}`
-        try {
-          // Создаем и кликаем скрытую ссылку, чтобы SPA-роутер Яндекса перехватил переход
-          const a = document.createElement('a')
-          a.href = newHash
-          a.style.display = 'none'
-          document.body.appendChild(a)
-          a.click()
-          a.remove()
-        } catch (_e) {
-          window.location.hash = newHash
+        if (!handleCenterMapApi(lat, lon, z, dur)) {
+          applyFallbackRouting(z, lon, lat)
         }
       }
     })
 
     let isPickingPoint = false
+    let activeCleanup: (() => void) | null = null
+
+    document.addEventListener(NMAPS_CANCEL_PICK_POINT_EVENT, () => {
+      if (activeCleanup) {
+        activeCleanup()
+      }
+    })
+
     document.addEventListener(NMAPS_START_PICK_POINT_EVENT, (event: Event) => {
       if (isPickingPoint) return
 
@@ -656,7 +682,7 @@ export default defineContentScript({
 
         if (geomType === 'Polygon' && accumulatedCoords.length > 2) {
           const first = accumulatedCoords[0]
-          const last = accumulatedCoords[accumulatedCoords.length - 1]
+          const last = accumulatedCoords.at(-1)!
           if (first[0] !== last[0] || first[1] !== last[1]) {
             accumulatedCoords.push([...first])
           }
@@ -675,7 +701,9 @@ export default defineContentScript({
         isPickingPoint = false
         overlay.remove()
         document.removeEventListener('keydown', handleKeyDown)
+        activeCleanup = null
       }
+      activeCleanup = cleanup
 
       const showError = (msg: string) => {
         const errDiv = document.createElement('div')
@@ -697,19 +725,7 @@ export default defineContentScript({
         event.stopPropagation()
 
         try {
-          const map = globalActiveMapInstance ?? findActiveMap()
-          let apiCoords: number[] | null = null
-
-          if (map) {
-            const m = map as any
-            if (m.converter && m.options) {
-              const projection = m.options.get('projection')
-              const globalPixels = m.converter.pageToGlobal([event.clientX, event.clientY])
-              apiCoords = projection.fromGlobalPixels(globalPixels, m.getZoom())
-            } else {
-              apiCoords = m.getCenter()
-            }
-          }
+          const apiCoords = getApiCoords(event)
 
           const urlCoords = getCoordsFromUrlClick(event.clientX, event.clientY)
 

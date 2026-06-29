@@ -6,6 +6,7 @@ import { buildNkUserBarCssVars, readNkUserBarTypography } from '@/lib/nk_user_ba
 import {
   NMAPS_POINT_PICKED_EVENT,
   notifyStartPickPoint,
+  notifyCancelPickPoint,
   parsePointPickedEvent,
 } from '@/lib/nmaps_pick_point_notify'
 import {
@@ -14,7 +15,7 @@ import {
   PANEL_SIDEBAR_WRAPPER_ID,
   removePanelSidebarFromDom,
 } from '@/lib/panel_sidebar_notify'
-import { POINT_PICKED_ACTION, START_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
+import { POINT_PICKED_ACTION, START_POINT_PICKING_ACTION, CANCEL_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
 
 const PANEL_PAGE = '/panel.html' as const
 const PANEL_WIDTH = 425
@@ -179,6 +180,35 @@ export default defineContentScript({
       promise.catch(reportTogglePanelError)
     }
 
+    const calculateZoomFromBbox = (bbox: number[]): number => {
+      const [minLon, minLat, maxLon, maxLat] = bbox
+      const width = window.innerWidth - 425 - 40 // 425 is PANEL_WIDTH, 40 margin
+      const height = window.innerHeight - 80 // 80 margin
+
+      let zoomX = 18
+      let zoomY = 18
+
+      if (width > 0 && height > 0) {
+        const lonDiff = maxLon - minLon
+        if (lonDiff > 0) {
+          zoomX = Math.log2((width * 360) / (256 * lonDiff))
+        }
+
+        const latToMercatorY = (l: number) => {
+          const rad = (l * Math.PI) / 180
+          return Math.log(Math.tan(Math.PI / 4 + rad / 2))
+        }
+        const yDiff = Math.abs(latToMercatorY(maxLat) - latToMercatorY(minLat))
+        if (yDiff > 0) {
+          zoomY = Math.log2((height * 2 * Math.PI) / (256 * yDiff))
+        }
+
+        const rawZoom = Math.min(zoomX, zoomY, 18)
+        return Math.max(Math.floor(rawZoom) - 1, 2)
+      }
+      return 18
+    }
+
     const handleRuntimeMessage = (message: RuntimeMessage): void => {
       if (CLOSE_PANEL_SIDEBAR_ACTION === message?.action) {
         closePanelIfOpen()
@@ -187,6 +217,8 @@ export default defineContentScript({
       } else if (START_POINT_PICKING_ACTION === message?.action) {
         const geomType = typeof message.geomType === 'string' ? message.geomType : 'Point'
         notifyStartPickPoint(geomType)
+      } else if (CANCEL_POINT_PICKING_ACTION === message?.action) {
+        notifyCancelPickPoint()
       } else if ('centerMap' === message?.action) {
         const lat = Number(message.latitude)
         const lon = Number(message.longitude)
@@ -194,33 +226,7 @@ export default defineContentScript({
           let zoom = typeof message.zoom === 'number' ? message.zoom : 18
 
           if (Array.isArray(message.bbox) && message.bbox.length === 4) {
-            const [minLon, minLat, maxLon, maxLat] = message.bbox
-            const width = window.innerWidth - 425 - 40 // 425 is PANEL_WIDTH, 40 margin
-            const height = window.innerHeight - 80 // 80 margin
-
-            let zoomX = 18
-            let zoomY = 18
-
-            if (width > 0 && height > 0) {
-              const lonDiff = maxLon - minLon
-              if (lonDiff > 0) {
-                zoomX = Math.log2((width * 360) / (256 * lonDiff))
-              }
-
-              const latToMercatorY = (l: number) => {
-                const rad = (l * Math.PI) / 180
-                return Math.log(Math.tan(Math.PI / 4 + rad / 2))
-              }
-              const yDiff = Math.abs(latToMercatorY(maxLat) - latToMercatorY(minLat))
-              if (yDiff > 0) {
-                zoomY = Math.log2((height * 2 * Math.PI) / (256 * yDiff))
-              }
-
-              const rawZoom = Math.min(zoomX, zoomY, 18)
-              zoom = Math.floor(rawZoom)
-              // Даем padding, отнимая 1 от зума, но не меньше 2
-              zoom = Math.max(zoom - 1, 2)
-            }
+            zoom = calculateZoomFromBbox(message.bbox)
           }
 
           document.dispatchEvent(
@@ -232,10 +238,6 @@ export default defineContentScript({
           console.error('[nmap_uploader panel] Invalid coordinates for centerMap', message)
         }
       } else if ('DRAW_MAP_OBJECTS' === message?.action) {
-        console.log(
-          '[NMAP_DEBUG] panel-sidebar: received DRAW_MAP_OBJECTS, dispatching nmaps:drawObjects',
-          message.points,
-        )
         document.dispatchEvent(
           new CustomEvent('nmaps:drawObjects', {
             detail: JSON.stringify({ points: message.points }),
@@ -271,7 +273,7 @@ export default defineContentScript({
             if (panelIframe?.contentWindow) {
               panelIframe.contentWindow.postMessage(
                 { action: 'TRACKER_DATE_CHANGED', date: txt },
-                '*',
+                new URL(browser.runtime.getURL('/')).origin,
               )
             }
             browser.runtime

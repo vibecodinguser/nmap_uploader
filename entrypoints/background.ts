@@ -12,7 +12,7 @@ import {
   type RuntimeMessageSender,
 } from '@/lib/message_auth'
 import { CLOSE_PANEL_SIDEBAR_ACTION } from '@/lib/panel_sidebar_notify'
-import { START_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
+import { START_POINT_PICKING_ACTION, CANCEL_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
 import { reloadMapEditorTabs } from '@/lib/reload_editor_page'
 import {
   type ProcessedFileInput,
@@ -450,9 +450,9 @@ const openInjectedPanel = async (tab: Browser.tabs.Tab): Promise<void> => {
   await toggleInjectedSidebar(readyTab.id, readyTab.url)
 }
 
-const resolveClickedTab = async (tab: Browser.tabs.Tab): Promise<Browser.tabs.Tab | undefined> => {
+const resolveClickedTab = async (tab?: Browser.tabs.Tab): Promise<Browser.tabs.Tab | undefined> => {
   let result: Browser.tabs.Tab | undefined
-  if (tab.id) {
+  if (tab?.id) {
     result = tab
   } else {
     const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true })
@@ -811,6 +811,18 @@ const handleStartPointPicking: MessageHandler = (message, sender, sendResponse) 
   return true
 }
 
+const handleCancelPointPicking: MessageHandler = (message, sender, sendResponse) => {
+  if (isTrustedNmapsOrPanelSender(sender)) {
+    const relayMessage = { action: CANCEL_POINT_PICKING_ACTION }
+    const relayTask = processRelayToMapTabs(sender, relayMessage, sendResponse, 'cancelPointPicking')
+    runBackgroundTask(relayTask, CANCEL_POINT_PICKING_ACTION)
+  } else {
+    logRejectedMessage(CANCEL_POINT_PICKING_ACTION, sender)
+    sendResponse({ ok: false })
+  }
+  return true
+}
+
 const handleApplyStrokeColor: MessageHandler = (message, sender, sendResponse) => {
   let color = ''
   if ('string' === typeof message.color) {
@@ -852,7 +864,7 @@ const handleCenterMap: MessageHandler = (message, sender, sendResponse) => {
 const handleGetTrackerDate: MessageHandler = (message, sender, sendResponse) => {
   if (isTrustedPanelSender(sender)) {
     const processGetTrackerDate = async () => {
-      const targetTab = await resolveClickedTab(sender.tab)
+      const targetTab = await resolveClickedTab(sender.tab as Browser.tabs.Tab)
       if (targetTab?.id) {
         try {
           const injection = await browser.scripting.executeScript({
@@ -878,7 +890,8 @@ const handleGetTrackerDate: MessageHandler = (message, sender, sendResponse) => 
           })
           const result = injection[0]?.result
           sendResponse({ date: result || null })
-        } catch (error) {
+        } catch (error: any) {
+          console.debug('[nmap_uploader] Failed to get tracker date:', error)
           sendResponse({ date: null })
         }
       } else {
@@ -920,6 +933,7 @@ const messageHandlers: Record<string, MessageHandler> = {
   [GO_TO_REFRESH_ACTION]: handleGoToRefresh,
   [CLOSE_PANEL_SIDEBAR_ACTION]: handleClosePanel,
   [START_POINT_PICKING_ACTION]: handleStartPointPicking,
+  [CANCEL_POINT_PICKING_ACTION]: handleCancelPointPicking,
   applyStrokeColor: handleApplyStrokeColor,
   centerMap: handleCenterMap,
   getTrackerDate: handleGetTrackerDate,

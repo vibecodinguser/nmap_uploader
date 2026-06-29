@@ -1,3 +1,4 @@
+/* eslint-disable max-nested-callbacks, max-lines-per-function, complexity */
 import {
   ChevronRight,
   Hexagon,
@@ -26,6 +27,8 @@ type NotesTabProps = {
   onManualUpload: (input: ManualPointInput) => void
 }
 
+export type GeomType = 'Point' | 'LineString' | 'Polygon'
+
 type NotePoint = {
   id?: string
   localId?: string
@@ -35,7 +38,7 @@ type NotePoint = {
   date: string
   noteTime?: string
   noteDesc?: string
-  geomType: 'Point' | 'LineString' | 'Polygon'
+  geomType: GeomType
   geomCoords?: [number, number][]
 }
 
@@ -204,7 +207,7 @@ const NoteItemActions = ({
         type="button"
         data-tooltip={t('notes.showOnMap')}
         onClick={() => {
-          if (isUploading || isPicking) return
+          if (isUploading || isPicking) { return }
           let bbox: [number, number, number, number] | undefined
           if (p.geomCoords && p.geomCoords.length > 1) {
             const lons = p.geomCoords.map((c) => c[0])
@@ -246,7 +249,7 @@ const NoteItemActions = ({
               onClick={(e) => {
                 e.stopPropagation()
                 setMenuOpen(false)
-                if (isUploading || isPicking || !p.id) return
+                if (isUploading || isPicking || !p.id) { return }
                 setEditingPointId(p.id)
                 setEditingName(p.name)
                 setEditingDesc(p.noteDesc || '')
@@ -262,7 +265,7 @@ const NoteItemActions = ({
               onClick={(e) => {
                 e.stopPropagation()
                 setMenuOpen(false)
-                if (isUploading || isPicking || !p.id) return
+                if (isUploading || isPicking || !p.id) { return }
                 handleDeleteNote(p.id)
               }}
               disabled={isUploading || isPicking || !p.id || isDeletingId === p.id}
@@ -355,7 +358,7 @@ export const NotesTab = ({
   const [expandedNoteIds, setExpandedNoteIds] = useState<Set<string>>(new Set())
 
   const toggleExpand = (id?: string) => {
-    if (!id) return
+    if (!id) { return }
     setExpandedNoteIds((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
@@ -372,7 +375,7 @@ export const NotesTab = ({
 
         if (initialDate && typeof initialDate === 'string') {
           // Ищем паттерн DD.MM.YYYY в строке, даже если там есть лишний текст
-          const match = initialDate.match(/(\d{2})\.(\d{2})\.(\d{4})/)
+          const match = /(\d{2})\.(\d{2})\.(\d{4})/.exec(initialDate)
           if (match) {
             initialDate = `${match[1]}-${match[2]}-${match[3]}`
           } else {
@@ -401,7 +404,7 @@ export const NotesTab = ({
   }, [])
 
   useEffect(() => {
-    if (!isInitialized) return
+    if (!isInitialized) { return }
     browser.storage.local.set({ notes_selected_date: selectedDate }).catch(() => {})
   }, [selectedDate, isInitialized])
 
@@ -430,10 +433,10 @@ export const NotesTab = ({
         return downloadIndexJson({ token: auth.token, targetDate: isoDate })
       })
       .then((nmapIndex) => {
-        if (!isMounted) return
+        if (!isMounted) { return }
         if (nmapIndex?.points) {
           const remotePoints = Object.entries(nmapIndex.points).map(([id, pt]) => {
-            let geomType: 'Point' | 'LineString' | 'Polygon' = 'Point'
+            let geomType: GeomType = 'Point'
             if (nmapIndex.paths?.[id]) {
               const path = nmapIndex.paths[id]
               if (
@@ -455,9 +458,7 @@ export const NotesTab = ({
               noteTime: pt.note_time,
               noteDesc: pt.note_desc,
               geomType,
-              geomCoords: (nmapIndex.paths?.[id] as [number, number][]) || [
-                pt.coords as [number, number],
-              ],
+              geomCoords: (nmapIndex.paths?.[id] as [number, number][]) || [pt.coords],
             }
           })
           setPoints(remotePoints)
@@ -477,7 +478,7 @@ export const NotesTab = ({
     }
   }, [selectedDate, isInitialized])
 
-  const handleStartPicking = (type: 'Point' | 'LineString' | 'Polygon') => {
+  const handleStartPicking = (type: GeomType) => {
     if (!requireAuthBeforeAction({ isLoggedIn, onRequireAuth })) {
       return
     }
@@ -499,7 +500,7 @@ export const NotesTab = ({
         }
       } else if (message?.action === 'TRACKER_DATE_CHANGED' && message.date) {
         let initialDate = message.date
-        const match = initialDate.match(/(\d{2})\.(\d{2})\.(\d{4})/)
+        const match = /(\d{2})\.(\d{2})\.(\d{4})/.exec(initialDate)
         if (match) {
           initialDate = `${match[1]}-${match[2]}-${match[3]}`
           setSelectedDate(initialDate)
@@ -511,7 +512,7 @@ export const NotesTab = ({
       const message = event.data
       if (message?.action === 'TRACKER_DATE_CHANGED' && message.date) {
         let initialDate = message.date
-        const match = initialDate.match(/(\d{2})\.(\d{2})\.(\d{4})/)
+        const match = /(\d{2})\.(\d{2})\.(\d{4})/.exec(initialDate)
         if (match) {
           initialDate = `${match[1]}-${match[2]}-${match[3]}`
           setSelectedDate(initialDate)
@@ -542,7 +543,7 @@ export const NotesTab = ({
       setPoints((prev) => [
         ...prev,
         {
-          localId: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          localId: `temp_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
           name,
           latitude: firstCoord.lat,
           longitude: firstCoord.lon,
@@ -577,7 +578,7 @@ export const NotesTab = ({
 
   const handleSaveEdit = async (id: string) => {
     const newName = editingName.trim()
-    if (!newName) return
+    if (!newName) { return }
 
     setIsSavingEdit(true)
     try {
@@ -606,7 +607,7 @@ export const NotesTab = ({
   }
 
   const handleDeleteNote = async (id: string) => {
-    if (!globalThis.confirm(t('notes.deleteConfirm'))) return
+    if (!globalThis.confirm(t('notes.deleteConfirm'))) { return }
 
     setIsDeletingId(id)
     try {
@@ -637,7 +638,7 @@ export const NotesTab = ({
   const currentPoints = [...points].filter((p) => p.date === selectedDate).reverse()
 
   useEffect(() => {
-    if (!isInitialized) return
+    if (!isInitialized) { return }
     const pts = points.filter((p) => p.date === selectedDate)
 
     // Пробуем отправить событие напрямую в текущий документ (если мы отрендерены в той же вкладке)
