@@ -117,7 +117,7 @@ describe('NotesTab', () => {
     }
 
     // Форма сохранения должна появиться
-    const saveBtn = await screen.findByText('Сохранить') as HTMLButtonElement
+    const saveBtn = (await screen.findByText('Сохранить')) as HTMLButtonElement
     expect(saveBtn).toBeDefined()
     // Кнопка сохранения заблокирована, пока не введено название
     expect(saveBtn.disabled).toBe(true)

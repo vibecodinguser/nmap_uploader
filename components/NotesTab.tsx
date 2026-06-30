@@ -140,31 +140,32 @@ const NoteItemContent = ({
       disabled={!expandId}
       className={`notes-list-item-btn ${isExpanded ? 'notes-list-item-btn--expanded' : ''}`}
     >
-    <div className="notes-list-item-header">
-      <ChevronRight
-        size={16}
-        className={`notes-list-item-chevron ${isExpanded ? 'notes-list-item-chevron--expanded' : ''}`}
-      />
-      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-        {p.geomType === 'Point' && (
-          <MapPin size={16} style={{ color: 'var(--nmap-text-secondary)' }} />
-        )}
-        {p.geomType === 'LineString' && (
-          <Waypoints size={16} style={{ color: 'var(--nmap-text-secondary)' }} />
-        )}
-        {p.geomType === 'Polygon' && (
-          <Hexagon size={16} style={{ color: 'var(--nmap-text-secondary)' }} />
-        )}
+      <div className="notes-list-item-header">
+        <ChevronRight
+          size={16}
+          className={`notes-list-item-chevron ${isExpanded ? 'notes-list-item-chevron--expanded' : ''}`}
+        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+          {p.geomType === 'Point' && (
+            <MapPin size={16} style={{ color: 'var(--nmap-text-secondary)' }} />
+          )}
+          {p.geomType === 'LineString' && (
+            <Waypoints size={16} style={{ color: 'var(--nmap-text-secondary)' }} />
+          )}
+          {p.geomType === 'Polygon' && (
+            <Hexagon size={16} style={{ color: 'var(--nmap-text-secondary)' }} />
+          )}
+        </div>
+        <strong className="notes-list-item-title">{p.name}</strong>
       </div>
-      <strong className="notes-list-item-title">{p.name}</strong>
-    </div>
-    {p.noteDesc && (
-      <div className="notes-list-item-desc">
-        <span className="notes-list-item-desc-text">{p.noteDesc}</span>
-      </div>
-    )}
-  </button>
-)}
+      {p.noteDesc && (
+        <div className="notes-list-item-desc">
+          <span className="notes-list-item-desc-text">{p.noteDesc}</span>
+        </div>
+      )}
+    </button>
+  )
+}
 const NoteItemActions = ({
   p,
   isExpanded,
@@ -207,7 +208,9 @@ const NoteItemActions = ({
         type="button"
         data-tooltip={t('notes.showOnMap')}
         onClick={() => {
-          if (isUploading || isPicking) { return }
+          if (isUploading || isPicking) {
+            return
+          }
           let bbox: [number, number, number, number] | undefined
           if (p.geomCoords && p.geomCoords.length > 1) {
             const lons = p.geomCoords.map((c) => c[0])
@@ -249,7 +252,9 @@ const NoteItemActions = ({
               onClick={(e) => {
                 e.stopPropagation()
                 setMenuOpen(false)
-                if (isUploading || isPicking || !p.id) { return }
+                if (isUploading || isPicking || !p.id) {
+                  return
+                }
                 setEditingPointId(p.id)
                 setEditingName(p.name)
                 setEditingDesc(p.noteDesc || '')
@@ -265,7 +270,9 @@ const NoteItemActions = ({
               onClick={(e) => {
                 e.stopPropagation()
                 setMenuOpen(false)
-                if (isUploading || isPicking || !p.id) { return }
+                if (isUploading || isPicking || !p.id) {
+                  return
+                }
                 handleDeleteNote(p.id)
               }}
               disabled={isUploading || isPicking || !p.id || isDeletingId === p.id}
@@ -358,7 +365,9 @@ export const NotesTab = ({
   const [expandedNoteIds, setExpandedNoteIds] = useState<Set<string>>(new Set())
 
   const toggleExpand = (id?: string) => {
-    if (!id) { return }
+    if (!id) {
+      return
+    }
     setExpandedNoteIds((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
@@ -404,7 +413,9 @@ export const NotesTab = ({
   }, [])
 
   useEffect(() => {
-    if (!isInitialized) { return }
+    if (!isInitialized) {
+      return
+    }
     browser.storage.local.set({ notes_selected_date: selectedDate }).catch(() => {})
   }, [selectedDate, isInitialized])
 
@@ -433,7 +444,9 @@ export const NotesTab = ({
         return downloadIndexJson({ token: auth.token, targetDate: isoDate })
       })
       .then((nmapIndex) => {
-        if (!isMounted) { return }
+        if (!isMounted) {
+          return
+        }
         if (nmapIndex?.points) {
           const remotePoints = Object.entries(nmapIndex.points).map(([id, pt]) => {
             let geomType: GeomType = 'Point'
@@ -484,9 +497,11 @@ export const NotesTab = ({
     }
     setGeomType(type)
     setIsPicking(true)
-    browser.runtime.sendMessage({ action: START_POINT_PICKING_ACTION, geomType: type }).catch(() => {
-      setIsPicking(false)
-    })
+    browser.runtime
+      .sendMessage({ action: START_POINT_PICKING_ACTION, geomType: type })
+      .catch(() => {
+        setIsPicking(false)
+      })
   }
 
   useEffect(() => {
@@ -578,7 +593,9 @@ export const NotesTab = ({
 
   const handleSaveEdit = async (id: string) => {
     const newName = editingName.trim()
-    if (!newName) { return }
+    if (!newName) {
+      return
+    }
 
     setIsSavingEdit(true)
     try {
@@ -607,7 +624,9 @@ export const NotesTab = ({
   }
 
   const handleDeleteNote = async (id: string) => {
-    if (!globalThis.confirm(t('notes.deleteConfirm'))) { return }
+    if (!globalThis.confirm(t('notes.deleteConfirm'))) {
+      return
+    }
 
     setIsDeletingId(id)
     try {
@@ -640,7 +659,9 @@ export const NotesTab = ({
   const lastDispatchedRef = useRef<string | null>(null)
 
   useEffect(() => {
-    if (!isInitialized) { return }
+    if (!isInitialized) {
+      return
+    }
     const pts = points.filter((p) => p.date === selectedDate)
     const ptsString = JSON.stringify(pts)
 
@@ -737,7 +758,6 @@ export const NotesTab = ({
           {t('notes.typePolygon')}
         </button>
       </div>
-
 
       {isLoadingNotes && <div className="notes-loading">{t('notes.loadingNotes')}</div>}
 

@@ -127,30 +127,30 @@ export const NoteItemContent = ({
       disabled={!expandId}
       className={`notes-list-item-btn ${isExpanded ? 'notes-list-item-btn--expanded' : ''}`}
     >
-    <div className="notes-list-item-header">
-      <ChevronRight
-        size={ICON_SIZE}
-        className={`notes-list-item-chevron ${isExpanded ? 'notes-list-item-chevron--expanded' : ''}`}
-      />
-      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-        {p.geomType === 'Point' && (
-          <MapPin size={ICON_SIZE} style={{ color: 'var(--nmap-text-secondary)' }} />
-        )}
-        {p.geomType === 'LineString' && (
-          <Waypoints size={ICON_SIZE} style={{ color: 'var(--nmap-text-secondary)' }} />
-        )}
-        {p.geomType === 'Polygon' && (
-          <Hexagon size={ICON_SIZE} style={{ color: 'var(--nmap-text-secondary)' }} />
-        )}
+      <div className="notes-list-item-header">
+        <ChevronRight
+          size={ICON_SIZE}
+          className={`notes-list-item-chevron ${isExpanded ? 'notes-list-item-chevron--expanded' : ''}`}
+        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+          {p.geomType === 'Point' && (
+            <MapPin size={ICON_SIZE} style={{ color: 'var(--nmap-text-secondary)' }} />
+          )}
+          {p.geomType === 'LineString' && (
+            <Waypoints size={ICON_SIZE} style={{ color: 'var(--nmap-text-secondary)' }} />
+          )}
+          {p.geomType === 'Polygon' && (
+            <Hexagon size={ICON_SIZE} style={{ color: 'var(--nmap-text-secondary)' }} />
+          )}
+        </div>
+        <strong className="notes-list-item-title">{p.name}</strong>
       </div>
-      <strong className="notes-list-item-title">{p.name}</strong>
-    </div>
-    {p.noteDesc && (
-      <div className="notes-list-item-desc">
-        <span className="notes-list-item-desc-text">{p.noteDesc}</span>
-      </div>
-    )}
-  </button>
+      {p.noteDesc && (
+        <div className="notes-list-item-desc">
+          <span className="notes-list-item-desc-text">{p.noteDesc}</span>
+        </div>
+      )}
+    </button>
   )
 }
 
@@ -297,19 +297,19 @@ export const NoteListItemView = ({
   | 'handleDeleteNote'
 >) => {
   return (
-  <div className="notes-list-item-view">
-    <NoteItemContent p={p} isExpanded={isExpanded} toggleExpand={toggleExpand} />
-    <NoteItemActions
-      p={p}
-      isUploading={isUploading}
-      isPicking={isPicking}
-      isDeletingId={isDeletingId}
-      setEditingPointId={setEditingPointId}
-      setEditingName={setEditingName}
-      setEditingDesc={setEditingDesc}
-      handleDeleteNote={handleDeleteNote}
-    />
-  </div>
+    <div className="notes-list-item-view">
+      <NoteItemContent p={p} isExpanded={isExpanded} toggleExpand={toggleExpand} />
+      <NoteItemActions
+        p={p}
+        isUploading={isUploading}
+        isPicking={isPicking}
+        isDeletingId={isDeletingId}
+        setEditingPointId={setEditingPointId}
+        setEditingName={setEditingName}
+        setEditingDesc={setEditingDesc}
+        handleDeleteNote={handleDeleteNote}
+      />
+    </div>
   )
 }
 
@@ -321,4 +321,3 @@ export const NoteListItem = (props: NoteListItemProps) => {
     </li>
   )
 }
-

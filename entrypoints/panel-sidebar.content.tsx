@@ -5,8 +5,8 @@ import { isYandexBrowser } from '@/lib/browser'
 import { buildNkUserBarCssVars, readNkUserBarTypography } from '@/lib/nk_user_bar_typography'
 import {
   NMAPS_POINT_PICKED_EVENT,
-  notifyStartPickPoint,
   notifyCancelPickPoint,
+  notifyStartPickPoint,
   parsePointPickedEvent,
 } from '@/lib/nmaps_pick_point_notify'
 import {
@@ -15,7 +15,11 @@ import {
   PANEL_SIDEBAR_WRAPPER_ID,
   removePanelSidebarFromDom,
 } from '@/lib/panel_sidebar_notify'
-import { POINT_PICKED_ACTION, START_POINT_PICKING_ACTION, CANCEL_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
+import {
+  CANCEL_POINT_PICKING_ACTION,
+  POINT_PICKED_ACTION,
+  START_POINT_PICKING_ACTION,
+} from '@/lib/pick_point_action'
 
 const PANEL_PAGE = '/panel.html' as const
 const PANEL_WIDTH = 425
@@ -209,40 +213,121 @@ export default defineContentScript({
       return 18
     }
 
-    const handleRuntimeMessage = (message: RuntimeMessage): void => {
-      if (CLOSE_PANEL_SIDEBAR_ACTION === message?.action) {
-        closePanelIfOpen()
-      } else if (TOGGLE_PANEL_ACTION === message?.action) {
-        startTogglePanel()
-      } else if (START_POINT_PICKING_ACTION === message?.action) {
-        const geomType = typeof message.geomType === 'string' ? message.geomType : 'Point'
-        notifyStartPickPoint(geomType)
-      } else if (CANCEL_POINT_PICKING_ACTION === message?.action) {
-        notifyCancelPickPoint()
-      } else if ('centerMap' === message?.action) {
-        const lat = Number(message.latitude)
-        const lon = Number(message.longitude)
-        if (!Number.isNaN(lat) && !Number.isNaN(lon)) {
-          let zoom = typeof message.zoom === 'number' ? message.zoom : 18
+    const handleCenterMap = (message: RuntimeMessage): void => {
+      const lat = Number(message.latitude)
+      const lon = Number(message.longitude)
+      if (!Number.isNaN(lat) && !Number.isNaN(lon)) {
+        let zoom = typeof message.zoom === 'number' ? message.zoom : 18
 
-          if (Array.isArray(message.bbox) && message.bbox.length === 4) {
-            zoom = calculateZoomFromBbox(message.bbox)
-          }
-
-          document.dispatchEvent(
-            new CustomEvent('nmaps:centerMap', {
-              detail: { latitude: lat, longitude: lon, zoom },
-            }),
-          )
-        } else {
-          console.error('[nmap_uploader panel] Invalid coordinates for centerMap', message)
+        if (Array.isArray(message.bbox) && message.bbox.length === 4) {
+          zoom = calculateZoomFromBbox(message.bbox)
         }
-      } else if ('DRAW_MAP_OBJECTS' === message?.action) {
+
         document.dispatchEvent(
-          new CustomEvent('nmaps:drawObjects', {
-            detail: JSON.stringify({ points: message.points }),
+          new CustomEvent('nmaps:centerMap', {
+            detail: { latitude: lat, longitude: lon, zoom },
           }),
         )
+      } else {
+        console.error('[nmap_uploader panel] Invalid coordinates for centerMap', message)
+      }
+    }
+
+    const handleSetTrackerDate = (message: RuntimeMessage): void => {
+      const nkDate = message.date as string
+      if (typeof nkDate !== 'string') return
+
+      const targetContainer = document.querySelector(
+        '.nk-select.nk-select_theme_islands.nk-select_size_m',
+      )
+      if (!targetContainer) return
+
+      const button = targetContainer.querySelector(
+        'button.nk-select__button',
+      ) as HTMLButtonElement | null
+      if (!button) return
+
+      const currentText = button.textContent || ''
+      if (currentText.includes(nkDate)) return
+
+      // Надежно эмулируем клик (React иногда игнорирует простой button.click())
+      button.dispatchEvent(
+        new MouseEvent('mousedown', {
+          bubbles: true,
+          cancelable: true,
+          view: globalThis as unknown as Window,
+        }),
+      )
+      button.dispatchEvent(
+        new MouseEvent('mouseup', {
+          bubbles: true,
+          cancelable: true,
+          view: globalThis as unknown as Window,
+        }),
+      )
+      button.click()
+
+      // Ждем пока DOM обновится и появится popup с меню (проверяем каждые 100мс)
+      let attempts = 0
+      const checkInterval = setInterval(() => {
+        attempts++
+        // Ищем пункты меню внутри видимого попапа (у Яндекса он может рендериться в портале)
+        const menuItems = document.querySelectorAll(
+          '.nk-popup .nk-menu__item, [class*="popup_visible"] [class*="menu-item"]',
+        )
+
+        if (menuItems.length > 0) {
+          clearInterval(checkInterval) // Меню появилось, останавливаем поиск
+
+          let found = false
+          for (const item of Array.from(menuItems)) {
+            const itemText = item.textContent || ''
+            if (itemText.includes(nkDate)) {
+              ;(item as HTMLElement).click()
+              found = true
+              break
+            }
+          }
+
+          if (!found) {
+            // Если не нашли, закрываем меню повторным кликом по кнопке
+            button.click()
+          }
+        } else if (attempts > 10) {
+          clearInterval(checkInterval)
+        }
+      }, 100)
+    }
+
+    const handleRuntimeMessage = (message: RuntimeMessage): void => {
+      switch (message?.action) {
+        case CLOSE_PANEL_SIDEBAR_ACTION:
+          closePanelIfOpen()
+          break
+        case TOGGLE_PANEL_ACTION:
+          startTogglePanel()
+          break
+        case START_POINT_PICKING_ACTION: {
+          const geomType = typeof message.geomType === 'string' ? message.geomType : 'Point'
+          notifyStartPickPoint(geomType)
+          break
+        }
+        case CANCEL_POINT_PICKING_ACTION:
+          notifyCancelPickPoint()
+          break
+        case 'centerMap':
+          handleCenterMap(message)
+          break
+        case 'DRAW_MAP_OBJECTS':
+          document.dispatchEvent(
+            new CustomEvent('nmaps:drawObjects', {
+              detail: JSON.stringify({ points: message.points }),
+            }),
+          )
+          break
+        case 'SET_TRACKER_DATE':
+          handleSetTrackerDate(message)
+          break
       }
     }
 

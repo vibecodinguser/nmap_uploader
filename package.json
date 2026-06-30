@@ -2,7 +2,7 @@
   "name": "Загрузчик в Блокнот картографа Народной карты",
   "description": "Загрузка геоданных в Блокнот картографа НЯК",
   "private": true,
-  "version": "1.4",
+  "version": "1.5",
   "type": "module",
   "scripts": {
     "dev": "wxt",

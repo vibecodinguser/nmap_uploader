@@ -12,7 +12,7 @@ import {
   type RuntimeMessageSender,
 } from '@/lib/message_auth'
 import { CLOSE_PANEL_SIDEBAR_ACTION } from '@/lib/panel_sidebar_notify'
-import { START_POINT_PICKING_ACTION, CANCEL_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
+import { CANCEL_POINT_PICKING_ACTION, START_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
 import { reloadMapEditorTabs } from '@/lib/reload_editor_page'
 import {
   type ProcessedFileInput,
@@ -814,7 +814,12 @@ const handleStartPointPicking: MessageHandler = (message, sender, sendResponse) 
 const handleCancelPointPicking: MessageHandler = (message, sender, sendResponse) => {
   if (isTrustedNmapsOrPanelSender(sender)) {
     const relayMessage = { action: CANCEL_POINT_PICKING_ACTION }
-    const relayTask = processRelayToMapTabs(sender, relayMessage, sendResponse, 'cancelPointPicking')
+    const relayTask = processRelayToMapTabs(
+      sender,
+      relayMessage,
+      sendResponse,
+      'cancelPointPicking',
+    )
     runBackgroundTask(relayTask, CANCEL_POINT_PICKING_ACTION)
   } else {
     logRejectedMessage(CANCEL_POINT_PICKING_ACTION, sender)
@@ -922,6 +927,21 @@ const handleDrawMapObjects: MessageHandler = (message, sender, sendResponse) => 
   return true
 }
 
+const handleSetTrackerDate: MessageHandler = (message, sender, sendResponse) => {
+  if (isTrustedNmapsOrPanelSender(sender)) {
+    const relayMessage = {
+      action: 'SET_TRACKER_DATE',
+      date: message.date,
+    }
+    const relayTask = processRelayToMapTabs(sender, relayMessage, sendResponse, 'SET_TRACKER_DATE')
+    runBackgroundTask(relayTask, 'SET_TRACKER_DATE')
+  } else {
+    logRejectedMessage('SET_TRACKER_DATE', sender)
+    sendResponse({ ok: false })
+  }
+  return true
+}
+
 const messageHandlers: Record<string, MessageHandler> = {
   getAuth: handleGetAuth,
   ensureAuth: handleEnsureAuth,
@@ -938,6 +958,7 @@ const messageHandlers: Record<string, MessageHandler> = {
   centerMap: handleCenterMap,
   getTrackerDate: handleGetTrackerDate,
   DRAW_MAP_OBJECTS: handleDrawMapObjects,
+  SET_TRACKER_DATE: handleSetTrackerDate,
 }
 
 const onMessageHandler = (

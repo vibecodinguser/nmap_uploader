@@ -9,9 +9,7 @@ export const notifyStartPickPoint = (geomType: string): void => {
 }
 
 export const notifyCancelPickPoint = (): void => {
-  document.dispatchEvent(
-    new CustomEvent(NMAPS_CANCEL_PICK_POINT_EVENT, { bubbles: true }),
-  )
+  document.dispatchEvent(new CustomEvent(NMAPS_CANCEL_PICK_POINT_EVENT, { bubbles: true }))
 }
 
 export const notifyPointPicked = (coords: number[][], geomType: string): void => {

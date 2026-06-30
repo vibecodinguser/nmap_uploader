@@ -307,6 +307,31 @@ export const PointDateField = ({
     [isOpen, closeCalendar, cleanupStoredPointerDownEffect],
   )
 
+  useEffect(
+    function syncNkSelectOnDateChange(): void {
+      const parsedDate = parseDateDisplay(value)
+      if (parsedDate) {
+        const day = String(parsedDate.getDate()).padStart(2, '0')
+        const month = String(parsedDate.getMonth() + 1).padStart(2, '0')
+        const year = parsedDate.getFullYear()
+        const nkDate = `${day}.${month}.${year}`
+
+        // Отправляем сообщение контент-скрипту для обновления на хост-странице
+        import('wxt/browser')
+          .then(({ browser }) => {
+            browser.runtime
+              .sendMessage({
+                action: 'SET_TRACKER_DATE',
+                date: nkDate,
+              })
+              .catch(() => {})
+          })
+          .catch(() => {})
+      }
+    },
+    [value],
+  )
+
   const handleTriggerClick = function handleTriggerClick(): void {
     if (isOpen) {
       closeCalendar()
@@ -368,12 +393,12 @@ export const PointDateField = ({
           </button>
         </div>
         {isOpen && (
-          <div
+          <dialog
             className="point-date-popover"
             id={popoverId}
-            role="dialog"
             aria-label={t('dateField.calendarAria')}
             style={popoverStyle}
+            open
           >
             {isLoading && (
               <p className="point-date-popover-status">{t('dateField.loadingDates')}</p>
@@ -399,7 +424,7 @@ export const PointDateField = ({
               <span className="point-date-legend-swatch" aria-hidden />
               {t('dateField.occupiedLegend')}
             </p>
-          </div>
+          </dialog>
         )}
       </div>
     </div>

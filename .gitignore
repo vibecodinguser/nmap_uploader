@@ -1,5 +1,6 @@
 # Зависимости
 node_modules/
+.pnpm-store/*
 
 # WXT / Vite
 .output/
