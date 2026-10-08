@@ -11,6 +11,7 @@ import {
   logRejectedMessage,
   type RuntimeMessageSender,
 } from '@/lib/message_auth'
+import { type DrawMapObjectsDetail, loadDrawMapObjectsForDate } from '@/lib/nmaps_draw_objects'
 import { CLOSE_PANEL_SIDEBAR_ACTION } from '@/lib/panel_sidebar_notify'
 import { CANCEL_POINT_PICKING_ACTION, START_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
 import { reloadMapEditorTabs } from '@/lib/reload_editor_page'
@@ -23,6 +24,7 @@ import {
   type AuthPayload,
   buildAuthPayload,
   clearAuth,
+  downloadIndexJson,
   ensureYandexAuth,
   getStoredAuth,
   listExistingDateFolders,
@@ -912,17 +914,54 @@ const handleGetTrackerDate: MessageHandler = (message, sender, sendResponse) => 
   return true
 }
 
+let lastDrawMapObjects: DrawMapObjectsDetail | null = null
+
 const handleDrawMapObjects: MessageHandler = (message, sender, sendResponse) => {
   if (isTrustedNmapsOrPanelSender(sender)) {
     const relayMessage = {
       action: 'DRAW_MAP_OBJECTS',
       points: message.points,
+      snapTargets: Array.isArray(message.snapTargets) ? message.snapTargets : [],
+    }
+    lastDrawMapObjects = {
+      points: Array.isArray(relayMessage.points) ? relayMessage.points : [],
+      snapTargets: relayMessage.snapTargets,
     }
     const relayTask = processRelayToMapTabs(sender, relayMessage, sendResponse, 'DRAW_MAP_OBJECTS')
     runBackgroundTask(relayTask, 'DRAW_MAP_OBJECTS')
   } else {
     logRejectedMessage('DRAW_MAP_OBJECTS', sender)
     sendResponse({ ok: false })
+  }
+  return true
+}
+
+const handleGetDrawMapObjects: MessageHandler = (_message, sender, sendResponse) => {
+  if (isTrustedNmapsOrPanelSender(sender)) {
+    const loadDrawMapObjects = async () => {
+      try {
+        if (!lastDrawMapObjects) {
+          const [{ notes_selected_date: selectedDate }, auth] = await Promise.all([
+            browser.storage.local.get('notes_selected_date'),
+            getStoredAuth(),
+          ])
+
+          if (typeof selectedDate === 'string' && auth?.token) {
+            lastDrawMapObjects = await loadDrawMapObjectsForDate({
+              selectedDate,
+              token: auth.token,
+              downloadIndex: downloadIndexJson,
+            })
+          }
+        }
+      } finally {
+        sendResponse(lastDrawMapObjects ?? { points: [], snapTargets: [] })
+      }
+    }
+    runBackgroundTask(loadDrawMapObjects(), 'GET_DRAW_MAP_OBJECTS')
+  } else {
+    logRejectedMessage('GET_DRAW_MAP_OBJECTS', sender)
+    sendResponse({ points: [], snapTargets: [] })
   }
   return true
 }
@@ -958,6 +997,7 @@ const messageHandlers: Record<string, MessageHandler> = {
   centerMap: handleCenterMap,
   getTrackerDate: handleGetTrackerDate,
   DRAW_MAP_OBJECTS: handleDrawMapObjects,
+  GET_DRAW_MAP_OBJECTS: handleGetDrawMapObjects,
   SET_TRACKER_DATE: handleSetTrackerDate,
 }
 

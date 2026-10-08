@@ -16,6 +16,11 @@ import { PointDateField } from '@/components/PointDateField'
 import { useLocale } from '@/hooks/useLocale'
 import type { ManualPointInput } from '@/hooks/usePointUpload'
 import { displayToIso } from '@/lib/date_format'
+import {
+  createDrawMapObjectsDetail,
+  createDrawMapObjectsFromNmapIndex,
+  createPolygonSnapTargets,
+} from '@/lib/nmaps_draw_objects'
 import { POINT_PICKED_ACTION, START_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
 import { requireAuthBeforeAction } from '@/lib/require_auth'
 import { downloadIndexJson, getStoredAuth, uploadIndexJson } from '@/lib/yandex/client'
@@ -138,7 +143,9 @@ const NoteItemContent = ({
       type="button"
       onClick={() => toggleExpand(expandId)}
       disabled={!expandId}
-      className={`notes-list-item-btn ${isExpanded ? 'notes-list-item-btn--expanded' : ''}`}
+      className={['notes-list-item-btn', isExpanded ? 'notes-list-item-btn--expanded' : '']
+        .filter(Boolean)
+        .join(' ')}
     >
       <div className="notes-list-item-header">
         <ChevronRight
@@ -448,33 +455,9 @@ export const NotesTab = ({
           return
         }
         if (nmapIndex?.points) {
-          const remotePoints = Object.entries(nmapIndex.points).map(([id, pt]) => {
-            let geomType: GeomType = 'Point'
-            if (nmapIndex.paths?.[id]) {
-              const path = nmapIndex.paths[id]
-              if (
-                path.length > 2 &&
-                path[0][0] === path.at(-1)?.[0] &&
-                path[0][1] === path.at(-1)?.[1]
-              ) {
-                geomType = 'Polygon'
-              } else {
-                geomType = 'LineString'
-              }
-            }
-            return {
-              id,
-              name: pt.desc,
-              latitude: pt.coords[1],
-              longitude: pt.coords[0],
-              date: selectedDate,
-              noteTime: pt.note_time,
-              noteDesc: pt.note_desc,
-              geomType,
-              geomCoords: (nmapIndex.paths?.[id] as [number, number][]) || [pt.coords],
-            }
-          })
-          setPoints(remotePoints)
+          setPoints(
+            createDrawMapObjectsFromNmapIndex(nmapIndex, selectedDate).points as NotePoint[],
+          )
         } else {
           setPoints((prev) => (prev.length === 0 ? prev : []))
         }
@@ -663,22 +646,23 @@ export const NotesTab = ({
       return
     }
     const pts = points.filter((p) => p.date === selectedDate)
-    const ptsString = JSON.stringify(pts)
+    const detail = createDrawMapObjectsDetail(pts, createPolygonSnapTargets(pts))
+    const detailString = JSON.stringify(detail)
 
-    if (lastDispatchedRef.current === ptsString) {
+    if (lastDispatchedRef.current === detailString) {
       return
     }
-    lastDispatchedRef.current = ptsString
+    lastDispatchedRef.current = detailString
 
     // Пробуем отправить событие напрямую в текущий документ (если мы отрендерены в той же вкладке)
     document.dispatchEvent(
       new CustomEvent('nmaps:drawObjects', {
-        detail: JSON.stringify({ points: pts }),
+        detail: detailString,
       }),
     )
 
     // И отправляем через фоновый скрипт (для нативной боковой панели)
-    browser.runtime.sendMessage({ action: 'DRAW_MAP_OBJECTS', points: pts }).catch(() => {
+    browser.runtime.sendMessage({ action: 'DRAW_MAP_OBJECTS', ...detail }).catch(() => {
       // Игнорируем ошибку отправки
     })
   }, [points, selectedDate, isInitialized])

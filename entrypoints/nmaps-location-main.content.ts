@@ -1,6 +1,12 @@
 import { defineContentScript } from 'wxt/utils/define-content-script'
 import { notifyNmapsBoundsChange } from '@/lib/nmaps_bounds_notify'
+import { parseDrawMapObjectsDetail } from '@/lib/nmaps_draw_objects'
 import { NMAPS_MAP_RESIZE_EVENT } from '@/lib/nmaps_map_resize_notify'
+import {
+  createNativeTracingAdapter,
+  type NativeTracingAdapter,
+  type NativeTracingMap,
+} from '@/lib/nmaps_native_tracing_adapter'
 import {
   NMAPS_CANCEL_PICK_POINT_EVENT,
   NMAPS_START_PICK_POINT_EVENT,
@@ -458,6 +464,18 @@ export default defineContentScript({
   world: 'MAIN',
 
   main() {
+    const windowWithTracingAdapter = globalThis as typeof globalThis & {
+      __nmapNativeTracingAdapter__?: NativeTracingAdapter
+    }
+    windowWithTracingAdapter.__nmapNativeTracingAdapter__?.destroy()
+
+    const tracingAdapter = createNativeTracingAdapter({
+      globalObject: globalThis,
+      getMap: () => (globalActiveMapInstance ?? findActiveMap()) as NativeTracingMap | null,
+    })
+    windowWithTracingAdapter.__nmapNativeTracingAdapter__ = tracingAdapter
+    globalThis.addEventListener('pagehide', () => tracingAdapter.destroy(), { once: true })
+
     globalThis.addEventListener('hashchange', notifyNmapsUrlChange)
     globalThis.addEventListener('popstate', notifyNmapsUrlChange)
 
@@ -469,18 +487,11 @@ export default defineContentScript({
     document.addEventListener(NMAPS_MAP_RESIZE_EVENT, requestMapRepaint)
 
     document.addEventListener('nmaps:drawObjects', (event: Event) => {
-      const customEvent = event as CustomEvent
-      let detail = customEvent.detail
-      if (typeof detail === 'string') {
-        try {
-          detail = JSON.parse(detail)
-        } catch (e: any) {
-          console.debug(e)
-        }
-      }
+      const detail = parseDrawMapObjectsDetail((event as CustomEvent).detail)
+      if (!detail) return
 
-      const points = detail?.points
-      if (!Array.isArray(points)) return
+      tracingAdapter.setTargets(detail.snapTargets)
+      const { points } = detail
 
       const ymaps = (globalThis as any).ymaps
       if (!ymaps) {

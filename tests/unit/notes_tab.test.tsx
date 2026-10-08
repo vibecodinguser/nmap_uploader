@@ -1,11 +1,12 @@
 // @vitest-environment happy-dom
 
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { browser } from 'wxt/browser'
 import { NotesTab } from '@/components/NotesTab'
 import { LocaleProvider } from '@/hooks/useLocale'
 import { OccupiedDatesProvider } from '@/hooks/useOccupiedDates'
+import { downloadIndexJson } from '@/lib/yandex/client'
 
 vi.mock('wxt/browser', () => ({
   browser: {
@@ -33,10 +34,34 @@ vi.mock('wxt/browser', () => ({
   },
 }))
 
+vi.mock('@/lib/yandex/client', () => ({
+  downloadIndexJson: vi.fn(),
+  getStoredAuth: vi.fn(() => Promise.resolve({ token: 'token' })),
+  uploadIndexJson: vi.fn(),
+}))
+
+const mockedDownloadIndexJson = vi.mocked(downloadIndexJson)
+
+const renderNotesTab = () =>
+  render(
+    <LocaleProvider>
+      <OccupiedDatesProvider isLoggedIn={true}>
+        <NotesTab
+          isUploading={false}
+          isLoggedIn={true}
+          onRequireAuth={() => {}}
+          onManualUpload={() => {}}
+        />
+      </OccupiedDatesProvider>
+    </LocaleProvider>,
+  )
+
 describe('NotesTab', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     ;(browser.storage.local.get as any).mockResolvedValue({})
+    ;(browser.runtime.sendMessage as any).mockResolvedValue(undefined)
+    mockedDownloadIndexJson.mockResolvedValue(null)
   })
 
   afterEach(() => {
@@ -46,7 +71,7 @@ describe('NotesTab', () => {
   it('рендрит кнопки выбора типа фигуры и отправляет сообщение при клике', async () => {
     // Подменим storage так, чтобы selectedDate было валидным
     ;(browser.storage.local.get as any).mockResolvedValue({
-      notes_selected_date: '2025-01-01',
+      notes_selected_date: '01-01-2025',
     })
 
     render(
@@ -81,7 +106,7 @@ describe('NotesTab', () => {
   it('показывает форму сохранения после выбора координат на карте', async () => {
     // Подменим storage так, чтобы selectedDate было валидным
     ;(browser.storage.local.get as any).mockResolvedValue({
-      notes_selected_date: '2025-01-01',
+      notes_selected_date: '01-01-2025',
     })
 
     let runtimeMessageListener: any = null
@@ -128,7 +153,7 @@ describe('NotesTab', () => {
     ;(browser.runtime.sendMessage as any).mockResolvedValue({ date: 'дата 17.06.2026 г.' })
     // Storage вернет другую дату, чтобы убедиться, что приоритет у трекера
     ;(browser.storage.local.get as any).mockResolvedValue({
-      notes_selected_date: '2025-01-01',
+      notes_selected_date: '01-01-2025',
     })
 
     render(
@@ -147,5 +172,52 @@ describe('NotesTab', () => {
     // В дата-пикере должно быть 17-06-2026
     const dateInput = await screen.findByDisplayValue('17-06-2026')
     expect(dateInput).toBeDefined()
+  })
+
+  it('автоматически отправляет все полигоны выбранной даты без ручного выбора', async () => {
+    ;(browser.storage.local.get as any).mockResolvedValue({
+      notes_selected_date: '01-01-2025',
+    })
+    mockedDownloadIndexJson.mockResolvedValue({
+      points: {
+        'polygon-one': { coords: [37.6, 55.7], desc: 'Полигон один' },
+        'polygon-two': { coords: [38.6, 56.7], desc: 'Полигон два' },
+        line: { coords: [37.8, 55.8], desc: 'Линия' },
+      },
+      paths: {
+        'polygon-one': [
+          [37.6, 55.7],
+          [37.7, 55.7],
+          [37.7, 55.8],
+          [37.6, 55.7],
+        ],
+        'polygon-two': [
+          [38.6, 56.7],
+          [38.7, 56.7],
+          [38.7, 56.8],
+          [38.6, 56.7],
+        ],
+        line: [
+          [37.8, 55.8],
+          [37.9, 55.8],
+        ],
+      },
+    })
+
+    renderNotesTab()
+
+    await waitFor(() =>
+      expect(browser.runtime.sendMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'DRAW_MAP_OBJECTS',
+          snapTargets: [
+            expect.objectContaining({ id: 'polygon-one' }),
+            expect.objectContaining({ id: 'polygon-two' }),
+          ],
+        }),
+      ),
+    )
+
+    expect(screen.queryByRole('button', { pressed: false })).toBeNull()
   })
 })

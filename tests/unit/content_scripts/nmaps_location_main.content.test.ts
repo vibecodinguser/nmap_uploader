@@ -11,6 +11,88 @@ const runMain = (): void => {
   nmapsLocationMainScript.main?.(createContentScriptContext())
 }
 
+type Coordinate = [number, number]
+
+class FakePolygon {
+  constructor(private coordinates: Coordinate[][]) {}
+  getCoordinates(): Coordinate[][] {
+    return this.coordinates
+  }
+  getType(): string {
+    return 'Polygon'
+  }
+  isTypeOf(type: string): boolean {
+    return type === 'Polygon'
+  }
+}
+
+class FakeGeometryFactory {
+  createPoint(): object {
+    return {}
+  }
+  createPolyline(): object {
+    return {}
+  }
+  createCollection(): object {
+    return {}
+  }
+  createPolygon(coordinates: Coordinate[][]): FakePolygon {
+    return new FakePolygon(coordinates)
+  }
+}
+
+class FakeHotspot {
+  attrs = {
+    disabled: true,
+    hotspotWidth: 10,
+    ignoreZMax: true,
+    simplify: false,
+    zIndex: -1,
+  }
+  onRender(): void {}
+  onInit(): void {}
+  onUnmount(): void {}
+  getGeoObjectsByCoords(_coordinates: Coordinate): Promise<unknown[]> {
+    return Promise.resolve([])
+  }
+}
+
+type WebpackFactory = (
+  module: { exports: Record<string, unknown> },
+  exports: Record<string, unknown>,
+  require: unknown,
+) => void
+
+const installFakeNmapsModules = (): void => {
+  const globalObject = globalThis as typeof globalThis & {
+    webpackChunknmaps?: [number[], Record<string, WebpackFactory>][]
+  }
+  if (!globalObject.webpackChunknmaps) {
+    globalObject.webpackChunknmaps = []
+  }
+  const chunks = globalObject.webpackChunknmaps
+  const factories: Record<string, WebpackFactory> = {}
+  chunks.push = (chunk) => {
+    Object.assign(factories, chunk[1])
+    return 1
+  }
+  chunks.push([
+    [265],
+    {
+      48590: (_module, exports) => {
+        exports.A = FakeGeometryFactory
+      },
+      61653: (_module, exports) => {
+        exports.A = FakeHotspot
+      },
+    },
+  ])
+  for (const moduleId of ['48590', '61653']) {
+    const module = { exports: {} as Record<string, unknown> }
+    factories[moduleId](module, module.exports, vi.fn())
+  }
+}
+
 describe('nmaps-location-main.content', () => {
   beforeEach(() => {
     vi.useFakeTimers()
@@ -19,7 +101,9 @@ describe('nmaps-location-main.content', () => {
 
   afterEach(() => {
     vi.useRealTimers()
+    window.dispatchEvent(new PageTransitionEvent('pagehide'))
     document.body.replaceChildren()
+    Reflect.deleteProperty(globalThis, 'webpackChunknmaps')
   })
 
   it('транслирует hashchange в CustomEvent смены URL', () => {
@@ -100,5 +184,68 @@ describe('nmaps-location-main.content', () => {
 
     expect(resizeSpy).toHaveBeenCalledWith(expect.any(Event))
     expect(mapInstance.container.fitToViewport).toHaveBeenCalled()
+  })
+
+  it('передаёт все snapTargets штатному tracer-provider без DOM-перехвата', async () => {
+    const mapInstance = {
+      getCenter: () => [55.7, 37.6] as [number, number],
+      getZoom: () => 18,
+      events: { add: vi.fn(), remove: vi.fn() },
+      options: {
+        get: () => ({
+          toGlobalPixels: (coordinates: Coordinate) => coordinates,
+        }),
+      },
+    }
+    const mapElement = document.createElement('div')
+    mapElement.className = 'nk-map ymaps-map'
+    ;(mapElement as unknown as Record<string, unknown>).__ymaps_map = mapInstance
+    document.body.appendChild(mapElement)
+
+    runMain()
+    vi.runAllTimers()
+    installFakeNmapsModules()
+
+    document.dispatchEvent(
+      new CustomEvent('nmaps:drawObjects', {
+        detail: JSON.stringify({
+          points: [],
+          snapTargets: [
+            {
+              id: 'left',
+              coordinates: [
+                [0, 0],
+                [100, 0],
+                [100, 100],
+                [0, 0],
+              ],
+            },
+            {
+              id: 'right',
+              coordinates: [
+                [200, 0],
+                [300, 0],
+                [300, 100],
+                [200, 0],
+              ],
+            },
+          ],
+        }),
+      }),
+    )
+    const withTarget = await new FakeHotspot().getGeoObjectsByCoords([240, 6])
+
+    document.dispatchEvent(
+      new CustomEvent('nmaps:drawObjects', {
+        detail: JSON.stringify({ points: [], snapTargets: [] }),
+      }),
+    )
+    const withoutTarget = await new FakeHotspot().getGeoObjectsByCoords([40, 6])
+
+    expect(withTarget.map((item) => (item as { getId: () => string }).getId())).toContain(
+      'nmap-uploader:note:right',
+    )
+    expect(withoutTarget).toEqual([])
+    expect(document.querySelector('[data-nmap-snap-marker]')).toBeNull()
   })
 })

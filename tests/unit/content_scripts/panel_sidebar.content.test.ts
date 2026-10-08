@@ -66,4 +66,47 @@ describe('panel-sidebar.content', () => {
     dispatchMessage(CLOSE_PANEL_SIDEBAR_ACTION)
     expect(document.getElementById(PANEL_SIDEBAR_WRAPPER_ID)).toBeNull()
   })
+
+  it('запрашивает последний drawObjects при загрузке страницы карты', async () => {
+    vi.spyOn(browser.runtime, 'sendMessage').mockResolvedValue({
+      points: [{ id: 'polygon' }],
+      snapTargets: [
+        {
+          id: 'polygon',
+          coordinates: [
+            [0, 0],
+            [1, 0],
+            [1, 1],
+            [0, 0],
+          ],
+        },
+      ],
+    } as never)
+    const listener = vi.fn()
+    document.addEventListener('nmaps:drawObjects', listener)
+
+    panelSidebarScript.main?.(ctx)
+
+    await vi.waitFor(() =>
+      expect(browser.runtime.sendMessage).toHaveBeenCalledWith({
+        action: 'GET_DRAW_MAP_OBJECTS',
+      }),
+    )
+    await vi.waitFor(() => expect(listener).toHaveBeenCalledOnce())
+    const event = listener.mock.calls[0][0] as CustomEvent
+    expect(JSON.parse(event.detail)).toEqual({
+      points: [{ id: 'polygon' }],
+      snapTargets: [
+        {
+          id: 'polygon',
+          coordinates: [
+            [0, 0],
+            [1, 0],
+            [1, 1],
+            [0, 0],
+          ],
+        },
+      ],
+    })
+  })
 })

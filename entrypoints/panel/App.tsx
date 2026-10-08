@@ -122,14 +122,14 @@ export const App = ({ themeTarget }: AppProps) => {
                 />
               )}
 
-              {activeTab === 'notes' && (
+              <div hidden={activeTab !== 'notes'}>
                 <NotesTab
                   isUploading={isPointUploading}
                   isLoggedIn={isLoggedIn}
                   onRequireAuth={handleRequireAuth}
                   onManualUpload={performManualUpload}
                 />
-              )}
+              </div>
             </>
           )}
         </OccupiedDatesProvider>
