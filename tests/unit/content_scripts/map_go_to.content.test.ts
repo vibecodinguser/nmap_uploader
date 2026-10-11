@@ -10,7 +10,7 @@ import {
   GO_TO_SPLIT_BUTTON_ENABLED_STORAGE_KEY,
   GO_TO_SPLIT_BUTTON_ID,
 } from '@/lib/go_to_split_button'
-import { NOTES_BUTTON_ID } from '@/lib/notes_button'
+import { NOTES_BUTTON_ENABLED_STORAGE_KEY, NOTES_BUTTON_ID } from '@/lib/notes_button'
 import { NOTES_POPUP_ID } from '@/lib/notes_popup'
 import { POLYGON_UPLOAD_BUTTON_ID } from '@/lib/polygon_upload_button'
 import { POLYGON_UPLOAD_POPUP_ID } from '@/lib/polygon_upload_popup'
@@ -140,5 +140,19 @@ describe('map-go-to.content', () => {
 
     document.getElementById(POLYGON_UPLOAD_BUTTON_ID)?.click()
     expect(document.getElementById(POLYGON_UPLOAD_POPUP_ID)).toBeNull()
+  })
+
+  it('не монтирует кнопку заметок при отключённой опции в хранилище', async () => {
+    await browser.storage.local.set({
+      [NOTES_BUTTON_ENABLED_STORAGE_KEY]: false,
+    })
+
+    mountNmapsToolbarAnchor()
+    mapGoToScript.main?.(ctx)
+
+    await vi.waitFor(() => {
+      expect(document.getElementById(POLYGON_UPLOAD_BUTTON_ID)).not.toBeNull()
+      expect(document.getElementById(NOTES_BUTTON_ID)).toBeNull()
+    })
   })
 })

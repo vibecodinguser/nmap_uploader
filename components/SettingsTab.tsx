@@ -3,6 +3,7 @@ import { type ChangeEvent, type KeyboardEvent, type ReactNode, useMemo } from 'r
 import { GoToLinksSettings } from '@/components/GoToLinksSettings'
 import type { useGoToLinks } from '@/hooks/useGoToLinks'
 import { useLocale } from '@/hooks/useLocale'
+import type { useNotesButton } from '@/hooks/useNotesButton'
 import type { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
 import type { useSplitViewButton } from '@/hooks/useSplitViewButton'
 import type { useStrokeColor } from '@/hooks/useStrokeColor'
@@ -51,6 +52,11 @@ type SplitViewButtonSettings = Pick<
   'isEnabled' | 'isLoaded' | 'setIsEnabled'
 >
 
+type NotesButtonSettings = Pick<
+  ReturnType<typeof useNotesButton>,
+  'isEnabled' | 'isLoaded' | 'setIsEnabled'
+>
+
 type SettingsTabProps = {
   themeMode: ThemeMode
   onThemeModeChange: (mode: ThemeMode) => void
@@ -58,6 +64,7 @@ type SettingsTabProps = {
   strokeColor: StrokeColorSettings
   reloadAfterUpload: ReloadAfterUploadSettings
   splitViewButton: SplitViewButtonSettings
+  notesButton: NotesButtonSettings
   goToLinks: GoToLinksSettingsState
 }
 
@@ -65,6 +72,7 @@ type SettingsTabRuntime = {
   setLocale: (locale: Locale) => void
   onThemeModeChange: (mode: ThemeMode) => void
   setSplitViewButtonEnabled: (enabled: boolean) => void
+  setNotesButtonEnabled: (enabled: boolean) => void
   setReloadAfterUploadEnabled: (enabled: boolean) => void
   handleApply: () => Promise<void>
   handleInputChange: (value: string) => void
@@ -137,6 +145,10 @@ type ThemeModeOptionRenderContext = {
 }
 
 function getSplitViewButtonDisabled(isLoaded: boolean): boolean {
+  return !isLoaded
+}
+
+function getNotesButtonDisabled(isLoaded: boolean): boolean {
   return !isLoaded
 }
 
@@ -281,6 +293,10 @@ function onSplitViewButtonChange(event: ChangeEvent<HTMLInputElement>): void {
   settingsTabRuntime.current?.setSplitViewButtonEnabled(event.target.checked)
 }
 
+function onNotesButtonChange(event: ChangeEvent<HTMLInputElement>): void {
+  settingsTabRuntime.current?.setNotesButtonEnabled(event.target.checked)
+}
+
 function onReloadAfterUploadChange(event: ChangeEvent<HTMLInputElement>): void {
   settingsTabRuntime.current?.setReloadAfterUploadEnabled(event.target.checked)
 }
@@ -292,6 +308,7 @@ export const SettingsTab = function settingsTab({
   strokeColor,
   reloadAfterUpload,
   splitViewButton,
+  notesButton,
   goToLinks,
 }: SettingsTabProps) {
   const { locale, setLocale, t } = useLocale()
@@ -317,11 +334,17 @@ export const SettingsTab = function settingsTab({
     isLoaded: isSplitViewButtonLoaded,
     setIsEnabled: setSplitViewButtonEnabled,
   } = splitViewButton
+  const {
+    isEnabled: isNotesButtonEnabled,
+    isLoaded: isNotesButtonLoaded,
+    setIsEnabled: setNotesButtonEnabled,
+  } = notesButton
 
   settingsTabRuntime.current = {
     setLocale,
     onThemeModeChange,
     setSplitViewButtonEnabled,
+    setNotesButtonEnabled,
     setReloadAfterUploadEnabled,
     handleApply,
     handleInputChange,
@@ -336,6 +359,7 @@ export const SettingsTab = function settingsTab({
   )
 
   const isSplitViewButtonDisabled = getSplitViewButtonDisabled(isSplitViewButtonLoaded)
+  const isNotesButtonDisabled = getNotesButtonDisabled(isNotesButtonLoaded)
   const isReloadAfterUploadDisabled = getReloadAfterUploadDisabled(
     isReloadAfterUploadLoaded,
     canChangeReloadAfterUpload,
@@ -415,6 +439,30 @@ export const SettingsTab = function settingsTab({
               disabled={isSplitViewButtonDisabled}
               aria-label={t('settings.splitViewAria')}
               onChange={onSplitViewButtonChange}
+            />
+            <span className="settings-toggle-track" aria-hidden="true">
+              <span className="settings-toggle-thumb" />
+            </span>
+          </label>
+        </div>
+      </section>
+
+      <section className="settings-section" aria-labelledby="settings-notes-button-heading">
+        <div className="settings-toggle-row">
+          <h3 id="settings-notes-button-heading" className="settings-section-title">
+            {t('settings.notesButton')}
+          </h3>
+          <label className="settings-toggle" htmlFor="settings-notes-button">
+            <input
+              id="settings-notes-button"
+              type="checkbox"
+              role="switch"
+              className="settings-toggle-input"
+              checked={isNotesButtonEnabled}
+              aria-checked={isNotesButtonEnabled}
+              disabled={isNotesButtonDisabled}
+              aria-label={t('settings.notesButtonAria')}
+              onChange={onNotesButtonChange}
             />
             <span className="settings-toggle-track" aria-hidden="true">
               <span className="settings-toggle-thumb" />

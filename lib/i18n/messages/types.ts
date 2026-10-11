@@ -103,6 +103,8 @@ export type Messages = {
     themeSystem: string
     splitViewButton: string
     splitViewAria: string
+    notesButton: string
+    notesButtonAria: string
     goToButton: string
     showButtonAria: string
     activeCount: string

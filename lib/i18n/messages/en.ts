@@ -101,6 +101,8 @@ export const enMessages = {
     themeSystem: 'Auto',
     splitViewButton: 'Button: Split view',
     splitViewAria: 'Split view',
+    notesButton: 'Button: Notes',
+    notesButtonAria: 'Notes',
     goToButton: 'Button: External geoservices',
     showButtonAria: 'Show button',
     activeCount: '{active} of {total} active',

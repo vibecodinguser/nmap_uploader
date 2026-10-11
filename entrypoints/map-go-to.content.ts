@@ -53,7 +53,13 @@ import {
 import { createTranslator, getStoredLocale, type TranslateFn } from '@/lib/i18n'
 import { LOCALE_STORAGE_KEY } from '@/lib/i18n/locale'
 import type { Locale } from '@/lib/i18n/locale.types'
-import { createNotesButton, NOTES_BUTTON_ICON_SVG, NOTES_BUTTON_ID } from '@/lib/notes_button'
+import {
+  createNotesButton,
+  getStoredNotesButtonEnabled,
+  NOTES_BUTTON_ENABLED_STORAGE_KEY,
+  NOTES_BUTTON_ICON_SVG,
+  NOTES_BUTTON_ID,
+} from '@/lib/notes_button'
 import { closeNotesPopup, teardownNotesPopup, toggleNotesPopup } from '@/lib/notes_popup'
 import {
   createPolygonUploadButton,
@@ -223,6 +229,15 @@ const removeSplitButton = (): void => {
   }
 }
 
+const removeNotesButton = (): void => {
+  closeNotesPopup()
+  teardownNotesPopup()
+  const notesButton = getNotesButton()
+  if (notesButton) {
+    notesButton.remove()
+  }
+}
+
 const removeButtonAndMenu = (): void => {
   waitForAnchorCleanup?.()
   waitForAnchorCleanup = undefined
@@ -354,6 +369,15 @@ const syncSplitButtonState = (splitEnabled: boolean): void => {
     menuEnabledPromise.then(handleMenuEnabledForSplitSync)
   } else {
     removeSplitButton()
+  }
+}
+
+const syncNotesButtonState = (notesEnabled: boolean): void => {
+  if (notesEnabled) {
+    mountNotesButton()
+    repairToolbarIcons()
+  } else {
+    removeNotesButton()
   }
 }
 
@@ -531,7 +555,12 @@ const isToolbarButtonHoverTarget = (
   buttonId: string,
 ): button is HTMLElement => button !== null && isElementDescendantToOrEquals(eventTarget, buttonId)
 
-const mountToolbar = (anchor: Element, menuEnabled: boolean, splitButtonEnabled: boolean): void => {
+const mountToolbar = (
+  anchor: Element,
+  menuEnabled: boolean,
+  splitButtonEnabled: boolean,
+  notesButtonEnabled: boolean,
+): void => {
   const parent = getButtonInsertParent(anchor)
   if (parent) {
     const toolbarMountState = getGoToToolbarMountState(anchor)
@@ -568,20 +597,33 @@ const mountToolbar = (anchor: Element, menuEnabled: boolean, splitButtonEnabled:
     }
 
     mountPolygonUploadButton()
-    mountNotesButton()
+
+    if (notesButtonEnabled) {
+      mountNotesButton()
+    } else {
+      removeNotesButton()
+    }
+
     repairToolbarIcons()
   }
 }
 
-const mountToolbarAtAnchor = (menuEnabled: boolean, splitButtonEnabled: boolean): void => {
+const mountToolbarAtAnchor = (
+  menuEnabled: boolean,
+  splitButtonEnabled: boolean,
+  notesButtonEnabled: boolean,
+): void => {
   const anchor = resolveAnchor()
   if (anchor) {
-    mountToolbar(anchor, menuEnabled, splitButtonEnabled)
+    mountToolbar(anchor, menuEnabled, splitButtonEnabled, notesButtonEnabled)
   }
 }
 
 const handleMenuEnabledForSplitSync = (menuEnabled: boolean): void => {
-  mountToolbarAtAnchor(menuEnabled, true)
+  const notesEnabledPromise = getStoredNotesButtonEnabled()
+  notesEnabledPromise.then(function onNotesEnabledLoaded(notesEnabled: boolean): void {
+    mountToolbarAtAnchor(menuEnabled, true, notesEnabled)
+  })
 }
 
 const isGoToMenuItemTarget = (target: EventTarget | null): target is HTMLElement =>
@@ -817,16 +859,17 @@ const refreshMenuItems = async (): Promise<void> => {
   }
 }
 
-type GoToToolbarSettings = readonly [boolean, boolean]
+type GoToToolbarSettings = readonly [boolean, boolean, boolean]
 
 const loadGoToToolbarSettings = (): Promise<GoToToolbarSettings> => {
   const menuEnabledPromise = getStoredGoToMenuEnabled()
   const splitButtonEnabledPromise = getStoredSplitButtonEnabled()
-  return Promise.all([menuEnabledPromise, splitButtonEnabledPromise])
+  const notesButtonEnabledPromise = getStoredNotesButtonEnabled()
+  return Promise.all([menuEnabledPromise, splitButtonEnabledPromise, notesButtonEnabledPromise])
 }
 
 const onToolbarSettingsLoadedForAnchor = (anchor: Element, settings: GoToToolbarSettings): void => {
-  mountToolbar(anchor, settings[0], settings[1])
+  mountToolbar(anchor, settings[0], settings[1], settings[2])
 }
 
 const handleAnchorElementFound = (anchor: Element): void => {
@@ -846,10 +889,11 @@ const waitForAnchorAndMount = (): void => {
 const applyEnabledState = async (
   menuEnabled: boolean,
   splitButtonEnabled: boolean,
+  notesButtonEnabled: boolean,
 ): Promise<void> => {
   const anchor = resolveAnchor()
   if (anchor) {
-    mountToolbar(anchor, menuEnabled, splitButtonEnabled)
+    mountToolbar(anchor, menuEnabled, splitButtonEnabled, notesButtonEnabled)
     if (menuEnabled) {
       await refreshMenuItems()
     }
@@ -860,8 +904,8 @@ const applyEnabledState = async (
 
 async function refreshGoToEnabledState(): Promise<void> {
   const toolbarSettingsPromise = loadGoToToolbarSettings()
-  const [enabled, splitButtonEnabled] = await toolbarSettingsPromise
-  await applyEnabledState(enabled, splitButtonEnabled)
+  const [enabled, splitButtonEnabled, notesButtonEnabled] = await toolbarSettingsPromise
+  await applyEnabledState(enabled, splitButtonEnabled, notesButtonEnabled)
 }
 
 const isLocalStorageArea = (area: string): area is 'local' => area === 'local'
@@ -869,7 +913,8 @@ const isLocalStorageArea = (area: string): area is 'local' => area === 'local'
 const hasGoToRefreshStorageChange = (changes: Record<string, { newValue?: unknown }>): boolean =>
   GO_TO_MENU_ENABLED_STORAGE_KEY in changes ||
   GO_TO_ITEMS_STORAGE_KEY in changes ||
-  GO_TO_SPLIT_BUTTON_ENABLED_STORAGE_KEY in changes
+  GO_TO_SPLIT_BUTTON_ENABLED_STORAGE_KEY in changes ||
+  NOTES_BUTTON_ENABLED_STORAGE_KEY in changes
 
 const reportGoToRefreshError = (error: unknown): void => {
   console.warn('[nmap_uploader] go-to menu refresh failed:', error)
@@ -984,15 +1029,17 @@ export default defineContentScript({
     const handleMenuEnabledStorageChange = (
       nextMenuEnabled: boolean,
       splitButtonEnabled: boolean,
+      notesButtonEnabled: boolean,
     ): void => {
-      mountToolbarAtAnchor(nextMenuEnabled, splitButtonEnabled)
+      mountToolbarAtAnchor(nextMenuEnabled, splitButtonEnabled, notesButtonEnabled)
     }
 
     const onMenuEnabledStorageLoaded = function onMenuEnabledStorageLoaded(
       nextMenuEnabled: boolean,
       splitButtonEnabled: boolean,
+      notesButtonEnabled: boolean,
     ): void {
-      handleMenuEnabledStorageChange(nextMenuEnabled, splitButtonEnabled)
+      handleMenuEnabledStorageChange(nextMenuEnabled, splitButtonEnabled, notesButtonEnabled)
     }
 
     const handleStorageChange = (
@@ -1007,6 +1054,13 @@ export default defineContentScript({
           }
         }
 
+        if (NOTES_BUTTON_ENABLED_STORAGE_KEY in changes) {
+          const nextNotesEnabled = changes[NOTES_BUTTON_ENABLED_STORAGE_KEY]?.newValue
+          if (typeof nextNotesEnabled === 'boolean') {
+            syncNotesButtonState(nextNotesEnabled)
+          }
+        }
+
         if (LOCALE_STORAGE_KEY in changes) {
           const localeRefreshPromise = refreshContentLocale()
           localeRefreshPromise.then(handleLocaleRefreshScheduled)
@@ -1016,11 +1070,15 @@ export default defineContentScript({
           const nextMenuEnabled = changes[GO_TO_MENU_ENABLED_STORAGE_KEY]?.newValue
           if (typeof nextMenuEnabled === 'boolean') {
             const splitButtonEnabledPromise = getStoredSplitButtonEnabled()
-            splitButtonEnabledPromise.then(function onSplitButtonEnabledLoaded(
-              splitButtonEnabled: boolean,
-            ): void {
-              onMenuEnabledStorageLoaded(nextMenuEnabled, splitButtonEnabled)
-            })
+            const notesButtonEnabledPromise = getStoredNotesButtonEnabled()
+            Promise.all([splitButtonEnabledPromise, notesButtonEnabledPromise]).then(
+              function onToolbarButtonsEnabledLoaded([
+                splitButtonEnabled,
+                notesButtonEnabled,
+              ]): void {
+                onMenuEnabledStorageLoaded(nextMenuEnabled, splitButtonEnabled, notesButtonEnabled)
+              },
+            )
           }
         }
 
@@ -1033,7 +1091,7 @@ export default defineContentScript({
     const onRuntimeToolbarSettingsLoaded = function onRuntimeToolbarSettingsLoaded(
       settings: GoToToolbarSettings,
     ): void {
-      mountToolbarAtAnchor(settings[0], settings[1])
+      mountToolbarAtAnchor(settings[0], settings[1], settings[2])
     }
 
     const handleRuntimeMessage = (message: { action?: string }): void => {

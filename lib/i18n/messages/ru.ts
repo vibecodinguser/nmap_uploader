@@ -101,6 +101,8 @@ export const ruMessages = {
     themeSystem: 'Авто',
     splitViewButton: 'Кнопка: Раздельный вид',
     splitViewAria: 'Раздельный вид',
+    notesButton: 'Кнопка: Заметки',
+    notesButtonAria: 'Заметки',
     goToButton: 'Кнопка: Внешние геосервисы',
     showButtonAria: 'Отображать кнопку',
     activeCount: '{active} из {total} активны',

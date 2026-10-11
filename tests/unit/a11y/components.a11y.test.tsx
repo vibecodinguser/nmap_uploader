@@ -42,6 +42,11 @@ const settingsTabProps = {
     isLoaded: true,
     setIsEnabled: noop,
   },
+  notesButton: {
+    isEnabled: true,
+    isLoaded: true,
+    setIsEnabled: noop,
+  },
   goToLinks: {
     isMenuEnabled: true,
     isLoaded: true,
