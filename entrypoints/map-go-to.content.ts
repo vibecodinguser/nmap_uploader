@@ -53,6 +53,8 @@ import {
 import { createTranslator, getStoredLocale, type TranslateFn } from '@/lib/i18n'
 import { LOCALE_STORAGE_KEY } from '@/lib/i18n/locale'
 import type { Locale } from '@/lib/i18n/locale.types'
+import { createNotesButton, NOTES_BUTTON_ICON_SVG, NOTES_BUTTON_ID } from '@/lib/notes_button'
+import { closeNotesPopup, teardownNotesPopup, toggleNotesPopup } from '@/lib/notes_popup'
 import {
   createPolygonUploadButton,
   POLYGON_UPLOAD_BUTTON_ICON_SVG,
@@ -73,6 +75,7 @@ const BUTTON_ANCHOR_SELECTORS = [
 const SERVICE_BUTTON_ID = GO_TO_SERVICE_BUTTON_ID
 const SPLIT_BUTTON_ID = GO_TO_SPLIT_BUTTON_ID
 const UPLOAD_BUTTON_ID = POLYGON_UPLOAD_BUTTON_ID
+const NOTES_TOOLBAR_BUTTON_ID = NOTES_BUTTON_ID
 const MENU_ID = 'goToLinksMenu'
 const MENU_ITEMS_ID = 'linksItems'
 
@@ -118,6 +121,10 @@ const refreshContentLocale = async (): Promise<void> => {
   if (uploadButton) {
     uploadButton.setAttribute('aria-label', contentTranslator('map.uploadPolygons'))
   }
+  const notesButton = getNotesButton()
+  if (notesButton) {
+    notesButton.setAttribute('aria-label', contentTranslator('map.notes'))
+  }
 }
 
 const createMenuItemElement = (item: GoToItem, iconUrl: string): HTMLDivElement => {
@@ -135,6 +142,8 @@ const getSplitButton = (): HTMLButtonElement | null =>
   document.getElementById(SPLIT_BUTTON_ID) as HTMLButtonElement | null
 const getPolygonUploadButton = (): HTMLButtonElement | null =>
   document.getElementById(UPLOAD_BUTTON_ID) as HTMLButtonElement | null
+const getNotesButton = (): HTMLButtonElement | null =>
+  document.getElementById(NOTES_TOOLBAR_BUTTON_ID) as HTMLButtonElement | null
 const getMenu = (): HTMLElement | null => document.getElementById(MENU_ID)
 const getMenuItems = (): HTMLElement | null => document.getElementById(MENU_ITEMS_ID)
 
@@ -221,6 +230,7 @@ const removeButtonAndMenu = (): void => {
   removeMenu()
   teardownSplitView()
   teardownPolygonUploadPopup()
+  teardownNotesPopup()
   removeAllGoToToolbarButtons()
 }
 
@@ -292,6 +302,12 @@ const bindPolygonUploadButtonEvents = (button: HTMLButtonElement): void => {
   button.addEventListener('click', handlePolygonUploadButtonClick)
   button.addEventListener('mouseover', handlePolygonUploadButtonMouseOver)
   button.addEventListener('mouseout', handlePolygonUploadButtonMouseOut)
+}
+
+const bindNotesButtonEvents = (button: HTMLButtonElement): void => {
+  button.addEventListener('click', handleNotesButtonClick)
+  button.addEventListener('mouseover', handleNotesButtonMouseOver)
+  button.addEventListener('mouseout', handleNotesButtonMouseOut)
 }
 
 const isSplitButtonSiblingOf = (
@@ -403,18 +419,47 @@ const mountPolygonUploadButton = (): void => {
   }
 }
 
+const mountNotesButton = (): void => {
+  const uploadButton = getPolygonUploadButton()
+  if (!uploadButton) return
+
+  const existingButton = getNotesButton()
+  if (existingButton && existingButton.previousElementSibling !== uploadButton) {
+    closeNotesPopup()
+    existingButton.remove()
+  }
+
+  if (!getNotesButton()) {
+    const button = createNotesButton(contentTranslator('map.notes'))
+    uploadButton.insertAdjacentElement('afterend', button)
+    bindNotesButtonEvents(button)
+  }
+}
+
+const getIsNotesSiblingCorrect = (
+  uploadButtons: HTMLElement[],
+  notesButtons: HTMLElement[],
+): boolean => {
+  const notesButton = notesButtons[0]
+  if (!notesButton) return true
+  const uploadButton = uploadButtons[0]
+  return uploadButton !== undefined && notesButton.previousElementSibling === uploadButton
+}
+
 const getGoToToolbarMountState = (
   anchor: Element,
 ): Parameters<typeof shouldRemountGoToToolbar>[0] => {
   const goToServiceButtons = queryAllByDomId(GO_TO_SERVICE_BUTTON_ID)
   const splitButtons = queryAllByDomId(GO_TO_SPLIT_BUTTON_ID)
   const uploadButtons = queryAllByDomId(POLYGON_UPLOAD_BUTTON_ID)
+  const notesButtons = queryAllByDomId(NOTES_BUTTON_ID)
   const goToServiceButton = goToServiceButtons[0] ?? null
 
   return {
     goToCount: goToServiceButtons.length,
     splitCount: splitButtons.length,
     uploadCount: uploadButtons.length,
+    notesCount: notesButtons.length,
     isGoToMountedCorrectly: getIsGoToMountedCorrectly(goToServiceButton, anchor),
     isSplitSiblingCorrect: getIsSplitSiblingCorrect(goToServiceButton, splitButtons),
     isUploadSiblingCorrect: getIsUploadSiblingCorrect(
@@ -422,6 +467,7 @@ const getGoToToolbarMountState = (
       splitButtons,
       uploadButtons,
     ),
+    isNotesSiblingCorrect: getIsNotesSiblingCorrect(uploadButtons, notesButtons),
   }
 }
 
@@ -430,6 +476,7 @@ const repairToolbarIcons = (): void => {
     [GO_TO_SERVICE_BUTTON_ID]: GO_TO_SERVICE_BUTTON_ICON_SVG,
     [GO_TO_SPLIT_BUTTON_ID]: GO_TO_SPLIT_BUTTON_ICON_SVG,
     [POLYGON_UPLOAD_BUTTON_ID]: POLYGON_UPLOAD_BUTTON_ICON_SVG,
+    [NOTES_BUTTON_ID]: NOTES_BUTTON_ICON_SVG,
   })
 }
 
@@ -467,6 +514,7 @@ const mountToolbar = (anchor: Element, menuEnabled: boolean, splitButtonEnabled:
     const toolbarMountState = getGoToToolbarMountState(anchor)
     if (shouldRemountGoToToolbar(toolbarMountState)) {
       closePolygonUploadPopup()
+      closeNotesPopup()
       removeAllGoToToolbarButtons()
     }
 
@@ -497,6 +545,7 @@ const mountToolbar = (anchor: Element, menuEnabled: boolean, splitButtonEnabled:
     }
 
     mountPolygonUploadButton()
+    mountNotesButton()
     repairToolbarIcons()
   }
 }
@@ -603,17 +652,33 @@ const handleMenuItemAuxClick = (event: MouseEvent): void => {
 
 const handleButtonClick = (): void => {
   closePolygonUploadPopup()
+  closeNotesPopup()
   showMenu()
 }
 
 const handlePolygonUploadButtonClick = (event: MouseEvent): void => {
   event.preventDefault()
   event.stopPropagation()
+  event.stopImmediatePropagation()
   hideMenu()
+  closeNotesPopup()
 
   const button = getPolygonUploadButton()
   if (button) {
     togglePolygonUploadPopup(button)
+  }
+}
+
+const handleNotesButtonClick = (event: MouseEvent): void => {
+  event.preventDefault()
+  event.stopPropagation()
+  event.stopImmediatePropagation()
+  hideMenu()
+  closePolygonUploadPopup()
+
+  const button = getNotesButton()
+  if (button) {
+    toggleNotesPopup(button)
   }
 }
 
@@ -622,6 +687,7 @@ const handleSplitButtonClick = (event: MouseEvent): void => {
   event.stopPropagation()
   hideMenu()
   closePolygonUploadPopup()
+  closeNotesPopup()
 
   if (isSplitViewOpen()) {
     toggleSplitView()
@@ -666,6 +732,22 @@ const handlePolygonUploadButtonMouseOver = (event: MouseEvent): void => {
 const handlePolygonUploadButtonMouseOut = (event: MouseEvent): void => {
   const button = getPolygonUploadButton()
   if (isToolbarButtonHoverTarget(button, event.target, UPLOAD_BUTTON_ID)) {
+    button.classList.remove(GO_TO_BUTTON_HOVERED_CLASS)
+    hideGoToTooltip()
+  }
+}
+
+const handleNotesButtonMouseOver = (event: MouseEvent): void => {
+  const button = getNotesButton()
+  if (isToolbarButtonHoverTarget(button, event.target, NOTES_TOOLBAR_BUTTON_ID)) {
+    button.classList.add(GO_TO_BUTTON_HOVERED_CLASS)
+    showGoToTooltip(contentTranslator('map.notes'), button, 'top')
+  }
+}
+
+const handleNotesButtonMouseOut = (event: MouseEvent): void => {
+  const button = getNotesButton()
+  if (isToolbarButtonHoverTarget(button, event.target, NOTES_TOOLBAR_BUTTON_ID)) {
     button.classList.remove(GO_TO_BUTTON_HOVERED_CLASS)
     hideGoToTooltip()
   }

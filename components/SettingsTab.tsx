@@ -54,7 +54,7 @@ type SplitViewButtonSettings = Pick<
 type SettingsTabProps = {
   themeMode: ThemeMode
   onThemeModeChange: (mode: ThemeMode) => void
-  onBack: () => void
+  onBack?: () => void
   strokeColor: StrokeColorSettings
   reloadAfterUpload: ReloadAfterUploadSettings
   splitViewButton: SplitViewButtonSettings
@@ -363,15 +363,17 @@ export const SettingsTab = function settingsTab({
 
   return (
     <div className="tab-panel settings-tab">
-      <button
-        type="button"
-        className="settings-back-btn"
-        onClick={onBack}
-        aria-label={t('tabs.backToUploadAria')}
-      >
-        <ArrowLeft size={SETTINGS_BACK_ICON_SIZE} aria-hidden />
-        <span>{t('common.back')}</span>
-      </button>
+      {onBack ? (
+        <button
+          type="button"
+          className="settings-back-btn"
+          onClick={onBack}
+          aria-label={t('tabs.backToUploadAria')}
+        >
+          <ArrowLeft size={SETTINGS_BACK_ICON_SIZE} aria-hidden />
+          <span>{t('common.back')}</span>
+        </button>
+      ) : null}
 
       <h2 className="settings-title">{t('settings.title')}</h2>
 

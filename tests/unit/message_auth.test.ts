@@ -11,6 +11,8 @@ import {
 import { EXTENSION_ID, getURL } from '@/tests/setup/browser_mock'
 
 const panelUrl = getURL('/panel.html')
+const polygonUploadUrl = getURL('/polygon-upload.html')
+const notesUrl = getURL('/notes.html')
 
 const buildSender = ({
   id = EXTENSION_ID,
@@ -31,6 +33,19 @@ const buildSender = ({
 describe('message_auth', () => {
   it('isPanelSender: принимает panel.html расширения', () => {
     expect(isPanelSender(buildSender({ url: panelUrl }))).toBe(true)
+  })
+
+  it('isTrustedPanelSender: принимает страницу загрузки полигонов', () => {
+    expect(isTrustedPanelSender(buildSender({ url: polygonUploadUrl }))).toBe(true)
+    expect(isPanelSender(buildSender({ url: `${polygonUploadUrl}#root` }))).toBe(true)
+  })
+
+  it('isTrustedPanelSender: принимает страницу заметок', () => {
+    expect(isTrustedPanelSender(buildSender({ url: notesUrl }))).toBe(true)
+  })
+
+  it('isTrustedPanelSender: отклоняет произвольную страницу расширения', () => {
+    expect(isTrustedPanelSender(buildSender({ url: getURL('/other.html') }))).toBe(false)
   })
 
   it('isNmapsContentSender: принимает content script на n.maps', () => {

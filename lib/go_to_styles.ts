@@ -99,12 +99,18 @@ const GO_TO_STYLES = `
 }
 
 .nmap-uploader-polygon-popup {
+  position: fixed !important;
   z-index: 11000;
+  display: block !important;
   width: min(425px, calc(100vw - 24px));
+  margin: 0 !important;
   overflow: hidden;
+  visibility: visible !important;
+  opacity: 1 !important;
   border-radius: 4px;
   background: var(--nmap-uploader-popup-bg, #fff);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  animation: none !important;
 }
 
 .nmap-uploader-polygon-popup__content {
@@ -210,7 +216,13 @@ html.nmap-uploader-split-active .nk-app-view {
 
 /** Подключает изолированные стили go-to UI, без классов nk-popup/nk-map-region-view. */
 export const ensureGoToStyles = (): void => {
-  if (document.getElementById(GO_TO_STYLES_ID)) return
+  const existing = document.getElementById(GO_TO_STYLES_ID)
+  if (existing) {
+    if (existing.textContent !== GO_TO_STYLES) {
+      existing.textContent = GO_TO_STYLES
+    }
+    return
+  }
 
   const style = document.createElement('style')
   style.id = GO_TO_STYLES_ID

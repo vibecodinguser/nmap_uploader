@@ -12,11 +12,13 @@ export type RuntimeMessageSender = {
   }
 }
 
-const getPanelUrlPrefix = (): string => {
+const TRUSTED_EXTENSION_PAGE_PATHS = ['/panel.html', '/polygon-upload.html', '/notes.html'] as const
+
+const getExtensionPageUrl = (path: (typeof TRUSTED_EXTENSION_PAGE_PATHS)[number]): string => {
   const runtime = browser.runtime as typeof browser.runtime & {
     getURL: (path: string) => string
   }
-  return runtime.getURL('/panel.html')
+  return runtime.getURL(path)
 }
 
 export const isExtensionSender = (sender: RuntimeMessageSender): boolean =>
@@ -25,7 +27,9 @@ export const isExtensionSender = (sender: RuntimeMessageSender): boolean =>
 export const isPanelSender = (sender: RuntimeMessageSender): boolean => {
   const senderUrl = sender.url
   if (!senderUrl) return false
-  return senderUrl.startsWith(getPanelUrlPrefix())
+  return TRUSTED_EXTENSION_PAGE_PATHS.some((path) =>
+    senderUrl.startsWith(getExtensionPageUrl(path)),
+  )
 }
 
 export const isNmapsContentSender = (sender: RuntimeMessageSender): boolean =>

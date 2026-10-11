@@ -11,6 +11,13 @@ body,
 }
 
 .polygon-upload-popup-app .tab-panel,
-.polygon-upload-popup-app .upload-form {
+.polygon-upload-popup-app .upload-form,
+.notes-popup-app,
+.notes-popup-app .tab-panel {
   min-height: 0;
+}
+
+.notes-popup-app {
+  min-height: 100%;
+  padding: 16px;
 }

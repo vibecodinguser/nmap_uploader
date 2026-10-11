@@ -6,9 +6,11 @@ describe('shouldRemountGoToToolbar', () => {
     goToCount: 1,
     splitCount: 1,
     uploadCount: 1,
+    notesCount: 1,
     isGoToMountedCorrectly: true,
     isSplitSiblingCorrect: true,
     isUploadSiblingCorrect: true,
+    isNotesSiblingCorrect: true,
   }
 
   it('не пересоздаёт корректно смонтированную пару кнопок', () => {
@@ -65,6 +67,24 @@ describe('shouldRemountGoToToolbar', () => {
       shouldRemountGoToToolbar({
         ...mountedCorrectly,
         isUploadSiblingCorrect: false,
+      }),
+    ).toBe(true)
+  })
+
+  it('пересоздаёт кнопки при дубликатах заметок', () => {
+    expect(
+      shouldRemountGoToToolbar({
+        ...mountedCorrectly,
+        notesCount: 2,
+      }),
+    ).toBe(true)
+  })
+
+  it('пересоздаёт кнопки, если заметки стоят не после загрузки', () => {
+    expect(
+      shouldRemountGoToToolbar({
+        ...mountedCorrectly,
+        isNotesSiblingCorrect: false,
       }),
     ).toBe(true)
   })

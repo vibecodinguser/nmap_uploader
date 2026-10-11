@@ -52,15 +52,39 @@ describe('polygon upload popup', () => {
     expect(isPolygonUploadPopupOpen()).toBe(false)
   })
 
-  it('закрывает popup кликом снаружи', () => {
+  it('не закрывает popup внешним кликом из того же стека, что и открытие', () => {
+    const button = mountButton()
+    button.addEventListener('click', () => {
+      togglePolygonUploadPopup(button)
+      document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+    expect(isPolygonUploadPopupOpen()).toBe(true)
+  })
+
+  it('не закрывает popup кликом на следующем тике после открытия', async () => {
     togglePolygonUploadPopup(mountButton())
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+    expect(isPolygonUploadPopupOpen()).toBe(true)
+  })
+
+  it('закрывает popup кликом снаружи', async () => {
+    togglePolygonUploadPopup(mountButton())
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
     document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 
     expect(isPolygonUploadPopupOpen()).toBe(false)
   })
 
-  it('не закрывает popup кликом внутри', () => {
+  it('не закрывает popup кликом внутри', async () => {
     togglePolygonUploadPopup(mountButton())
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
     document
       .getElementById(POLYGON_UPLOAD_POPUP_ID)
       ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
@@ -73,5 +97,17 @@ describe('polygon upload popup', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
 
     expect(isPolygonUploadPopupOpen()).toBe(false)
+  })
+
+  it('не бросает и не открывает popup при invalidated extension context', () => {
+    vi.spyOn(browser.runtime, 'getURL').mockImplementation(() => {
+      throw new Error('Extension context invalidated.')
+    })
+    const button = mountButton()
+
+    expect(() => togglePolygonUploadPopup(button)).not.toThrow()
+    expect(isPolygonUploadPopupOpen()).toBe(false)
+    expect(document.getElementById(POLYGON_UPLOAD_POPUP_ID)).toBeNull()
+    expect(button.getAttribute('aria-expanded')).not.toBe('true')
   })
 })

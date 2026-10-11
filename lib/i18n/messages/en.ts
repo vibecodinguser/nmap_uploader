@@ -127,6 +127,7 @@ export const enMessages = {
   map: {
     splitView: 'Split view',
     uploadPolygons: 'Upload polygons',
+    notes: 'Notes',
     externalGeoservices: 'External geoservices',
     mapLocationError: 'Could not determine map position from URL (ll, z)',
     nakarteCompareError: 'Could not open comparison with Nakarte',

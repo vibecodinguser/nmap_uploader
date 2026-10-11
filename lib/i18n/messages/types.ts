@@ -129,6 +129,7 @@ export type Messages = {
   map: {
     splitView: string
     uploadPolygons: string
+    notes: string
     externalGeoservices: string
     mapLocationError: string
     nakarteCompareError: string
