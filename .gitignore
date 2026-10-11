@@ -1,6 +1,6 @@
 # Зависимости
 node_modules/
-.pnpm-store/*
+.pnpm-store/
 
 # WXT / Vite
 .output/
@@ -48,6 +48,10 @@ skills-lock.json
 *.sw?
 AGENTS.md
 .cursorignore
+GEMINI.md
+TASK.md
+docs/
+.worktrees/
 
 # ОС
 .DS_Store
@@ -65,9 +69,3 @@ coverage/
 # Аналитика сборки (Vite bundle analyzer)
 stats.html
 stats-*.json
-
-#Проектные файлы
-GEMINI.md
-TASK.md
-docs/*
-.worktrees/
