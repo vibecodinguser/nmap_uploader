@@ -98,6 +98,28 @@ const GO_TO_STYLES = `
   background-color: var(--nmap-uploader-menu-item-hover-bg, #ffeba0);
 }
 
+.nmap-uploader-polygon-popup {
+  z-index: 11000;
+  width: min(425px, calc(100vw - 24px));
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--nmap-uploader-popup-bg, #fff);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.nmap-uploader-polygon-popup__content {
+  width: 100%;
+  height: min(560px, calc(100vh - 80px));
+  max-height: inherit;
+}
+
+.nmap-uploader-polygon-popup__iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
 .nmap-uploader-split-btn--active .nmap-uploader-goto-icon {
   opacity: 1;
   color: #4d8eff;

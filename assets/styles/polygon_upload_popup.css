@@ -1,0 +1,16 @@
+html,
+body,
+#root {
+  min-height: 0;
+  overflow: auto;
+}
+
+.polygon-upload-popup-app {
+  min-height: 100%;
+  padding: 16px;
+}
+
+.polygon-upload-popup-app .tab-panel,
+.polygon-upload-popup-app .upload-form {
+  min-height: 0;
+}

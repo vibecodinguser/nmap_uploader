@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { encodeBinaryPayload, normalizeBinaryBuffer } from '@/lib/binary_buffer'
 import { processFile } from '@/lib/converters'
 import { ERR_SHAPEFILE, isProcessingError, ProcessingError } from '@/lib/errors'
-import { createZipBuffer, readShapefileFixture } from '../fixtures/shapefile_fixtures'
+import { createShapefileFixture, createZipBuffer } from '../fixtures/shapefile_fixtures'
 
 const expectShapefileError = async (
   run: () => Promise<unknown>,
@@ -22,7 +22,7 @@ describe('processFile: shapefile в ZIP', () => {
   it('конвертирует point shapefile в точку с координатами [lon, lat]', async () => {
     const result = await processFile({
       name: 'point_shapefile.zip',
-      buffer: readShapefileFixture('point_shapefile.zip'),
+      buffer: await createShapefileFixture('point_shapefile.zip'),
     })
 
     const points = Object.values(result.points)
@@ -39,7 +39,7 @@ describe('processFile: shapefile в ZIP', () => {
   it('конвертирует polygon shapefile (Shape Type 5) в пути', async () => {
     const result = await processFile({
       name: 'poly_shapefile.zip',
-      buffer: readShapefileFixture('poly_shapefile.zip'),
+      buffer: await createShapefileFixture('poly_shapefile.zip'),
     })
 
     const paths = Object.values(result.paths)
@@ -51,7 +51,7 @@ describe('processFile: shapefile в ZIP', () => {
   it('конвертирует multipoint shapefile (Shape Type 8)', async () => {
     const result = await processFile({
       name: 'mpoint_shapefile.zip',
-      buffer: readShapefileFixture('mpoint_shapefile.zip'),
+      buffer: await createShapefileFixture('mpoint_shapefile.zip'),
     })
 
     expect(
@@ -62,7 +62,7 @@ describe('processFile: shapefile в ZIP', () => {
   it('конвертирует shapefile с Null Shape и Point в одном наборе', async () => {
     const result = await processFile({
       name: 'mixed_shapefile.zip',
-      buffer: readShapefileFixture('mixed_shapefile.zip'),
+      buffer: await createShapefileFixture('mixed_shapefile.zip'),
     })
 
     const points = Object.values(result.points)
@@ -73,7 +73,7 @@ describe('processFile: shapefile в ZIP', () => {
   it('конвертирует polyline shapefile в пути', async () => {
     const result = await processFile({
       name: 'line_shapefile.zip',
-      buffer: readShapefileFixture('line_shapefile.zip'),
+      buffer: await createShapefileFixture('line_shapefile.zip'),
     })
 
     const paths = Object.values(result.paths)
@@ -84,10 +84,10 @@ describe('processFile: shapefile в ZIP', () => {
 
   it('отклоняет пустой shapefile без геометрии', async () => {
     await expectShapefileError(
-      () =>
+      async () =>
         processFile({
           name: 'empty_shapefile.zip',
-          buffer: readShapefileFixture('empty_shapefile.zip'),
+          buffer: await createShapefileFixture('empty_shapefile.zip'),
         }),
       'Shapefile пуст',
     )
@@ -129,7 +129,7 @@ describe('processFile: shapefile в ZIP', () => {
   it('отклоняет ZIP с .shp/.shx/.dbf, но с повреждённым содержимым', async () => {
     const source = await (async () => {
       const JSZip = (await import('jszip')).default
-      const zip = await JSZip.loadAsync(readShapefileFixture('point_shapefile.zip'))
+      const zip = await JSZip.loadAsync(await createShapefileFixture('point_shapefile.zip'))
       return {
         shp: (await zip.file('point.shp')?.async('uint8array')) ?? new Uint8Array(),
         shx: (await zip.file('point.shx')?.async('uint8array')) ?? new Uint8Array(),
@@ -155,7 +155,7 @@ describe('processFile: shapefile в ZIP', () => {
   })
 
   it('принимает shapefile, переданный как base64 payload', async () => {
-    const source = readShapefileFixture('point_shapefile.zip')
+    const source = await createShapefileFixture('point_shapefile.zip')
     const payload = encodeBinaryPayload(source)
 
     const result = await processFile({

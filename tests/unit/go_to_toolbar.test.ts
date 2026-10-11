@@ -5,8 +5,10 @@ describe('shouldRemountGoToToolbar', () => {
   const mountedCorrectly = {
     goToCount: 1,
     splitCount: 1,
+    uploadCount: 1,
     isGoToMountedCorrectly: true,
     isSplitSiblingCorrect: true,
+    isUploadSiblingCorrect: true,
   }
 
   it('не пересоздаёт корректно смонтированную пару кнопок', () => {
@@ -31,6 +33,15 @@ describe('shouldRemountGoToToolbar', () => {
     ).toBe(true)
   })
 
+  it('пересоздаёт кнопки при дубликатах загрузки', () => {
+    expect(
+      shouldRemountGoToToolbar({
+        ...mountedCorrectly,
+        uploadCount: 2,
+      }),
+    ).toBe(true)
+  })
+
   it('пересоздаёт кнопки при неверной позиции go-to', () => {
     expect(
       shouldRemountGoToToolbar({
@@ -45,6 +56,15 @@ describe('shouldRemountGoToToolbar', () => {
       shouldRemountGoToToolbar({
         ...mountedCorrectly,
         isSplitSiblingCorrect: false,
+      }),
+    ).toBe(true)
+  })
+
+  it('пересоздаёт кнопки, если загрузка стоит не после split-view', () => {
+    expect(
+      shouldRemountGoToToolbar({
+        ...mountedCorrectly,
+        isUploadSiblingCorrect: false,
       }),
     ).toBe(true)
   })

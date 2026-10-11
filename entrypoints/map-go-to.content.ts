@@ -53,6 +53,16 @@ import {
 import { createTranslator, getStoredLocale, type TranslateFn } from '@/lib/i18n'
 import { LOCALE_STORAGE_KEY } from '@/lib/i18n/locale'
 import type { Locale } from '@/lib/i18n/locale.types'
+import {
+  createPolygonUploadButton,
+  POLYGON_UPLOAD_BUTTON_ICON_SVG,
+  POLYGON_UPLOAD_BUTTON_ID,
+} from '@/lib/polygon_upload_button'
+import {
+  closePolygonUploadPopup,
+  teardownPolygonUploadPopup,
+  togglePolygonUploadPopup,
+} from '@/lib/polygon_upload_popup'
 
 const BUTTON_ANCHOR_SELECTORS = [
   '.nk-map-region-view__button .nk-icon_id_ymaps',
@@ -62,6 +72,7 @@ const BUTTON_ANCHOR_SELECTORS = [
 
 const SERVICE_BUTTON_ID = GO_TO_SERVICE_BUTTON_ID
 const SPLIT_BUTTON_ID = GO_TO_SPLIT_BUTTON_ID
+const UPLOAD_BUTTON_ID = POLYGON_UPLOAD_BUTTON_ID
 const MENU_ID = 'goToLinksMenu'
 const MENU_ITEMS_ID = 'linksItems'
 
@@ -103,6 +114,10 @@ const refreshContentLocale = async (): Promise<void> => {
     const splitViewLabel = contentTranslator('map.splitView')
     splitButton.setAttribute('aria-label', splitViewLabel)
   }
+  const uploadButton = getPolygonUploadButton()
+  if (uploadButton) {
+    uploadButton.setAttribute('aria-label', contentTranslator('map.uploadPolygons'))
+  }
 }
 
 const createMenuItemElement = (item: GoToItem, iconUrl: string): HTMLDivElement => {
@@ -118,6 +133,8 @@ const createMenuItemElement = (item: GoToItem, iconUrl: string): HTMLDivElement 
 const getServiceButton = (): HTMLElement | null => document.getElementById(SERVICE_BUTTON_ID)
 const getSplitButton = (): HTMLButtonElement | null =>
   document.getElementById(SPLIT_BUTTON_ID) as HTMLButtonElement | null
+const getPolygonUploadButton = (): HTMLButtonElement | null =>
+  document.getElementById(UPLOAD_BUTTON_ID) as HTMLButtonElement | null
 const getMenu = (): HTMLElement | null => document.getElementById(MENU_ID)
 const getMenuItems = (): HTMLElement | null => document.getElementById(MENU_ITEMS_ID)
 
@@ -178,17 +195,6 @@ const showGoToServiceButton = (): void => {
   }
 }
 
-const hideSplitButton = (): void => {
-  const splitButton = getSplitButton()
-  if (splitButton) {
-    splitButton.classList.add(GO_TO_SPLIT_BUTTON_HIDDEN_CLASS)
-    splitButton.setAttribute('aria-hidden', 'true')
-    for (const className of REGION_BUTTON_CLASSES) {
-      splitButton.classList.remove(className)
-    }
-  }
-}
-
 const showSplitButton = (): void => {
   const splitButton = getSplitButton()
   if (splitButton) {
@@ -214,6 +220,7 @@ const removeButtonAndMenu = (): void => {
   hideGoToTooltip()
   removeMenu()
   teardownSplitView()
+  teardownPolygonUploadPopup()
   removeAllGoToToolbarButtons()
 }
 
@@ -221,20 +228,6 @@ const hideGoToMenuOnly = (): void => {
   hideGoToTooltip()
   hideMenu()
   hideGoToServiceButton()
-}
-
-const hideButtonAndMenu = (): void => {
-  if (waitForAnchorCleanup) {
-    waitForAnchorCleanup()
-  }
-  waitForAnchorCleanup = undefined
-  hideGoToTooltip()
-  hideMenu()
-  if (isSplitViewOpen()) {
-    teardownSplitView()
-  }
-  hideGoToServiceButton()
-  hideSplitButton()
 }
 
 const renderMenuItems = (items: GoToItem[]): void => {
@@ -295,6 +288,12 @@ const bindSplitButtonEvents = (splitButton: HTMLButtonElement): void => {
   splitButton.addEventListener('mouseout', handleSplitButtonMouseOut)
 }
 
+const bindPolygonUploadButtonEvents = (button: HTMLButtonElement): void => {
+  button.addEventListener('click', handlePolygonUploadButtonClick)
+  button.addEventListener('mouseover', handlePolygonUploadButtonMouseOver)
+  button.addEventListener('mouseout', handlePolygonUploadButtonMouseOut)
+}
+
 const isSplitButtonSiblingOf = (
   splitButton: HTMLButtonElement,
   goToServiceButton: HTMLElement,
@@ -344,6 +343,21 @@ const getIsSplitSiblingCorrect = (
   return isSiblingCorrect
 }
 
+const getIsUploadSiblingCorrect = (
+  goToServiceButton: HTMLElement | null,
+  splitButtons: HTMLElement[],
+  uploadButtons: HTMLElement[],
+): boolean => {
+  const uploadButton = uploadButtons[0]
+  if (!uploadButton) return true
+
+  const expectedPreviousSibling = splitButtons[0] ?? goToServiceButton
+  return (
+    expectedPreviousSibling !== null &&
+    uploadButton.previousElementSibling === expectedPreviousSibling
+  )
+}
+
 const createAndBindSplitButton = (goToServiceButton: HTMLElement): void => {
   const splitViewLabel = contentTranslator('map.splitView')
   const splitViewButton = createSplitViewButton(splitViewLabel)
@@ -370,18 +384,44 @@ const mountSplitButton = (): void => {
   }
 }
 
+const mountPolygonUploadButton = (): void => {
+  const serviceButton = getServiceButton()
+  if (!serviceButton) return
+
+  const insertAfter = getSplitButton() ?? serviceButton
+  const existingButton = getPolygonUploadButton()
+  if (existingButton && existingButton.previousElementSibling !== insertAfter) {
+    closePolygonUploadPopup()
+    existingButton.remove()
+  }
+
+  if (!getPolygonUploadButton()) {
+    const label = contentTranslator('map.uploadPolygons')
+    const button = createPolygonUploadButton(label)
+    insertAfter.insertAdjacentElement('afterend', button)
+    bindPolygonUploadButtonEvents(button)
+  }
+}
+
 const getGoToToolbarMountState = (
   anchor: Element,
 ): Parameters<typeof shouldRemountGoToToolbar>[0] => {
   const goToServiceButtons = queryAllByDomId(GO_TO_SERVICE_BUTTON_ID)
   const splitButtons = queryAllByDomId(GO_TO_SPLIT_BUTTON_ID)
+  const uploadButtons = queryAllByDomId(POLYGON_UPLOAD_BUTTON_ID)
   const goToServiceButton = goToServiceButtons[0] ?? null
 
   return {
     goToCount: goToServiceButtons.length,
     splitCount: splitButtons.length,
+    uploadCount: uploadButtons.length,
     isGoToMountedCorrectly: getIsGoToMountedCorrectly(goToServiceButton, anchor),
     isSplitSiblingCorrect: getIsSplitSiblingCorrect(goToServiceButton, splitButtons),
+    isUploadSiblingCorrect: getIsUploadSiblingCorrect(
+      goToServiceButton,
+      splitButtons,
+      uploadButtons,
+    ),
   }
 }
 
@@ -389,6 +429,7 @@ const repairToolbarIcons = (): void => {
   repairAllGoToToolbarIcons({
     [GO_TO_SERVICE_BUTTON_ID]: GO_TO_SERVICE_BUTTON_ICON_SVG,
     [GO_TO_SPLIT_BUTTON_ID]: GO_TO_SPLIT_BUTTON_ICON_SVG,
+    [POLYGON_UPLOAD_BUTTON_ID]: POLYGON_UPLOAD_BUTTON_ICON_SVG,
   })
 }
 
@@ -425,6 +466,7 @@ const mountToolbar = (anchor: Element, menuEnabled: boolean, splitButtonEnabled:
   if (parent) {
     const toolbarMountState = getGoToToolbarMountState(anchor)
     if (shouldRemountGoToToolbar(toolbarMountState)) {
+      closePolygonUploadPopup()
       removeAllGoToToolbarButtons()
     }
 
@@ -454,6 +496,7 @@ const mountToolbar = (anchor: Element, menuEnabled: boolean, splitButtonEnabled:
       removeSplitButton()
     }
 
+    mountPolygonUploadButton()
     repairToolbarIcons()
   }
 }
@@ -559,13 +602,26 @@ const handleMenuItemAuxClick = (event: MouseEvent): void => {
 }
 
 const handleButtonClick = (): void => {
+  closePolygonUploadPopup()
   showMenu()
+}
+
+const handlePolygonUploadButtonClick = (event: MouseEvent): void => {
+  event.preventDefault()
+  event.stopPropagation()
+  hideMenu()
+
+  const button = getPolygonUploadButton()
+  if (button) {
+    togglePolygonUploadPopup(button)
+  }
 }
 
 const handleSplitButtonClick = (event: MouseEvent): void => {
   event.preventDefault()
   event.stopPropagation()
   hideMenu()
+  closePolygonUploadPopup()
 
   if (isSplitViewOpen()) {
     toggleSplitView()
@@ -595,6 +651,22 @@ const handleSplitButtonMouseOut = (event: MouseEvent): void => {
   const splitButton = getSplitButton()
   if (isToolbarButtonHoverTarget(splitButton, event.target, SPLIT_BUTTON_ID)) {
     splitButton.classList.remove(GO_TO_BUTTON_HOVERED_CLASS)
+    hideGoToTooltip()
+  }
+}
+
+const handlePolygonUploadButtonMouseOver = (event: MouseEvent): void => {
+  const button = getPolygonUploadButton()
+  if (isToolbarButtonHoverTarget(button, event.target, UPLOAD_BUTTON_ID)) {
+    button.classList.add(GO_TO_BUTTON_HOVERED_CLASS)
+    showGoToTooltip(contentTranslator('map.uploadPolygons'), button, 'top')
+  }
+}
+
+const handlePolygonUploadButtonMouseOut = (event: MouseEvent): void => {
+  const button = getPolygonUploadButton()
+  if (isToolbarButtonHoverTarget(button, event.target, UPLOAD_BUTTON_ID)) {
+    button.classList.remove(GO_TO_BUTTON_HOVERED_CLASS)
     hideGoToTooltip()
   }
 }
@@ -670,18 +742,14 @@ const applyEnabledState = async (
   menuEnabled: boolean,
   splitButtonEnabled: boolean,
 ): Promise<void> => {
-  if (menuEnabled || splitButtonEnabled) {
-    const anchor = resolveAnchor()
-    if (anchor) {
-      mountToolbar(anchor, menuEnabled, splitButtonEnabled)
-      if (menuEnabled) {
-        await refreshMenuItems()
-      }
-    } else {
-      waitForAnchorAndMount()
+  const anchor = resolveAnchor()
+  if (anchor) {
+    mountToolbar(anchor, menuEnabled, splitButtonEnabled)
+    if (menuEnabled) {
+      await refreshMenuItems()
     }
   } else {
-    hideButtonAndMenu()
+    waitForAnchorAndMount()
   }
 }
 
@@ -719,7 +787,7 @@ const teardownGoToContentScript = (): void => {
   if (context) {
     try {
       context.cleanupThemeObserver()
-    } catch (e) {
+    } catch {
       // Ignore extension context invalidated errors
     }
     document.removeEventListener('visibilitychange', context.handleVisibilityChange)
@@ -727,7 +795,7 @@ const teardownGoToContentScript = (): void => {
     try {
       context.storageOnChanged.removeListener(context.handleStorageChange)
       context.runtimeOnMessage.removeListener(context.handleRuntimeMessage)
-    } catch (e) {
+    } catch {
       // Ignore extension context invalidated errors
     }
     removeButtonAndMenu()

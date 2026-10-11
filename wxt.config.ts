@@ -51,7 +51,7 @@ const baseManifest = {
   ],
   web_accessible_resources: [
     {
-      resources: ['panel.html', 'chunks/*', 'assets/*'],
+      resources: ['panel.html', 'polygon-upload.html', 'chunks/*', 'assets/*'],
       matches: [manifestHostPattern('n.maps.yandex.ru/*')],
     },
   ],

@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ERR_SHAPEFILE, ProcessingError } from '@/lib/errors'
 import {
@@ -14,13 +12,11 @@ import {
   validateEsriShapefileZip,
   validateShxAgainstShp,
 } from '@/lib/shapefile/esri_spec'
-import { createZipBuffer, readShapefileFixture } from '../fixtures/shapefile_fixtures'
-
-const fixturesDir = resolve(import.meta.dirname, '../fixtures')
+import { createShapefileFixture, createZipBuffer } from '../fixtures/shapefile_fixtures'
 
 const loadShapefileSetFromZip = async (zipName: string, basename: string) => {
   const JSZip = (await import('jszip')).default
-  const zip = await JSZip.loadAsync(readShapefileFixture(zipName))
+  const zip = await JSZip.loadAsync(await createShapefileFixture(zipName))
   const shp = await zip.file(`${basename}.shp`)?.async('arraybuffer')
   const shx = await zip.file(`${basename}.shx`)?.async('arraybuffer')
   const dbf = await zip.file(`${basename}.dbf`)?.async('arraybuffer')
@@ -141,15 +137,16 @@ describe('ESRI Shapefile spec: все фикстуры соответствую�
   ] as const
 
   it.each(compliantFixtures)('%s проходит validateEsriShapefileZip', async (zipName) => {
-    await expect(validateEsriShapefileZip(readShapefileFixture(zipName))).resolves.toBeUndefined()
+    await expect(
+      validateEsriShapefileZip(await createShapefileFixture(zipName)),
+    ).resolves.toBeUndefined()
   })
 })
 
 describe('ESRI Shapefile spec: отклонение нарушений', () => {
   it('отклоняет ZIP только с .shp без .shx и .dbf', async () => {
-    const shpOnly = readFileSync(resolve(fixturesDir, 'point_shapefile.zip'))
     const JSZip = (await import('jszip')).default
-    const zip = await JSZip.loadAsync(shpOnly)
+    const zip = await JSZip.loadAsync(await createShapefileFixture('point_shapefile.zip'))
     const shp = await zip.file('point.shp')?.async('arraybuffer')
     const buffer = await createZipBuffer({ 'point.shp': new Uint8Array(shp ?? []) })
 

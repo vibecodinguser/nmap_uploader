@@ -10,6 +10,8 @@ import {
   GO_TO_SPLIT_BUTTON_ENABLED_STORAGE_KEY,
   GO_TO_SPLIT_BUTTON_ID,
 } from '@/lib/go_to_split_button'
+import { POLYGON_UPLOAD_BUTTON_ID } from '@/lib/polygon_upload_button'
+import { POLYGON_UPLOAD_POPUP_ID } from '@/lib/polygon_upload_popup'
 import { createContentScriptContext } from '@/tests/setup/content_script_context'
 
 const mountNmapsToolbarAnchor = (): HTMLElement => {
@@ -54,7 +56,7 @@ describe('map-go-to.content', () => {
     await vi.waitFor(() => expect(document.getElementById(GO_TO_SERVICE_BUTTON_ID)).not.toBeNull())
   })
 
-  it('скрывает кнопки при выключенных меню и split-view', async () => {
+  it('оставляет кнопку загрузки при выключенных меню и split-view', async () => {
     await browser.storage.local.set({
       [GO_TO_MENU_ENABLED_STORAGE_KEY]: false,
       [GO_TO_SPLIT_BUTTON_ENABLED_STORAGE_KEY]: false,
@@ -64,8 +66,8 @@ describe('map-go-to.content', () => {
     mapGoToScript.main?.(ctx)
 
     await vi.waitFor(() => {
-      const button = document.getElementById(GO_TO_SERVICE_BUTTON_ID)
-      expect(button).toBeNull()
+      expect(document.getElementById(POLYGON_UPLOAD_BUTTON_ID)).not.toBeNull()
+      expect(document.getElementById(GO_TO_SPLIT_BUTTON_ID)).toBeNull()
     })
   })
 
@@ -79,7 +81,10 @@ describe('map-go-to.content', () => {
 
     runtimeListener?.({ action: GO_TO_REFRESH_ACTION })
 
-    await vi.waitFor(() => expect(document.getElementById(GO_TO_SERVICE_BUTTON_ID)).not.toBeNull())
+    await vi.waitFor(() => {
+      expect(document.getElementById(GO_TO_SERVICE_BUTTON_ID)).not.toBeNull()
+      expect(document.querySelectorAll(`#${POLYGON_UPLOAD_BUTTON_ID}`)).toHaveLength(1)
+    })
   })
 
   it('монтирует split-view кнопку при включённой опции', async () => {
@@ -94,6 +99,23 @@ describe('map-go-to.content', () => {
     await vi.waitFor(() => {
       expect(document.getElementById(GO_TO_SERVICE_BUTTON_ID)).not.toBeNull()
       expect(document.getElementById(GO_TO_SPLIT_BUTTON_ID)).not.toBeNull()
+      const uploadButton = document.getElementById(POLYGON_UPLOAD_BUTTON_ID)
+      expect(uploadButton).not.toBeNull()
+      expect(uploadButton?.previousElementSibling?.id).toBe(GO_TO_SPLIT_BUTTON_ID)
     })
+  })
+
+  it('открывает и закрывает popup кнопкой загрузки', async () => {
+    vi.spyOn(browser.runtime, 'getURL').mockReturnValue('about:blank')
+    mountNmapsToolbarAnchor()
+    mapGoToScript.main?.(ctx)
+
+    await vi.waitFor(() => expect(document.getElementById(POLYGON_UPLOAD_BUTTON_ID)).not.toBeNull())
+
+    document.getElementById(POLYGON_UPLOAD_BUTTON_ID)?.click()
+    expect(document.getElementById(POLYGON_UPLOAD_POPUP_ID)).not.toBeNull()
+
+    document.getElementById(POLYGON_UPLOAD_BUTTON_ID)?.click()
+    expect(document.getElementById(POLYGON_UPLOAD_POPUP_ID)).toBeNull()
   })
 })

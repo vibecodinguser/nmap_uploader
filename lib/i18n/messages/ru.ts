@@ -126,6 +126,7 @@ export const ruMessages = {
   },
   map: {
     splitView: 'Раздельный вид',
+    uploadPolygons: 'Загрузить полигоны',
     externalGeoservices: 'Внешние геосервисы',
     mapLocationError: 'Не удалось определить положение карты из URL (ll, z)',
     nakarteCompareError: 'Не удалось открыть сравнение с Nakarte',

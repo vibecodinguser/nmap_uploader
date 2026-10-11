@@ -70,3 +70,4 @@ stats-*.json
 GEMINI.md
 TASK.md
 docs/*
+.worktrees/
