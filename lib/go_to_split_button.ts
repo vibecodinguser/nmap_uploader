@@ -35,7 +35,7 @@ export const createSplitViewButton = (ariaLabel = ''): HTMLButtonElement => {
 export const getStoredSplitButtonEnabled = async (): Promise<boolean> => {
   const stored = await browser.storage.local.get(GO_TO_SPLIT_BUTTON_ENABLED_STORAGE_KEY)
   const value = stored[GO_TO_SPLIT_BUTTON_ENABLED_STORAGE_KEY]
-  return value === undefined ? true : Boolean(value)
+  return value === undefined ? false : Boolean(value)
 }
 
 export const setStoredSplitButtonEnabled = async (enabled: boolean): Promise<void> => {

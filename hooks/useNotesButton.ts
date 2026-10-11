@@ -8,7 +8,7 @@ import {
 } from '@/lib/notes_button'
 
 export function useNotesButton() {
-  const [isEnabled, setIsEnabledState] = useState(true)
+  const [isEnabled, setIsEnabledState] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
 
   useEffect(function getIsEnabledEffect() {

@@ -11,6 +11,11 @@ import {
   setStoredGoToItems,
   setStoredGoToMenuEnabled,
 } from '@/lib/go_to_settings'
+import {
+  GO_TO_SPLIT_BUTTON_ENABLED_STORAGE_KEY,
+  getStoredSplitButtonEnabled,
+  setStoredSplitButtonEnabled,
+} from '@/lib/go_to_split_button'
 import { resetBrowserMocks } from '../setup/browser_mock'
 
 describe('normalizeGoToItems', () => {
@@ -77,6 +82,21 @@ describe('go_to storage', () => {
 
     const stored = await browser.storage.local.get(GO_TO_MENU_ENABLED_STORAGE_KEY)
     expect(stored[GO_TO_MENU_ENABLED_STORAGE_KEY]).toBe(false)
+  })
+
+  it('выключает раздельный вид по умолчанию', async () => {
+    expect(await getStoredSplitButtonEnabled()).toBe(false)
+  })
+
+  it('сохраняет и восстанавливает флаг раздельного вида', async () => {
+    await setStoredSplitButtonEnabled(true)
+    expect(await getStoredSplitButtonEnabled()).toBe(true)
+
+    const stored = await browser.storage.local.get(GO_TO_SPLIT_BUTTON_ENABLED_STORAGE_KEY)
+    expect(stored[GO_TO_SPLIT_BUTTON_ENABLED_STORAGE_KEY]).toBe(true)
+
+    await setStoredSplitButtonEnabled(false)
+    expect(await getStoredSplitButtonEnabled()).toBe(false)
   })
 
   it('нормализует список при сохранении и чтении', async () => {

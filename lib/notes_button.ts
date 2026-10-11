@@ -29,7 +29,7 @@ export const createNotesButton = (ariaLabel = ''): HTMLButtonElement => {
 export const getStoredNotesButtonEnabled = async (): Promise<boolean> => {
   const stored = await browser.storage.local.get(NOTES_BUTTON_ENABLED_STORAGE_KEY)
   const value = stored[NOTES_BUTTON_ENABLED_STORAGE_KEY]
-  return value === undefined ? true : Boolean(value)
+  return value === undefined ? false : Boolean(value)
 }
 
 export const setStoredNotesButtonEnabled = async (enabled: boolean): Promise<void> => {

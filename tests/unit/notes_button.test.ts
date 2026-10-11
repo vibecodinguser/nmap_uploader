@@ -25,9 +25,9 @@ describe('notes_button', () => {
     expect(button.getAttribute('aria-expanded')).toBe('false')
   })
 
-  it('по умолчанию возвращает true при отсутствии значения в хранилище', async () => {
+  it('по умолчанию возвращает false при отсутствии значения в хранилище', async () => {
     const enabled = await getStoredNotesButtonEnabled()
-    expect(enabled).toBe(true)
+    expect(enabled).toBe(false)
   })
 
   it('сохраняет и читает значение настройки кнопки заметок', async () => {
@@ -50,14 +50,14 @@ describe('notes_button', () => {
       // ждём загрузки
     })
 
-    expect(result.current.isEnabled).toBe(true)
+    expect(result.current.isEnabled).toBe(false)
     expect(result.current.isLoaded).toBe(true)
 
     await act(async () => {
-      result.current.setIsEnabled(false)
+      result.current.setIsEnabled(true)
     })
 
-    expect(result.current.isEnabled).toBe(false)
-    expect(await getStoredNotesButtonEnabled()).toBe(false)
+    expect(result.current.isEnabled).toBe(true)
+    expect(await getStoredNotesButtonEnabled()).toBe(true)
   })
 })

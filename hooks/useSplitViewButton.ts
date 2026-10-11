@@ -8,7 +8,7 @@ import {
 } from '@/lib/go_to_split_button'
 
 export function useSplitViewButton() {
-  const [isEnabled, setIsEnabledState] = useState(true)
+  const [isEnabled, setIsEnabledState] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
 
   useEffect(function getIsEnabledEffect() {

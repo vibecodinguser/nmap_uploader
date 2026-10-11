@@ -93,6 +93,7 @@ describe('map-go-to.content', () => {
     await browser.storage.local.set({
       [GO_TO_MENU_ENABLED_STORAGE_KEY]: true,
       [GO_TO_SPLIT_BUTTON_ENABLED_STORAGE_KEY]: true,
+      [NOTES_BUTTON_ENABLED_STORAGE_KEY]: true,
     })
 
     mountNmapsToolbarAnchor()
@@ -111,6 +112,9 @@ describe('map-go-to.content', () => {
   })
 
   it('открывает заметки справа от загрузки и закрывает попап загрузки', async () => {
+    await browser.storage.local.set({
+      [NOTES_BUTTON_ENABLED_STORAGE_KEY]: true,
+    })
     vi.spyOn(browser.runtime, 'getURL').mockReturnValue('about:blank')
     mountNmapsToolbarAnchor()
     mapGoToScript.main?.(ctx)
@@ -152,6 +156,19 @@ describe('map-go-to.content', () => {
 
     await vi.waitFor(() => {
       expect(document.getElementById(POLYGON_UPLOAD_BUTTON_ID)).not.toBeNull()
+      expect(document.getElementById(NOTES_BUTTON_ID)).toBeNull()
+    })
+  })
+
+  it('по умолчанию не монтирует split-view и заметки при первом запуске', async () => {
+    await browser.storage.local.clear()
+    mountNmapsToolbarAnchor()
+    mapGoToScript.main?.(ctx)
+
+    await vi.waitFor(() => {
+      expect(document.getElementById(GO_TO_SERVICE_BUTTON_ID)).not.toBeNull()
+      expect(document.getElementById(POLYGON_UPLOAD_BUTTON_ID)).not.toBeNull()
+      expect(document.getElementById(GO_TO_SPLIT_BUTTON_ID)).toBeNull()
       expect(document.getElementById(NOTES_BUTTON_ID)).toBeNull()
     })
   })
