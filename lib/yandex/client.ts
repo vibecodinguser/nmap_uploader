@@ -584,7 +584,7 @@ export const listExistingDateFolders = async ({ token }: { token: string }): Pro
     looping = result.hasMore
   }
 
-  return dates.sort() // NOSONAR
+  return dates.sort()
 }
 
 export const ensureStorageFolders = async ({ token }: { token: string }): Promise<void> => {
