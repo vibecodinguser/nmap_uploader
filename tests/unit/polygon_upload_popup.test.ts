@@ -28,15 +28,38 @@ afterEach(() => {
 })
 
 describe('polygon upload popup', () => {
-  it('открывает popup с iframe и классами редактора', () => {
+  it('открывает popup с iframe и собственными классами расширения', () => {
     const button = mountButton()
+    Object.defineProperty(document.documentElement, 'clientHeight', {
+      configurable: true,
+      value: 800,
+    })
+    Object.defineProperty(document.documentElement, 'clientWidth', {
+      configurable: true,
+      value: 1200,
+    })
+    Object.defineProperty(button, 'getBoundingClientRect', {
+      value: () => ({
+        top: 12,
+        bottom: 44,
+        left: 40,
+        right: 72,
+        width: 32,
+        height: 32,
+        x: 40,
+        y: 12,
+        toJSON: () => ({}),
+      }),
+    })
     togglePolygonUploadPopup(button)
     const popup = document.getElementById(POLYGON_UPLOAD_POPUP_ID)
 
-    expect(popup?.classList.contains('nk-popup_visible')).toBe(true)
-    expect(popup?.classList.contains('nk-popup_direction_right-bottom')).toBe(true)
-    expect(popup?.classList.contains('nk-popup_theme_islands')).toBe(true)
-    expect(popup?.classList.contains('nk-popup_restrict-height')).toBe(true)
+    expect(popup?.className).not.toMatch(/nk-popup/)
+    expect(popup?.classList.contains('nmap-uploader-popup--visible')).toBe(true)
+    expect(popup?.classList.contains('nmap-uploader-polygon-popup')).toBe(true)
+    expect(popup?.style.top).not.toBe('')
+    expect(popup?.style.bottom).toBe('auto')
+    expect(Number.parseFloat(popup?.style.maxHeight || '0')).toBeGreaterThan(100)
     expect(popup?.querySelector('iframe')?.getAttribute('title')).toBe('Загрузить полигоны')
     expect(button.getAttribute('aria-expanded')).toBe('true')
     expect(isPolygonUploadPopupOpen()).toBe(true)
@@ -52,11 +75,11 @@ describe('polygon upload popup', () => {
     expect(isPolygonUploadPopupOpen()).toBe(false)
   })
 
-  it('не закрывает popup внешним кликом из того же стека, что и открытие', () => {
+  it('не закрывает popup pointerdown на кнопке открытия', () => {
     const button = mountButton()
     button.addEventListener('click', () => {
       togglePolygonUploadPopup(button)
-      document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      button.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
     })
 
     button.dispatchEvent(new MouseEvent('click', { bubbles: true }))
@@ -64,30 +87,18 @@ describe('polygon upload popup', () => {
     expect(isPolygonUploadPopupOpen()).toBe(true)
   })
 
-  it('не закрывает popup кликом на следующем тике после открытия', async () => {
+  it('закрывает popup pointerdown снаружи', () => {
     togglePolygonUploadPopup(mountButton())
-    await new Promise((resolve) => setTimeout(resolve, 0))
-    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-
-    expect(isPolygonUploadPopupOpen()).toBe(true)
-  })
-
-  it('закрывает popup кликом снаружи', async () => {
-    togglePolygonUploadPopup(mountButton())
-    await new Promise((resolve) => setTimeout(resolve, 0))
-    await new Promise((resolve) => setTimeout(resolve, 0))
-    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
 
     expect(isPolygonUploadPopupOpen()).toBe(false)
   })
 
-  it('не закрывает popup кликом внутри', async () => {
+  it('не закрывает popup pointerdown внутри', () => {
     togglePolygonUploadPopup(mountButton())
-    await new Promise((resolve) => setTimeout(resolve, 0))
-    await new Promise((resolve) => setTimeout(resolve, 0))
     document
       .getElementById(POLYGON_UPLOAD_POPUP_ID)
-      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      ?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
 
     expect(isPolygonUploadPopupOpen()).toBe(true)
   })

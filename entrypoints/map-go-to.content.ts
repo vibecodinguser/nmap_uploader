@@ -298,16 +298,39 @@ const bindSplitButtonEvents = (splitButton: HTMLButtonElement): void => {
   splitButton.addEventListener('mouseout', handleSplitButtonMouseOut)
 }
 
+const toolbarButtonListeners = new WeakMap<HTMLElement, AbortController>()
+
+const bindToolbarButtonEvents = (
+  button: HTMLButtonElement,
+  handlers: {
+    click: (event: MouseEvent) => void
+    mouseover: (event: MouseEvent) => void
+    mouseout: (event: MouseEvent) => void
+  },
+): void => {
+  toolbarButtonListeners.get(button)?.abort()
+  const controller = new AbortController()
+  toolbarButtonListeners.set(button, controller)
+  const { signal } = controller
+  button.addEventListener('click', handlers.click, { signal })
+  button.addEventListener('mouseover', handlers.mouseover, { signal })
+  button.addEventListener('mouseout', handlers.mouseout, { signal })
+}
+
 const bindPolygonUploadButtonEvents = (button: HTMLButtonElement): void => {
-  button.addEventListener('click', handlePolygonUploadButtonClick)
-  button.addEventListener('mouseover', handlePolygonUploadButtonMouseOver)
-  button.addEventListener('mouseout', handlePolygonUploadButtonMouseOut)
+  bindToolbarButtonEvents(button, {
+    click: handlePolygonUploadButtonClick,
+    mouseover: handlePolygonUploadButtonMouseOver,
+    mouseout: handlePolygonUploadButtonMouseOut,
+  })
 }
 
 const bindNotesButtonEvents = (button: HTMLButtonElement): void => {
-  button.addEventListener('click', handleNotesButtonClick)
-  button.addEventListener('mouseover', handleNotesButtonMouseOver)
-  button.addEventListener('mouseout', handleNotesButtonMouseOut)
+  bindToolbarButtonEvents(button, {
+    click: handleNotesButtonClick,
+    mouseover: handleNotesButtonMouseOver,
+    mouseout: handleNotesButtonMouseOut,
+  })
 }
 
 const isSplitButtonSiblingOf = (

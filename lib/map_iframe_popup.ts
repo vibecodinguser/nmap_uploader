@@ -1,7 +1,9 @@
 import { browser } from 'wxt/browser'
+import { applyGoToTheme } from '@/lib/go_to_theme'
 
 const VIEWPORT_MARGIN = 12
 const BUTTON_GAP = 10
+const MIN_USABLE_HEIGHT = 160
 
 type MapIframePopupOptions = {
   popupId: string
@@ -33,7 +35,7 @@ const getExtensionPageUrl = (pagePath: string): string | null => {
   }
 }
 
-/** Popup редактора с iframe страницы расширения, привязанный к кнопке панели. */
+/** Popup расширения с iframe, привязанный к кнопке панели карты. */
 export const createMapIframePopup = (options: MapIframePopupOptions): MapIframePopup => {
   let popup: HTMLDivElement | null = null
   let activeButton: HTMLElement | null = null
@@ -44,17 +46,31 @@ export const createMapIframePopup = (options: MapIframePopupOptions): MapIframeP
     const buttonRect = activeButton.getBoundingClientRect()
     if (buttonRect.width === 0 && buttonRect.height === 0) return
 
-    const availableHeight = Math.max(buttonRect.top - BUTTON_GAP - VIEWPORT_MARGIN, 0)
-    const popupWidth = popup.getBoundingClientRect().width
+    const spaceAbove = Math.max(buttonRect.top - BUTTON_GAP - VIEWPORT_MARGIN, 0)
+    const spaceBelow = Math.max(
+      document.documentElement.clientHeight - buttonRect.bottom - BUTTON_GAP - VIEWPORT_MARGIN,
+      0,
+    )
+    const openBelow = spaceBelow >= spaceAbove || spaceAbove < MIN_USABLE_HEIGHT
+    const availableHeight = openBelow ? spaceBelow : spaceAbove
+    const measuredWidth = popup.getBoundingClientRect().width
+    const popupWidth = measuredWidth || Math.min(425, document.documentElement.clientWidth - 24)
     const maxLeft = Math.max(document.documentElement.clientWidth - popupWidth - VIEWPORT_MARGIN, 0)
 
-    popup.style.bottom = `${document.documentElement.clientHeight - buttonRect.top + BUTTON_GAP}px`
     popup.style.left = `${Math.max(Math.min(buttonRect.left, maxLeft), VIEWPORT_MARGIN)}px`
     popup.style.maxHeight = `${availableHeight}px`
+
+    if (openBelow) {
+      popup.style.top = `${buttonRect.bottom + BUTTON_GAP}px`
+      popup.style.bottom = 'auto'
+    } else {
+      popup.style.bottom = `${document.documentElement.clientHeight - buttonRect.top + BUTTON_GAP}px`
+      popup.style.top = 'auto'
+    }
   }
 
   const close = (): void => {
-    document.removeEventListener('click', handleDocumentClick, true)
+    document.removeEventListener('pointerdown', handleDocumentPointerDown, true)
     document.removeEventListener('keydown', handleDocumentKeyDown)
     window.removeEventListener('resize', positionPopup)
     popup?.remove()
@@ -63,7 +79,7 @@ export const createMapIframePopup = (options: MapIframePopupOptions): MapIframeP
     activeButton = null
   }
 
-  const handleDocumentClick = (event: MouseEvent): void => {
+  const handleDocumentPointerDown = (event: PointerEvent): void => {
     const target = event.target
     if (!(target instanceof Node)) return
     if (popup?.contains(target) || activeButton?.contains(target)) return
@@ -101,15 +117,6 @@ export const createMapIframePopup = (options: MapIframePopupOptions): MapIframeP
 
   const isOpen = (): boolean => popup?.isConnected === true
 
-  const armOutsideClick = (createdPopup: HTMLDivElement): void => {
-    setTimeout(() => {
-      setTimeout(() => {
-        if (popup !== createdPopup) return
-        document.addEventListener('click', handleDocumentClick, true)
-      }, 0)
-    }, 0)
-  }
-
   const toggle = (button: HTMLElement): void => {
     if (isOpen()) {
       close()
@@ -125,12 +132,12 @@ export const createMapIframePopup = (options: MapIframePopupOptions): MapIframeP
     popup = createdPopup
     button.setAttribute('aria-expanded', 'true')
     document.documentElement.appendChild(popup)
+    applyGoToTheme(createdPopup)
     positionPopup()
+    // Открытие идёт из click (после pointerup), поэтому pointerdown текущего жеста уже прошёл.
+    document.addEventListener('pointerdown', handleDocumentPointerDown, true)
     document.addEventListener('keydown', handleDocumentKeyDown)
     window.addEventListener('resize', positionPopup)
-    // Редактор после клика по кнопке шлёт ещё один клик на следующем тике.
-    // Слушатель снаружи включается после него, иначе попап сразу закрывается.
-    armOutsideClick(createdPopup)
   }
 
   return {

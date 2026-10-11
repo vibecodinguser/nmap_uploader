@@ -98,25 +98,24 @@ const GO_TO_STYLES = `
   background-color: var(--nmap-uploader-menu-item-hover-bg, #ffeba0);
 }
 
-.nmap-uploader-polygon-popup {
-  position: fixed !important;
+.nmap-uploader-polygon-popup.nmap-uploader-popup {
   z-index: 11000;
-  display: block !important;
+  display: block;
+  box-sizing: border-box;
   width: min(425px, calc(100vw - 24px));
-  margin: 0 !important;
   overflow: hidden;
-  visibility: visible !important;
-  opacity: 1 !important;
   border-radius: 4px;
   background: var(--nmap-uploader-popup-bg, #fff);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-  animation: none !important;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.1),
+    0 10px 20px -5px rgba(0, 0, 0, 0.4);
 }
 
 .nmap-uploader-polygon-popup__content {
   width: 100%;
   height: min(560px, calc(100vh - 80px));
   max-height: inherit;
+  overflow: hidden;
 }
 
 .nmap-uploader-polygon-popup__iframe {
