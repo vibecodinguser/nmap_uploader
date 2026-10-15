@@ -103,6 +103,8 @@ export const ruMessages = {
     splitViewAria: 'Раздельный вид',
     notesButton: 'Кнопка: Заметки',
     notesButtonAria: 'Заметки',
+    feedsFilter: 'Фильтр истории правок',
+    feedsFilterAria: 'Фильтр истории правок',
     goToButton: 'Кнопка: Внешние геосервисы',
     showButtonAria: 'Отображать кнопку',
     activeCount: '{active} из {total} активны',

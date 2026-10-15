@@ -103,6 +103,8 @@ export const enMessages = {
     splitViewAria: 'Split view',
     notesButton: 'Button: Notes',
     notesButtonAria: 'Notes',
+    feedsFilter: 'Edits history filter',
+    feedsFilterAria: 'Edits history filter',
     goToButton: 'Button: External geoservices',
     showButtonAria: 'Show button',
     activeCount: '{active} of {total} active',

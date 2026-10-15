@@ -1,6 +1,7 @@
 import { ArrowLeft, Send } from 'lucide-react'
 import { type ChangeEvent, type KeyboardEvent, type ReactNode, useMemo } from 'react'
 import { GoToLinksSettings } from '@/components/GoToLinksSettings'
+import type { useFeedsFilter } from '@/hooks/useFeedsFilter'
 import type { useGoToLinks } from '@/hooks/useGoToLinks'
 import { useLocale } from '@/hooks/useLocale'
 import type { useNotesButton } from '@/hooks/useNotesButton'
@@ -57,6 +58,11 @@ type NotesButtonSettings = Pick<
   'isEnabled' | 'isLoaded' | 'setIsEnabled'
 >
 
+type FeedsFilterSettings = Pick<
+  ReturnType<typeof useFeedsFilter>,
+  'isEnabled' | 'isLoaded' | 'setIsEnabled'
+>
+
 type SettingsTabProps = {
   themeMode: ThemeMode
   onThemeModeChange: (mode: ThemeMode) => void
@@ -65,6 +71,7 @@ type SettingsTabProps = {
   reloadAfterUpload: ReloadAfterUploadSettings
   splitViewButton: SplitViewButtonSettings
   notesButton: NotesButtonSettings
+  feedsFilter?: FeedsFilterSettings
   goToLinks: GoToLinksSettingsState
 }
 
@@ -73,6 +80,7 @@ type SettingsTabRuntime = {
   onThemeModeChange: (mode: ThemeMode) => void
   setSplitViewButtonEnabled: (enabled: boolean) => void
   setNotesButtonEnabled: (enabled: boolean) => void
+  setFeedsFilterEnabled: (enabled: boolean) => void
   setReloadAfterUploadEnabled: (enabled: boolean) => void
   handleApply: () => Promise<void>
   handleInputChange: (value: string) => void
@@ -297,6 +305,10 @@ function onNotesButtonChange(event: ChangeEvent<HTMLInputElement>): void {
   settingsTabRuntime.current?.setNotesButtonEnabled(event.target.checked)
 }
 
+function onFeedsFilterChange(event: ChangeEvent<HTMLInputElement>): void {
+  settingsTabRuntime.current?.setFeedsFilterEnabled(event.target.checked)
+}
+
 function onReloadAfterUploadChange(event: ChangeEvent<HTMLInputElement>): void {
   settingsTabRuntime.current?.setReloadAfterUploadEnabled(event.target.checked)
 }
@@ -309,6 +321,7 @@ export const SettingsTab = function settingsTab({
   reloadAfterUpload,
   splitViewButton,
   notesButton,
+  feedsFilter,
   goToLinks,
 }: SettingsTabProps) {
   const { locale, setLocale, t } = useLocale()
@@ -340,11 +353,16 @@ export const SettingsTab = function settingsTab({
     setIsEnabled: setNotesButtonEnabled,
   } = notesButton
 
+  const isFeedsFilterEnabled = feedsFilter?.isEnabled ?? true
+  const isFeedsFilterLoaded = feedsFilter?.isLoaded ?? true
+  const isFeedsFilterDisabled = !isFeedsFilterLoaded
+
   settingsTabRuntime.current = {
     setLocale,
     onThemeModeChange,
     setSplitViewButtonEnabled,
     setNotesButtonEnabled,
+    setFeedsFilterEnabled: (enabled: boolean) => feedsFilter?.setIsEnabled(enabled),
     setReloadAfterUploadEnabled,
     handleApply,
     handleInputChange,
@@ -463,6 +481,30 @@ export const SettingsTab = function settingsTab({
               disabled={isNotesButtonDisabled}
               aria-label={t('settings.notesButtonAria')}
               onChange={onNotesButtonChange}
+            />
+            <span className="settings-toggle-track" aria-hidden="true">
+              <span className="settings-toggle-thumb" />
+            </span>
+          </label>
+        </div>
+      </section>
+
+      <section className="settings-section" aria-labelledby="settings-feeds-filter-heading">
+        <div className="settings-toggle-row">
+          <h3 id="settings-feeds-filter-heading" className="settings-section-title">
+            {t('settings.feedsFilter')}
+          </h3>
+          <label className="settings-toggle" htmlFor="settings-feeds-filter-button">
+            <input
+              id="settings-feeds-filter-button"
+              type="checkbox"
+              role="switch"
+              className="settings-toggle-input"
+              checked={isFeedsFilterEnabled}
+              aria-checked={isFeedsFilterEnabled}
+              disabled={isFeedsFilterDisabled}
+              aria-label={t('settings.feedsFilterAria')}
+              onChange={onFeedsFilterChange}
             />
             <span className="settings-toggle-track" aria-hidden="true">
               <span className="settings-toggle-thumb" />

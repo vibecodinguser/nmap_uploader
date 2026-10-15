@@ -105,6 +105,8 @@ export type Messages = {
     splitViewAria: string
     notesButton: string
     notesButtonAria: string
+    feedsFilter: string
+    feedsFilterAria: string
     goToButton: string
     showButtonAria: string
     activeCount: string

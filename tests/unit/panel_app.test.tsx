@@ -21,6 +21,9 @@ vi.mock('@/hooks/useGoToLinks', () => ({ useGoToLinks: () => ({}) }))
 vi.mock('@/hooks/useReloadAfterUpload', () => ({ useReloadAfterUpload: () => false }))
 vi.mock('@/hooks/useSplitViewButton', () => ({ useSplitViewButton: () => false }))
 vi.mock('@/hooks/useNotesButton', () => ({ useNotesButton: () => false }))
+vi.mock('@/hooks/useFeedsFilter', () => ({
+  useFeedsFilter: () => ({ isEnabled: true, isLoaded: true, setIsEnabled: vi.fn() }),
+}))
 vi.mock('@/hooks/useStrokeColor', () => ({ useStrokeColor: () => '#000000' }))
 vi.mock('@/hooks/useTheme', () => ({
   useTheme: () => ({ themeMode: 'system', setThemeMode: vi.fn() }),

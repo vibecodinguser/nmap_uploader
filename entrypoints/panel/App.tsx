@@ -2,6 +2,7 @@ import '@/assets/styles/uploader.css'
 import { Header } from '@/components/Header'
 import { SettingsTab } from '@/components/SettingsTab'
 import { useAuth } from '@/hooks/useAuth'
+import { useFeedsFilter } from '@/hooks/useFeedsFilter'
 import { useGoToLinks } from '@/hooks/useGoToLinks'
 import { useNotesButton } from '@/hooks/useNotesButton'
 import { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
@@ -20,6 +21,7 @@ export const App = ({ themeTarget }: AppProps) => {
   const reloadAfterUpload = useReloadAfterUpload(user?.id)
   const splitViewButton = useSplitViewButton()
   const notesButton = useNotesButton()
+  const feedsFilter = useFeedsFilter()
   const goToLinks = useGoToLinks()
 
   const triggerLogin = async () => {
@@ -44,6 +46,7 @@ export const App = ({ themeTarget }: AppProps) => {
           reloadAfterUpload={reloadAfterUpload}
           splitViewButton={splitViewButton}
           notesButton={notesButton}
+          feedsFilter={feedsFilter}
           goToLinks={goToLinks}
         />
       </main>
