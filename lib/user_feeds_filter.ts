@@ -289,6 +289,9 @@ export const ensureFeedFilterStyles = (): void => {
       pointer-events: auto !important;
       box-sizing: border-box !important;
       height: var(--nmap-feeds-select-height, 32px) !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      z-index: 10 !important;
     }
     .nmap-feeds-status-select .nk-select__button {
       position: relative !important;
@@ -772,25 +775,234 @@ export const createFilterDropdownElement = (
 }
 
 /**
- * Ищет целевой селект nk-select размера m темы islands в интерфейсе Народной карты.
+ * Ищет элемент шапки или панели управления ленты событий строго внутри контейнера ленты.
  */
-export const findTargetSelect = (container?: HTMLElement | null): HTMLElement | null => {
-  const notMeSelector = `:not(#${FEEDS_FILTER_SELECT_ID})`
-  const baseSelector = `.nk-select.nk-select_theme_islands.nk-select_size_m${notMeSelector}`
+export const findFeedHeader = (container?: HTMLElement | null): HTMLElement | null => {
+  const headerSelectors = [
+    '.nk-user-feeds-view__header',
+    '.nk-user-feed-view__header',
+    '.nk-feeds-view__header',
+    '.nk-feed-view__header',
+    '.nk-feed-header-view',
+    '[class*="user-feeds-view__header"]',
+    '[class*="user-feed-view__header"]',
+    '[class*="feeds-view__header"]',
+    '[class*="feed-header"]',
+    '.nk-user-feeds-view__controls',
+    '[class*="user-feeds-view__controls"]',
+    '.nk-sidebar-view__header',
+    '[class*="sidebar-view__header"]',
+    '.nk-header-view',
+  ]
 
   if (container) {
-    const inContainer = container.querySelector<HTMLElement>(baseSelector)
-    if (inContainer) {
-      return inContainer
+    for (const selector of headerSelectors) {
+      const inContainer = container.querySelector<HTMLElement>(selector)
+      if (inContainer) {
+        return inContainer
+      }
+    }
+    for (const selector of headerSelectors) {
+      if (container.matches(selector)) {
+        return container
+      }
     }
   }
 
-  return (
-    document.querySelector<HTMLElement>(`.nk-user-feeds-view ${baseSelector}`) ||
-    document.querySelector<HTMLElement>(`.nk-sidebar-view ${baseSelector}`) ||
-    document.querySelector<HTMLElement>(`[class*="user-feeds"] ${baseSelector}`) ||
-    document.querySelector<HTMLElement>(baseSelector)
+  for (const selector of headerSelectors) {
+    const found = document.querySelector<HTMLElement>(selector)
+    if (found) {
+      const sidebar = found.closest('.nk-sidebar-view')
+      if (sidebar) {
+        const hasFeed =
+          sidebar.querySelector('.nk-event-view, [class*="event-view"], [class*="feed"]') !== null
+        if (hasFeed) {
+          return found
+        }
+      } else {
+        return found
+      }
+    }
+  }
+
+  return null
+}
+
+/**
+ * Проверяет, является ли кандидат допустимым целевым селектом Народной карты,
+ * рядом с которым можно разместить дропдаун фильтра статусов.
+ */
+export const isValidTargetSelect = (
+  candidate: Element | null,
+  dropdownElement?: HTMLElement | null,
+): candidate is HTMLElement => {
+  if (!candidate || !(candidate instanceof HTMLElement)) {
+    return false
+  }
+
+  // Не может быть собственным элементом фильтра или его попапом
+  if (candidate.id === FEEDS_FILTER_SELECT_ID || candidate.id === FEEDS_FILTER_POPUP_ID) {
+    return false
+  }
+
+  // Не может быть частью/потомком нашего фильтра статусов
+  if (
+    candidate.closest(
+      `#${FEEDS_FILTER_SELECT_ID}, #${FEEDS_FILTER_POPUP_ID}, .nmap-feeds-status-select, .nmap-feeds-status-popup`,
+    )
+  ) {
+    return false
+  }
+
+  // Не может быть тем же элементом, предком или потомком переданного dropdownElement
+  if (
+    dropdownElement &&
+    (dropdownElement === candidate ||
+      dropdownElement.contains(candidate) ||
+      candidate.contains(dropdownElement))
+  ) {
+    return false
+  }
+
+  // Не должен находиться внутри тулбара редактора, панели пользователя или кнопок управления
+  // Разрешаем селекты внутри сайдбара ленты событий (.nk-sidebar-view)
+  if (
+    candidate.closest(
+      '.nk-user-feeds-control-view, .nk-toolbar-view, [class*="toolbar-view"], [class*="user-bar-view"], button:not(.nk-select), [class*="control-view"]:not([class*="feed"])',
+    )
+  ) {
+    return false
+  }
+
+  // Целевой селект в БЭМ-разметке Яндекса — это блок .nk-select или селект.
+  // Исключаем элементы БЭМ, такие как .nk-select__button, .nk-select__text, .nk-select__tick
+  if (
+    candidate.classList.contains('nk-select__button') ||
+    candidate.classList.contains('nk-select__text') ||
+    candidate.classList.contains('nk-select__tick') ||
+    candidate.classList.contains('nk-select__menu')
+  ) {
+    return false
+  }
+
+  const classList = Array.from(candidate.classList)
+  const isSelect =
+    classList.some(
+      (cls) => cls === 'nk-select' || cls.startsWith('nk-select_') || cls.includes('select'),
+    ) && !classList.some((cls) => cls.startsWith('nk-select__'))
+
+  return isSelect
+}
+
+/**
+ * Проверяет, выбран ли в целевом селекте режим "Правки".
+ * В интерфейсе Народной карты текст текущего выбранного значения содержится в
+ * <span class="nk-button__text">Правки</span> (или .nk-select__text / button).
+ */
+export const isEditsModeSelected = (targetSelect?: HTMLElement | null): boolean => {
+  if (!targetSelect || !(targetSelect instanceof HTMLElement)) {
+    return false
+  }
+
+  // Исключаем собственный дропдаун фильтра статусов
+  if (
+    targetSelect.id === FEEDS_FILTER_SELECT_ID ||
+    targetSelect.classList.contains('nmap-feeds-status-select') ||
+    targetSelect.closest(`#${FEEDS_FILTER_SELECT_ID}`)
+  ) {
+    return false
+  }
+
+  const textElement =
+    targetSelect.querySelector<HTMLElement>('.nk-button__text, .nk-select__text') ||
+    targetSelect.querySelector<HTMLElement>('button') ||
+    targetSelect
+
+  const rawText = (textElement.textContent || '').trim().toLowerCase()
+  if (!rawText) {
+    return false
+  }
+
+  // Режим "Правки" (на русском или английском)
+  return rawText.includes('правк') || rawText.includes('edit')
+}
+
+/**
+ * Ищет целевой селект nk-select в интерфейсе Народной карты строго внутри контейнера ленты.
+ * Исключает сам фильтр расширения и все его дочерние узлы (кнопки, текст, иконки).
+ * Приоритетно выбирает селект, в котором выбран режим "Правки".
+ */
+export const findTargetSelect = (
+  container?: HTMLElement | null,
+  dropdownElement?: HTMLElement | null,
+): HTMLElement | null => {
+  const notMeSelector = `:not(#${FEEDS_FILTER_SELECT_ID}):not(.nmap-feeds-status-select)`
+
+  const queryCandidateSelects = (root: ParentNode): HTMLElement[] => {
+    const rawList = root.querySelectorAll<HTMLElement>(
+      `.nk-select${notMeSelector}, [class*="nk-select"]${notMeSelector}`,
+    )
+    const valid: HTMLElement[] = []
+    for (let i = 0; i < rawList.length; i++) {
+      const candidate = rawList[i]
+      if (isValidTargetSelect(candidate, dropdownElement)) {
+        valid.push(candidate)
+      }
+    }
+    return valid
+  }
+
+  const pickBestSelect = (candidates: HTMLElement[]): HTMLElement | null => {
+    if (candidates.length === 0) {
+      return null
+    }
+    const editsSelect = candidates.find((c) => isEditsModeSelected(c))
+    if (editsSelect) {
+      return editsSelect
+    }
+    return candidates[0]
+  }
+
+  // 1. Приоритетный поиск в шапке ленты (где обычно располагаются штатные селекты фильтров)
+  const header = findFeedHeader(container)
+  if (header) {
+    const candidates = queryCandidateSelects(header)
+    const best = pickBestSelect(candidates)
+    if (best) {
+      return best
+    }
+  }
+
+  // 2. Поиск внутри переданного контейнера ленты
+  if (container) {
+    const candidates = queryCandidateSelects(container)
+    const best = pickBestSelect(candidates)
+    if (best) {
+      return best
+    }
+  }
+
+  // 3. Поиск внутри сайдбара ленты событий в документе
+  const scopedRoots = document.querySelectorAll<HTMLElement>(
+    '.nk-user-feeds-view, .nk-user-feed-view, .nk-feeds-view, .nk-feed-view, .nk-events-view, [class*="user-feeds-view"], [class*="user-feed-view"], .nk-sidebar-view',
   )
+  for (let i = 0; i < scopedRoots.length; i++) {
+    const root = scopedRoots[i]
+    if (root.classList.contains('nk-sidebar-view')) {
+      const hasFeed =
+        root.querySelector('.nk-event-view, [class*="event-view"], [class*="feed"]') !== null
+      if (!hasFeed) {
+        continue
+      }
+    }
+    const candidates = queryCandidateSelects(root)
+    const best = pickBestSelect(candidates)
+    if (best) {
+      return best
+    }
+  }
+
+  return null
 }
 
 /**
@@ -801,7 +1013,7 @@ export const syncFilterDropdownHeight = (
   dropdownElement: HTMLElement,
   referenceSelect?: HTMLElement | null,
 ): number => {
-  const target = referenceSelect || findTargetSelect()
+  const target = referenceSelect || findTargetSelect(null, dropdownElement)
   let measuredHeight = 0
 
   if (target) {
@@ -842,41 +1054,76 @@ export const syncFilterDropdownHeight = (
 }
 
 /**
- * Ищет целевой селект nk-select в интерфейсе Народной карты (например, выбор типа объекта/категории)
- * и размещает дропдаун фильтра статусов рядом с ним с синхронизацией точной высоты.
+ * Ищет целевой селект nk-select в интерфейсе Народной карты (выбор категории событий ленты)
+ * и размещает дропдаун фильтра статусов ТОЛЬКО тогда, когда в целевом селекте выбран режим "Правки".
+ * Если целевой селект не найден или в нем выбран другой режим (например, "Комментарии"),
+ * дропдаун скрывается и не отображается, а функция возвращает false.
  */
 export const attachFilterDropdownToDom = (
   dropdownElement: HTMLElement,
   container: HTMLElement,
 ): boolean => {
-  const targetSelect = findTargetSelect(container)
+  if (!container || !dropdownElement) {
+    return false
+  }
 
-  if (targetSelect) {
-    if (targetSelect.nextElementSibling !== dropdownElement) {
+  // Защита от ошибочного монтирования в кнопки или контролы тулбара редактора
+  if (
+    container.matches(
+      '.nk-user-feeds-control-view, .nk-toolbar-view, [class*="toolbar"], button, [class*="btn"]',
+    )
+  ) {
+    return false
+  }
+
+  const targetSelect = findTargetSelect(container, dropdownElement)
+
+  // Наш дропдаун должен отображаться ТОЛЬКО тогда, когда в штатном селекте выбран пункт "Правки"
+  if (!targetSelect || !isEditsModeSelected(targetSelect)) {
+    if (dropdownElement.parentElement) {
+      dropdownElement.style.display = 'none'
+    }
+    return false
+  }
+
+  // Гарантированная защита от HierarchyRequestError:
+  // targetSelect не может совпадать с dropdownElement, содержать его или быть внутри него
+  if (
+    targetSelect === dropdownElement ||
+    dropdownElement.contains(targetSelect) ||
+    targetSelect.contains(dropdownElement)
+  ) {
+    return false
+  }
+
+  dropdownElement.style.display = ''
+
+  if (targetSelect.nextElementSibling !== dropdownElement) {
+    try {
       targetSelect.insertAdjacentElement('afterend', dropdownElement)
+    } catch (error) {
+      console.warn(
+        '[nmap-uploader] Ошибка при размещении селекта фильтра рядом с targetSelect:',
+        error,
+      )
+      return false
     }
-    syncFilterDropdownHeight(dropdownElement, targetSelect)
-    if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
-      window.requestAnimationFrame(() => {
-        syncFilterDropdownHeight(dropdownElement, targetSelect)
-      })
-    }
-    return true
   }
-
-  // Резервное размещение: если целевой селект еще не отрендерен, крепим в начало контейнера
-  if (dropdownElement.parentElement !== container) {
-    container.prepend(dropdownElement)
+  syncFilterDropdownHeight(dropdownElement, targetSelect)
+  if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+    window.requestAnimationFrame(() => {
+      syncFilterDropdownHeight(dropdownElement, targetSelect)
+    })
   }
-  syncFilterDropdownHeight(dropdownElement)
-  return false
+  return true
 }
 
 /**
  * Находит корневой контейнер ленты правок/событий в DOM.
+ * Возвращает контейнер шторки ленты (.nk-user-feeds-view / .nk-sidebar-view) и игнорирует кнопки тулбара редактора.
  */
 export const findFeedContainer = (root: ParentNode = document): HTMLElement | null => {
-  // 1. Проверяем наличие карточек событий и их общего предка
+  // 1. Поиск по наличию карточек событий и их общего предка
   const eventCards =
     root instanceof HTMLElement
       ? getEventCards(root)
@@ -884,27 +1131,799 @@ export const findFeedContainer = (root: ParentNode = document): HTMLElement | nu
   const eventCard = eventCards[0]
   if (eventCard) {
     const parentContainer =
-      eventCard.closest<HTMLElement>('.nk-user-feeds-view') ||
+      eventCard.closest<HTMLElement>(
+        '.nk-user-feeds-view, .nk-user-feed-view, .nk-feeds-view, .nk-feed-view, .nk-events-view, [class*="user-feed"], [class*="feeds-view"], [class*="events-view"]',
+      ) ||
       eventCard.closest<HTMLElement>('.nk-sidebar-view') ||
-      eventCard.closest<HTMLElement>('.nk-events-view') ||
-      eventCard.closest<HTMLElement>('[class*="user-feeds"]') ||
-      eventCard.closest<HTMLElement>('[class*="scrollable"]') ||
       eventCard.parentElement
 
-    if (parentContainer) {
+    if (
+      parentContainer &&
+      !parentContainer.matches(
+        '.nk-user-feeds-control-view, .nk-toolbar-view, [class*="toolbar"], button',
+      )
+    ) {
       return parentContainer
     }
   }
 
-  // 2. Проверяем наличие специализированного класса ленты пользователя
+  // 2. Поиск по классам представления ленты пользователя
   const knownView =
     root.querySelector<HTMLElement>('.nk-user-feeds-view') ||
+    root.querySelector<HTMLElement>('.nk-user-feed-view') ||
+    root.querySelector<HTMLElement>('.nk-feeds-view') ||
+    root.querySelector<HTMLElement>('.nk-feed-view') ||
     root.querySelector<HTMLElement>('.nk-events-view') ||
-    root.querySelector<HTMLElement>('[class*="user-feeds-view"]')
+    root.querySelector<HTMLElement>(
+      '[class*="user-feeds-view"]:not([class*="control-view"]):not(button)',
+    ) ||
+    root.querySelector<HTMLElement>(
+      '[class*="user-feed-view"]:not([class*="control-view"]):not(button)',
+    ) ||
+    root.querySelector<HTMLElement>(
+      '[class*="feeds-view"]:not([class*="control-view"]):not(button)',
+    )
 
   if (knownView) {
     return knownView
   }
 
+  // 3. Поиск по открытому сайдбару с признаками ленты событий
+  const sidebar = root.querySelector<HTMLElement>('.nk-sidebar-view')
+  if (sidebar) {
+    const hasFeed =
+      sidebar.querySelector('.nk-event-view, [class*="event-view"], [class*="feed"]') !== null
+    if (hasFeed) {
+      return sidebar
+    }
+  }
+
+  // 4. Проверяем, не является ли сам root элементом ленты
+  if (
+    root instanceof HTMLElement &&
+    root.matches(
+      '.nk-user-feeds-view, .nk-user-feed-view, .nk-feeds-view, .nk-feed-view, .nk-events-view, [class*="user-feed"], [class*="feeds-view"]',
+    ) &&
+    !root.matches('.nk-user-feeds-control-view, .nk-toolbar-view, [class*="control-view"], button')
+  ) {
+    return root
+  }
+
   return null
+}
+
+const RUSSIAN_MONTHS_MAP: Record<string, number> = {
+  янв: 0,
+  фев: 1,
+  мар: 2,
+  апр: 3,
+  май: 4,
+  мая: 4,
+  июн: 5,
+  июл: 6,
+  авг: 7,
+  сен: 8,
+  окт: 9,
+  ноя: 10,
+  дек: 11,
+}
+
+/**
+ * Разбирает текстовую строку даты/времени Народной карты в объект Date.
+ */
+export const parseEventDateString = (
+  rawText: string,
+  referenceTimestamp = Date.now(),
+): Date | null => {
+  const text = rawText.trim().toLowerCase()
+  if (!text) {
+    return null
+  }
+
+  // 1. Стандартный ISO или дата в формате YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}/.test(text)) {
+    const parsed = Date.parse(text)
+    if (!Number.isNaN(parsed)) {
+      return new Date(parsed)
+    }
+  }
+
+  // 2. Относительное время: "только что"
+  if (text.includes('только что')) {
+    return new Date(referenceTimestamp)
+  }
+
+  // 3. Относительное время: N секунд / минут / часов / дней назад
+  const relativeMatch = text.match(/(\d+)\s*(сек|мин|час|ч\b|дн|ден)/)
+  if (relativeMatch && text.includes('назад')) {
+    const value = Number.parseInt(relativeMatch[1], 10)
+    const unit = relativeMatch[2]
+    if (!Number.isNaN(value)) {
+      if (unit.startsWith('сек')) {
+        return new Date(referenceTimestamp - value * 1000)
+      }
+      if (unit.startsWith('мин')) {
+        return new Date(referenceTimestamp - value * 60 * 1000)
+      }
+      if (unit.startsWith('час') || unit === 'ч') {
+        return new Date(referenceTimestamp - value * 3600 * 1000)
+      }
+      if (unit.startsWith('дн') || unit.startsWith('ден')) {
+        return new Date(referenceTimestamp - value * 86400 * 1000)
+      }
+    }
+  }
+
+  // 4. Одиночное время: "14:20", "09:05", "в 14:20" (типично для событий за сегодня в Народной карте)
+  const timeOnlyMatch = text.match(/^(?:в\s*)?([01]?\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?$/)
+  if (timeOnlyMatch) {
+    const hours = Number.parseInt(timeOnlyMatch[1], 10)
+    const minutes = Number.parseInt(timeOnlyMatch[2], 10)
+    const d = new Date(referenceTimestamp)
+    d.setHours(hours, minutes, 0, 0)
+    return d
+  }
+
+  const refDate = new Date(referenceTimestamp)
+
+  // 5. "сегодня [в/в,] HH:MM"
+  const todayMatch = text.match(/(?:^|[^\wа-яё])сегодня[,\s]*(?:в\s*)?(\d{1,2}):(\d{2})/)
+  if (todayMatch) {
+    const hours = Number.parseInt(todayMatch[1], 10)
+    const minutes = Number.parseInt(todayMatch[2], 10)
+    const d = new Date(referenceTimestamp)
+    d.setHours(hours, minutes, 0, 0)
+    return d
+  }
+
+  // 6. "позавчера [в/в,] HH:MM"
+  const dayBeforeMatch = text.match(/(?:^|[^\wа-яё])позавчера[,\s]*(?:в\s*)?(\d{1,2}):(\d{2})/)
+  if (dayBeforeMatch) {
+    const hours = Number.parseInt(dayBeforeMatch[1], 10)
+    const minutes = Number.parseInt(dayBeforeMatch[2], 10)
+    const d = new Date(referenceTimestamp - 2 * 86400 * 1000)
+    d.setHours(hours, minutes, 0, 0)
+    return d
+  }
+
+  // 7. "вчера [в/в,] HH:MM"
+  const yesterdayMatch = text.match(/(?:^|[^\wа-яё])вчера[,\s]*(?:в\s*)?(\d{1,2}):(\d{2})/)
+  if (yesterdayMatch) {
+    const hours = Number.parseInt(yesterdayMatch[1], 10)
+    const minutes = Number.parseInt(yesterdayMatch[2], 10)
+    const d = new Date(referenceTimestamp - 86400 * 1000)
+    d.setHours(hours, minutes, 0, 0)
+    return d
+  }
+
+  // 8. Числовой формат "DD.MM.YYYY" или "DD.MM.YY" (опционально с HH:MM)
+  const ddmmyyyyMatch = text.match(
+    /(\d{1,2})[./](\d{1,2})[./](\d{2,4})(?:[,\s]+(?:в\s*)?(\d{1,2}):(\d{2}))?/,
+  )
+  if (ddmmyyyyMatch) {
+    const day = Number.parseInt(ddmmyyyyMatch[1], 10)
+    const month = Number.parseInt(ddmmyyyyMatch[2], 10) - 1
+    let year = Number.parseInt(ddmmyyyyMatch[3], 10)
+    if (year < 100) {
+      year += 2000
+    }
+    const hours = ddmmyyyyMatch[4] ? Number.parseInt(ddmmyyyyMatch[4], 10) : 12
+    const minutes = ddmmyyyyMatch[5] ? Number.parseInt(ddmmyyyyMatch[5], 10) : 0
+    return new Date(year, month, day, hours, minutes, 0, 0)
+  }
+
+  // 9. Формат с названием месяца: "15 октября 2026 в 14:20" или "15 октября, 14:20" или "15 октября"
+  // Защита от адресов объектов: если перед числом стоит "ул.", "пер.", "пр.", "д." и т.д., это адрес, а не дата!
+  const monthMatch = text.match(
+    /(?:^|[^а-яё0-9])(\d{1,2})\s+([а-яё]+)(?:\s+(\d{4}))?(?:[,\s]+(?:в\s*)?(\d{1,2}):(\d{2}))?/i,
+  )
+  if (monthMatch && monthMatch.index !== undefined) {
+    const matchStart = monthMatch.index
+    const prefix = text.slice(Math.max(0, matchStart - 20), matchStart).trim()
+    const isAddress =
+      /(?:ул(?:ица|\.)?|пер(?:еулок|\.)?|просп(?:ект|\.)?|пр-т|бул(?:ьвар|\.)?|б-р|пл(?:ощадь|\.)?|шоссе|туп(?:ик|\.)?|наб(?:ережная|\.)?|д(?:ом|\.)?|корп(?:ус|\.)?|стр(?:оение|\.)?)$/i.test(
+        prefix,
+      )
+
+    if (!isAddress) {
+      const day = Number.parseInt(monthMatch[1], 10)
+      const rawMonth = monthMatch[2].slice(0, 3)
+      const month = RUSSIAN_MONTHS_MAP[rawMonth]
+      if (month !== undefined) {
+        const hasExplicitYear = Boolean(monthMatch[3])
+        const hasExplicitTime = Boolean(monthMatch[4])
+
+        // Если в строке только день и месяц без года и без времени, требуем, чтобы строка была компактной
+        // (например, "15 октября"), а не длинным заголовком объекта
+        if (hasExplicitYear || hasExplicitTime || text.length <= 30) {
+          const year = monthMatch[3] ? Number.parseInt(monthMatch[3], 10) : refDate.getFullYear()
+          const hours = monthMatch[4] ? Number.parseInt(monthMatch[4], 10) : 12
+          const minutes = monthMatch[5] ? Number.parseInt(monthMatch[5], 10) : 0
+
+          const candidate = new Date(year, month, day, hours, minutes, 0, 0)
+          if (!monthMatch[3] && candidate.getTime() > referenceTimestamp + 2 * 86400 * 1000) {
+            candidate.setFullYear(year - 1)
+          }
+          return candidate
+        }
+      }
+    }
+  }
+
+  return null
+}
+
+/**
+ * Извлекает и парсит дату из карточки события .nk-event-view.
+ */
+export const parseEventCardDate = (
+  card: HTMLElement,
+  referenceTimestamp = Date.now(),
+): Date | null => {
+  // 1. Проверяем data-атрибуты с timestamp
+  const dataTimestamp =
+    card.getAttribute('data-timestamp') ||
+    card.getAttribute('data-time') ||
+    card.getAttribute('data-date')
+  if (dataTimestamp) {
+    const tsNum = Number(dataTimestamp)
+    if (!Number.isNaN(tsNum) && tsNum > 0) {
+      return new Date(tsNum < 1e11 ? tsNum * 1000 : tsNum)
+    }
+    const parsedDate = parseEventDateString(dataTimestamp, referenceTimestamp)
+    if (parsedDate) {
+      return parsedDate
+    }
+  }
+
+  // 2. Проверяем элемент <time datetime="...">
+  const timeEl = card.querySelector<HTMLElement>('time[datetime], [datetime]')
+  if (timeEl) {
+    const dt = timeEl.getAttribute('datetime')
+    if (dt) {
+      const parsed = parseEventDateString(dt, referenceTimestamp)
+      if (parsed) {
+        return parsed
+      }
+    }
+  }
+
+  // 3. Проверяем специализированные классы времени в карточке
+  // Исключаем заголовки и общие метаданные (.nk-event-view__header), чтобы не парсить названия улиц!
+  const dateSelectors = [
+    '.nk-event-view__time',
+    '.nk-event-view__date',
+    '[class*="event-view__time"]',
+    '[class*="event-view__date"]',
+    '[class*="relative-time"]',
+    '[class*="event-view__timestamp"]',
+    'time',
+  ]
+
+  for (const selector of dateSelectors) {
+    const element = card.querySelector<HTMLElement>(selector)
+    if (element) {
+      const parsed =
+        parseEventDateString(element.getAttribute('title') || '', referenceTimestamp) ||
+        parseEventDateString(element.getAttribute('aria-label') || '', referenceTimestamp) ||
+        parseEventDateString(element.textContent || '', referenceTimestamp)
+      if (parsed) {
+        return parsed
+      }
+    }
+  }
+
+  // 4. Резервный поиск по футеру карточки (где обычно размещаются метаданные)
+  const footerEl = card.querySelector<HTMLElement>(
+    '.nk-event-view__footer, [class*="event-view__footer"]',
+  )
+  if (footerEl) {
+    const parsedFooter = parseEventDateString(footerEl.textContent || '', referenceTimestamp)
+    if (parsedFooter) {
+      return parsedFooter
+    }
+  }
+
+  // 5. Крайний резерв по тексту карточки
+  return parseEventDateString(card.textContent || '', referenceTimestamp)
+}
+
+/**
+ * Извлекает текстовую строку давности из элемента даты карточки события.
+ * Приоритетно ищет .nk-date-time.nk-event-view__date.
+ */
+export const getEventCardDateText = (card: HTMLElement): string => {
+  const dateElement =
+    card.querySelector<HTMLElement>(
+      '.nk-date-time.nk-event-view__date, .nk-date-time_mode_relative, .nk-date-time, .nk-event-view__date, [class*="event-view__date"], [class*="relative-time"]',
+    ) || card.querySelector<HTMLElement>('time')
+
+  if (dateElement) {
+    const directText = dateElement.textContent?.trim() || ''
+    if (directText) {
+      return directText
+    }
+    const title = dateElement.getAttribute('title')?.trim() || ''
+    if (title) {
+      return title
+    }
+    const ariaLabel = dateElement.getAttribute('aria-label')?.trim() || ''
+    if (ariaLabel) {
+      return ariaLabel
+    }
+  }
+
+  return ''
+}
+
+/**
+ * Определяет давность правки в полных днях (0 = сегодня, 1 = вчера, 2 = 2 дня назад и т.д.)
+ * на основе формата Народной карты (nk-date-time nk-date-time_mode_relative nk-event-view__date).
+ */
+export const getEventCardDayAge = (
+  card: HTMLElement,
+  referenceTimestamp = Date.now(),
+): number | null => {
+  const rawText = getEventCardDateText(card).toLowerCase()
+  if (!rawText) {
+    const parsedDate = parseEventCardDate(card, referenceTimestamp)
+    if (!parsedDate) {
+      return null
+    }
+    const diffMs = referenceTimestamp - parsedDate.getTime()
+    return Math.max(0, Math.floor(diffMs / (24 * 60 * 60 * 1000)))
+  }
+
+  // 1. "только что", "сегодня", изолированное время "HH:MM" или "в HH:MM" — давность 0 дней (сегодня)
+  if (
+    rawText.includes('только что') ||
+    rawText.includes('сегодня') ||
+    /^(?:в\s*)?[012]?\d:[0-5]\d(?::[0-5]\d)?$/.test(rawText)
+  ) {
+    return 0
+  }
+
+  // 2. Относительное время в секундах, минутах, часах
+  const hourMinMatch = rawText.match(/(\d+)\s*(сек|мин|час|ч\b)\w*\s*назад/)
+  if (hourMinMatch) {
+    const val = Number.parseInt(hourMinMatch[1], 10)
+    const unit = hourMinMatch[2]
+    if (unit.startsWith('час') || unit === 'ч') {
+      return val >= 24 ? Math.floor(val / 24) : 0
+    }
+    return 0
+  }
+
+  // 3. "позавчера" — давность 2 дня
+  if (rawText.includes('позавчера')) {
+    return 2
+  }
+
+  // 4. "вчера" — давность 1 день
+  if (rawText.includes('вчера')) {
+    return 1
+  }
+
+  // 5. "N дня/дней назад" — давность N дней
+  const daysAgoMatch = rawText.match(/(\d+)\s*(?:дн|ден)\w*\s*назад/)
+  if (daysAgoMatch) {
+    const days = Number.parseInt(daysAgoMatch[1], 10)
+    if (!Number.isNaN(days)) {
+      return days
+    }
+  }
+
+  // 6. Календарные даты ("14 октября", "10.10.2026")
+  const parsed = parseEventDateString(rawText, referenceTimestamp)
+  if (parsed) {
+    const refDate = new Date(referenceTimestamp)
+    refDate.setHours(0, 0, 0, 0)
+    const cardDate = new Date(parsed.getTime())
+    cardDate.setHours(0, 0, 0, 0)
+    const diffDays = Math.round((refDate.getTime() - cardDate.getTime()) / (24 * 60 * 60 * 1000))
+    return Math.max(0, diffDays)
+  }
+
+  return null
+}
+
+/**
+ * Находит последнюю карточку с известной давностью в днях, сканируя список карточек с конца.
+ */
+export const getLastCardWithDayAge = (
+  cards: HTMLElement[],
+  referenceTimestamp = Date.now(),
+): { card: HTMLElement; dayAge: number } | null => {
+  for (let i = cards.length - 1; i >= 0; i--) {
+    const card = cards[i]
+    if (
+      card.classList.contains('nk-event-view_skeleton') ||
+      card.classList.contains('nk-spinner') ||
+      card.getAttribute('aria-hidden') === 'true'
+    ) {
+      continue
+    }
+    const dayAge = getEventCardDayAge(card, referenceTimestamp)
+    if (dayAge !== null) {
+      return { card, dayAge }
+    }
+  }
+  return null
+}
+
+/**
+ * Находит все потенциально скроллируемые контейнеры для ленты событий.
+ */
+export const getAllScrollableContainers = (feedContainer: HTMLElement): HTMLElement[] => {
+  const containers = new Set<HTMLElement>()
+
+  // 1. Сам feedContainer и все его предки
+  let current: HTMLElement | null = feedContainer
+  while (current && current !== document.documentElement) {
+    containers.add(current)
+    current = current.parentElement
+  }
+
+  // 2. Внутренние элементы со скроллом
+  feedContainer
+    .querySelectorAll<HTMLElement>(
+      '.nk-scrollable, .nk-scrollable__content, [class*="scrollable"], .nk-list, .nk-sidebar-view__body',
+    )
+    .forEach((el) => {
+      containers.add(el)
+    })
+
+  // 3. Родители карточек
+  const cards = feedContainer.querySelectorAll<HTMLElement>('.nk-event-view, [class*="event-view"]')
+  if (cards.length > 0) {
+    const lastCard = cards[cards.length - 1]
+    if (lastCard.parentElement) {
+      containers.add(lastCard.parentElement)
+      if (lastCard.parentElement.parentElement) {
+        containers.add(lastCard.parentElement.parentElement)
+      }
+    }
+  }
+
+  // Фильтруем элементы, которые могут скроллиться
+  const scrollable: HTMLElement[] = []
+  for (const el of containers) {
+    const style = typeof window !== 'undefined' ? window.getComputedStyle(el) : null
+    const overflowY = style?.overflowY
+    if (
+      overflowY === 'auto' ||
+      overflowY === 'scroll' ||
+      el.scrollHeight > el.clientHeight ||
+      el.classList.contains('nk-scrollable') ||
+      el.classList.contains('nk-scrollable__content')
+    ) {
+      scrollable.push(el)
+    }
+  }
+
+  if (scrollable.length === 0) {
+    scrollable.push(feedContainer)
+  }
+
+  return scrollable
+}
+
+/**
+ * Находит основной скроллируемый контейнер для ленты событий.
+ */
+export const findFeedScrollableContainer = (feedContainer: HTMLElement): HTMLElement => {
+  // 1. Ищем элемент с явным scrollHeight > clientHeight и overflow auto/scroll
+  const all = getAllScrollableContainers(feedContainer)
+  const activeScroll = all.find(
+    (el) =>
+      el.scrollHeight > el.clientHeight &&
+      typeof window !== 'undefined' &&
+      (window.getComputedStyle(el).overflowY === 'auto' ||
+        window.getComputedStyle(el).overflowY === 'scroll'),
+  )
+  if (activeScroll) {
+    return activeScroll
+  }
+
+  // 2. Ищем внутренний .nk-scrollable или .nk-scrollable__content
+  const scrollChild = feedContainer.querySelector<HTMLElement>(
+    '.nk-scrollable, .nk-scrollable__content, [class*="scrollable"]',
+  )
+  if (scrollChild) {
+    return scrollChild
+  }
+
+  return feedContainer
+}
+
+/**
+ * Программно триггерит дозагрузку следующей порции событий ленты через прокрутку.
+ */
+export const triggerFeedScrollLoad = (feedContainer: HTMLElement): void => {
+  // 1. Нативный скролл последней карточки в видимую зону (гарантированно сдвигает реальный скроллбар)
+  const cards = feedContainer.querySelectorAll<HTMLElement>('.nk-event-view, [class*="event-view"]')
+  if (cards.length > 0) {
+    const lastCard = cards[cards.length - 1]
+    try {
+      if (typeof lastCard.scrollIntoView === 'function') {
+        lastCard.scrollIntoView({ behavior: 'auto', block: 'end' })
+      }
+    } catch {
+      // Игнорируем в тестовых средах без нативного scrollIntoView
+    }
+  }
+
+  // 2. Прокрутка всех найденных скролл-контейнеров
+  const targets = getAllScrollableContainers(feedContainer)
+  for (const target of targets) {
+    const maxScroll = Math.max(0, target.scrollHeight - target.clientHeight)
+    if (maxScroll > 0) {
+      target.scrollTop = Math.max(0, maxScroll - 30)
+      target.dispatchEvent(new Event('scroll', { bubbles: true }))
+      target.scrollTop = maxScroll
+      target.dispatchEvent(new Event('scroll', { bubbles: true }))
+    } else {
+      target.scrollTop = target.scrollHeight
+      target.dispatchEvent(new Event('scroll', { bubbles: true }))
+    }
+
+    try {
+      if (typeof WheelEvent !== 'undefined') {
+        const wheelEvt = new WheelEvent('wheel', {
+          bubbles: true,
+          cancelable: true,
+          deltaY: 600,
+        })
+        target.dispatchEvent(wheelEvt)
+      }
+    } catch {
+      // Игнорируем в средах без WheelEvent
+    }
+  }
+
+  // 3. Клик по кнопке "Показать еще" / "Загрузить еще" (если есть)
+  const moreButton = feedContainer.querySelector<HTMLElement>(
+    'button.nk-button, .nk-user-feeds-view__more, [class*="more-button"], [class*="load-more"]',
+  )
+  if (moreButton && /ещ[её]|дальше|больше|load\s*more/i.test(moreButton.textContent || '')) {
+    moreButton.click()
+  }
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('scroll'))
+  }
+}
+
+/**
+ * Рассчитывает целевой временной порог (в мс) для N суток.
+ * Гарантирует покрытие всех правок текущего календарного дня (с 00:00:00) и не менее 24 часов.
+ */
+export const getTargetThresholdMs = (
+  targetDays: number,
+  referenceTimestamp = Date.now(),
+): number => {
+  const startOfToday = new Date(referenceTimestamp)
+  startOfToday.setHours(0, 0, 0, 0)
+  const startOfTodayMs = startOfToday.getTime()
+
+  const daysAgoMs = referenceTimestamp - targetDays * 24 * 60 * 60 * 1000
+  const calendarDaysAgoMs = startOfTodayMs - (targetDays - 1) * 24 * 60 * 60 * 1000
+
+  return Math.min(calendarDaysAgoMs, daysAgoMs)
+}
+
+/**
+ * Находит последнюю карточку с валидной датой, сканируя список карточек с конца.
+ */
+export const getLastCardWithDate = (
+  cards: HTMLElement[],
+  referenceTimestamp = Date.now(),
+): { card: HTMLElement; date: Date } | null => {
+  for (let i = cards.length - 1; i >= 0; i--) {
+    const card = cards[i]
+    if (
+      card.classList.contains('nk-event-view_skeleton') ||
+      card.classList.contains('nk-spinner') ||
+      card.getAttribute('aria-hidden') === 'true'
+    ) {
+      continue
+    }
+    const date = parseEventCardDate(card, referenceTimestamp)
+    if (date) {
+      return { card, date }
+    }
+  }
+  return null
+}
+
+export interface FeedDailyLoaderOptions {
+  maxStepsPerDay?: number
+  stepDelayMs?: number
+  onProgress?: (loadedCount: number, targetDays: number) => void
+}
+
+export interface FeedDailyLoaderController {
+  loadUpToDays: (days: number) => Promise<boolean>
+  getLoadedDaysCount: () => number
+  isLoading: () => boolean
+  teardown: () => void
+}
+
+/**
+ * Создает контроллер автоматической загрузки событий ленты за сутки.
+ * При открытии ленты подгружает события за текущие сутки (не менее 24 часов).
+ * При скролле вниз автоматически догружает очередные сутки.
+ */
+export const createFeedDailyLoader = (
+  feedContainer: HTMLElement,
+  options?: FeedDailyLoaderOptions,
+): FeedDailyLoaderController => {
+  const openedTimestamp = Date.now()
+  let loadedDaysCount = 1
+  let isCurrentlyLoading = false
+  let isAllHistoryLoaded = false
+  let isTeardown = false
+
+  const scrollContainer = findFeedScrollableContainer(feedContainer)
+
+  const waitForNewCards = (
+    container: HTMLElement,
+    previousCount: number,
+    timeoutMs = 3500,
+  ): Promise<number> => {
+    return new Promise((resolve) => {
+      let isResolved = false
+      let timer: ReturnType<typeof setTimeout> | null = null
+      let observer: MutationObserver | null = null
+
+      const finish = (count: number) => {
+        if (isResolved) {
+          return
+        }
+        isResolved = true
+        if (timer) {
+          clearTimeout(timer)
+          timer = null
+        }
+        if (observer) {
+          observer.disconnect()
+          observer = null
+        }
+        resolve(count)
+      }
+
+      timer = setTimeout(() => {
+        const currentCards = getEventCards(container)
+        finish(currentCards.length)
+      }, timeoutMs)
+
+      if (typeof MutationObserver !== 'undefined') {
+        observer = new MutationObserver(() => {
+          const currentCards = getEventCards(container)
+          if (currentCards.length > previousCount) {
+            finish(currentCards.length)
+          }
+        })
+        observer.observe(container, { childList: true, subtree: true })
+      }
+    })
+  }
+
+  const loadUpToDays = async (targetDays: number): Promise<boolean> => {
+    if (isCurrentlyLoading || isAllHistoryLoaded || isTeardown) {
+      return false
+    }
+
+    isCurrentlyLoading = true
+    const maxSteps = options?.maxStepsPerDay ?? 60
+    const stepDelayMs = options?.stepDelayMs ?? 200
+    const targetThresholdMs = getTargetThresholdMs(targetDays, openedTimestamp)
+
+    try {
+      let currentStep = 0
+      let consecutiveStalls = 0
+      const maxStalls = 3
+
+      while (currentStep < maxSteps && !isTeardown) {
+        const cards = getEventCards(feedContainer)
+        if (cards.length === 0) {
+          triggerFeedScrollLoad(feedContainer)
+          const newCount = await waitForNewCards(feedContainer, 0, 2500)
+          if (newCount === 0) {
+            consecutiveStalls += 1
+            if (consecutiveStalls >= maxStalls) {
+              isAllHistoryLoaded = true
+              break
+            }
+          } else {
+            consecutiveStalls = 0
+          }
+          continue
+        }
+
+        // 1. Приоритетная проверка по дням Народной карты (nk-date-time nk-date-time_mode_relative)
+        const lastDayInfo = getLastCardWithDayAge(cards, openedTimestamp)
+        if (lastDayInfo && lastDayInfo.dayAge >= targetDays) {
+          // Для targetDays = 1 (сегодня): встретилось "вчера" (dayAge >= 1) — все события за сегодня уже загружены!
+          // Для targetDays = 2 (2 суток): встретилось "2 дня назад" (dayAge >= 2) — все события за 2 суток загружены!
+          break
+        }
+
+        // 2. Резервная проверка по миллисекундам даты
+        const lastDateInfo = getLastCardWithDate(cards, openedTimestamp)
+        if (lastDateInfo && lastDateInfo.date.getTime() < targetThresholdMs) {
+          break
+        }
+
+        currentStep += 1
+        options?.onProgress?.(cards.length, targetDays)
+
+        const prevCardCount = cards.length
+        triggerFeedScrollLoad(feedContainer)
+
+        const nextCardCount = await waitForNewCards(feedContainer, prevCardCount, 3500)
+        if (nextCardCount <= prevCardCount) {
+          consecutiveStalls += 1
+          // Повторный альтернативный триггер
+          triggerFeedScrollLoad(feedContainer)
+
+          if (consecutiveStalls >= maxStalls) {
+            if (lastDayInfo && lastDayInfo.dayAge >= targetDays) {
+              break
+            }
+            if (lastDateInfo && lastDateInfo.date.getTime() < targetThresholdMs) {
+              break
+            }
+            break
+          }
+        } else {
+          consecutiveStalls = 0
+        }
+
+        if (stepDelayMs > 0) {
+          await new Promise((resolve) => setTimeout(resolve, stepDelayMs))
+        }
+      }
+
+      loadedDaysCount = Math.max(loadedDaysCount, targetDays)
+      return true
+    } finally {
+      isCurrentlyLoading = false
+    }
+  }
+
+  const handleScroll = (): void => {
+    if (isCurrentlyLoading || isAllHistoryLoaded || isTeardown) {
+      return
+    }
+
+    const isNearBottom =
+      scrollContainer.scrollTop + scrollContainer.clientHeight >=
+        scrollContainer.scrollHeight - 250 ||
+      feedContainer.scrollTop + feedContainer.clientHeight >= feedContainer.scrollHeight - 250
+
+    if (isNearBottom) {
+      const nextDays = loadedDaysCount + 1
+      void loadUpToDays(nextDays)
+    }
+  }
+
+  feedContainer.addEventListener('scroll', handleScroll, { capture: true, passive: true })
+  scrollContainer.addEventListener('scroll', handleScroll, { passive: true })
+
+  // Инициализация: загрузка правок за первые сутки при открытии ленты
+  void loadUpToDays(1)
+
+  const teardown = (): void => {
+    isTeardown = true
+    feedContainer.removeEventListener('scroll', handleScroll, { capture: true })
+    scrollContainer.removeEventListener('scroll', handleScroll)
+  }
+
+  return {
+    loadUpToDays,
+    getLoadedDaysCount: () => loadedDaysCount,
+    isLoading: () => isCurrentlyLoading,
+    teardown,
+  }
 }
