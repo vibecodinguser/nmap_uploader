@@ -7,7 +7,7 @@ import {
 } from '@/lib/user_feeds_filter'
 
 export const useFeedsFilter = () => {
-  const [isEnabled, setIsEnabledState] = useState(true)
+  const [isEnabled, setIsEnabledState] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
 
   useEffect(() => {

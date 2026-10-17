@@ -23,7 +23,7 @@ export default defineContentScript({
   runAt: 'document_idle',
 
   main(ctx) {
-    let isFeatureEnabled = true
+    let isFeatureEnabled = false
     let currentFilter: FeedStatusId = 'all'
     let currentObserver: MutationObserver | null = null
     let activeFeedContainer: HTMLElement | null = null

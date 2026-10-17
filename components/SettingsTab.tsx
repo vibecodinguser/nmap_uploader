@@ -353,7 +353,7 @@ export const SettingsTab = function settingsTab({
     setIsEnabled: setNotesButtonEnabled,
   } = notesButton
 
-  const isFeedsFilterEnabled = feedsFilter?.isEnabled ?? true
+  const isFeedsFilterEnabled = feedsFilter?.isEnabled ?? false
   const isFeedsFilterLoaded = feedsFilter?.isLoaded ?? true
   const isFeedsFilterDisabled = !isFeedsFilterLoaded
 

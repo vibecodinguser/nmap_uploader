@@ -690,9 +690,9 @@ describe('user_feeds_filter', () => {
   })
 
   describe('хранилище настроек и хук useFeedsFilter', () => {
-    it('по умолчанию возвращает true при отсутствии значения в хранилище', async () => {
+    it('по умолчанию возвращает false при отсутствии значения в хранилище', async () => {
       const enabled = await getStoredFeedsFilterEnabled()
-      expect(enabled).toBe(true)
+      expect(enabled).toBe(false)
     })
 
     it('сохраняет и читает значение настройки', async () => {
@@ -704,8 +704,8 @@ describe('user_feeds_filter', () => {
     })
 
     it('корректно читает значение, установленное напрямую в storage', async () => {
-      await browser.storage.local.set({ [FEEDS_FILTER_ENABLED_STORAGE_KEY]: false })
-      expect(await getStoredFeedsFilterEnabled()).toBe(false)
+      await browser.storage.local.set({ [FEEDS_FILTER_ENABLED_STORAGE_KEY]: true })
+      expect(await getStoredFeedsFilterEnabled()).toBe(true)
     })
 
     it('хук useFeedsFilter инициализируется и сохраняет новое состояние', async () => {
@@ -715,15 +715,15 @@ describe('user_feeds_filter', () => {
         // ждём чтения из хранилища
       })
 
-      expect(result.current.isEnabled).toBe(true)
+      expect(result.current.isEnabled).toBe(false)
       expect(result.current.isLoaded).toBe(true)
 
       await act(async () => {
-        result.current.setIsEnabled(false)
+        result.current.setIsEnabled(true)
       })
 
-      expect(result.current.isEnabled).toBe(false)
-      expect(await getStoredFeedsFilterEnabled()).toBe(false)
+      expect(result.current.isEnabled).toBe(true)
+      expect(await getStoredFeedsFilterEnabled()).toBe(true)
     })
   })
 
