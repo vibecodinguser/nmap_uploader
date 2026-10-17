@@ -105,7 +105,7 @@ export const enMessages = {
     notesButtonAria: 'Notes',
     feedsFilter: 'Edits history filter',
     feedsFilterAria: 'Edits history filter',
-    goToButton: 'Button: External geoservices',
+    goToButton: 'External geoservices',
     showButtonAria: 'Show button',
     activeCount: '{active} of {total} active',
     goToHint: 'List order matches the order in the menu.',

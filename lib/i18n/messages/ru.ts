@@ -105,7 +105,7 @@ export const ruMessages = {
     notesButtonAria: 'Заметки',
     feedsFilter: 'Фильтр истории правок',
     feedsFilterAria: 'Фильтр истории правок',
-    goToButton: 'Кнопка: Внешние геосервисы',
+    goToButton: 'Внешние геосервисы',
     showButtonAria: 'Отображать кнопку',
     activeCount: '{active} из {total} активны',
     goToHint: 'Порядок пунктов в списке соответствует их расположению в меню.',
