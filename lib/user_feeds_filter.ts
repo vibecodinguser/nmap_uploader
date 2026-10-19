@@ -31,7 +31,7 @@ export const STATUS_FILTER_OPTIONS: readonly StatusFilterOption[] = [
   { id: 'all', label: 'Все статусы' },
   {
     id: 'published',
-    label: 'Правка опубликована',
+    label: 'Опубликована',
     iconClass:
       'nk-icon nk-icon_id_commit-published nk-icon_align_auto nk-commit-state-view nk-event-view__commit-state',
     svgMarkup:
@@ -40,7 +40,7 @@ export const STATUS_FILTER_OPTIONS: readonly StatusFilterOption[] = [
   },
   {
     id: 'green',
-    label: 'Принятые',
+    label: 'Одобрена',
     iconClass:
       'nk-icon nk-icon_id_commit-approved nk-icon_align_auto nk-commit-state-view nk-event-view__commit-state',
     svgMarkup:
@@ -49,7 +49,7 @@ export const STATUS_FILTER_OPTIONS: readonly StatusFilterOption[] = [
   },
   {
     id: 'yellow',
-    label: 'На проверке',
+    label: 'На рассмотрении',
     iconClass:
       'nk-icon nk-icon_id_commit-pending nk-icon_align_auto nk-commit-state-view nk-event-view__commit-state',
     svgMarkup:
@@ -58,7 +58,7 @@ export const STATUS_FILTER_OPTIONS: readonly StatusFilterOption[] = [
   },
   {
     id: 'red',
-    label: 'Отклоненные',
+    label: 'Не принята',
     iconClass:
       'nk-icon nk-icon_id_commit-rejected nk-icon_align_auto nk-commit-state-view nk-event-view__commit-state',
     svgMarkup:
@@ -288,7 +288,7 @@ export const ensureFeedFilterStyles = (): void => {
       font-family: var(--nk-user-bar-font-family, "YS Text", -apple-system, BlinkMacSystemFont, Arial, sans-serif);
       pointer-events: auto !important;
       box-sizing: border-box !important;
-      height: var(--nmap-feeds-select-height, 32px) !important;
+      height: var(--nmap-feeds-select-height, 28px) !important;
       visibility: visible !important;
       opacity: 1 !important;
       z-index: 10 !important;
@@ -297,17 +297,18 @@ export const ensureFeedFilterStyles = (): void => {
       position: relative !important;
       display: inline-flex !important;
       align-items: center !important;
-      justify-content: space-between !important;
-      gap: 6px !important;
-      height: var(--nmap-feeds-select-height, 32px) !important;
-      min-height: var(--nmap-feeds-select-height, 32px) !important;
-      max-height: var(--nmap-feeds-select-height, 32px) !important;
-      line-height: normal !important;
-      padding: 0 28px 0 10px !important;
-      border-radius: 4px !important;
-      border: 1px solid rgba(0, 0, 0, 0.2) !important;
-      background: #ffffff !important;
-      color: #000000 !important;
+      width: 100% !important;
+      height: var(--nmap-feeds-select-height, 28px) !important;
+      min-height: var(--nmap-feeds-select-height, 28px) !important;
+      max-height: var(--nmap-feeds-select-height, 28px) !important;
+      line-height: var(--nmap-feeds-select-height, 28px) !important;
+      padding: 0 25px 0 0 !important;
+      border: var(--nmap-feeds-select-border, 1px solid rgba(255, 255, 255, 0.4)) !important;
+      border-radius: var(--nmap-feeds-select-radius, 4px) !important;
+      outline: 0 !important;
+      background: var(--nmap-feeds-select-bg, transparent) !important;
+      background-color: var(--nmap-feeds-select-bg, transparent) !important;
+      color: var(--nmap-feeds-select-color, inherit) !important;
       font-size: 13px !important;
       font-family: inherit !important;
       cursor: pointer !important;
@@ -315,30 +316,52 @@ export const ensureFeedFilterStyles = (): void => {
       white-space: nowrap !important;
       user-select: none !important;
       pointer-events: auto !important;
-      transition: border-color 0.15s ease, background-color 0.15s ease;
+      text-align: left !important;
+      vertical-align: top !important;
+      transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .nmap-feeds-status-select .nk-select__button::before {
+      display: none !important;
     }
     .nmap-feeds-status-select .nk-select__button:hover {
-      border-color: rgba(0, 0, 0, 0.4) !important;
-      background: #f8f8f8 !important;
+      background: var(--nmap-feeds-select-hover-bg, rgba(255, 255, 255, 0.08)) !important;
+      border-color: var(--nmap-feeds-select-hover-border, rgba(255, 255, 255, 0.6)) !important;
     }
-    .nmap-feeds-status-select.nk-select_opened .nk-select__button {
-      border-color: #ffdb4d !important;
-      box-shadow: 0 0 0 1px #ffdb4d !important;
+    .nmap-feeds-status-select.nk-select_opened .nk-select__button,
+    .nmap-feeds-status-select .nk-select__button:focus {
+      background: var(--nmap-feeds-select-focus-bg, rgba(255, 255, 255, 0.12)) !important;
+      border-color: #ffcc00 !important;
+      box-shadow: 0 0 0 1px #ffcc00, inset 0 0 0 1px #ffcc00 !important;
     }
     .nmap-feeds-status-select .nk-select__text {
+      position: relative !important;
       display: inline-flex !important;
       align-items: center !important;
       gap: 6px !important;
+      margin: 0 0 0 10px !important;
+      height: 100% !important;
+      line-height: inherit !important;
       pointer-events: none !important;
+      z-index: 1 !important;
+      vertical-align: top !important;
+      color: inherit !important;
     }
     .nmap-feeds-status-select .nk-select__tick {
       position: absolute !important;
       top: 0 !important;
       right: 0 !important;
       bottom: 0 !important;
-      width: 28px !important;
+      width: 25px !important;
+      height: 100% !important;
       pointer-events: none !important;
-      transition: transform 0.2s ease !important;
+      z-index: 1 !important;
+      background-image: var(
+        --nmap-feeds-select-tick,
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='6'%3E%3Cpath fill='%23fff' d='M10.3 0L5.5 4.7.7 0 0 .7 5.5 6 11 .7z'/%3E%3C/svg%3E")
+      ) !important;
+      background-repeat: no-repeat !important;
+      background-position: center center !important;
+      transition: transform 0.15s ease-out !important;
     }
     .nmap-feeds-status-select.nk-select_opened .nk-select__tick {
       transform: rotate(180deg) !important;
@@ -347,11 +370,11 @@ export const ensureFeedFilterStyles = (): void => {
       position: fixed !important;
       z-index: 2147483647 !important;
       min-width: 175px !important;
-      background: #ffffff !important;
-      color: #000000 !important;
+      background: var(--nmap-feeds-popup-bg, #2b2b2b) !important;
+      color: var(--nmap-feeds-popup-color, #ffffff) !important;
       border-radius: 6px !important;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
-      border: 1px solid rgba(0, 0, 0, 0.15) !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45) !important;
+      border: 1px solid var(--nmap-feeds-popup-border, rgba(255, 255, 255, 0.15)) !important;
       padding: 4px 0 !important;
       font-family: var(--nk-user-bar-font-family, "YS Text", -apple-system, BlinkMacSystemFont, Arial, sans-serif) !important;
       font-size: 13px !important;
@@ -370,13 +393,14 @@ export const ensureFeedFilterStyles = (): void => {
       padding: 6px 12px !important;
       cursor: pointer !important;
       user-select: none !important;
+      color: inherit !important;
       transition: background-color 0.1s ease !important;
     }
     .nmap-feeds-status-popup .nk-menu__item:hover {
-      background-color: rgba(0, 0, 0, 0.05) !important;
+      background-color: var(--nmap-feeds-popup-hover-bg, rgba(255, 255, 255, 0.08)) !important;
     }
     .nmap-feeds-status-popup .nk-menu__item_checked {
-      background-color: rgba(0, 0, 0, 0.08) !important;
+      background-color: var(--nmap-feeds-popup-checked-bg, rgba(255, 255, 255, 0.15)) !important;
       font-weight: 600 !important;
     }
     .nmap-feeds-status-select .nk-commit-state-view,
@@ -387,10 +411,10 @@ export const ensureFeedFilterStyles = (): void => {
       display: inline-flex !important;
       align-items: center !important;
       justify-content: center !important;
-      width: 16px !important;
-      height: 16px !important;
-      min-width: 16px !important;
-      min-height: 16px !important;
+      width: 22px !important;
+      height: 22px !important;
+      min-width: 22px !important;
+      min-height: 22px !important;
       margin: 0 !important;
       padding: 0 !important;
       flex-shrink: 0 !important;
@@ -399,8 +423,8 @@ export const ensureFeedFilterStyles = (): void => {
     .nmap-feeds-status-select .nk-commit-state-view svg,
     .nmap-feeds-status-popup .nk-commit-state-view svg {
       display: block !important;
-      width: 16px !important;
-      height: 16px !important;
+      width: 22px !important;
+      height: 22px !important;
       margin: 0 !important;
       flex-shrink: 0 !important;
     }
@@ -410,34 +434,8 @@ export const ensureFeedFilterStyles = (): void => {
       font-weight: 600 !important;
       padding: 1px 6px !important;
       border-radius: 10px !important;
-      background: rgba(0, 0, 0, 0.08) !important;
+      background: var(--nmap-feeds-badge-bg, rgba(255, 255, 255, 0.16)) !important;
       color: inherit !important;
-    }
-    @media (prefers-color-scheme: dark) {
-      .nmap-feeds-status-select .nk-select__button {
-        background: #2b2b2b !important;
-        color: #ffffff !important;
-        border-color: rgba(255, 255, 255, 0.2) !important;
-      }
-      .nmap-feeds-status-select .nk-select__button:hover {
-        background: #333333 !important;
-        border-color: rgba(255, 255, 255, 0.35) !important;
-      }
-      .nmap-feeds-status-popup {
-        background: #2b2b2b !important;
-        color: #ffffff !important;
-        border-color: rgba(255, 255, 255, 0.18) !important;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
-      }
-      .nmap-feeds-status-popup .nk-menu__item:hover {
-        background-color: rgba(255, 255, 255, 0.08) !important;
-      }
-      .nmap-feeds-status-popup .nk-menu__item_checked {
-        background-color: rgba(255, 255, 255, 0.15) !important;
-      }
-      .nmap-status-count-badge {
-        background: rgba(255, 255, 255, 0.15) !important;
-      }
     }
   `
   document.head.appendChild(styleEl)
@@ -1050,6 +1048,62 @@ export const syncFilterDropdownHeight = (
     button.style.maxHeight = heightPx
   }
 
+  // Синхронизация стилей темы (цвета, рамка, фон, скругление) с соседним селектом Яндекса
+  if (target && typeof window !== 'undefined') {
+    const targetButton =
+      target.querySelector<HTMLElement>(
+        'button.nk-select__button, button.nk-button, .nk-select__button',
+      ) || target
+    const targetComputed = window.getComputedStyle(targetButton)
+
+    const color = targetComputed.color
+    if (color) {
+      dropdownElement.style.setProperty('--nmap-feeds-select-color', color)
+      dropdownElement.style.setProperty('--nmap-feeds-popup-color', color)
+    }
+
+    const borderRadius = targetComputed.borderRadius
+    if (borderRadius && borderRadius !== '0px') {
+      dropdownElement.style.setProperty('--nmap-feeds-select-radius', borderRadius)
+    }
+
+    const borderColor = targetComputed.borderColor
+    const borderWidth = targetComputed.borderWidth
+    const borderStyle = targetComputed.borderStyle
+    if (borderColor && borderWidth && borderStyle && borderStyle !== 'none' && borderWidth !== '0px') {
+      dropdownElement.style.setProperty(
+        '--nmap-feeds-select-border',
+        `${borderWidth} ${borderStyle} ${borderColor}`,
+      )
+    }
+
+    const backgroundColor = targetComputed.backgroundColor
+    if (backgroundColor) {
+      dropdownElement.style.setProperty('--nmap-feeds-select-bg', backgroundColor)
+    }
+
+    // Если цвет текста тёмный (светлая тема), адаптируем фон и стрелку под светлую тему
+    const isLightText =
+      color.includes('255, 255, 255') ||
+      color.includes('rgba(255') ||
+      color === 'rgb(255, 255, 255)' ||
+      color === '#ffffff' ||
+      color === '#ededed'
+
+    if (!isLightText && color && color !== 'inherit') {
+      dropdownElement.style.setProperty(
+        '--nmap-feeds-select-tick',
+        'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'11\' height=\'6\'%3E%3Cpath fill=\'%23000\' d=\'M10.3 0L5.5 4.7.7 0 0 .7 5.5 6 11 .7z\'/%3E%3C/svg%3E")',
+      )
+      dropdownElement.style.setProperty('--nmap-feeds-popup-bg', '#ffffff')
+      dropdownElement.style.setProperty('--nmap-feeds-popup-color', '#000000')
+      dropdownElement.style.setProperty('--nmap-feeds-popup-border', 'rgba(0, 0, 0, 0.15)')
+      dropdownElement.style.setProperty('--nmap-feeds-popup-hover-bg', 'rgba(0, 0, 0, 0.05)')
+      dropdownElement.style.setProperty('--nmap-feeds-popup-checked-bg', 'rgba(0, 0, 0, 0.08)')
+      dropdownElement.style.setProperty('--nmap-feeds-badge-bg', 'rgba(0, 0, 0, 0.08)')
+    }
+  }
+
   return effectiveHeight
 }
 
@@ -1484,10 +1538,10 @@ export const getEventCardDayAge = (
   }
 
   // 2. Относительное время в секундах, минутах, часах
-  const hourMinMatch = rawText.match(/(\d+)\s*(сек|мин|час|ч\b)\w*\s*назад/)
+  const hourMinMatch = rawText.match(/(\d+)\s*(сек|мин|час|ч\b)[а-яё]*\s*назад/i)
   if (hourMinMatch) {
     const val = Number.parseInt(hourMinMatch[1], 10)
-    const unit = hourMinMatch[2]
+    const unit = hourMinMatch[2].toLowerCase()
     if (unit.startsWith('час') || unit === 'ч') {
       return val >= 24 ? Math.floor(val / 24) : 0
     }

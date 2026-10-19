@@ -190,7 +190,7 @@ describe('user_feeds_filter', () => {
         <div class="nk-event-view"><span class="nk-badge nk-badge_color_red nk-event-view__badge">Правка 4</span></div>
       `
 
-      // Фильтр 'red' (Отклоненные)
+      // Фильтр 'red' (Не принята)
       const stats = applyFeedFilter(container, 'red')
 
       expect(stats.total).toBe(4)
@@ -205,7 +205,7 @@ describe('user_feeds_filter', () => {
       expect(cards[2].classList.contains(FEED_HIDDEN_CLASS)).toBe(true)
       expect(cards[3].classList.contains(FEED_HIDDEN_CLASS)).toBe(false)
 
-      // Фильтр 'published' (Правка опубликована)
+      // Фильтр 'published' (Опубликована)
       applyFeedFilter(container, 'published')
       expect(cards[0].classList.contains(FEED_HIDDEN_CLASS)).toBe(false)
       expect(cards[1].classList.contains(FEED_HIDDEN_CLASS)).toBe(true)
@@ -295,7 +295,7 @@ describe('user_feeds_filter', () => {
       const greenBadge = greenItem?.querySelector('.nmap-status-count-badge')
       expect(greenBadge?.textContent).toBe('10')
 
-      // Клик по пункту меню "Правка опубликована" (published)
+      // Клик по пункту меню "Опубликована" (published)
       publishedItem?.click()
       expect(selectedStatus).toBe('published')
       expect(controller.popupElement.style.display).toBe('none')
@@ -305,7 +305,7 @@ describe('user_feeds_filter', () => {
         'nk-icon nk-icon_id_commit-published nk-icon_align_auto nk-commit-state-view nk-event-view__commit-state',
       )
 
-      // Клик по пункту меню "Принятые" (green)
+      // Клик по пункту меню "Одобрена" (green)
       controller.setActiveFilter('green')
       expect(buttonIcon?.style.display).toBe('inline-flex')
       expect(buttonIcon?.querySelector('svg')).toBeDefined()
@@ -313,7 +313,7 @@ describe('user_feeds_filter', () => {
         'nk-icon nk-icon_id_commit-approved nk-icon_align_auto nk-commit-state-view nk-event-view__commit-state',
       )
 
-      // Переключение на "На проверке" (yellow)
+      // Переключение на "На рассмотрении" (yellow)
       controller.setActiveFilter('yellow')
       expect(buttonIcon?.style.display).toBe('inline-flex')
       expect(buttonIcon?.querySelector('svg')).toBeDefined()
@@ -321,7 +321,7 @@ describe('user_feeds_filter', () => {
         'nk-icon nk-icon_id_commit-pending nk-icon_align_auto nk-commit-state-view nk-event-view__commit-state',
       )
 
-      // Переключение на "Отклоненные" (red)
+      // Переключение на "Не принята" (red)
       controller.setActiveFilter('red')
       expect(buttonIcon?.style.display).toBe('inline-flex')
       expect(buttonIcon?.querySelector('svg')).toBeDefined()
