@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseEventDateString } from '@/lib/feeds_filter/date_parser'
+import { calculateDayAgeFromDateText, parseEventDateString } from '@/lib/feeds_filter/date_parser'
 
 describe('parseEventDateString (TDD slice: parsing feed event timestamps)', () => {
   const referenceTimestamp = new Date('2026-10-20T12:00:00.000Z').getTime()
@@ -31,5 +31,23 @@ describe('parseEventDateString (TDD slice: parsing feed event timestamps)', () =
     expect(parseEventDateString('')).toBeNull()
     expect(parseEventDateString('   ')).toBeNull()
     expect(parseEventDateString('непонятная строка без даты')).toBeNull()
+  })
+
+  describe('calculateDayAgeFromDateText', () => {
+    it('определяет 0 дней для "только что", "сегодня" и времени дня', () => {
+      expect(calculateDayAgeFromDateText('только что', referenceTimestamp)).toBe(0)
+      expect(calculateDayAgeFromDateText('сегодня в 14:00', referenceTimestamp)).toBe(0)
+      expect(calculateDayAgeFromDateText('14:20', referenceTimestamp)).toBe(0)
+    })
+
+    it('определяет 1 день для "вчера" и 2 дня для "позавчера"', () => {
+      expect(calculateDayAgeFromDateText('вчера в 18:30', referenceTimestamp)).toBe(1)
+      expect(calculateDayAgeFromDateText('позавчера', referenceTimestamp)).toBe(2)
+    })
+
+    it('определяет N дней для строк "N дней назад"', () => {
+      expect(calculateDayAgeFromDateText('5 дней назад', referenceTimestamp)).toBe(5)
+      expect(calculateDayAgeFromDateText('3 дня назад', referenceTimestamp)).toBe(3)
+    })
   })
 })

@@ -155,3 +155,68 @@ export const parseEventDateString = (
 
   return null
 }
+
+/**
+ * Вычисляет давность события в днях по текстовой строке даты (чистая функция).
+ */
+export const calculateDayAgeFromDateText = (
+  rawText: string,
+  referenceTimestamp = Date.now(),
+): number | null => {
+  const text = rawText.trim().toLowerCase()
+  if (!text) {
+    return null
+  }
+
+  // 1. "только что", "сегодня", изолированное время "HH:MM" или "в HH:MM" — 0 дней
+  if (
+    text.includes('только что') ||
+    text.includes('сегодня') ||
+    /^(?:в\s*)?[012]?\d:[0-5]\d(?::[0-5]\d)?$/.test(text)
+  ) {
+    return 0
+  }
+
+  // 2. Относительное время в секундах, минутах, часах
+  const hourMinMatch = text.match(/(\d+)\s*(сек|мин|час|ч\b)[а-яё]*\s*назад/i)
+  if (hourMinMatch) {
+    const val = Number.parseInt(hourMinMatch[1], 10)
+    const unit = hourMinMatch[2].toLowerCase()
+    if (unit.startsWith('час') || unit === 'ч') {
+      return val >= 24 ? Math.floor(val / 24) : 0
+    }
+    return 0
+  }
+
+  // 3. "позавчера" — 2 дня
+  if (text.includes('позавчера')) {
+    return 2
+  }
+
+  // 4. "вчера" — 1 день
+  if (text.includes('вчера')) {
+    return 1
+  }
+
+  // 5. "N дня/дней назад"
+  const daysAgoMatch = text.match(/(\d+)\s*(?:дн|ден)\w*\s*назад/)
+  if (daysAgoMatch) {
+    const days = Number.parseInt(daysAgoMatch[1], 10)
+    if (!Number.isNaN(days)) {
+      return days
+    }
+  }
+
+  // 6. Календарные даты ("14 октября", "10.10.2026")
+  const parsed = parseEventDateString(text, referenceTimestamp)
+  if (parsed) {
+    const refDate = new Date(referenceTimestamp)
+    refDate.setHours(0, 0, 0, 0)
+    const cardDate = new Date(parsed.getTime())
+    cardDate.setHours(0, 0, 0, 0)
+    const diffDays = Math.round((refDate.getTime() - cardDate.getTime()) / (24 * 60 * 60 * 1000))
+    return Math.max(0, diffDays)
+  }
+
+  return null
+}

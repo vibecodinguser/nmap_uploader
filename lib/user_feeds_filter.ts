@@ -1,5 +1,6 @@
 import {
   applyFeedFilterToDom,
+  calculateDayAgeFromDateText,
   FEED_HIDDEN_CLASS,
   FEEDS_FILTER_BAR_ID,
   FEEDS_FILTER_ENABLED_STORAGE_KEY,
@@ -1441,7 +1442,7 @@ export const getEventCardDayAge = (
   card: HTMLElement,
   referenceTimestamp = Date.now(),
 ): number | null => {
-  const rawText = getEventCardDateText(card).toLowerCase()
+  const rawText = getEventCardDateText(card)
   if (!rawText) {
     const parsedDate = parseEventCardDate(card, referenceTimestamp)
     if (!parsedDate) {
@@ -1451,57 +1452,17 @@ export const getEventCardDayAge = (
     return Math.max(0, Math.floor(diffMs / (24 * 60 * 60 * 1000)))
   }
 
-  // 1. "только что", "сегодня", изолированное время "HH:MM" или "в HH:MM" — давность 0 дней (сегодня)
-  if (
-    rawText.includes('только что') ||
-    rawText.includes('сегодня') ||
-    /^(?:в\s*)?[012]?\d:[0-5]\d(?::[0-5]\d)?$/.test(rawText)
-  ) {
-    return 0
+  const calculated = calculateDayAgeFromDateText(rawText, referenceTimestamp)
+  if (calculated !== null) {
+    return calculated
   }
 
-  // 2. Относительное время в секундах, минутах, часах
-  const hourMinMatch = rawText.match(/(\d+)\s*(сек|мин|час|ч\b)[а-яё]*\s*назад/i)
-  if (hourMinMatch) {
-    const val = Number.parseInt(hourMinMatch[1], 10)
-    const unit = hourMinMatch[2].toLowerCase()
-    if (unit.startsWith('час') || unit === 'ч') {
-      return val >= 24 ? Math.floor(val / 24) : 0
-    }
-    return 0
+  const parsedDate = parseEventCardDate(card, referenceTimestamp)
+  if (!parsedDate) {
+    return null
   }
-
-  // 3. "позавчера" — давность 2 дня
-  if (rawText.includes('позавчера')) {
-    return 2
-  }
-
-  // 4. "вчера" — давность 1 день
-  if (rawText.includes('вчера')) {
-    return 1
-  }
-
-  // 5. "N дня/дней назад" — давность N дней
-  const daysAgoMatch = rawText.match(/(\d+)\s*(?:дн|ден)\w*\s*назад/)
-  if (daysAgoMatch) {
-    const days = Number.parseInt(daysAgoMatch[1], 10)
-    if (!Number.isNaN(days)) {
-      return days
-    }
-  }
-
-  // 6. Календарные даты ("14 октября", "10.10.2026")
-  const parsed = parseEventDateString(rawText, referenceTimestamp)
-  if (parsed) {
-    const refDate = new Date(referenceTimestamp)
-    refDate.setHours(0, 0, 0, 0)
-    const cardDate = new Date(parsed.getTime())
-    cardDate.setHours(0, 0, 0, 0)
-    const diffDays = Math.round((refDate.getTime() - cardDate.getTime()) / (24 * 60 * 60 * 1000))
-    return Math.max(0, diffDays)
-  }
-
-  return null
+  const diffMs = referenceTimestamp - parsedDate.getTime()
+  return Math.max(0, Math.floor(diffMs / (24 * 60 * 60 * 1000)))
 }
 
 /**
