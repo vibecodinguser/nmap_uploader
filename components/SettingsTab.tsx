@@ -1,5 +1,5 @@
 import { ArrowLeft, Send } from 'lucide-react'
-import { type ChangeEvent, type ReactNode, useMemo } from 'react'
+import { useMemo } from 'react'
 import { GoToLinksSettings } from '@/components/GoToLinksSettings'
 import { StrokeColorSection, type StrokeColorSettingsProps } from '@/components/StrokeColorSection'
 import type { useFeedsFilter } from '@/hooks/useFeedsFilter'
@@ -9,7 +9,6 @@ import type { useNotesButton } from '@/hooks/useNotesButton'
 import type { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
 import type { useSplitViewButton } from '@/hooks/useSplitViewButton'
 import type { ThemeMode } from '@/hooks/useTheme'
-import type { TranslateFn } from '@/lib/i18n'
 import { LOCALE_OPTIONS } from '@/lib/i18n/locale'
 import type { Locale, LocaleOption } from '@/lib/i18n/locale.types'
 import { RELEASES_URL } from '@/lib/releases_url'
@@ -61,132 +60,6 @@ type SettingsTabProps = {
   goToLinks: GoToLinksSettingsState
 }
 
-type SettingsTabRuntime = {
-  setLocale: (locale: Locale) => void
-  onThemeModeChange: (mode: ThemeMode) => void
-  setSplitViewButtonEnabled: (enabled: boolean) => void
-  setNotesButtonEnabled: (enabled: boolean) => void
-  setFeedsFilterEnabled: (enabled: boolean) => void
-  setReloadAfterUploadEnabled: (enabled: boolean) => void
-  handleApply: () => Promise<void>
-  handleInputChange: (value: string) => void
-  canApply: boolean
-}
-
-const settingsTabRuntime: { current: SettingsTabRuntime | null } = { current: null }
-
-function buildThemeModeOptions(t: TranslateFn) {
-  const darkLabel = t('settings.themeDark')
-  const lightLabel = t('settings.themeLight')
-  const systemLabel = t('settings.themeSystem')
-  return [
-    { value: 'dark' as const, label: darkLabel },
-    { value: 'light' as const, label: lightLabel },
-    { value: 'system' as const, label: systemLabel },
-  ] as const
-}
-
-function themeModeOptionsMemo(t: TranslateFn) {
-  return buildThemeModeOptions(t)
-}
-
-type ThemeModeOption = {
-  value: ThemeMode
-  label: string
-}
-
-type LocaleOptionRenderContext = {
-  locale: Locale
-  translate: TranslateFn
-}
-
-type ThemeModeOptionRenderContext = {
-  themeMode: ThemeMode
-}
-
-function getSplitViewButtonDisabled(isLoaded: boolean): boolean {
-  return !isLoaded
-}
-
-function getNotesButtonDisabled(isLoaded: boolean): boolean {
-  return !isLoaded
-}
-
-function getReloadAfterUploadDisabled(isLoaded: boolean, canChange: boolean): boolean {
-  return !isLoaded || !canChange
-}
-
-function buildLocaleOptionItems(context: LocaleOptionRenderContext): ReactNode[] {
-  const items: ReactNode[] = []
-  for (let index = 0; index < LOCALE_OPTIONS.length; index += 1) {
-    const option = LOCALE_OPTIONS[index] as LocaleOption
-    const localeOptionItem = (
-      <label key={option.value} className="theme-mode-switch-option">
-        <input
-          type="radio"
-          name="locale"
-          value={option.value}
-          className="theme-mode-switch-input"
-          checked={context.locale === option.value}
-          onChange={onLocaleChange}
-        />
-        <span className="theme-mode-switch-label">{context.translate(option.labelKey)}</span>
-      </label>
-    )
-    items.push(localeOptionItem)
-  }
-  return items
-}
-
-function buildThemeModeOptionItems(
-  options: readonly ThemeModeOption[],
-  context: ThemeModeOptionRenderContext,
-): ReactNode[] {
-  const items: ReactNode[] = []
-  for (let index = 0; index < options.length; index += 1) {
-    const option = options[index]
-    const themeModeOptionItem = (
-      <label key={option.value} className="theme-mode-switch-option">
-        <input
-          type="radio"
-          name="theme-mode"
-          value={option.value}
-          className="theme-mode-switch-input"
-          checked={context.themeMode === option.value}
-          onChange={onThemeModeRadioChange}
-        />
-        <span className="theme-mode-switch-label">{option.label}</span>
-      </label>
-    )
-    items.push(themeModeOptionItem)
-  }
-  return items
-}
-
-function onLocaleChange(event: ChangeEvent<HTMLInputElement>): void {
-  settingsTabRuntime.current?.setLocale(event.target.value as Locale)
-}
-
-function onThemeModeRadioChange(event: ChangeEvent<HTMLInputElement>): void {
-  settingsTabRuntime.current?.onThemeModeChange(event.target.value as ThemeMode)
-}
-
-function onSplitViewButtonChange(event: ChangeEvent<HTMLInputElement>): void {
-  settingsTabRuntime.current?.setSplitViewButtonEnabled(event.target.checked)
-}
-
-function onNotesButtonChange(event: ChangeEvent<HTMLInputElement>): void {
-  settingsTabRuntime.current?.setNotesButtonEnabled(event.target.checked)
-}
-
-function onFeedsFilterChange(event: ChangeEvent<HTMLInputElement>): void {
-  settingsTabRuntime.current?.setFeedsFilterEnabled(event.target.checked)
-}
-
-function onReloadAfterUploadChange(event: ChangeEvent<HTMLInputElement>): void {
-  settingsTabRuntime.current?.setReloadAfterUploadEnabled(event.target.checked)
-}
-
 export const SettingsTab = ({
   themeMode,
   onThemeModeChange,
@@ -220,33 +93,18 @@ export const SettingsTab = ({
   const isFeedsFilterLoaded = feedsFilter?.isLoaded ?? true
   const isFeedsFilterDisabled = !isFeedsFilterLoaded
 
-  settingsTabRuntime.current = {
-    setLocale,
-    onThemeModeChange,
-    setSplitViewButtonEnabled,
-    setNotesButtonEnabled,
-    setFeedsFilterEnabled: (enabled: boolean) => feedsFilter?.setIsEnabled(enabled),
-    setReloadAfterUploadEnabled,
-    handleApply: strokeColor.handleApply,
-    handleInputChange: strokeColor.handleInputChange,
-    canApply: strokeColor.canApply,
-  }
-
   const themeModeOptions = useMemo(
-    function selectThemeModeOptions() {
-      return themeModeOptionsMemo(t)
-    },
+    () => [
+      { value: 'dark' as const, label: t('settings.themeDark') },
+      { value: 'light' as const, label: t('settings.themeLight') },
+      { value: 'system' as const, label: t('settings.themeSystem') },
+    ],
     [t],
   )
 
-  const isSplitViewButtonDisabled = getSplitViewButtonDisabled(isSplitViewButtonLoaded)
-  const isNotesButtonDisabled = getNotesButtonDisabled(isNotesButtonLoaded)
-  const isReloadAfterUploadDisabled = getReloadAfterUploadDisabled(
-    isReloadAfterUploadLoaded,
-    canChangeReloadAfterUpload,
-  )
-  const localeOptionItems = buildLocaleOptionItems({ locale, translate: t })
-  const themeModeOptionItems = buildThemeModeOptionItems(themeModeOptions, { themeMode })
+  const isSplitViewButtonDisabled = !isSplitViewButtonLoaded
+  const isNotesButtonDisabled = !isNotesButtonLoaded
+  const isReloadAfterUploadDisabled = !isReloadAfterUploadLoaded || !canChangeReloadAfterUpload
 
   return (
     <div className="tab-panel settings-tab">
@@ -273,7 +131,19 @@ export const SettingsTab = ({
           role="radiogroup"
           aria-label={t('settings.languageAria')}
         >
-          {localeOptionItems}
+          {LOCALE_OPTIONS.map((option: LocaleOption) => (
+            <label key={option.value} className="theme-mode-switch-option">
+              <input
+                type="radio"
+                name="locale"
+                value={option.value}
+                className="theme-mode-switch-input"
+                checked={locale === option.value}
+                onChange={(e) => setLocale(e.target.value as Locale)}
+              />
+              <span className="theme-mode-switch-label">{t(option.labelKey)}</span>
+            </label>
+          ))}
         </div>
       </section>
 
@@ -282,7 +152,19 @@ export const SettingsTab = ({
           {t('settings.appearance')}
         </h3>
         <div className="theme-mode-switch" role="radiogroup" aria-label={t('settings.themeAria')}>
-          {themeModeOptionItems}
+          {themeModeOptions.map((option) => (
+            <label key={option.value} className="theme-mode-switch-option">
+              <input
+                type="radio"
+                name="theme-mode"
+                value={option.value}
+                className="theme-mode-switch-input"
+                checked={themeMode === option.value}
+                onChange={(e) => onThemeModeChange(e.target.value as ThemeMode)}
+              />
+              <span className="theme-mode-switch-label">{option.label}</span>
+            </label>
+          ))}
         </div>
       </section>
 
@@ -301,7 +183,7 @@ export const SettingsTab = ({
               aria-checked={isSplitViewButtonEnabled}
               disabled={isSplitViewButtonDisabled}
               aria-label={t('settings.splitViewAria')}
-              onChange={onSplitViewButtonChange}
+              onChange={(e) => setSplitViewButtonEnabled(e.target.checked)}
             />
             <span className="settings-toggle-track" aria-hidden="true">
               <span className="settings-toggle-thumb" />
@@ -325,7 +207,7 @@ export const SettingsTab = ({
               aria-checked={isNotesButtonEnabled}
               disabled={isNotesButtonDisabled}
               aria-label={t('settings.notesButtonAria')}
-              onChange={onNotesButtonChange}
+              onChange={(e) => setNotesButtonEnabled(e.target.checked)}
             />
             <span className="settings-toggle-track" aria-hidden="true">
               <span className="settings-toggle-thumb" />
@@ -349,7 +231,7 @@ export const SettingsTab = ({
               aria-checked={isFeedsFilterEnabled}
               disabled={isFeedsFilterDisabled}
               aria-label={t('settings.feedsFilterAria')}
-              onChange={onFeedsFilterChange}
+              onChange={(e) => feedsFilter?.setIsEnabled(e.target.checked)}
             />
             <span className="settings-toggle-track" aria-hidden="true">
               <span className="settings-toggle-thumb" />
@@ -375,7 +257,7 @@ export const SettingsTab = ({
               aria-checked={isReloadAfterUploadEnabled}
               disabled={isReloadAfterUploadDisabled}
               aria-label={t('settings.reloadAfterUploadAria')}
-              onChange={onReloadAfterUploadChange}
+              onChange={(e) => setReloadAfterUploadEnabled(e.target.checked)}
             />
             <span className="settings-toggle-track" aria-hidden="true">
               <span className="settings-toggle-thumb" />
