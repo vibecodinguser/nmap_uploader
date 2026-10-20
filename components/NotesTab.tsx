@@ -21,7 +21,7 @@ import {
   createDrawMapObjectsFromNmapIndex,
   createPolygonSnapTargets,
 } from '@/lib/nmaps_draw_objects'
-import { calculateBoundingBox } from '@/lib/notes'
+import { calculateBoundingBox, extractTrackerDate } from '@/lib/notes'
 import { POINT_PICKED_ACTION, START_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
 import { requireAuthBeforeAction } from '@/lib/require_auth'
 import { downloadIndexJson, getStoredAuth, uploadIndexJson } from '@/lib/yandex/client'
@@ -384,17 +384,7 @@ export const NotesTab = ({
     const initializeDate = async () => {
       try {
         const response = await browser.runtime.sendMessage({ action: 'getTrackerDate' })
-        let initialDate = response?.date
-
-        if (initialDate && typeof initialDate === 'string') {
-          // Ищем паттерн DD.MM.YYYY в строке, даже если там есть лишний текст
-          const match = /(\d{2})\.(\d{2})\.(\d{4})/.exec(initialDate)
-          if (match) {
-            initialDate = `${match[1]}-${match[2]}-${match[3]}`
-          } else {
-            initialDate = null
-          }
-        }
+        let initialDate = extractTrackerDate(response?.date)
 
         if (!initialDate) {
           const res = await browser.storage.local.get(['notes_selected_date'])
@@ -494,11 +484,9 @@ export const NotesTab = ({
           setPendingName('')
         }
       } else if (message?.action === 'TRACKER_DATE_CHANGED' && message.date) {
-        let initialDate = message.date
-        const match = /(\d{2})\.(\d{2})\.(\d{4})/.exec(initialDate)
-        if (match) {
-          initialDate = `${match[1]}-${match[2]}-${match[3]}`
-          setSelectedDate(initialDate)
+        const nextDate = extractTrackerDate(message.date)
+        if (nextDate) {
+          setSelectedDate(nextDate)
         }
       }
     }
@@ -506,11 +494,9 @@ export const NotesTab = ({
     const handleWindowMessage = (event: MessageEvent) => {
       const message = event.data
       if (message?.action === 'TRACKER_DATE_CHANGED' && message.date) {
-        let initialDate = message.date
-        const match = /(\d{2})\.(\d{2})\.(\d{4})/.exec(initialDate)
-        if (match) {
-          initialDate = `${match[1]}-${match[2]}-${match[3]}`
-          setSelectedDate(initialDate)
+        const nextDate = extractTrackerDate(message.date)
+        if (nextDate) {
+          setSelectedDate(nextDate)
         }
       }
     }
