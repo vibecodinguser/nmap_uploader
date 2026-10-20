@@ -14,38 +14,17 @@ import { useEffect, useRef, useState } from 'react'
 import { browser } from 'wxt/browser'
 import { PointDateField } from '@/components/PointDateField'
 import { useLocale } from '@/hooks/useLocale'
+import { useNotesManagement } from '@/hooks/useNotesManagement'
 import type { ManualPointInput } from '@/hooks/usePointUpload'
-import { displayToIso } from '@/lib/date_format'
-import {
-  createDrawMapObjectsDetail,
-  createDrawMapObjectsFromNmapIndex,
-  createPolygonSnapTargets,
-} from '@/lib/nmaps_draw_objects'
-import { calculateBoundingBox, extractTrackerDate } from '@/lib/notes'
-import { POINT_PICKED_ACTION, START_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
-import { requireAuthBeforeAction } from '@/lib/require_auth'
-import { downloadIndexJson, getStoredAuth, uploadIndexJson } from '@/lib/yandex/client'
+import { calculateBoundingBox, type GeomType, type NotePoint } from '@/lib/notes'
+
+export type { GeomType, NotePoint }
 
 type NotesTabProps = {
   isUploading: boolean
   isLoggedIn: boolean
   onRequireAuth: () => void
   onManualUpload: (input: ManualPointInput) => void
-}
-
-export type GeomType = 'Point' | 'LineString' | 'Polygon'
-
-type NotePoint = {
-  id?: string
-  localId?: string
-  name: string
-  latitude: number
-  longitude: number
-  date: string
-  noteTime?: string
-  noteDesc?: string
-  geomType: GeomType
-  geomCoords?: [number, number][]
 }
 
 type NoteListItemProps = {
@@ -176,7 +155,6 @@ const NoteItemContent = ({
 }
 const NoteItemActions = ({
   p,
-  isExpanded,
   isUploading,
   isPicking,
   isDeletingId,
@@ -187,7 +165,6 @@ const NoteItemActions = ({
 }: Pick<
   NoteListItemProps,
   | 'p'
-  | 'isExpanded'
   | 'isUploading'
   | 'isPicking'
   | 'isDeletingId'
@@ -324,7 +301,6 @@ const NoteListItemView = ({
     <NoteItemContent p={p} isExpanded={isExpanded} toggleExpand={toggleExpand} />
     <NoteItemActions
       p={p}
-      isExpanded={isExpanded}
       isUploading={isUploading}
       isPicking={isPicking}
       isDeletingId={isDeletingId}
@@ -352,303 +328,39 @@ export const NotesTab = ({
   onManualUpload,
 }: NotesTabProps) => {
   const { t } = useLocale()
-  const [selectedDate, setSelectedDate] = useState('')
-  const [points, setPoints] = useState<NotePoint[]>([])
-  const [isInitialized, setIsInitialized] = useState(false)
-  const [isLoadingNotes, setIsLoadingNotes] = useState(false)
-  const [isPicking, setIsPicking] = useState(false)
-  const [pendingCoords, setPendingCoords] = useState<{ lat: number; lon: number }[] | null>(null)
-  const [pendingName, setPendingName] = useState('')
-  const [pendingDesc, setPendingDesc] = useState('')
-  const [geomType, setGeomType] = useState<string | null>(null)
-  const [editingPointId, setEditingPointId] = useState<string | null>(null)
-  const [editingName, setEditingName] = useState('')
-  const [editingDesc, setEditingDesc] = useState('')
-  const [isSavingEdit, setIsSavingEdit] = useState(false)
-  const [isDeletingId, setIsDeletingId] = useState<string | null>(null)
-  const [expandedNoteIds, setExpandedNoteIds] = useState<Set<string>>(new Set())
-
-  const toggleExpand = (id?: string) => {
-    if (!id) {
-      return
-    }
-    setExpandedNoteIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
-
-  useEffect(() => {
-    const initializeDate = async () => {
-      try {
-        const response = await browser.runtime.sendMessage({ action: 'getTrackerDate' })
-        let initialDate = extractTrackerDate(response?.date)
-
-        if (!initialDate) {
-          const res = await browser.storage.local.get(['notes_selected_date'])
-          if (typeof res.notes_selected_date === 'string') {
-            initialDate = res.notes_selected_date
-          }
-        }
-
-        if (initialDate) {
-          setSelectedDate(initialDate)
-        }
-      } catch (error) {
-        console.error('[nmap_uploader] Failed to initialize notes date:', error)
-      } finally {
-        setIsInitialized(true)
-      }
-    }
-
-    initializeDate()
-  }, [])
-
-  useEffect(() => {
-    if (!isInitialized) {
-      return
-    }
-    browser.storage.local.set({ notes_selected_date: selectedDate }).catch(() => {})
-  }, [selectedDate, isInitialized])
-
-  useEffect(() => {
-    if (!isInitialized || !selectedDate) {
-      setPoints((prev) => (prev.length === 0 ? prev : []))
-      return
-    }
-
-    const isoDate = displayToIso(selectedDate)
-    if (!isoDate) {
-      setPoints((prev) => (prev.length === 0 ? prev : []))
-      return
-    }
-
-    let isMounted = true
-    setIsLoadingNotes(true)
-
-    getStoredAuth()
-      .then((auth) => {
-        if (!auth || !isMounted) {
-          setIsLoadingNotes(false)
-          return
-        }
-
-        return downloadIndexJson({ token: auth.token, targetDate: isoDate })
-      })
-      .then((nmapIndex) => {
-        if (!isMounted) {
-          return
-        }
-        if (nmapIndex?.points) {
-          setPoints(
-            createDrawMapObjectsFromNmapIndex(nmapIndex, selectedDate).points as NotePoint[],
-          )
-        } else {
-          setPoints((prev) => (prev.length === 0 ? prev : []))
-        }
-      })
-      .catch(() => {
-        if (isMounted) setPoints((prev) => (prev.length === 0 ? prev : []))
-      })
-      .finally(() => {
-        if (isMounted) setIsLoadingNotes(false)
-      })
-
-    return () => {
-      isMounted = false
-    }
-  }, [selectedDate, isInitialized])
-
-  const handleStartPicking = (type: GeomType) => {
-    if (!requireAuthBeforeAction({ isLoggedIn, onRequireAuth })) {
-      return
-    }
-    setGeomType(type)
-    setIsPicking(true)
-    browser.runtime
-      .sendMessage({ action: START_POINT_PICKING_ACTION, geomType: type })
-      .catch(() => {
-        setIsPicking(false)
-      })
-  }
-
-  useEffect(() => {
-    const handleRuntimeMessage = (message: any) => {
-      if (message?.action === POINT_PICKED_ACTION) {
-        setIsPicking(false)
-        if (Array.isArray(message.coords)) {
-          const coordsArr = message.coords.map((c: number[]) => ({ lat: c[0], lon: c[1] }))
-          setPendingCoords(coordsArr)
-          setPendingName('')
-        }
-      } else if (message?.action === 'TRACKER_DATE_CHANGED' && message.date) {
-        const nextDate = extractTrackerDate(message.date)
-        if (nextDate) {
-          setSelectedDate(nextDate)
-        }
-      }
-    }
-
-    const handleWindowMessage = (event: MessageEvent) => {
-      const message = event.data
-      if (message?.action === 'TRACKER_DATE_CHANGED' && message.date) {
-        const nextDate = extractTrackerDate(message.date)
-        if (nextDate) {
-          setSelectedDate(nextDate)
-        }
-      }
-    }
-
-    browser.runtime.onMessage.addListener(handleRuntimeMessage)
-    window.addEventListener('message', handleWindowMessage)
-
-    return () => {
-      browser.runtime.onMessage.removeListener(handleRuntimeMessage)
-      window.removeEventListener('message', handleWindowMessage)
-    }
-  }, [])
-
-  const handleSaveNote = () => {
-    if (pendingCoords && pendingCoords.length > 0 && pendingName.trim() && geomType) {
-      const name = pendingName.trim()
-      const firstCoord = pendingCoords[0]
-      const now = new Date()
-      const noteTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
-      const desc = pendingDesc.trim()
-
-      // Преобразуем формат
-      const formattedCoords = pendingCoords.map((c) => [c.lon, c.lat])
-
-      setPoints((prev) => [
-        ...prev,
-        {
-          localId: `temp_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
-          name,
-          latitude: firstCoord.lat,
-          longitude: firstCoord.lon,
-          date: selectedDate,
-          noteTime,
-          noteDesc: desc,
-          geomType: geomType as 'Point' | 'LineString' | 'Polygon',
-          geomCoords: formattedCoords as [number, number][],
-        },
-      ])
-
-      onManualUpload({
-        description: name,
-        coords: formattedCoords,
-        geomType,
-        date: selectedDate,
-        note_time: noteTime,
-        note_desc: desc,
-      })
-
-      setPendingCoords(null)
-      setPendingName('')
-      setPendingDesc('')
-    }
-  }
-
-  const handleCancelNote = () => {
-    setPendingCoords(null)
-    setPendingName('')
-    setPendingDesc('')
-  }
-
-  const handleSaveEdit = async (id: string) => {
-    const newName = editingName.trim()
-    if (!newName) {
-      return
-    }
-
-    setIsSavingEdit(true)
-    try {
-      const auth = await getStoredAuth()
-      if (!auth) throw new Error('No auth')
-
-      const isoDate = displayToIso(selectedDate)
-      if (!isoDate) throw new Error('Invalid date')
-
-      const index = await downloadIndexJson({ token: auth.token, targetDate: isoDate })
-      if (!index?.points?.[id]) throw new Error('Point not found')
-
-      index.points[id].desc = newName
-      index.points[id].note_desc = editingDesc.trim()
-      await uploadIndexJson({ token: auth.token, targetDate: isoDate, data: index })
-
-      setPoints((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, name: newName, noteDesc: editingDesc.trim() } : p)),
-      )
-      setEditingPointId(null)
-    } catch (e) {
-      console.error('Failed to edit point:', e)
-    } finally {
-      setIsSavingEdit(false)
-    }
-  }
-
-  const handleDeleteNote = async (id: string) => {
-    if (!globalThis.confirm(t('notes.deleteConfirm'))) {
-      return
-    }
-
-    setIsDeletingId(id)
-    try {
-      const auth = await getStoredAuth()
-      if (!auth) throw new Error('No auth')
-
-      const isoDate = displayToIso(selectedDate)
-      if (!isoDate) throw new Error('Invalid date')
-
-      const index = await downloadIndexJson({ token: auth.token, targetDate: isoDate })
-      if (!index?.points) throw new Error('Index not found')
-
-      delete index.points[id]
-      if (index.paths?.[id]) {
-        delete index.paths[id]
-      }
-
-      await uploadIndexJson({ token: auth.token, targetDate: isoDate, data: index })
-
-      setPoints((prev) => prev.filter((p) => p.id !== id))
-    } catch (e) {
-      console.error('Failed to delete point:', e)
-    } finally {
-      setIsDeletingId(null)
-    }
-  }
-
-  const currentPoints = [...points].filter((p) => p.date === selectedDate).reverse()
-
-  const lastDispatchedRef = useRef<string | null>(null)
-
-  useEffect(() => {
-    if (!isInitialized) {
-      return
-    }
-    const pts = points.filter((p) => p.date === selectedDate)
-    const detail = createDrawMapObjectsDetail(pts, createPolygonSnapTargets(pts))
-    const detailString = JSON.stringify(detail)
-
-    if (lastDispatchedRef.current === detailString) {
-      return
-    }
-    lastDispatchedRef.current = detailString
-
-    // Пробуем отправить событие напрямую в текущий документ (если мы отрендерены в той же вкладке)
-    document.dispatchEvent(
-      new CustomEvent('nmaps:drawObjects', {
-        detail: detailString,
-      }),
-    )
-
-    // И отправляем через фоновый скрипт (для нативной боковой панели)
-    browser.runtime.sendMessage({ action: 'DRAW_MAP_OBJECTS', ...detail }).catch(() => {
-      // Игнорируем ошибку отправки
-    })
-  }, [points, selectedDate, isInitialized])
+  const {
+    selectedDate,
+    setSelectedDate,
+    currentPoints,
+    isInitialized,
+    isLoadingNotes,
+    isPicking,
+    geomType,
+    pendingCoords,
+    pendingName,
+    setPendingName,
+    pendingDesc,
+    setPendingDesc,
+    editingPointId,
+    setEditingPointId,
+    editingName,
+    setEditingName,
+    editingDesc,
+    setEditingDesc,
+    isSavingEdit,
+    isDeletingId,
+    expandedNoteIds,
+    toggleExpand,
+    handleStartPicking,
+    handleSaveNote,
+    handleCancelNote,
+    handleSaveEdit,
+    handleDeleteNote,
+  } = useNotesManagement({
+    isLoggedIn,
+    onRequireAuth,
+    onManualUpload,
+  })
 
   if (!isInitialized) {
     return null
@@ -798,7 +510,7 @@ export const NotesTab = ({
                   setEditingName={setEditingName}
                   setEditingDesc={setEditingDesc}
                   handleSaveEdit={handleSaveEdit}
-                  handleDeleteNote={handleDeleteNote}
+                  handleDeleteNote={(id) => handleDeleteNote(id, t('notes.deleteConfirm'))}
                 />
               )
             })}
