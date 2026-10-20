@@ -12,22 +12,12 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import { browser } from 'wxt/browser'
 import { useLocale } from '@/hooks/useLocale'
+import { calculateBoundingBox, type NotePoint } from '@/lib/notes'
 
 const ICON_SIZE = 16
 const ICON_SIZE_SMALL = 14
 
-export type NotePoint = {
-  id?: string
-  localId?: string
-  name: string
-  latitude: number
-  longitude: number
-  date: string
-  noteTime?: string
-  noteDesc?: string
-  geomType: 'Point' | 'LineString' | 'Polygon'
-  geomCoords?: [number, number][]
-}
+export type { NotePoint }
 
 export type NoteListItemProps = {
   p: NotePoint
@@ -195,12 +185,7 @@ export const NoteItemActions = ({
         data-tooltip={t('notes.showOnMap')}
         onClick={() => {
           if (isUploading || isPicking) return
-          let bbox: [number, number, number, number] | undefined
-          if (p.geomCoords && p.geomCoords.length > 1) {
-            const lons = p.geomCoords.map((c) => c[0])
-            const lats = p.geomCoords.map((c) => c[1])
-            bbox = [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)]
-          }
+          const bbox = calculateBoundingBox(p.geomCoords)
           browser.runtime
             .sendMessage({
               action: 'centerMap',
