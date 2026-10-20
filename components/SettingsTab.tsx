@@ -1,6 +1,7 @@
 import { ArrowLeft, Send } from 'lucide-react'
 import { useMemo } from 'react'
 import { GoToLinksSettings } from '@/components/GoToLinksSettings'
+import { SegmentedRadioGroup } from '@/components/SegmentedRadioGroup'
 import { SettingsToggleRow } from '@/components/SettingsToggleRow'
 import { StrokeColorSection, type StrokeColorSettingsProps } from '@/components/StrokeColorSection'
 import type { useFeedsFilter } from '@/hooks/useFeedsFilter'
@@ -11,7 +12,7 @@ import type { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
 import type { useSplitViewButton } from '@/hooks/useSplitViewButton'
 import type { ThemeMode } from '@/hooks/useTheme'
 import { LOCALE_OPTIONS } from '@/lib/i18n/locale'
-import type { Locale, LocaleOption } from '@/lib/i18n/locale.types'
+import type { Locale } from '@/lib/i18n/locale.types'
 import { RELEASES_URL } from '@/lib/releases_url'
 import packageJson from '../package.json'
 
@@ -103,6 +104,15 @@ export const SettingsTab = ({
     [t],
   )
 
+  const localeOptions = useMemo(
+    () =>
+      LOCALE_OPTIONS.map((opt) => ({
+        value: opt.value,
+        label: t(opt.labelKey),
+      })),
+    [t],
+  )
+
   const isSplitViewButtonDisabled = !isSplitViewButtonLoaded
   const isNotesButtonDisabled = !isNotesButtonLoaded
   const isReloadAfterUploadDisabled = !isReloadAfterUploadLoaded || !canChangeReloadAfterUpload
@@ -127,46 +137,26 @@ export const SettingsTab = ({
         <h3 id="settings-language-heading" className="settings-section-title">
           {t('locale.label')}
         </h3>
-        <div
-          className="theme-mode-switch"
-          role="radiogroup"
-          aria-label={t('settings.languageAria')}
-        >
-          {LOCALE_OPTIONS.map((option: LocaleOption) => (
-            <label key={option.value} className="theme-mode-switch-option">
-              <input
-                type="radio"
-                name="locale"
-                value={option.value}
-                className="theme-mode-switch-input"
-                checked={locale === option.value}
-                onChange={(e) => setLocale(e.target.value as Locale)}
-              />
-              <span className="theme-mode-switch-label">{t(option.labelKey)}</span>
-            </label>
-          ))}
-        </div>
+        <SegmentedRadioGroup
+          name="locale"
+          ariaLabel={t('settings.languageAria')}
+          value={locale}
+          options={localeOptions}
+          onChange={setLocale}
+        />
       </section>
 
       <section className="settings-section" aria-labelledby="settings-appearance-heading">
         <h3 id="settings-appearance-heading" className="settings-section-title">
           {t('settings.appearance')}
         </h3>
-        <div className="theme-mode-switch" role="radiogroup" aria-label={t('settings.themeAria')}>
-          {themeModeOptions.map((option) => (
-            <label key={option.value} className="theme-mode-switch-option">
-              <input
-                type="radio"
-                name="theme-mode"
-                value={option.value}
-                className="theme-mode-switch-input"
-                checked={themeMode === option.value}
-                onChange={(e) => onThemeModeChange(e.target.value as ThemeMode)}
-              />
-              <span className="theme-mode-switch-label">{option.label}</span>
-            </label>
-          ))}
-        </div>
+        <SegmentedRadioGroup
+          name="theme-mode"
+          ariaLabel={t('settings.themeAria')}
+          value={themeMode}
+          options={themeModeOptions}
+          onChange={onThemeModeChange}
+        />
       </section>
 
       <SettingsToggleRow
