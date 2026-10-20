@@ -1,5 +1,6 @@
 import { type Browser, browser } from 'wxt/browser'
 import { defineBackground } from 'wxt/utils/define-background'
+import { createMessageRouter } from '@/lib/background'
 import { detectYandexBrowserInPageContext, isYandexBrowser } from '@/lib/browser'
 import { getErrorMessage } from '@/lib/errors'
 import { GO_TO_REFRESH_ACTION } from '@/lib/go_to_notify'
@@ -1001,23 +1002,16 @@ const messageHandlers: Record<string, MessageHandler> = {
   SET_TRACKER_DATE: handleSetTrackerDate,
 }
 
-const onMessageHandler = (
-  message: any,
-  sender: RuntimeMessageSender,
-  sendResponse: (response: any) => void,
-): boolean | undefined => {
-  const action = message?.action as string | undefined
-  let handler: MessageHandler | undefined
-  if (action) {
-    handler = messageHandlers[action]
-  }
+const backgroundMessageRouter = createMessageRouter({ handlers: messageHandlers })
 
-  let result: boolean | undefined
-  if (handler) {
-    result = handler(message, sender, sendResponse)
-  }
-  return result
+const onMessageHandler = (
+  message: unknown,
+  sender: RuntimeMessageSender,
+  sendResponse: (response: unknown) => void,
+): boolean | undefined => {
+  return backgroundMessageRouter.dispatch(message, sender, sendResponse)
 }
+
 
 const initBackground = (): void => {
   const persistTask = persistYandexBrowserFlag()

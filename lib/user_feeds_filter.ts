@@ -1,4 +1,5 @@
 import { browser } from 'wxt/browser'
+import { applyFeedFilterToDom } from '@/lib/feeds_filter'
 import { parseStaticSvg } from '@/lib/parse_static_svg'
 
 export type FeedStatusId = 'all' | 'published' | 'green' | 'yellow' | 'red'
@@ -445,44 +446,9 @@ export const ensureFeedFilterStyles = (): void => {
  * Применяет активный фильтр к карточкам событий и подсчитывает статистику.
  */
 export const applyFeedFilter = (container: HTMLElement, filter: FeedStatusId): FeedStats => {
-  const cards = getEventCards(container)
-
-  const stats: FeedStats = {
-    total: cards.length,
-    published: 0,
-    green: 0,
-    yellow: 0,
-    red: 0,
-  }
-
-  if (cards.length === 0) {
-    return stats
-  }
-
-  for (const card of cards) {
-    const status = getEventCardStatus(card)
-
-    if (status === 'published') {
-      stats.published += 1
-    } else if (status === 'green') {
-      stats.green += 1
-    } else if (status === 'yellow') {
-      stats.yellow += 1
-    } else if (status === 'red') {
-      stats.red += 1
-    }
-
-    const matchesFilter = filter === 'all' || status === filter
-
-    if (matchesFilter) {
-      card.classList.remove(FEED_HIDDEN_CLASS)
-    } else {
-      card.classList.add(FEED_HIDDEN_CLASS)
-    }
-  }
-
-  return stats
+  return applyFeedFilterToDom({ container, filter })
 }
+
 
 /**
  * Контроллер дропдауна фильтрации статусов правок.

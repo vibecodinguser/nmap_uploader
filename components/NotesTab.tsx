@@ -21,6 +21,7 @@ import {
   createDrawMapObjectsFromNmapIndex,
   createPolygonSnapTargets,
 } from '@/lib/nmaps_draw_objects'
+import { calculateBoundingBox } from '@/lib/notes'
 import { POINT_PICKED_ACTION, START_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
 import { requireAuthBeforeAction } from '@/lib/require_auth'
 import { downloadIndexJson, getStoredAuth, uploadIndexJson } from '@/lib/yandex/client'
@@ -218,13 +219,9 @@ const NoteItemActions = ({
           if (isUploading || isPicking) {
             return
           }
-          let bbox: [number, number, number, number] | undefined
-          if (p.geomCoords && p.geomCoords.length > 1) {
-            const lons = p.geomCoords.map((c) => c[0])
-            const lats = p.geomCoords.map((c) => c[1])
-            bbox = [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)]
-          }
+          const bbox = calculateBoundingBox(p.geomCoords)
           browser.runtime
+
             .sendMessage({
               action: 'centerMap',
               latitude: p.latitude,
