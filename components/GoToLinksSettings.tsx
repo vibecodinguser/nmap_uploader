@@ -1,6 +1,7 @@
 import { ChevronRight } from 'lucide-react'
-import { type ChangeEvent, type ReactNode, useState } from 'react'
+import { type ReactNode, useState } from 'react'
 import { GoToLinksSettingsItem } from '@/components/GoToLinksSettingsItem'
+import { SettingsToggleRow } from '@/components/SettingsToggleRow'
 import type { useGoToLinks } from '@/hooks/useGoToLinks'
 import { useTranslate } from '@/hooks/useLocale'
 import type { GoToItem } from '@/lib/go_to_settings'
@@ -107,10 +108,6 @@ export const GoToLinksSettings = ({
     setIsListExpanded(getToggledListExpanded)
   }
 
-  const handleMenuEnabledChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setIsMenuEnabled(event.target.checked)
-  }
-
   const listContext: GoToLinksListRenderContext = {
     totalItems: items.length,
     isLoaded,
@@ -120,29 +117,14 @@ export const GoToLinksSettings = ({
   }
 
   return (
-    <section className="settings-section" aria-labelledby="settings-go-to-heading">
-      <div className="settings-toggle-row">
-        <h3 id="settings-go-to-heading" className="settings-section-title">
-          {t('settings.goToButton')}
-        </h3>
-        <label className="settings-toggle" htmlFor="settings-go-to-menu-enabled">
-          <input
-            id="settings-go-to-menu-enabled"
-            type="checkbox"
-            role="switch"
-            className="settings-toggle-input"
-            checked={isMenuEnabled}
-            aria-checked={isMenuEnabled}
-            disabled={!isLoaded}
-            aria-label={t('settings.showButtonAria')}
-            onChange={handleMenuEnabledChange}
-          />
-          <span className="settings-toggle-track" aria-hidden="true">
-            <span className="settings-toggle-thumb" />
-          </span>
-        </label>
-      </div>
-
+    <SettingsToggleRow
+      id="settings-go-to-menu-enabled"
+      title={t('settings.goToButton')}
+      ariaLabel={t('settings.showButtonAria')}
+      checked={isMenuEnabled}
+      disabled={!isLoaded}
+      onChange={setIsMenuEnabled}
+    >
       <button
         type="button"
         className="settings-go-to-toggle"
@@ -169,6 +151,6 @@ export const GoToLinksSettings = ({
         listHint: t('settings.goToHint'),
         listAriaLabel: t('settings.goToListAria'),
       })}
-    </section>
+    </SettingsToggleRow>
   )
 }
