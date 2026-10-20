@@ -47,7 +47,6 @@ type FeedsFilterSettings = Pick<
 >
 
 const SETTINGS_BACK_ICON_SIZE = 18
-const SETTINGS_FOOTER_ICON_SIZE = 16
 
 type SettingsTabProps = {
   themeMode: ThemeMode
