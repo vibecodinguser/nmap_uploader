@@ -17,7 +17,7 @@ type GoToLinksSettingsItemProps = Readonly<{
   moveItemDown: ReturnType<typeof useGoToLinks>['moveItemDown']
 }>
 
-function GoToLinksSettingsItemBase({
+const GoToLinksSettingsItemBase = ({
   item,
   index,
   totalItems,
@@ -25,7 +25,7 @@ function GoToLinksSettingsItemBase({
   setItemActive,
   moveItemUp,
   moveItemDown,
-}: GoToLinksSettingsItemProps) {
+}: GoToLinksSettingsItemProps) => {
   const t = useTranslate()
   const { locale } = useLocale()
   const displayName = getGoToSourceDisplayName(item.name, locale)
