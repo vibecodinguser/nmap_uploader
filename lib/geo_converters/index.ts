@@ -2,6 +2,7 @@ import { processFile } from '@/lib/converters'
 import { ProcessingError } from '@/lib/errors'
 import type { GeoConvertResult, ProcessGeoFileInput } from './types'
 
+export { extractFeatureName } from './feature_names'
 export * from './types'
 
 /**

@@ -1,39 +1,8 @@
 import type { Feature, FeatureCollection, Geometry } from 'geojson'
+import { extractFeatureName } from '@/lib/geo_converters'
 import { addFeatureToOutput, extractPaths } from '@/lib/geometry'
 import type { ProcessResult } from '@/lib/nmap_index'
 import { createNmapOutputTemplate } from '@/lib/nmap_index'
-
-const FEATURE_NAME_KEYS = ['name', 'title', 'NAME', 'TITLE', 'Name'] as const
-
-const getTrimmedNonEmptyString = (value: unknown): string | undefined => {
-  let result: string | undefined
-
-  if (typeof value === 'string') {
-    if (value.trim().length > 0) {
-      result = value.trim()
-    }
-  }
-
-  return result
-}
-
-const getFeatureName = (feature: Feature): string | undefined => {
-  const props = feature.properties
-  let featureName: string | undefined
-
-  if (props) {
-    for (const key of FEATURE_NAME_KEYS) {
-      if (featureName === undefined) {
-        const name = getTrimmedNonEmptyString(props[key])
-        if (name !== undefined) {
-          featureName = name
-        }
-      }
-    }
-  }
-
-  return featureName
-}
 
 const processGeometry = ({
   output,
@@ -83,7 +52,7 @@ const processFeature = ({
   metadata: string[]
   output: ProcessResult
 }): void => {
-  const featureName = getFeatureName(feature)
+  const featureName = extractFeatureName(feature)
   processGeometry({
     output,
     geom: feature.geometry,
