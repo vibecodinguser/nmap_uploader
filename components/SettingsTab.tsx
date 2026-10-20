@@ -1,6 +1,7 @@
 import { ArrowLeft, Send } from 'lucide-react'
 import { useMemo } from 'react'
 import { GoToLinksSettings } from '@/components/GoToLinksSettings'
+import { SettingsToggleRow } from '@/components/SettingsToggleRow'
 import { StrokeColorSection, type StrokeColorSettingsProps } from '@/components/StrokeColorSection'
 import type { useFeedsFilter } from '@/hooks/useFeedsFilter'
 import type { useGoToLinks } from '@/hooks/useGoToLinks'
@@ -168,103 +169,43 @@ export const SettingsTab = ({
         </div>
       </section>
 
-      <section className="settings-section" aria-labelledby="settings-split-view-heading">
-        <div className="settings-toggle-row">
-          <h3 id="settings-split-view-heading" className="settings-section-title">
-            {t('settings.splitViewButton')}
-          </h3>
-          <label className="settings-toggle" htmlFor="settings-split-view-button">
-            <input
-              id="settings-split-view-button"
-              type="checkbox"
-              role="switch"
-              className="settings-toggle-input"
-              checked={isSplitViewButtonEnabled}
-              aria-checked={isSplitViewButtonEnabled}
-              disabled={isSplitViewButtonDisabled}
-              aria-label={t('settings.splitViewAria')}
-              onChange={(e) => setSplitViewButtonEnabled(e.target.checked)}
-            />
-            <span className="settings-toggle-track" aria-hidden="true">
-              <span className="settings-toggle-thumb" />
-            </span>
-          </label>
-        </div>
-      </section>
+      <SettingsToggleRow
+        id="settings-split-view-button"
+        title={t('settings.splitViewButton')}
+        ariaLabel={t('settings.splitViewAria')}
+        checked={isSplitViewButtonEnabled}
+        disabled={isSplitViewButtonDisabled}
+        onChange={setSplitViewButtonEnabled}
+      />
 
-      <section className="settings-section" aria-labelledby="settings-notes-button-heading">
-        <div className="settings-toggle-row">
-          <h3 id="settings-notes-button-heading" className="settings-section-title">
-            {t('settings.notesButton')}
-          </h3>
-          <label className="settings-toggle" htmlFor="settings-notes-button">
-            <input
-              id="settings-notes-button"
-              type="checkbox"
-              role="switch"
-              className="settings-toggle-input"
-              checked={isNotesButtonEnabled}
-              aria-checked={isNotesButtonEnabled}
-              disabled={isNotesButtonDisabled}
-              aria-label={t('settings.notesButtonAria')}
-              onChange={(e) => setNotesButtonEnabled(e.target.checked)}
-            />
-            <span className="settings-toggle-track" aria-hidden="true">
-              <span className="settings-toggle-thumb" />
-            </span>
-          </label>
-        </div>
-      </section>
+      <SettingsToggleRow
+        id="settings-notes-button"
+        title={t('settings.notesButton')}
+        ariaLabel={t('settings.notesButtonAria')}
+        checked={isNotesButtonEnabled}
+        disabled={isNotesButtonDisabled}
+        onChange={setNotesButtonEnabled}
+      />
 
-      <section className="settings-section" aria-labelledby="settings-feeds-filter-heading">
-        <div className="settings-toggle-row">
-          <h3 id="settings-feeds-filter-heading" className="settings-section-title">
-            {t('settings.feedsFilter')}
-          </h3>
-          <label className="settings-toggle" htmlFor="settings-feeds-filter-button">
-            <input
-              id="settings-feeds-filter-button"
-              type="checkbox"
-              role="switch"
-              className="settings-toggle-input"
-              checked={isFeedsFilterEnabled}
-              aria-checked={isFeedsFilterEnabled}
-              disabled={isFeedsFilterDisabled}
-              aria-label={t('settings.feedsFilterAria')}
-              onChange={(e) => feedsFilter?.setIsEnabled(e.target.checked)}
-            />
-            <span className="settings-toggle-track" aria-hidden="true">
-              <span className="settings-toggle-thumb" />
-            </span>
-          </label>
-        </div>
-      </section>
+      <SettingsToggleRow
+        id="settings-feeds-filter-button"
+        title={t('settings.feedsFilter')}
+        ariaLabel={t('settings.feedsFilterAria')}
+        checked={isFeedsFilterEnabled}
+        disabled={isFeedsFilterDisabled}
+        onChange={(checked) => feedsFilter?.setIsEnabled(checked)}
+      />
 
       <GoToLinksSettings {...goToLinks} />
 
-      <section className="settings-section" aria-labelledby="settings-upload-heading">
-        <div className="settings-toggle-row">
-          <h3 id="settings-upload-heading" className="settings-section-title">
-            {t('settings.reloadAfterUpload')}
-          </h3>
-          <label className="settings-toggle" htmlFor="settings-reload-after-upload">
-            <input
-              id="settings-reload-after-upload"
-              type="checkbox"
-              role="switch"
-              className="settings-toggle-input"
-              checked={isReloadAfterUploadEnabled}
-              aria-checked={isReloadAfterUploadEnabled}
-              disabled={isReloadAfterUploadDisabled}
-              aria-label={t('settings.reloadAfterUploadAria')}
-              onChange={(e) => setReloadAfterUploadEnabled(e.target.checked)}
-            />
-            <span className="settings-toggle-track" aria-hidden="true">
-              <span className="settings-toggle-thumb" />
-            </span>
-          </label>
-        </div>
-      </section>
+      <SettingsToggleRow
+        id="settings-reload-after-upload"
+        title={t('settings.reloadAfterUpload')}
+        ariaLabel={t('settings.reloadAfterUploadAria')}
+        checked={isReloadAfterUploadEnabled}
+        disabled={isReloadAfterUploadDisabled}
+        onChange={setReloadAfterUploadEnabled}
+      />
 
       <StrokeColorSection {...strokeColor} />
 
