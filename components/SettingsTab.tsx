@@ -1,36 +1,19 @@
 import { ArrowLeft, Send } from 'lucide-react'
-import { type ChangeEvent, type KeyboardEvent, type ReactNode, useMemo } from 'react'
+import { type ChangeEvent, type ReactNode, useMemo } from 'react'
 import { GoToLinksSettings } from '@/components/GoToLinksSettings'
+import { StrokeColorSection, type StrokeColorSettingsProps } from '@/components/StrokeColorSection'
 import type { useFeedsFilter } from '@/hooks/useFeedsFilter'
 import type { useGoToLinks } from '@/hooks/useGoToLinks'
 import { useLocale } from '@/hooks/useLocale'
 import type { useNotesButton } from '@/hooks/useNotesButton'
 import type { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
 import type { useSplitViewButton } from '@/hooks/useSplitViewButton'
-import type { useStrokeColor } from '@/hooks/useStrokeColor'
 import type { ThemeMode } from '@/hooks/useTheme'
 import type { TranslateFn } from '@/lib/i18n'
 import { LOCALE_OPTIONS } from '@/lib/i18n/locale'
 import type { Locale, LocaleOption } from '@/lib/i18n/locale.types'
 import { RELEASES_URL } from '@/lib/releases_url'
-import { DEFAULT_STROKE_COLOR_INPUT, toStrokeColorInputValue } from '@/lib/stroke_color'
 import packageJson from '../package.json'
-
-const SETTINGS_BACK_ICON_SIZE = 18
-const SETTINGS_FOOTER_ICON_SIZE = 16
-
-type StrokeColorSettings = Pick<
-  ReturnType<typeof useStrokeColor>,
-  | 'inputValue'
-  | 'effectiveColor'
-  | 'validationError'
-  | 'applyStatus'
-  | 'isLoaded'
-  | 'isApplying'
-  | 'canApply'
-  | 'handleInputChange'
-  | 'handleApply'
->
 
 type ReloadAfterUploadSettings = Pick<
   ReturnType<typeof useReloadAfterUpload>,
@@ -63,11 +46,14 @@ type FeedsFilterSettings = Pick<
   'isEnabled' | 'isLoaded' | 'setIsEnabled'
 >
 
+const SETTINGS_BACK_ICON_SIZE = 18
+const SETTINGS_FOOTER_ICON_SIZE = 16
+
 type SettingsTabProps = {
   themeMode: ThemeMode
   onThemeModeChange: (mode: ThemeMode) => void
   onBack?: () => void
-  strokeColor: StrokeColorSettings
+  strokeColor: StrokeColorSettingsProps
   reloadAfterUpload: ReloadAfterUploadSettings
   splitViewButton: SplitViewButtonSettings
   notesButton: NotesButtonSettings
@@ -88,40 +74,6 @@ type SettingsTabRuntime = {
 }
 
 const settingsTabRuntime: { current: SettingsTabRuntime | null } = { current: null }
-
-function logStrokeColorApplyFailure(error: unknown): void {
-  console.warn('[nmap_uploader] stroke color apply failed:', error)
-}
-
-function handleStrokeColorApplyTask(task: Promise<void>): void {
-  task.catch(logStrokeColorApplyFailure)
-}
-
-function getColorInputGroupClassName(hasValidationError: boolean): string {
-  let className = 'settings-color-input-group'
-  if (hasValidationError) {
-    className = 'settings-color-input-group settings-color-input-group--invalid'
-  }
-  return className
-}
-
-function getApplyButtonText(isApplying: boolean, applyLabel: string): string {
-  let text: string
-  if (isApplying) {
-    text = '…'
-  } else {
-    text = applyLabel
-  }
-  return text
-}
-
-function getStrokeColorAriaInvalid(hasValidationError: boolean): true | undefined {
-  let result: true | undefined
-  if (hasValidationError) {
-    result = true
-  }
-  return result
-}
 
 function buildThemeModeOptions(t: TranslateFn) {
   const darkLabel = t('settings.themeDark')
@@ -162,14 +114,6 @@ function getNotesButtonDisabled(isLoaded: boolean): boolean {
 
 function getReloadAfterUploadDisabled(isLoaded: boolean, canChange: boolean): boolean {
   return !isLoaded || !canChange
-}
-
-function getStrokeColorDisabled(isLoaded: boolean, isApplying: boolean): boolean {
-  return !isLoaded || isApplying
-}
-
-function getApplyDisabled(canApply: boolean): boolean {
-  return !canApply
 }
 
 function buildLocaleOptionItems(context: LocaleOptionRenderContext): ReactNode[] {
@@ -219,76 +163,6 @@ function buildThemeModeOptionItems(
   return items
 }
 
-function renderStrokeColorValidationError(message: string | null): ReactNode {
-  let content: ReactNode = null
-  if (message) {
-    content = (
-      <p id="stroke-color-error" className="settings-field-error" role="alert">
-        {message}
-      </p>
-    )
-  }
-  return content
-}
-
-function renderStrokeColorApplySuccess(isSuccess: boolean, successMessage: string): ReactNode {
-  let content: ReactNode = null
-  if (isSuccess) {
-    content = (
-      <p className="settings-field-success" role="status">
-        {successMessage}
-      </p>
-    )
-  }
-  return content
-}
-
-function renderStrokeColorApplyError(isError: boolean, errorMessage: string): ReactNode {
-  let content: ReactNode = null
-  if (isError) {
-    content = (
-      <p className="settings-field-error" role="alert">
-        {errorMessage}
-      </p>
-    )
-  }
-  return content
-}
-
-function onApplyClick(): void {
-  const runtime = settingsTabRuntime.current
-  if (runtime) {
-    const applyTask = runtime.handleApply()
-    handleStrokeColorApplyTask(applyTask)
-  }
-}
-
-function onColorPickerChange(value: string): void {
-  const handleInputChange = settingsTabRuntime.current?.handleInputChange
-  if (handleInputChange) {
-    const normalizedValue = toStrokeColorInputValue(value)
-    handleInputChange(normalizedValue)
-  }
-}
-
-function onColorPickerInputChange(event: ChangeEvent<HTMLInputElement>): void {
-  onColorPickerChange(event.target.value)
-}
-
-function onStrokeColorInputChange(event: ChangeEvent<HTMLInputElement>): void {
-  onColorPickerChange(event.target.value)
-}
-
-function onStrokeColorInputKeyDown(event: KeyboardEvent<HTMLInputElement>): void {
-  const runtime = settingsTabRuntime.current
-  if (runtime && event.key === 'Enter') {
-    event.preventDefault()
-    if (runtime.canApply) {
-      onApplyClick()
-    }
-  }
-}
-
 function onLocaleChange(event: ChangeEvent<HTMLInputElement>): void {
   settingsTabRuntime.current?.setLocale(event.target.value as Locale)
 }
@@ -313,7 +187,7 @@ function onReloadAfterUploadChange(event: ChangeEvent<HTMLInputElement>): void {
   settingsTabRuntime.current?.setReloadAfterUploadEnabled(event.target.checked)
 }
 
-export const SettingsTab = function settingsTab({
+export const SettingsTab = ({
   themeMode,
   onThemeModeChange,
   onBack,
@@ -323,19 +197,8 @@ export const SettingsTab = function settingsTab({
   notesButton,
   feedsFilter,
   goToLinks,
-}: SettingsTabProps) {
+}: SettingsTabProps) => {
   const { locale, setLocale, t } = useLocale()
-  const {
-    inputValue,
-    effectiveColor,
-    validationError,
-    applyStatus,
-    isLoaded,
-    isApplying,
-    canApply,
-    handleInputChange,
-    handleApply,
-  } = strokeColor
   const {
     isEnabled: isReloadAfterUploadEnabled,
     isLoaded: isReloadAfterUploadLoaded,
@@ -364,9 +227,9 @@ export const SettingsTab = function settingsTab({
     setNotesButtonEnabled,
     setFeedsFilterEnabled: (enabled: boolean) => feedsFilter?.setIsEnabled(enabled),
     setReloadAfterUploadEnabled,
-    handleApply,
-    handleInputChange,
-    canApply,
+    handleApply: strokeColor.handleApply,
+    handleInputChange: strokeColor.handleInputChange,
+    canApply: strokeColor.canApply,
   }
 
   const themeModeOptions = useMemo(
@@ -381,24 +244,6 @@ export const SettingsTab = function settingsTab({
   const isReloadAfterUploadDisabled = getReloadAfterUploadDisabled(
     isReloadAfterUploadLoaded,
     canChangeReloadAfterUpload,
-  )
-  const isStrokeColorDisabled = getStrokeColorDisabled(isLoaded, isApplying)
-  const isApplyDisabled = getApplyDisabled(canApply)
-  const hasValidationError = Boolean(validationError)
-  const colorInputGroupClassName = getColorInputGroupClassName(hasValidationError)
-  const applyLabel = t('common.apply')
-  const applyButtonText = getApplyButtonText(isApplying, applyLabel)
-  const strokeColorAriaInvalid = getStrokeColorAriaInvalid(hasValidationError)
-  const strokeColorValidationMessage = renderStrokeColorValidationError(validationError)
-  const strokeColorAppliedLabel = t('settings.strokeColorApplied')
-  const strokeColorSuccessMessage = renderStrokeColorApplySuccess(
-    applyStatus === 'success',
-    strokeColorAppliedLabel,
-  )
-  const strokeColorApplyErrorLabel = t('settings.strokeColorApplyError')
-  const strokeColorErrorMessage = renderStrokeColorApplyError(
-    applyStatus === 'error',
-    strokeColorApplyErrorLabel,
   )
   const localeOptionItems = buildLocaleOptionItems({ locale, translate: t })
   const themeModeOptionItems = buildThemeModeOptionItems(themeModeOptions, { themeMode })
@@ -539,53 +384,7 @@ export const SettingsTab = function settingsTab({
         </div>
       </section>
 
-      <section className="settings-section" aria-labelledby="settings-path-heading">
-        <h3 id="settings-path-heading" className="settings-section-title">
-          {t('settings.strokeColor')}
-        </h3>
-        <div className="settings-field">
-          <div className="settings-color-field">
-            <input
-              type="color"
-              className="settings-color-picker"
-              value={effectiveColor}
-              disabled={isStrokeColorDisabled}
-              aria-label={t('settings.pickStrokeColorAria')}
-              onChange={onColorPickerInputChange}
-            />
-            <div className={colorInputGroupClassName}>
-              <span className="settings-color-prefix" aria-hidden>
-                #
-              </span>
-              <input
-                id="stroke-color-input"
-                type="text"
-                className="settings-color-input"
-                value={inputValue}
-                placeholder={DEFAULT_STROKE_COLOR_INPUT}
-                disabled={isStrokeColorDisabled}
-                aria-label={t('settings.strokeColor')}
-                aria-invalid={strokeColorAriaInvalid}
-                aria-describedby="stroke-color-hint stroke-color-error"
-                onChange={onStrokeColorInputChange}
-                onKeyDown={onStrokeColorInputKeyDown}
-              />
-            </div>
-            <button
-              type="button"
-              className="submit-btn--outline settings-apply-btn"
-              disabled={isApplyDisabled}
-              onClick={onApplyClick}
-            >
-              {applyButtonText}
-            </button>
-          </div>
-
-          {strokeColorValidationMessage}
-          {strokeColorSuccessMessage}
-          {strokeColorErrorMessage}
-        </div>
-      </section>
+      <StrokeColorSection {...strokeColor} />
 
       <section
         className="settings-section settings-section--about"
