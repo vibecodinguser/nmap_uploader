@@ -1,3 +1,4 @@
+import { FEED_HIDDEN_CLASS } from './constants'
 import {
   calculateFeedStats,
   type FeedEventItem,
@@ -6,7 +7,7 @@ import {
   type FeedStatusId,
 } from './core'
 
-export const FEED_HIDDEN_CLASS = 'nmap-uploader-feed-event-hidden'
+export { FEED_HIDDEN_CLASS }
 
 /**
  * Извлекает статус коммита или бейджа из карточки события Народной карты.
@@ -24,9 +25,7 @@ export const extractCardStatus = (card: HTMLElement): FeedItemStatus => {
     card.querySelector<HTMLElement>('[class*="icon_id_commit-"]')
 
   if (stateElement) {
-    const iconChild = stateElement.querySelector<HTMLElement>(
-      '[class*="icon_id_commit-"]',
-    )
+    const iconChild = stateElement.querySelector<HTMLElement>('[class*="icon_id_commit-"]')
     const combinedClasses =
       `${stateElement.className} ${iconChild ? iconChild.className : ''}`.toLowerCase()
 
@@ -84,19 +83,26 @@ export const extractCardStatus = (card: HTMLElement): FeedItemStatus => {
 
   // Резервный поиск по бейджу
   const badge =
-    (card.matches('.nk-event-view__badge, .nk-badge, [class*="badge"]')
-      ? card
-      : null) ||
-    card.querySelector<HTMLElement>(
-      '.nk-event-view__badge, .nk-badge, [class*="badge"]',
-    )
+    (card.matches('.nk-event-view__badge, .nk-badge, [class*="badge"]') ? card : null) ||
+    card.querySelector<HTMLElement>('.nk-event-view__badge, .nk-badge, [class*="badge"]')
 
   if (badge) {
     const className = badge.className || ''
     if (className.includes('green')) return 'green'
-    if (className.includes('yellow') || className.includes('orange'))
-      return 'yellow'
+    if (className.includes('yellow') || className.includes('orange')) return 'yellow'
     if (className.includes('red')) return 'red'
+  }
+
+  // Fallback: проверка классов самого контейнера карточки
+  const cardClassName = card.className || ''
+  if (cardClassName.includes('badge_color_yellow') || cardClassName.includes('color_yellow')) {
+    return 'yellow'
+  }
+  if (cardClassName.includes('badge_color_green') || cardClassName.includes('color_green')) {
+    return 'green'
+  }
+  if (cardClassName.includes('badge_color_red') || cardClassName.includes('color_red')) {
+    return 'red'
   }
 
   return 'other'
@@ -106,16 +112,14 @@ export const extractCardStatus = (card: HTMLElement): FeedItemStatus => {
  * Находит карточки событий в контейнере.
  */
 export const findEventCards = (container: HTMLElement): HTMLElement[] => {
-  const directCards = Array.from(
-    container.querySelectorAll<HTMLElement>('.nk-event-view'),
-  )
+  const directCards = Array.from(container.querySelectorAll<HTMLElement>('.nk-event-view'))
   if (directCards.length > 0) {
     return directCards
   }
 
-  return Array.from(
-    container.querySelectorAll<HTMLElement>('[class*="event-view"]'),
-  ).filter((el) => !/[a-z0-9_-]+__/.test(el.className))
+  return Array.from(container.querySelectorAll<HTMLElement>('[class*="event-view"]')).filter(
+    (el) => !/[a-z0-9_-]+__/.test(el.className),
+  )
 }
 
 export type ApplyFeedFilterInput = {
@@ -126,10 +130,7 @@ export type ApplyFeedFilterInput = {
 /**
  * Применяет активный фильтр к карточкам в DOM и возвращает статистику.
  */
-export const applyFeedFilterToDom = ({
-  container,
-  filter,
-}: ApplyFeedFilterInput): FeedStats => {
+export const applyFeedFilterToDom = ({ container, filter }: ApplyFeedFilterInput): FeedStats => {
   const cards = findEventCards(container)
 
   const eventItems: FeedEventItem[] = cards.map((card, index) => ({

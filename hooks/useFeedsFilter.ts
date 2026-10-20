@@ -4,7 +4,7 @@ import {
   FEEDS_FILTER_ENABLED_STORAGE_KEY,
   getStoredFeedsFilterEnabled,
   setStoredFeedsFilterEnabled,
-} from '@/lib/user_feeds_filter'
+} from '@/lib/feeds_filter'
 
 export const useFeedsFilter = () => {
   const [isEnabled, setIsEnabledState] = useState(false)
