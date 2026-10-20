@@ -1,7 +1,8 @@
-import { ArrowLeft, Send } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { useMemo } from 'react'
 import { GoToLinksSettings } from '@/components/GoToLinksSettings'
 import { SegmentedRadioGroup } from '@/components/SegmentedRadioGroup'
+import { SettingsAboutSection } from '@/components/SettingsAboutSection'
 import { SettingsToggleRow } from '@/components/SettingsToggleRow'
 import { StrokeColorSection, type StrokeColorSettingsProps } from '@/components/StrokeColorSection'
 import type { useFeedsFilter } from '@/hooks/useFeedsFilter'
@@ -13,8 +14,6 @@ import type { useSplitViewButton } from '@/hooks/useSplitViewButton'
 import type { ThemeMode } from '@/hooks/useTheme'
 import { LOCALE_OPTIONS } from '@/lib/i18n/locale'
 import type { Locale } from '@/lib/i18n/locale.types'
-import { RELEASES_URL } from '@/lib/releases_url'
-import packageJson from '../package.json'
 
 type ReloadAfterUploadSettings = Pick<
   ReturnType<typeof useReloadAfterUpload>,
@@ -199,33 +198,7 @@ export const SettingsTab = ({
 
       <StrokeColorSection {...strokeColor} />
 
-      <section
-        className="settings-section settings-section--about"
-        aria-labelledby="settings-about-heading"
-      >
-        <h3 className="settings-section-title settings-section-title--row">
-          <a
-            id="settings-about-heading"
-            href={RELEASES_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="settings-about-link"
-          >
-            {t('common.version')} {packageJson.version}
-          </a>
-          <div className="footer-links">
-            <a
-              href="https://t.me/notebook_loader_bot"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="footer-link"
-            >
-              <Send size={SETTINGS_FOOTER_ICON_SIZE} aria-hidden />
-              @feedback
-            </a>
-          </div>
-        </h3>
-      </section>
+      <SettingsAboutSection />
     </div>
   )
 }
