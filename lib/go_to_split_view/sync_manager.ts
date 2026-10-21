@@ -1,81 +1,35 @@
 /**
  * Управление синхронизацией координат и подписками на события в сплит-режиме Go To.
  */
-import { isNakarteOrigin, NAKARTE_ORIGIN } from '@/lib/extension_origins'
-import { latLngToPanelPixel, mouseToLatLng } from '@/lib/go_to_geo_projection'
-import { getMapLocationFromUrl, type MapLocation } from '@/lib/go_to_link'
+import { isNakarteOrigin } from '@/lib/extension_origins'
+import type { MapLocation } from '@/lib/go_to_link'
 import {
   buildNmapsUrlFromLocation,
   locationsEqual,
-  NAKARTE_SYNC_MSG_SOURCE,
-  NMAP_UPLOADER_MSG_SOURCE,
   normalizeMapLocation,
   normalizeMapZoom,
-  type SplitLocationMessage,
 } from '@/lib/go_to_map_sync'
-import { GO_TO_SPLIT_BUTTON_ID } from '@/lib/go_to_split_button'
 import {
   calculateWheelZoomSteps,
-  clampMarkerPosition,
   isStaleNakarteZoomEcho,
   NAKARTE_ZOOM_PUSH_GRACE_MS,
   SYNC_DEBOUNCE_MS,
   URL_POLL_INTERVAL_MS,
 } from '@/lib/go_to_split_view/core'
-import {
-  getLeftPanelSize,
-  getRightPanelSize,
-  type SplitDomElements,
-  setMarkerElementPosition,
-} from '@/lib/go_to_split_view/dom'
-import { GO_TO_SPLIT_BUTTON_ACTIVE_CLASS } from '@/lib/go_to_styles'
+import type { SplitDomElements } from '@/lib/go_to_split_view/dom'
 import { NMAPS_BOUNDS_CHANGE_EVENT, parseBoundsChangeEvent } from '@/lib/nmaps_bounds_notify'
 import { NMAPS_URL_CHANGE_EVENT } from '@/lib/nmaps_url_notify'
+import { SplitCursorTracker } from './cursor_tracker'
+import {
+  NAKARTE_SYNC_MSG_SOURCE,
+  postLocationToIframe,
+  readNmapsLocation,
+  type SplitLocationMessage,
+  wrapHistoryMethod,
+} from './split_bridge'
 
-export const getSplitButton = (): HTMLButtonElement | null =>
-  document.getElementById(GO_TO_SPLIT_BUTTON_ID) as HTMLButtonElement | null
-
-export const updateSplitButtonState = (isOpen: boolean): void => {
-  const button = getSplitButton()
-  if (!button) return
-
-  button.classList.toggle(GO_TO_SPLIT_BUTTON_ACTIVE_CLASS, isOpen)
-  button.setAttribute('aria-pressed', String(isOpen))
-}
-
-export const postLocationToIframe = (
-  iframe: HTMLIFrameElement | null,
-  location: MapLocation,
-): void => {
-  const normalized = normalizeMapLocation(location)
-  iframe?.contentWindow?.postMessage(
-    {
-      source: NMAP_UPLOADER_MSG_SOURCE,
-      type: 'set_location',
-      location: normalized,
-    },
-    NAKARTE_ORIGIN,
-  )
-}
-
-export const wrapHistoryMethod = (
-  method: 'pushState' | 'replaceState',
-  onChange: () => void,
-): (() => void) => {
-  const original = history[method].bind(history) as History['pushState']
-
-  history[method] = ((...args: Parameters<History['pushState']>) => {
-    original(...args)
-    onChange()
-  }) as History['pushState']
-
-  return () => {
-    history[method] = original
-  }
-}
-
-export const readNmapsLocation = (): MapLocation | null =>
-  getMapLocationFromUrl(window.location.href)
+export * from './cursor_tracker'
+export * from './split_bridge'
 
 export class SplitSyncManager {
   private syncTimer: ReturnType<typeof setTimeout> | undefined
@@ -88,11 +42,13 @@ export class SplitSyncManager {
   private nmapsLocation: MapLocation | null = null
   private nakarteLocation: MapLocation | null = null
   private cleanupFns: Array<() => void> = []
+  private cursorTracker: SplitCursorTracker
 
   constructor(
     private readonly dom: SplitDomElements,
     initialLocation: MapLocation,
   ) {
+    this.cursorTracker = new SplitCursorTracker(dom)
     this.nmapsLocation = initialLocation
     this.nakarteLocation = initialLocation
     this.lastPolledUrlLocation = normalizeMapLocation(initialLocation)
@@ -105,8 +61,9 @@ export class SplitSyncManager {
     const restorePushState = wrapHistoryMethod('pushState', onNmapsUrlChange)
     const restoreReplaceState = wrapHistoryMethod('replaceState', onNmapsUrlChange)
 
-    const handleMouseMove = (e: MouseEvent) => this.handleNmapsMouseMove(e)
-    const handleMouseLeave = () => this.handleNmapsMouseLeave()
+    const handleMouseMove = (e: MouseEvent) =>
+      this.cursorTracker.handleNmapsMouseMove(e, this.nakarteLocation)
+    const handleMouseLeave = () => this.cursorTracker.handleNmapsMouseLeave()
     const handleMessage = (e: MessageEvent) => this.handleWindowMessage(e)
     const handleWheel = (e: WheelEvent) => this.handleNmapsWheel(e)
     const handleBoundsChange = (e: Event) => this.handleNmapsBoundsChange(e)
@@ -151,16 +108,15 @@ export class SplitSyncManager {
   }
 
   public hideCursorMarkers(): void {
-    this.hideLeftCursorMarker()
-    this.hideRightCursorMarker()
+    this.cursorTracker.hideCursorMarkers()
   }
 
   public hideLeftCursorMarker(): void {
-    setMarkerElementPosition(this.dom.leftCursorMarker, null)
+    this.cursorTracker.hideLeftCursorMarker()
   }
 
   public hideRightCursorMarker(): void {
-    setMarkerElementPosition(this.dom.rightCursorMarker, null)
+    this.cursorTracker.hideRightCursorMarker()
   }
 
   public dispose(): void {
@@ -175,40 +131,6 @@ export class SplitSyncManager {
     this.nmapsLocation = null
     this.nakarteLocation = null
     this.lastPolledUrlLocation = null
-  }
-
-  private updateRightCursorFromGeo(location: MapLocation | null): void {
-    const panel = getRightPanelSize()
-    if (!location || !this.nakarteLocation) {
-      this.hideRightCursorMarker()
-      return
-    }
-
-    const pixel = latLngToPanelPixel(location, this.nakarteLocation, panel)
-    if (!pixel) {
-      this.hideRightCursorMarker()
-      return
-    }
-
-    const clamped = clampMarkerPosition(pixel, panel)
-    setMarkerElementPosition(this.dom.rightCursorMarker, clamped)
-  }
-
-  private updateLeftCursorFromGeo(location: MapLocation | null): void {
-    const panel = getLeftPanelSize()
-    if (!location || !this.nmapsLocation) {
-      this.hideLeftCursorMarker()
-      return
-    }
-
-    const pixel = latLngToPanelPixel(location, this.nmapsLocation, panel)
-    if (!pixel) {
-      this.hideLeftCursorMarker()
-      return
-    }
-
-    const clamped = clampMarkerPosition(pixel, panel)
-    setMarkerElementPosition(this.dom.leftCursorMarker, clamped)
   }
 
   private markPendingNakarteZoomPush(location: MapLocation): void {
@@ -334,25 +256,6 @@ export class SplitSyncManager {
     this.pushLocationToNakarte({ ...this.nmapsLocation, zoom: nextZoom }, true)
   }
 
-  private handleNmapsMouseMove(event: MouseEvent): void {
-    const view = readNmapsLocation()
-    if (!view) return
-
-    const panel = getLeftPanelSize()
-    const { clientX, clientY } = event
-    if (clientX < 0 || clientX > panel.width || clientY < 0 || clientY > panel.height) {
-      this.hideRightCursorMarker()
-      return
-    }
-
-    const cursor = mouseToLatLng(clientX, clientY, view, panel)
-    this.updateRightCursorFromGeo(cursor)
-  }
-
-  private handleNmapsMouseLeave(): void {
-    this.hideRightCursorMarker()
-  }
-
   private handleWindowMessage(event: MessageEvent): void {
     const data = event.data as SplitLocationMessage | undefined
     if (!data || data.source !== NAKARTE_SYNC_MSG_SOURCE) return
@@ -379,11 +282,11 @@ export class SplitSyncManager {
 
     if (data.type === 'cursor') {
       if (data.location) {
-        this.updateLeftCursorFromGeo(data.location)
+        this.cursorTracker.updateLeftCursorFromGeo(data.location, this.nmapsLocation)
         return
       }
 
-      this.hideLeftCursorMarker()
+      this.cursorTracker.hideLeftCursorMarker()
     }
   }
 }
