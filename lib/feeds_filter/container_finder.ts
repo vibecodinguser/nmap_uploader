@@ -1,0 +1,222 @@
+import { FEEDS_FILTER_POPUP_ID, FEEDS_FILTER_SELECT_ID } from './constants'
+import { findEventCards } from './page_adapter'
+
+/**
+ * Ищет элемент шапки или панели управления ленты событий строго внутри контейнера ленты.
+ */
+export const findFeedHeader = (container?: HTMLElement | null): HTMLElement | null => {
+  const headerSelectors = [
+    '.nk-user-feeds-view__header',
+    '.nk-user-feed-view__header',
+    '.nk-feeds-view__header',
+    '.nk-feed-view__header',
+    '.nk-feed-header-view',
+    '[class*="user-feeds-view__header"]',
+    '[class*="user-feed-view__header"]',
+    '[class*="feeds-view__header"]',
+    '[class*="feed-header"]',
+    '.nk-user-feeds-view__controls',
+    '[class*="user-feeds-view__controls"]',
+    '.nk-sidebar-view__header',
+    '[class*="sidebar-view__header"]',
+    '.nk-header-view',
+  ]
+
+  if (container) {
+    for (const selector of headerSelectors) {
+      const inContainer = container.querySelector<HTMLElement>(selector)
+      if (inContainer) {
+        return inContainer
+      }
+    }
+    for (const selector of headerSelectors) {
+      if (container.matches(selector)) {
+        return container
+      }
+    }
+  }
+
+  for (const selector of headerSelectors) {
+    const found = document.querySelector<HTMLElement>(selector)
+    if (found) {
+      const sidebar = found.closest('.nk-sidebar-view')
+      if (sidebar) {
+        const hasFeed =
+          sidebar.querySelector('.nk-event-view, [class*="event-view"], [class*="feed"]') !== null
+        if (hasFeed) {
+          return found
+        }
+      } else {
+        return found
+      }
+    }
+  }
+
+  return null
+}
+
+/**
+ * Проверяет, является ли кандидат допустимым целевым селектом Народной карты,
+ * рядом с которым можно разместить дропдаун фильтра статусов.
+ */
+export const isValidTargetSelect = (
+  candidate: Element | null,
+  dropdownElement?: HTMLElement | null,
+): candidate is HTMLElement => {
+  if (!candidate || !(candidate instanceof HTMLElement)) {
+    return false
+  }
+
+  // Не может быть собственным элементом фильтра или его попапом
+  if (candidate.id === FEEDS_FILTER_SELECT_ID || candidate.id === FEEDS_FILTER_POPUP_ID) {
+    return false
+  }
+
+  // Не может быть частью/потомком нашего фильтра статусов
+  if (
+    candidate.closest(
+      `#${FEEDS_FILTER_SELECT_ID}, #${FEEDS_FILTER_POPUP_ID}, .nmap-feeds-status-select, .nmap-feeds-status-popup`,
+    )
+  ) {
+    return false
+  }
+
+  // Не может быть тем же элементом, предком или потомком переданного dropdownElement
+  if (
+    dropdownElement &&
+    (dropdownElement === candidate ||
+      dropdownElement.contains(candidate) ||
+      candidate.contains(dropdownElement))
+  ) {
+    return false
+  }
+
+  // Не должен находиться внутри тулбара редактора, панели пользователя или кнопок управления
+  if (
+    candidate.closest(
+      '.nk-user-feeds-control-view, .nk-toolbar-view, [class*="toolbar-view"], [class*="user-bar-view"], button:not(.nk-select), [class*="control-view"]:not([class*="feed"])',
+    )
+  ) {
+    return false
+  }
+
+  // Исключаем внутренние элементы БЭМ
+  if (
+    candidate.classList.contains('nk-select__button') ||
+    candidate.classList.contains('nk-select__text') ||
+    candidate.classList.contains('nk-select__tick') ||
+    candidate.classList.contains('nk-select__menu')
+  ) {
+    return false
+  }
+
+  const classList = Array.from(candidate.classList)
+  const isSelect =
+    classList.some(
+      (cls) => cls === 'nk-select' || cls.startsWith('nk-select_') || cls.includes('select'),
+    ) && !classList.some((cls) => cls.startsWith('nk-select__'))
+
+  return isSelect
+}
+
+/**
+ * Проверяет, выбран ли в целевом селекте режим "Правки".
+ */
+export const isEditsModeSelected = (targetSelect?: HTMLElement | null): boolean => {
+  if (!targetSelect || !(targetSelect instanceof HTMLElement)) {
+    return false
+  }
+
+  if (
+    targetSelect.id === FEEDS_FILTER_SELECT_ID ||
+    targetSelect.classList.contains('nmap-feeds-status-select') ||
+    targetSelect.closest(`#${FEEDS_FILTER_SELECT_ID}`)
+  ) {
+    return false
+  }
+
+  const textElement =
+    targetSelect.querySelector<HTMLElement>('.nk-button__text, .nk-select__text') ||
+    targetSelect.querySelector<HTMLElement>('button') ||
+    targetSelect
+
+  const rawText = (textElement.textContent || '').trim().toLowerCase()
+  if (!rawText) {
+    return false
+  }
+
+  return rawText.includes('правк') || rawText.includes('edit')
+}
+
+/**
+ * Находит корневой контейнер ленты правок/событий в DOM.
+ */
+export const findFeedContainer = (root: ParentNode = document): HTMLElement | null => {
+  // 1. Поиск по наличию карточек событий и их общего предка
+  const eventCards =
+    root instanceof HTMLElement
+      ? findEventCards(root)
+      : Array.from(root.querySelectorAll<HTMLElement>('.nk-event-view'))
+  const eventCard = eventCards[0]
+  if (eventCard) {
+    const parentContainer =
+      eventCard.closest<HTMLElement>(
+        '.nk-user-feeds-view, .nk-user-feed-view, .nk-feeds-view, .nk-feed-view, .nk-events-view, [class*="user-feed"], [class*="feeds-view"], [class*="events-view"]',
+      ) ||
+      eventCard.closest<HTMLElement>('.nk-sidebar-view') ||
+      eventCard.parentElement
+
+    if (
+      parentContainer &&
+      !parentContainer.matches(
+        '.nk-user-feeds-control-view, .nk-toolbar-view, [class*="toolbar"], button',
+      )
+    ) {
+      return parentContainer
+    }
+  }
+
+  // 2. Поиск по классам представления ленты пользователя
+  const knownView =
+    root.querySelector<HTMLElement>('.nk-user-feeds-view') ||
+    root.querySelector<HTMLElement>('.nk-user-feed-view') ||
+    root.querySelector<HTMLElement>('.nk-feeds-view') ||
+    root.querySelector<HTMLElement>('.nk-feed-view') ||
+    root.querySelector<HTMLElement>('.nk-events-view') ||
+    root.querySelector<HTMLElement>(
+      '[class*="user-feeds-view"]:not([class*="control-view"]):not(button)',
+    ) ||
+    root.querySelector<HTMLElement>(
+      '[class*="user-feed-view"]:not([class*="control-view"]):not(button)',
+    ) ||
+    root.querySelector<HTMLElement>(
+      '[class*="feeds-view"]:not([class*="control-view"]):not(button)',
+    )
+
+  if (knownView) {
+    return knownView
+  }
+
+  // 3. Поиск по открытому сайдбару с признаками ленты событий
+  const sidebar = root.querySelector<HTMLElement>('.nk-sidebar-view')
+  if (sidebar) {
+    const hasFeed =
+      sidebar.querySelector('.nk-event-view, [class*="event-view"], [class*="feed"]') !== null
+    if (hasFeed) {
+      return sidebar
+    }
+  }
+
+  // 4. Проверяем, не является ли сам root элементом ленты
+  if (
+    root instanceof HTMLElement &&
+    root.matches(
+      '.nk-user-feeds-view, .nk-user-feed-view, .nk-feeds-view, .nk-feed-view, .nk-events-view, [class*="user-feed"], [class*="feeds-view"]',
+    ) &&
+    !root.matches('.nk-user-feeds-control-view, .nk-toolbar-view, [class*="control-view"], button')
+  ) {
+    return root
+  }
+
+  return null
+}
