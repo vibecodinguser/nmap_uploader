@@ -1,6 +1,5 @@
-/**
- * Модуль интеграции и синхронизации с Народной картой (NMaps Adapter).
- */
-export * from '@/lib/nmaps/map_discovery'
-export * from '@/lib/nmaps/point_picker'
-export * from '@/lib/nmaps/projection'
+export * from './map_discovery'
+export * from './object_drawer'
+export * from './point_picker'
+export * from './projection'
+export * from './repaint'

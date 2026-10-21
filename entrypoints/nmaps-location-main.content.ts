@@ -1,11 +1,12 @@
 import { defineContentScript } from 'wxt/utils/define-content-script'
 import {
+  centerMapOnLocation,
   findActiveMap,
-  getCoordsFromUrlClick,
+  NmapsObjectDrawer,
   PointPickerOverlay,
+  requestMapRepaint,
   subscribeToMapEvents,
   type YmapsMapLike,
-  type YmapsMapWithContainer,
 } from '@/lib/nmaps'
 import { parseDrawMapObjectsDetail } from '@/lib/nmaps_draw_objects'
 import { NMAPS_MAP_RESIZE_EVENT } from '@/lib/nmaps_map_resize_notify'
@@ -22,87 +23,7 @@ import { notifyNmapsUrlChange } from '@/lib/nmaps_url_notify'
 
 let globalActiveMapInstance: YmapsMapLike | null = null
 
-const dispatchWindowResize = (): void => {
-  const w = globalThis.innerWidth
-  const h = globalThis.innerHeight
-
-  Object.defineProperty(globalThis, 'innerWidth', { value: w + 1, configurable: true })
-  Object.defineProperty(globalThis, 'innerHeight', { value: h + 1, configurable: true })
-
-  const intervals = [0, 100, 200, 300, 500, 800]
-  intervals.forEach((delay) => {
-    if (delay === 0) {
-      globalThis.dispatchEvent(new Event('resize'))
-    } else {
-      setTimeout(() => globalThis.dispatchEvent(new Event('resize')), delay)
-    }
-  })
-
-  setTimeout(() => {
-    delete (globalThis as unknown as Record<string, unknown>).innerWidth
-    delete (globalThis as unknown as Record<string, unknown>).innerHeight
-    globalThis.dispatchEvent(new Event('resize'))
-  }, 1000)
-}
-
-const requestMapRepaint = (event?: Event): void => {
-  dispatchWindowResize()
-
-  const map = globalActiveMapInstance ?? findActiveMap()
-  if (!map) return
-
-  try {
-    const detailRaw = (event as CustomEvent)?.detail
-    let detail: Record<string, unknown> | undefined = detailRaw
-    if (typeof detailRaw === 'string') {
-      try {
-        detail = JSON.parse(detailRaw)
-      } catch (e: unknown) {
-        console.debug(e)
-      }
-    }
-
-    let center: [number, number] | undefined
-    let zoom: number | undefined
-
-    if (detail && typeof detail.latitude === 'number' && typeof detail.longitude === 'number') {
-      const targetCenter = [detail.longitude, detail.latitude]
-      const targetZoom = Number(detail.zoom)
-
-      setTimeout(() => {
-        const activeMap = globalActiveMapInstance ?? findActiveMap()
-        if (activeMap && typeof (activeMap as Record<string, unknown>).setCenter === 'function') {
-          try {
-            ;(activeMap as Record<string, any>).setCenter(targetCenter, targetZoom, { duration: 0 })
-          } catch (e: unknown) {
-            console.debug(e)
-          }
-        }
-      }, 200)
-    } else {
-      try {
-        center = map.getCenter()
-        zoom = map.getZoom()
-      } catch (e: unknown) {
-        console.debug(e)
-      }
-    }
-
-    const container = (map as unknown as YmapsMapWithContainer).container
-    container?.fitToViewport?.()
-
-    if (center && zoom !== undefined) {
-      const centerMethod = ['setCenter', 'panTo', 'moveTo'].find(
-        (m) => typeof (map as Record<string, unknown>)[m] === 'function',
-      )
-      if (centerMethod) {
-        ;(map as Record<string, any>)[centerMethod](center, zoom, { duration: 0 })
-      }
-    }
-  } catch (err: unknown) {
-    console.debug(err)
-  }
-}
+const getActiveMap = (): YmapsMapLike | null => globalActiveMapInstance ?? findActiveMap()
 
 const interceptYmaps = (): void => {
   if (typeof globalThis === 'undefined') return
@@ -153,9 +74,6 @@ const wrapHistoryMethod = (method: 'pushState' | 'replaceState', onChange: () =>
   }) as typeof history.pushState
 }
 
-let customCollection: any = null
-
-// noinspection JSUnusedGlobalSymbols
 export default defineContentScript({
   matches: ['https://n.maps.yandex.ru/*'],
   runAt: 'document_start',
@@ -171,7 +89,7 @@ export default defineContentScript({
 
     const tracingAdapter = createNativeTracingAdapter({
       globalObject: globalThis,
-      getMap: () => (globalActiveMapInstance ?? findActiveMap()) as NativeTracingMap | null,
+      getMap: () => getActiveMap() as NativeTracingMap | null,
     })
     windowWithTracingAdapter.__nmapNativeTracingAdapter__ = tracingAdapter
     globalThis.addEventListener('pagehide', () => tracingAdapter.destroy(), { once: true })
@@ -184,55 +102,16 @@ export default defineContentScript({
 
     startMapDiscovery()
 
-    document.addEventListener(NMAPS_MAP_RESIZE_EVENT, requestMapRepaint)
+    const drawer = new NmapsObjectDrawer()
+
+    document.addEventListener(NMAPS_MAP_RESIZE_EVENT, (e) => requestMapRepaint(e, getActiveMap))
 
     document.addEventListener('nmaps:drawObjects', (event: Event) => {
       const detail = parseDrawMapObjectsDetail((event as CustomEvent).detail)
       if (!detail) return
 
       tracingAdapter.setTargets(detail.snapTargets)
-      const { points } = detail
-
-      const ymaps = (globalThis as unknown as Record<string, any>).ymaps
-      if (!ymaps) return
-
-      const map = globalActiveMapInstance ?? findActiveMap()
-      if (!map) return
-
-      if (!customCollection) {
-        customCollection = new ymaps.GeoObjectCollection(
-          {},
-          {
-            strokeColor: '#0078FF',
-            strokeWidth: 3,
-            fillColor: 'rgba(0, 120, 255, 0.25)',
-          },
-        )
-        ;(map as Record<string, any>).geoObjects.add(customCollection)
-      }
-
-      customCollection.removeAll()
-
-      points.forEach((p: any) => {
-        if (p.geomType === 'Polygon' && p.geomCoords) {
-          const polygon = new ymaps.Polygon(
-            [p.geomCoords],
-            { hintContent: p.name || p.noteDesc },
-            { fill: !p.id },
-          )
-          customCollection.add(polygon)
-        } else if (p.geomType === 'LineString' && p.geomCoords) {
-          const polyline = new ymaps.Polyline(p.geomCoords, {
-            hintContent: p.name || p.noteDesc,
-          })
-          customCollection.add(polyline)
-        } else {
-          const placemark = new ymaps.Placemark([p.longitude, p.latitude], {
-            hintContent: p.name || p.noteDesc,
-          })
-          customCollection.add(placemark)
-        }
-      })
+      drawer.drawObjects(detail, getActiveMap)
     })
 
     document.addEventListener('nmaps:centerMap', (event: Event) => {
@@ -241,33 +120,9 @@ export default defineContentScript({
       if (typeof detail === 'string') {
         try {
           detail = JSON.parse(detail)
-        } catch {
-          // ignore
-        }
+        } catch {}
       }
-      const { latitude, longitude, zoom, duration } = detail ?? {}
-      const lat = Number(latitude)
-      const lon = Number(longitude)
-      const z = Number(zoom) || 18
-      const dur = typeof duration === 'number' ? duration : 0
-
-      if (!Number.isNaN(lat) && !Number.isNaN(lon)) {
-        const map = globalActiveMapInstance ?? findActiveMap()
-        if (map) {
-          try {
-            const centerMethod = ['setCenter', 'panTo', 'moveTo'].find(
-              (m) => typeof (map as Record<string, any>)[m] === 'function',
-            )
-            if (centerMethod) {
-              ;(map as Record<string, any>)[centerMethod]([lon, lat], z, { duration: dur })
-              return
-            }
-          } catch {
-            // fallback
-          }
-        }
-        globalThis.location.hash = `#!/?z=${z}&ll=${lon},${lat}`
-      }
+      centerMapOnLocation(detail, getActiveMap)
     })
 
     let activeCleanup: (() => void) | null = null
@@ -286,7 +141,7 @@ export default defineContentScript({
           activeCleanup = null
         },
         (e) => {
-          const map = globalActiveMapInstance ?? findActiveMap()
+          const map = getActiveMap()
           if (!map) return null
           const m = map as Record<string, any>
           if (m.converter && m.options) {
