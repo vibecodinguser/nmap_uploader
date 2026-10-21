@@ -2,7 +2,7 @@
  * Контроллер сборки тулбара Народной карты: кнопки Перейти, Сплит, Загрузка, Заметки.
  */
 
-import { createGoToMenuElement, MENU_ID, MENU_ITEMS_ID } from '@/lib/go_to/menu_dom'
+import { createGoToMenuElement, MENU_ID } from '@/lib/go_to/menu_dom'
 import {
   getButtonInsertParent,
   getGoToToolbarMountState,
@@ -11,11 +11,9 @@ import {
   getServiceButton,
   getSplitButton,
   hideGoToServiceButton,
-  isButtonMountedInToolbar,
   isSplitButtonSiblingOf,
   isToolbarButtonHoverTarget,
   repairToolbarIcons,
-  resolveAnchor,
   showGoToServiceButton,
   showSplitButton,
 } from '@/lib/go_to/toolbar_mount'
@@ -32,8 +30,8 @@ import {
   GO_TO_SPLIT_BUTTON_ID,
   getStoredSplitButtonEnabled,
 } from '@/lib/go_to_split_button'
-import { isSplitViewOpen, teardownSplitView, toggleSplitView } from '@/lib/go_to_split_view'
-import { GO_TO_BUTTON_HOVERED_CLASS, GO_TO_POPUP_VISIBLE_CLASS } from '@/lib/go_to_styles'
+import { teardownSplitView, toggleSplitView } from '@/lib/go_to_split_view'
+import { GO_TO_BUTTON_HOVERED_CLASS } from '@/lib/go_to_styles'
 import { removeAllGoToToolbarButtons, shouldRemountGoToToolbar } from '@/lib/go_to_toolbar'
 import type { TranslateFn } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n/locale.types'
@@ -56,11 +54,9 @@ export const loadGoToToolbarSettings = (): Promise<GoToToolbarSettings> => {
 }
 
 export class GoToToolbarController {
-  private toolbarButtonListeners = new WeakMap<HTMLElement, AbortController>()
-
   constructor(
     private readonly getTranslator: () => TranslateFn,
-    private readonly getLocale: () => Locale,
+    readonly getLocale: () => Locale,
     private readonly onOpenMenu: () => void,
     private readonly onHideMenu: () => void,
     private readonly onRenderMenuItems: (items: GoToItem[]) => void,
