@@ -234,10 +234,7 @@ export default defineContentScript({
           return originalLineTo.apply(this, args)
         }
 
-        proto.stroke = function (
-          this: CanvasRenderingContext2D,
-          ...args: [path?: Path2D]
-        ) {
+        proto.stroke = function (this: CanvasRenderingContext2D, ...args: [path?: Path2D]) {
           if (Date.now() - lastMapInteractionTime > 5000) {
             return (originalStroke as (...a: unknown[]) => void).apply(this, args)
           }
