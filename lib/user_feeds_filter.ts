@@ -1,5 +1,6 @@
 import {
   applyFeedFilterToDom,
+  attachFilterDropdownToDom,
   calculateDayAgeFromDateText,
   createFilterDropdownElement,
   ensureFeedFilterStyles,
@@ -10,11 +11,17 @@ import {
   FEEDS_FILTER_SELECT_ID,
   FEEDS_FILTER_STYLES_ID,
   type FilterDropdownController,
+  findFeedContainer,
+  findFeedHeader,
+  findTargetSelect,
   findEventCards as getEventCards,
   getStoredFeedsFilterEnabled,
+  isEditsModeSelected,
+  isValidTargetSelect,
   STATUS_FILTER_OPTIONS,
   type StatusFilterOption,
   setStoredFeedsFilterEnabled,
+  syncFilterDropdownHeight,
 } from '@/lib/feeds_filter'
 
 export type FeedStatusId = 'all' | 'published' | 'green' | 'yellow' | 'red'
@@ -28,6 +35,7 @@ export interface FeedStats {
 }
 
 export {
+  attachFilterDropdownToDom,
   createFilterDropdownElement,
   ensureFeedFilterStyles,
   FEED_HIDDEN_CLASS,
@@ -37,11 +45,17 @@ export {
   FEEDS_FILTER_SELECT_ID,
   FEEDS_FILTER_STYLES_ID,
   type FilterDropdownController,
+  findFeedContainer,
+  findFeedHeader,
+  findTargetSelect,
   getEventCards,
   getStoredFeedsFilterEnabled,
+  isEditsModeSelected,
+  isValidTargetSelect,
   STATUS_FILTER_OPTIONS,
   type StatusFilterOption,
   setStoredFeedsFilterEnabled,
+  syncFilterDropdownHeight,
 }
 
 /**
@@ -218,486 +232,6 @@ export const getEventCardStatus = (card: HTMLElement): FeedStatusId | 'other' =>
  */
 export const applyFeedFilter = (container: HTMLElement, filter: FeedStatusId): FeedStats => {
   return applyFeedFilterToDom({ container, filter })
-}
-
-/**
- * Ищет элемент шапки или панели управления ленты событий строго внутри контейнера ленты.
- */
-export const findFeedHeader = (container?: HTMLElement | null): HTMLElement | null => {
-  const headerSelectors = [
-    '.nk-user-feeds-view__header',
-    '.nk-user-feed-view__header',
-    '.nk-feeds-view__header',
-    '.nk-feed-view__header',
-    '.nk-feed-header-view',
-    '[class*="user-feeds-view__header"]',
-    '[class*="user-feed-view__header"]',
-    '[class*="feeds-view__header"]',
-    '[class*="feed-header"]',
-    '.nk-user-feeds-view__controls',
-    '[class*="user-feeds-view__controls"]',
-    '.nk-sidebar-view__header',
-    '[class*="sidebar-view__header"]',
-    '.nk-header-view',
-  ]
-
-  if (container) {
-    for (const selector of headerSelectors) {
-      const inContainer = container.querySelector<HTMLElement>(selector)
-      if (inContainer) {
-        return inContainer
-      }
-    }
-    for (const selector of headerSelectors) {
-      if (container.matches(selector)) {
-        return container
-      }
-    }
-  }
-
-  for (const selector of headerSelectors) {
-    const found = document.querySelector<HTMLElement>(selector)
-    if (found) {
-      const sidebar = found.closest('.nk-sidebar-view')
-      if (sidebar) {
-        const hasFeed =
-          sidebar.querySelector('.nk-event-view, [class*="event-view"], [class*="feed"]') !== null
-        if (hasFeed) {
-          return found
-        }
-      } else {
-        return found
-      }
-    }
-  }
-
-  return null
-}
-
-/**
- * Проверяет, является ли кандидат допустимым целевым селектом Народной карты,
- * рядом с которым можно разместить дропдаун фильтра статусов.
- */
-export const isValidTargetSelect = (
-  candidate: Element | null,
-  dropdownElement?: HTMLElement | null,
-): candidate is HTMLElement => {
-  if (!candidate || !(candidate instanceof HTMLElement)) {
-    return false
-  }
-
-  // Не может быть собственным элементом фильтра или его попапом
-  if (candidate.id === FEEDS_FILTER_SELECT_ID || candidate.id === FEEDS_FILTER_POPUP_ID) {
-    return false
-  }
-
-  // Не может быть частью/потомком нашего фильтра статусов
-  if (
-    candidate.closest(
-      `#${FEEDS_FILTER_SELECT_ID}, #${FEEDS_FILTER_POPUP_ID}, .nmap-feeds-status-select, .nmap-feeds-status-popup`,
-    )
-  ) {
-    return false
-  }
-
-  // Не может быть тем же элементом, предком или потомком переданного dropdownElement
-  if (
-    dropdownElement &&
-    (dropdownElement === candidate ||
-      dropdownElement.contains(candidate) ||
-      candidate.contains(dropdownElement))
-  ) {
-    return false
-  }
-
-  // Не должен находиться внутри тулбара редактора, панели пользователя или кнопок управления
-  // Разрешаем селекты внутри сайдбара ленты событий (.nk-sidebar-view)
-  if (
-    candidate.closest(
-      '.nk-user-feeds-control-view, .nk-toolbar-view, [class*="toolbar-view"], [class*="user-bar-view"], button:not(.nk-select), [class*="control-view"]:not([class*="feed"])',
-    )
-  ) {
-    return false
-  }
-
-  // Целевой селект в БЭМ-разметке Яндекса — это блок .nk-select или селект.
-  // Исключаем элементы БЭМ, такие как .nk-select__button, .nk-select__text, .nk-select__tick
-  if (
-    candidate.classList.contains('nk-select__button') ||
-    candidate.classList.contains('nk-select__text') ||
-    candidate.classList.contains('nk-select__tick') ||
-    candidate.classList.contains('nk-select__menu')
-  ) {
-    return false
-  }
-
-  const classList = Array.from(candidate.classList)
-  const isSelect =
-    classList.some(
-      (cls) => cls === 'nk-select' || cls.startsWith('nk-select_') || cls.includes('select'),
-    ) && !classList.some((cls) => cls.startsWith('nk-select__'))
-
-  return isSelect
-}
-
-/**
- * Проверяет, выбран ли в целевом селекте режим "Правки".
- * В интерфейсе Народной карты текст текущего выбранного значения содержится в
- * <span class="nk-button__text">Правки</span> (или .nk-select__text / button).
- */
-export const isEditsModeSelected = (targetSelect?: HTMLElement | null): boolean => {
-  if (!targetSelect || !(targetSelect instanceof HTMLElement)) {
-    return false
-  }
-
-  // Исключаем собственный дропдаун фильтра статусов
-  if (
-    targetSelect.id === FEEDS_FILTER_SELECT_ID ||
-    targetSelect.classList.contains('nmap-feeds-status-select') ||
-    targetSelect.closest(`#${FEEDS_FILTER_SELECT_ID}`)
-  ) {
-    return false
-  }
-
-  const textElement =
-    targetSelect.querySelector<HTMLElement>('.nk-button__text, .nk-select__text') ||
-    targetSelect.querySelector<HTMLElement>('button') ||
-    targetSelect
-
-  const rawText = (textElement.textContent || '').trim().toLowerCase()
-  if (!rawText) {
-    return false
-  }
-
-  // Режим "Правки" (на русском или английском)
-  return rawText.includes('правк') || rawText.includes('edit')
-}
-
-/**
- * Ищет целевой селект nk-select в интерфейсе Народной карты строго внутри контейнера ленты.
- * Исключает сам фильтр расширения и все его дочерние узлы (кнопки, текст, иконки).
- * Приоритетно выбирает селект, в котором выбран режим "Правки".
- */
-export const findTargetSelect = (
-  container?: HTMLElement | null,
-  dropdownElement?: HTMLElement | null,
-): HTMLElement | null => {
-  const notMeSelector = `:not(#${FEEDS_FILTER_SELECT_ID}):not(.nmap-feeds-status-select)`
-
-  const queryCandidateSelects = (root: ParentNode): HTMLElement[] => {
-    const rawList = root.querySelectorAll<HTMLElement>(
-      `.nk-select${notMeSelector}, [class*="nk-select"]${notMeSelector}`,
-    )
-    const valid: HTMLElement[] = []
-    for (let i = 0; i < rawList.length; i++) {
-      const candidate = rawList[i]
-      if (isValidTargetSelect(candidate, dropdownElement)) {
-        valid.push(candidate)
-      }
-    }
-    return valid
-  }
-
-  const pickBestSelect = (candidates: HTMLElement[]): HTMLElement | null => {
-    if (candidates.length === 0) {
-      return null
-    }
-    const editsSelect = candidates.find((c) => isEditsModeSelected(c))
-    if (editsSelect) {
-      return editsSelect
-    }
-    return candidates[0]
-  }
-
-  // 1. Приоритетный поиск в шапке ленты (где обычно располагаются штатные селекты фильтров)
-  const header = findFeedHeader(container)
-  if (header) {
-    const candidates = queryCandidateSelects(header)
-    const best = pickBestSelect(candidates)
-    if (best) {
-      return best
-    }
-  }
-
-  // 2. Поиск внутри переданного контейнера ленты
-  if (container) {
-    const candidates = queryCandidateSelects(container)
-    const best = pickBestSelect(candidates)
-    if (best) {
-      return best
-    }
-  }
-
-  // 3. Поиск внутри сайдбара ленты событий в документе
-  const scopedRoots = document.querySelectorAll<HTMLElement>(
-    '.nk-user-feeds-view, .nk-user-feed-view, .nk-feeds-view, .nk-feed-view, .nk-events-view, [class*="user-feeds-view"], [class*="user-feed-view"], .nk-sidebar-view',
-  )
-  for (let i = 0; i < scopedRoots.length; i++) {
-    const root = scopedRoots[i]
-    if (root.classList.contains('nk-sidebar-view')) {
-      const hasFeed =
-        root.querySelector('.nk-event-view, [class*="event-view"], [class*="feed"]') !== null
-      if (!hasFeed) {
-        continue
-      }
-    }
-    const candidates = queryCandidateSelects(root)
-    const best = pickBestSelect(candidates)
-    if (best) {
-      return best
-    }
-  }
-
-  return null
-}
-
-/**
- * Измеряет высоту целевого nk-select и синхронизирует высоту кнопки дропдауна фильтра.
- * Копирует точную высоту соседнего селекта (в px), предотвращая расхождение размеров.
- */
-export const syncFilterDropdownHeight = (
-  dropdownElement: HTMLElement,
-  referenceSelect?: HTMLElement | null,
-): number => {
-  const target = referenceSelect || findTargetSelect(null, dropdownElement)
-  let measuredHeight = 0
-
-  if (target) {
-    const targetButton =
-      target.querySelector<HTMLElement>(
-        'button.nk-select__button, button.nk-button, .nk-select__button',
-      ) || target
-    const rect = targetButton.getBoundingClientRect()
-    if (rect.height > 0) {
-      measuredHeight = Math.round(rect.height)
-    } else {
-      const computed = window.getComputedStyle(targetButton)
-      const parsed = Number.parseFloat(computed.height)
-      if (!Number.isNaN(parsed) && parsed > 0) {
-        measuredHeight = Math.round(parsed)
-      } else if (targetButton.offsetHeight > 0) {
-        measuredHeight = targetButton.offsetHeight
-      }
-    }
-  }
-
-  // Стандартная высота для nk-select_size_m в интерфейсе Islands — 32px
-  const effectiveHeight = measuredHeight > 0 ? measuredHeight : 32
-  const heightPx = `${effectiveHeight}px`
-
-  dropdownElement.style.setProperty('--nmap-feeds-select-height', heightPx)
-  dropdownElement.style.height = heightPx
-  dropdownElement.style.minHeight = heightPx
-
-  const button = dropdownElement.querySelector<HTMLElement>('.nk-select__button')
-  if (button) {
-    button.style.height = heightPx
-    button.style.minHeight = heightPx
-    button.style.maxHeight = heightPx
-  }
-
-  // Синхронизация стилей темы (цвета, рамка, фон, скругление) с соседним селектом Яндекса
-  if (target && typeof window !== 'undefined') {
-    const targetButton =
-      target.querySelector<HTMLElement>(
-        'button.nk-select__button, button.nk-button, .nk-select__button',
-      ) || target
-    const targetComputed = window.getComputedStyle(targetButton)
-
-    const color = targetComputed.color
-    if (color) {
-      dropdownElement.style.setProperty('--nmap-feeds-select-color', color)
-      dropdownElement.style.setProperty('--nmap-feeds-popup-color', color)
-    }
-
-    const borderRadius = targetComputed.borderRadius
-    if (borderRadius && borderRadius !== '0px') {
-      dropdownElement.style.setProperty('--nmap-feeds-select-radius', borderRadius)
-    }
-
-    const borderColor = targetComputed.borderColor
-    const borderWidth = targetComputed.borderWidth
-    const borderStyle = targetComputed.borderStyle
-    if (
-      borderColor &&
-      borderWidth &&
-      borderStyle &&
-      borderStyle !== 'none' &&
-      borderWidth !== '0px'
-    ) {
-      dropdownElement.style.setProperty(
-        '--nmap-feeds-select-border',
-        `${borderWidth} ${borderStyle} ${borderColor}`,
-      )
-    }
-
-    const backgroundColor = targetComputed.backgroundColor
-    if (backgroundColor) {
-      dropdownElement.style.setProperty('--nmap-feeds-select-bg', backgroundColor)
-    }
-
-    // Если цвет текста тёмный (светлая тема), адаптируем фон и стрелку под светлую тему
-    const isLightText =
-      color.includes('255, 255, 255') ||
-      color.includes('rgba(255') ||
-      color === 'rgb(255, 255, 255)' ||
-      color === '#ffffff' ||
-      color === '#ededed'
-
-    if (!isLightText && color && color !== 'inherit') {
-      dropdownElement.style.setProperty(
-        '--nmap-feeds-select-tick',
-        "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='6'%3E%3Cpath fill='%23000' d='M10.3 0L5.5 4.7.7 0 0 .7 5.5 6 11 .7z'/%3E%3C/svg%3E\")",
-      )
-      dropdownElement.style.setProperty('--nmap-feeds-popup-bg', '#ffffff')
-      dropdownElement.style.setProperty('--nmap-feeds-popup-color', '#000000')
-      dropdownElement.style.setProperty('--nmap-feeds-popup-border', 'rgba(0, 0, 0, 0.15)')
-      dropdownElement.style.setProperty('--nmap-feeds-popup-hover-bg', 'rgba(0, 0, 0, 0.05)')
-      dropdownElement.style.setProperty('--nmap-feeds-popup-checked-bg', 'rgba(0, 0, 0, 0.08)')
-      dropdownElement.style.setProperty('--nmap-feeds-badge-bg', 'rgba(0, 0, 0, 0.08)')
-    }
-  }
-
-  return effectiveHeight
-}
-
-/**
- * Ищет целевой селект nk-select в интерфейсе Народной карты (выбор категории событий ленты)
- * и размещает дропдаун фильтра статусов ТОЛЬКО тогда, когда в целевом селекте выбран режим "Правки".
- * Если целевой селект не найден или в нем выбран другой режим (например, "Комментарии"),
- * дропдаун скрывается и не отображается, а функция возвращает false.
- */
-export const attachFilterDropdownToDom = (
-  dropdownElement: HTMLElement,
-  container: HTMLElement,
-): boolean => {
-  if (!container || !dropdownElement) {
-    return false
-  }
-
-  // Защита от ошибочного монтирования в кнопки или контролы тулбара редактора
-  if (
-    container.matches(
-      '.nk-user-feeds-control-view, .nk-toolbar-view, [class*="toolbar"], button, [class*="btn"]',
-    )
-  ) {
-    return false
-  }
-
-  const targetSelect = findTargetSelect(container, dropdownElement)
-
-  // Наш дропдаун должен отображаться ТОЛЬКО тогда, когда в штатном селекте выбран пункт "Правки"
-  if (!targetSelect || !isEditsModeSelected(targetSelect)) {
-    if (dropdownElement.parentElement) {
-      dropdownElement.style.display = 'none'
-    }
-    return false
-  }
-
-  // Гарантированная защита от HierarchyRequestError:
-  // targetSelect не может совпадать с dropdownElement, содержать его или быть внутри него
-  if (
-    targetSelect === dropdownElement ||
-    dropdownElement.contains(targetSelect) ||
-    targetSelect.contains(dropdownElement)
-  ) {
-    return false
-  }
-
-  dropdownElement.style.display = ''
-
-  if (targetSelect.nextElementSibling !== dropdownElement) {
-    try {
-      targetSelect.insertAdjacentElement('afterend', dropdownElement)
-    } catch (error) {
-      console.warn(
-        '[nmap-uploader] Ошибка при размещении селекта фильтра рядом с targetSelect:',
-        error,
-      )
-      return false
-    }
-  }
-  syncFilterDropdownHeight(dropdownElement, targetSelect)
-  if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
-    window.requestAnimationFrame(() => {
-      syncFilterDropdownHeight(dropdownElement, targetSelect)
-    })
-  }
-  return true
-}
-
-/**
- * Находит корневой контейнер ленты правок/событий в DOM.
- * Возвращает контейнер шторки ленты (.nk-user-feeds-view / .nk-sidebar-view) и игнорирует кнопки тулбара редактора.
- */
-export const findFeedContainer = (root: ParentNode = document): HTMLElement | null => {
-  // 1. Поиск по наличию карточек событий и их общего предка
-  const eventCards =
-    root instanceof HTMLElement
-      ? getEventCards(root)
-      : Array.from(root.querySelectorAll<HTMLElement>('.nk-event-view'))
-  const eventCard = eventCards[0]
-  if (eventCard) {
-    const parentContainer =
-      eventCard.closest<HTMLElement>(
-        '.nk-user-feeds-view, .nk-user-feed-view, .nk-feeds-view, .nk-feed-view, .nk-events-view, [class*="user-feed"], [class*="feeds-view"], [class*="events-view"]',
-      ) ||
-      eventCard.closest<HTMLElement>('.nk-sidebar-view') ||
-      eventCard.parentElement
-
-    if (
-      parentContainer &&
-      !parentContainer.matches(
-        '.nk-user-feeds-control-view, .nk-toolbar-view, [class*="toolbar"], button',
-      )
-    ) {
-      return parentContainer
-    }
-  }
-
-  // 2. Поиск по классам представления ленты пользователя
-  const knownView =
-    root.querySelector<HTMLElement>('.nk-user-feeds-view') ||
-    root.querySelector<HTMLElement>('.nk-user-feed-view') ||
-    root.querySelector<HTMLElement>('.nk-feeds-view') ||
-    root.querySelector<HTMLElement>('.nk-feed-view') ||
-    root.querySelector<HTMLElement>('.nk-events-view') ||
-    root.querySelector<HTMLElement>(
-      '[class*="user-feeds-view"]:not([class*="control-view"]):not(button)',
-    ) ||
-    root.querySelector<HTMLElement>(
-      '[class*="user-feed-view"]:not([class*="control-view"]):not(button)',
-    ) ||
-    root.querySelector<HTMLElement>(
-      '[class*="feeds-view"]:not([class*="control-view"]):not(button)',
-    )
-
-  if (knownView) {
-    return knownView
-  }
-
-  // 3. Поиск по открытому сайдбару с признаками ленты событий
-  const sidebar = root.querySelector<HTMLElement>('.nk-sidebar-view')
-  if (sidebar) {
-    const hasFeed =
-      sidebar.querySelector('.nk-event-view, [class*="event-view"], [class*="feed"]') !== null
-    if (hasFeed) {
-      return sidebar
-    }
-  }
-
-  // 4. Проверяем, не является ли сам root элементом ленты
-  if (
-    root instanceof HTMLElement &&
-    root.matches(
-      '.nk-user-feeds-view, .nk-user-feed-view, .nk-feeds-view, .nk-feed-view, .nk-events-view, [class*="user-feed"], [class*="feeds-view"]',
-    ) &&
-    !root.matches('.nk-user-feeds-control-view, .nk-toolbar-view, [class*="control-view"], button')
-  ) {
-    return root
-  }
-
-  return null
 }
 
 const RUSSIAN_MONTHS_MAP: Record<string, number> = {
