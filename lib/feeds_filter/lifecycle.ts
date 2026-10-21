@@ -1,3 +1,4 @@
+import { analyzeFeedMutations, isFeedContainerReadyForFilter } from './feed_mutation_scanner'
 import {
   applyFeedFilterToDom,
   attachFilterDropdownToDom,
@@ -16,24 +17,16 @@ import {
   getStoredFeedsFilterEnabled,
   isEditsModeSelected,
 } from './index'
+import {
+  CLICK_RETRY_DELAYS_MS,
+  type FeedFilterLifecycleOptions,
+  isFeedTriggerClick,
+  STARTUP_RETRY_DELAYS_MS,
+  type StorageChangeEmitter,
+} from './lifecycle_config'
 
-export interface StorageChangeEmitter {
-  onChanged: {
-    addListener: (
-      callback: (changes: Record<string, { newValue?: unknown }>, area: string) => void,
-    ) => void
-    removeListener: (
-      callback: (changes: Record<string, { newValue?: unknown }>, area: string) => void,
-    ) => void
-  }
-}
-
-export interface FeedFilterLifecycleOptions {
-  storage?: StorageChangeEmitter
-}
-
-const STARTUP_RETRY_DELAYS_MS = [100, 250, 500, 800, 1200, 1800, 2500, 3500, 5000]
-const CLICK_RETRY_DELAYS_MS = [30, 100, 250, 500, 800, 1200]
+export * from './feed_mutation_scanner'
+export * from './lifecycle_config'
 
 /**
  * Управляет полным жизненным циклом фильтра ленты правок:
@@ -116,13 +109,8 @@ export class FeedFilterLifecycleManager {
     }
 
     const container = findFeedContainer()
-    if (!container) {
-      this.removeFilterDropdown()
-      return
-    }
-
-    const targetSelect = findTargetSelect(container)
-    if (!targetSelect || !isEditsModeSelected(targetSelect)) {
+    const { ready } = isFeedContainerReadyForFilter(container)
+    if (!ready || !container) {
       this.removeFilterDropdown()
       return
     }
@@ -171,8 +159,8 @@ export class FeedFilterLifecycleManager {
       return
     }
 
-    const targetSelect = findTargetSelect(feedContainer)
-    if (!targetSelect || !isEditsModeSelected(targetSelect)) {
+    const { ready, targetSelect } = isFeedContainerReadyForFilter(feedContainer)
+    if (!ready || !targetSelect) {
       this.removeFilterDropdown()
       return
     }
@@ -222,44 +210,7 @@ export class FeedFilterLifecycleManager {
       this.currentDailyLoader = createFeedDailyLoader(feedContainer)
 
       this.currentObserver = new MutationObserver((mutations) => {
-        let hasNewEventCards = false
-        let shouldCheckPlacement = false
-
-        for (const mutation of mutations) {
-          if (mutation.type === 'characterData') {
-            shouldCheckPlacement = true
-          }
-
-          if (mutation.addedNodes.length === 0) {
-            continue
-          }
-
-          for (const node of mutation.addedNodes) {
-            if (node instanceof HTMLElement) {
-              if (
-                node.id === FEEDS_FILTER_SELECT_ID ||
-                node.id === FEEDS_FILTER_POPUP_ID ||
-                node.closest(`#${FEEDS_FILTER_SELECT_ID}`)
-              ) {
-                continue
-              }
-
-              if (
-                node.matches('.nk-select, [class*="nk-select"], [class*="select"]') ||
-                node.querySelector('.nk-select, [class*="nk-select"], [class*="select"]')
-              ) {
-                shouldCheckPlacement = true
-              }
-
-              if (
-                node.matches('.nk-event-view, [class*="event-view"]') ||
-                node.querySelector('.nk-event-view, [class*="event-view"]')
-              ) {
-                hasNewEventCards = true
-              }
-            }
-          }
-        }
+        const { hasNewEventCards, shouldCheckPlacement } = analyzeFeedMutations(mutations)
 
         if (shouldCheckPlacement && this.activeFeedContainer) {
           const currentTarget = findTargetSelect(this.activeFeedContainer)
@@ -300,15 +251,8 @@ export class FeedFilterLifecycleManager {
       }
 
       const container = findFeedContainer()
-      if (!container) {
-        if (this.activeFeedContainer || document.getElementById(FEEDS_FILTER_SELECT_ID)) {
-          this.removeFilterDropdown()
-        }
-        return
-      }
-
-      const targetSelect = findTargetSelect(container)
-      if (!targetSelect || !isEditsModeSelected(targetSelect)) {
+      const { ready, targetSelect } = isFeedContainerReadyForFilter(container)
+      if (!ready || !container || !targetSelect) {
         if (this.activeFeedContainer || document.getElementById(FEEDS_FILTER_SELECT_ID)) {
           this.removeFilterDropdown()
         }
@@ -346,15 +290,8 @@ export class FeedFilterLifecycleManager {
       }
 
       const container = findFeedContainer()
-      if (!container) {
-        if (this.activeFeedContainer || document.getElementById(FEEDS_FILTER_SELECT_ID)) {
-          this.removeFilterDropdown()
-        }
-        return
-      }
-
-      const targetSelect = findTargetSelect(container)
-      if (!targetSelect || !isEditsModeSelected(targetSelect)) {
+      const { ready } = isFeedContainerReadyForFilter(container)
+      if (!ready || !container) {
         if (this.activeFeedContainer || document.getElementById(FEEDS_FILTER_SELECT_ID)) {
           this.removeFilterDropdown()
         }
@@ -413,18 +350,7 @@ export class FeedFilterLifecycleManager {
     }
 
     const target = event.target as HTMLElement | null
-    if (!target) {
-      return
-    }
-
-    const isFeedTrigger = target.closest(
-      '.nk-user-feeds-control-view, [class*="user-feeds-control"], [class*="feeds-control"], [class*="user-bar-view"] [class*="feed"], [class*="user-bar-view"] [class*="notification"], [data-name="feeds"], [aria-label*="лент" i], [aria-label*="истори" i], [title*="лент" i], [title*="истори" i]',
-    )
-    const isSelectOrMenu = target.closest(
-      '.nk-select, .nk-menu, .nk-menu__item, .nk-popup, [role="menuitem"], [role="option"], [role="listbox"], button',
-    )
-
-    if (!isFeedTrigger && !isSelectOrMenu) {
+    if (!isFeedTriggerClick(target)) {
       return
     }
 
