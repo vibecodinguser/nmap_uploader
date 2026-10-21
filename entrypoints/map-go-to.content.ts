@@ -20,18 +20,15 @@ import {
   getStoredGoToMenuEnabled,
 } from '@/lib/go_to_settings'
 import {
-  getStoredSplitButtonEnabled,
   GO_TO_SPLIT_BUTTON_ENABLED_STORAGE_KEY,
+  getStoredSplitButtonEnabled,
 } from '@/lib/go_to_split_button'
 import { ensureGoToStyles } from '@/lib/go_to_styles'
 import { observeGoToTheme } from '@/lib/go_to_theme'
 import { createTranslator, getStoredLocale, type TranslateFn } from '@/lib/i18n'
 import { LOCALE_STORAGE_KEY } from '@/lib/i18n/locale'
 import type { Locale } from '@/lib/i18n/locale.types'
-import {
-  getStoredNotesButtonEnabled,
-  NOTES_BUTTON_ENABLED_STORAGE_KEY,
-} from '@/lib/notes_button'
+import { getStoredNotesButtonEnabled, NOTES_BUTTON_ENABLED_STORAGE_KEY } from '@/lib/notes_button'
 
 let contentLocale: Locale = 'ru'
 let contentTranslator: TranslateFn = createTranslator(contentLocale)

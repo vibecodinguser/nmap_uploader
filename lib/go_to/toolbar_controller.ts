@@ -29,19 +29,15 @@ import {
 } from '@/lib/go_to_settings'
 import {
   createSplitViewButton,
-  getStoredSplitButtonEnabled,
   GO_TO_SPLIT_BUTTON_ID,
+  getStoredSplitButtonEnabled,
 } from '@/lib/go_to_split_button'
 import { isSplitViewOpen, teardownSplitView, toggleSplitView } from '@/lib/go_to_split_view'
 import { GO_TO_BUTTON_HOVERED_CLASS, GO_TO_POPUP_VISIBLE_CLASS } from '@/lib/go_to_styles'
 import { removeAllGoToToolbarButtons, shouldRemountGoToToolbar } from '@/lib/go_to_toolbar'
 import type { TranslateFn } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n/locale.types'
-import {
-  createNotesButton,
-  getStoredNotesButtonEnabled,
-  NOTES_BUTTON_ID,
-} from '@/lib/notes_button'
+import { createNotesButton, getStoredNotesButtonEnabled, NOTES_BUTTON_ID } from '@/lib/notes_button'
 import { closeNotesPopup, teardownNotesPopup, toggleNotesPopup } from '@/lib/notes_popup'
 import { createPolygonUploadButton, POLYGON_UPLOAD_BUTTON_ID } from '@/lib/polygon_upload_button'
 import {
