@@ -1012,7 +1012,6 @@ const onMessageHandler = (
   return backgroundMessageRouter.dispatch(message, sender, sendResponse)
 }
 
-
 const initBackground = (): void => {
   const persistTask = persistYandexBrowserFlag()
   runBackgroundTask(persistTask, 'persistYandexBrowserFlag')

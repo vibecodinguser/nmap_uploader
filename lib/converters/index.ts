@@ -25,11 +25,10 @@ import {
 import { parseXmlDocument } from '@/lib/xml/parse_xml'
 import { processGeoJsonData } from './geojson'
 
+export type { GeoConvertError, GeoConvertResult, ProcessGeoFileInput } from '@/lib/geo_converters'
 export { processGeoFile } from '@/lib/geo_converters'
-export type { GeoConvertResult, GeoConvertError, ProcessGeoFileInput } from '@/lib/geo_converters'
 
 type ConverterInput = {
-
   buffer: ArrayBuffer
   fileDesc: string
 }

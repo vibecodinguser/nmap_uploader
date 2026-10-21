@@ -14,11 +14,7 @@ import {
   hasUploadAuthError,
   prepareUploadLocale,
 } from '@/lib/upload_auth_flow'
-import {
-  createUploadLog,
-  deriveUploadStatus,
-  type UploadStatus,
-} from '@/lib/upload_logs'
+import { createUploadLog, deriveUploadStatus, type UploadStatus } from '@/lib/upload_logs'
 import type { ProcessedFileInput, UploadLogEntry } from '@/lib/upload_service'
 
 export const UPLOAD_PROGRESS = {
@@ -93,8 +89,7 @@ export const executeUploadPipeline = async ({
   const uploadProcessedFiles = deps?.uploadProcessedFiles ?? defaultUploadProcessedFiles
   const invalidateCache = deps?.invalidateCache ?? invalidateOccupiedDatesCache
   const triggerReload = deps?.triggerReload ?? triggerEditorReloadIfNeeded
-  const getReloadPreference =
-    deps?.getReloadPreference ?? resolveReloadAfterUploadPreference
+  const getReloadPreference = deps?.getReloadPreference ?? resolveReloadAfterUploadPreference
 
   const logs: UploadLogEntry[] = []
 

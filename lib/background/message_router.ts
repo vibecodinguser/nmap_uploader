@@ -23,9 +23,7 @@ export type CreateMessageRouterOptions = {
 /**
  * Создает изолированный роутер сообщений фонового процесса.
  */
-export const createMessageRouter = (
-  options: CreateMessageRouterOptions = {},
-): MessageRouter => {
+export const createMessageRouter = (options: CreateMessageRouterOptions = {}): MessageRouter => {
   const handlerMap: Record<string, MessageHandler> = {
     ...options.handlers,
   }
