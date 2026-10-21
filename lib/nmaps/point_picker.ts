@@ -1,58 +1,12 @@
 /**
  * Интерактивный выбор точек/полигонов на Народной карте (Overlay Click Picker).
  */
-import { projectScreenClickToLatLon } from '@/lib/nmaps/projection'
 import { notifyPointPicked } from '@/lib/nmaps_pick_point_notify'
+import { getCoordsFromUrlClick } from './picker_coords'
+import { renderPickerSvg } from './picker_svg'
 
-export const getCoordsFromUrlClick = (
-  clientX: number,
-  clientY: number,
-): [number, number] | null => {
-  const hash = globalThis.location.hash
-  const paramsStr = hash.split('?')[1]
-  if (!paramsStr) return null
-  const params = new URLSearchParams(paramsStr)
-  const zStr = params.get('z')
-  const llStr = params.get('ll')
-  if (!zStr || !llStr) return null
-  const z = Number.parseFloat(zStr)
-  const [lon, lat] = llStr.split(',').map(Number.parseFloat)
-  if (Number.isNaN(z) || Number.isNaN(lon) || Number.isNaN(lat)) return null
-
-  let cx = globalThis.innerWidth / 2
-  let cy = globalThis.innerHeight / 2
-
-  const crosshair = document.querySelector(
-    '.nk-map-crosshair, [class*="crosshair"], .ymaps-map-crosshair',
-  )
-  if (crosshair) {
-    const rect = crosshair.getBoundingClientRect()
-    cx = rect.left + rect.width / 2
-    cy = rect.top + rect.height / 2
-  } else {
-    const mapContainer =
-      document.querySelector('.nk-map') ||
-      document.querySelector('.ymaps-map') ||
-      document.querySelector('[class*="map"]')
-    if (mapContainer) {
-      const rect = mapContainer.getBoundingClientRect()
-      cx = rect.left + rect.width / 2
-      cy = rect.top + rect.height / 2
-    }
-  }
-
-  const { lat: outLat, lon: outLon } = projectScreenClickToLatLon(
-    clientX,
-    clientY,
-    cx,
-    cy,
-    lat,
-    lon,
-    z,
-  )
-
-  return [outLat, outLon]
-}
+export * from './picker_coords'
+export * from './picker_svg'
 
 export class PointPickerOverlay {
   private overlay: HTMLDivElement | null = null
@@ -145,37 +99,7 @@ export class PointPickerOverlay {
 
   private redrawSvg(): void {
     if (!this.svg) return
-    this.svg.innerHTML = ''
-    if (this.accumulatedPixels.length === 0) return
-
-    const pointsStr = this.accumulatedPixels.map((p) => `${p.x},${p.y}`).join(' ')
-
-    if (this.geomType === 'Polygon' && this.accumulatedPixels.length > 2) {
-      const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon')
-      polygon.setAttribute('points', pointsStr)
-      polygon.setAttribute('fill', 'rgba(0, 120, 255, 0.3)')
-      polygon.setAttribute('stroke', 'rgba(0, 120, 255, 0.8)')
-      polygon.setAttribute('stroke-width', '2')
-      this.svg.appendChild(polygon)
-    } else {
-      const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline')
-      polyline.setAttribute('points', pointsStr)
-      polyline.setAttribute('fill', 'none')
-      polyline.setAttribute('stroke', 'rgba(0, 120, 255, 0.8)')
-      polyline.setAttribute('stroke-width', '2')
-      this.svg.appendChild(polyline)
-    }
-
-    for (const p of this.accumulatedPixels) {
-      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
-      circle.setAttribute('cx', String(p.x))
-      circle.setAttribute('cy', String(p.y))
-      circle.setAttribute('r', '4')
-      circle.setAttribute('fill', '#ffffff')
-      circle.setAttribute('stroke', 'rgba(0, 120, 255, 0.8)')
-      circle.setAttribute('stroke-width', '2')
-      this.svg.appendChild(circle)
-    }
+    renderPickerSvg(this.svg, this.accumulatedPixels, this.geomType)
   }
 
   private finish(): void {
