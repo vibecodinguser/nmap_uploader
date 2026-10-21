@@ -82,6 +82,10 @@ export class PointCounterUi {
     }
   }
 
+  public isVisible(): boolean {
+    return Boolean(this.counterWrapper && this.counterWrapper.style.display !== 'none')
+  }
+
   public isBuildingCategory(): boolean {
     const activeElements = Array.from(
       document.querySelectorAll(

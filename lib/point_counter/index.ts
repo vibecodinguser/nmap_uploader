@@ -1,5 +1,4 @@
-/**
- * Пакет счетчика точек редактора геометрии (Point Counter).
- */
-export * from '@/lib/point_counter/core'
-export * from '@/lib/point_counter/dom_ui'
+export * from './canvas_patch'
+export * from './core'
+export * from './dom_ui'
+export * from './svg_observer'

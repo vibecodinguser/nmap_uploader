@@ -51,8 +51,12 @@ describe('nmaps repaint & object_drawer', () => {
         },
       } as any
 
+      const MockCollectionConstructor = vi.fn(function (this: any) {
+        return mockCollection
+      })
+
       const mockYmaps = {
-        GeoObjectCollection: vi.fn(() => mockCollection),
+        GeoObjectCollection: MockCollectionConstructor,
         Polygon: vi.fn(),
         Polyline: vi.fn(),
         Placemark: vi.fn(),
