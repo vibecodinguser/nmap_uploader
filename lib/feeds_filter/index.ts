@@ -1,5 +1,6 @@
 export * from './constants'
 export * from './core'
 export * from './date_parser'
+export * from './dom_dropdown'
 export * from './page_adapter'
 export * from './storage'
