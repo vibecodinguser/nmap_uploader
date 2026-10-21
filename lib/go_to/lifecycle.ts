@@ -12,11 +12,7 @@ import {
 } from '@/lib/go_to'
 import { runWhenAnyElementExists } from '@/lib/go_to_dom'
 import { GO_TO_REFRESH_ACTION } from '@/lib/go_to_notify'
-import {
-  GO_TO_ITEMS_STORAGE_KEY,
-  GO_TO_MENU_ENABLED_STORAGE_KEY,
-  getStoredGoToMenuEnabled,
-} from '@/lib/go_to_settings'
+import { GO_TO_MENU_ENABLED_STORAGE_KEY, getStoredGoToMenuEnabled } from '@/lib/go_to_settings'
 import {
   GO_TO_SPLIT_BUTTON_ENABLED_STORAGE_KEY,
   getStoredSplitButtonEnabled,
@@ -27,37 +23,9 @@ import { createTranslator, getStoredLocale, type TranslateFn } from '@/lib/i18n'
 import { LOCALE_STORAGE_KEY } from '@/lib/i18n/locale'
 import type { Locale } from '@/lib/i18n/locale.types'
 import { getStoredNotesButtonEnabled, NOTES_BUTTON_ENABLED_STORAGE_KEY } from '@/lib/notes_button'
+import { type GoToLifecycleOptions, hasGoToRefreshStorageChange } from './lifecycle_contracts'
 
-export interface StorageAreaEmitter {
-  onChanged: {
-    addListener: (
-      callback: (changes: Record<string, { newValue?: unknown }>, area: string) => void,
-    ) => void
-    removeListener: (
-      callback: (changes: Record<string, { newValue?: unknown }>, area: string) => void,
-    ) => void
-  }
-}
-
-export interface RuntimeMessageEmitter {
-  onMessage: {
-    addListener: (callback: (message: { action?: string }) => void) => void
-    removeListener: (callback: (message: { action?: string }) => void) => void
-  }
-}
-
-export interface GoToLifecycleOptions {
-  storage?: StorageAreaEmitter
-  runtime?: RuntimeMessageEmitter
-}
-
-export const hasGoToRefreshStorageChange = (
-  changes: Record<string, { newValue?: unknown }>,
-): boolean =>
-  GO_TO_MENU_ENABLED_STORAGE_KEY in changes ||
-  GO_TO_ITEMS_STORAGE_KEY in changes ||
-  GO_TO_SPLIT_BUTTON_ENABLED_STORAGE_KEY in changes ||
-  NOTES_BUTTON_ENABLED_STORAGE_KEY in changes
+export * from './lifecycle_contracts'
 
 export class GoToToolbarLifecycleManager {
   private contentLocale: Locale = 'ru'
