@@ -8,11 +8,14 @@ import {
   isNativeCandidate,
   isTracerHotspot,
 } from './contracts'
-import { findTargetSnap } from './geometry'
+import {
+  buildTracingTargets,
+  findNearestTracingTarget,
+  mergeCandidateIfMissing,
+} from './target_builder'
 import type {
   Capability,
   Coordinate,
-  GeometryFactory,
   GeometryFactoryConstructor,
   HotspotConstructor,
   HotspotMethod,
@@ -20,6 +23,8 @@ import type {
   NativeTracingAdapterOptions,
   TracingTarget,
 } from './types'
+
+export * from './target_builder'
 
 export const createNativeTracingAdapter = ({
   globalObject,
@@ -61,44 +66,7 @@ export const createNativeTracingAdapter = ({
   }
 
   const refreshTargets = (): void => {
-    targets = []
-    if (!geometryFactoryConstructor || capability === 'disabled') {
-      return
-    }
-
-    let geometryFactory: GeometryFactory
-    try {
-      geometryFactory = new geometryFactoryConstructor()
-    } catch {
-      disable()
-      return
-    }
-
-    for (const nextTarget of pendingTargets) {
-      try {
-        const payload = {
-          id: nextTarget.id,
-          coordinates: nextTarget.coordinates.map(
-            ([longitude, latitude]) => [longitude, latitude] as Coordinate,
-          ),
-        }
-        const geometry = geometryFactory.createPolygon([payload.coordinates])
-        if (
-          !geometry ||
-          geometry.getType() !== 'Polygon' ||
-          !geometry.isTypeOf('Polygon') ||
-          !Array.isArray(geometry.getCoordinates())
-        ) {
-          continue
-        }
-        const id = `nmap-uploader:note:${payload.id}`
-        const candidate = Object.freeze({
-          getId: () => id,
-          getGeometry: () => geometry,
-        })
-        targets.push({ payload, geometry, candidate })
-      } catch {}
-    }
+    targets = buildTracingTargets(pendingTargets, geometryFactoryConstructor, capability, disable)
   }
 
   const activate = (): void => {
@@ -134,30 +102,15 @@ export const createNativeTracingAdapter = ({
         if (!map) {
           return nativeCandidates
         }
-        let nearest: { target: TracingTarget; distance: number } | null = null
-        try {
-          for (const tracingTarget of targets) {
-            const snap = findTargetSnap(
-              coordinates,
-              tracingTarget.payload.coordinates,
-              map,
-              this.attrs?.hotspotWidth as number,
-            )
-            if (snap && (!nearest || snap.distance < nearest.distance)) {
-              nearest = { target: tracingTarget, distance: snap.distance }
-            }
-          }
-        } catch {
-          return nativeCandidates
-        }
-        if (
-          !nearest ||
-          nativeCandidates.some((item) => item.getId() === nearest?.target.candidate.getId())
-        ) {
-          return nativeCandidates
-        }
 
-        return [...nativeCandidates, nearest.target.candidate]
+        const nearest = findNearestTracingTarget(
+          coordinates,
+          targets,
+          map,
+          this.attrs?.hotspotWidth as number,
+        )
+
+        return mergeCandidateIfMissing(nativeCandidates, nearest)
       })
     }
 
