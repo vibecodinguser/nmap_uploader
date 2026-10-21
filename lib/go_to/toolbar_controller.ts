@@ -7,15 +7,12 @@ import {
   getButtonInsertParent,
   getGoToToolbarMountState,
   getNotesButton,
-  getPolygonUploadButton,
   getServiceButton,
   getSplitButton,
   hideGoToServiceButton,
-  isSplitButtonSiblingOf,
   isToolbarButtonHoverTarget,
   repairToolbarIcons,
   showGoToServiceButton,
-  showSplitButton,
 } from '@/lib/go_to/toolbar_mount'
 import { hideGoToTooltip, showGoToTooltip } from '@/lib/go_to_dom'
 import { createGoToServiceButton, GO_TO_SERVICE_BUTTON_ID } from '@/lib/go_to_service_button'
@@ -25,24 +22,22 @@ import {
   getStoredGoToItems,
   getStoredGoToMenuEnabled,
 } from '@/lib/go_to_settings'
-import {
-  createSplitViewButton,
-  GO_TO_SPLIT_BUTTON_ID,
-  getStoredSplitButtonEnabled,
-} from '@/lib/go_to_split_button'
-import { teardownSplitView, toggleSplitView } from '@/lib/go_to_split_view'
+import { getStoredSplitButtonEnabled } from '@/lib/go_to_split_button'
+import { teardownSplitView } from '@/lib/go_to_split_view'
 import { GO_TO_BUTTON_HOVERED_CLASS } from '@/lib/go_to_styles'
 import { removeAllGoToToolbarButtons, shouldRemountGoToToolbar } from '@/lib/go_to_toolbar'
 import type { TranslateFn } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n/locale.types'
-import { createNotesButton, getStoredNotesButtonEnabled, NOTES_BUTTON_ID } from '@/lib/notes_button'
-import { closeNotesPopup, teardownNotesPopup, toggleNotesPopup } from '@/lib/notes_popup'
-import { createPolygonUploadButton, POLYGON_UPLOAD_BUTTON_ID } from '@/lib/polygon_upload_button'
+import { getStoredNotesButtonEnabled } from '@/lib/notes_button'
+import { closeNotesPopup, teardownNotesPopup } from '@/lib/notes_popup'
+import { closePolygonUploadPopup, teardownPolygonUploadPopup } from '@/lib/polygon_upload_popup'
 import {
-  closePolygonUploadPopup,
-  teardownPolygonUploadPopup,
-  togglePolygonUploadPopup,
-} from '@/lib/polygon_upload_popup'
+  mountNotesButtonView,
+  mountPolygonUploadButtonView,
+  mountSplitButtonView,
+} from './toolbar_buttons_mount'
+
+export * from './toolbar_buttons_mount'
 
 export type GoToToolbarSettings = readonly [boolean, boolean, boolean]
 
@@ -173,119 +168,23 @@ export class GoToToolbarController {
   }
 
   public mountSplitButton(): void {
-    const goToServiceButton = getServiceButton()
-    if (!goToServiceButton) return
-
-    const existing = getSplitButton()
-    if (existing && !isSplitButtonSiblingOf(existing, goToServiceButton)) {
-      existing.remove()
-    }
-
-    if (!getSplitButton()) {
-      const label = this.getTranslator()('map.splitView')
-      const btn = createSplitViewButton(label)
-      goToServiceButton.insertAdjacentElement('afterend', btn)
-      const created = getSplitButton()
-      if (created) {
-        created.addEventListener('click', (e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          this.onHideMenu()
-          closePolygonUploadPopup()
-          closeNotesPopup()
-          toggleSplitView()
-        })
-        created.addEventListener('mouseover', (e) => {
-          if (isToolbarButtonHoverTarget(created, e.target, GO_TO_SPLIT_BUTTON_ID)) {
-            created.classList.add(GO_TO_BUTTON_HOVERED_CLASS)
-            showGoToTooltip(this.getTranslator()('map.splitView'), created, 'top')
-          }
-        })
-        created.addEventListener('mouseout', (e) => {
-          if (isToolbarButtonHoverTarget(created, e.target, GO_TO_SPLIT_BUTTON_ID)) {
-            created.classList.remove(GO_TO_BUTTON_HOVERED_CLASS)
-            hideGoToTooltip()
-          }
-        })
-      }
-    }
-
-    showSplitButton()
+    mountSplitButtonView({
+      getTranslator: this.getTranslator,
+      onHideMenu: this.onHideMenu,
+    })
   }
 
   public mountPolygonUploadButton(): void {
-    const serviceButton = getServiceButton()
-    if (!serviceButton) return
-
-    const insertAfter = getSplitButton() ?? serviceButton
-    const existingButton = getPolygonUploadButton()
-    if (existingButton && existingButton.previousElementSibling !== insertAfter) {
-      closePolygonUploadPopup()
-      existingButton.remove()
-    }
-
-    if (!getPolygonUploadButton()) {
-      const label = this.getTranslator()('map.uploadPolygons')
-      const button = createPolygonUploadButton(label)
-      insertAfter.insertAdjacentElement('afterend', button)
-
-      button.addEventListener('click', (e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        e.stopImmediatePropagation()
-        this.onHideMenu()
-        closeNotesPopup()
-        togglePolygonUploadPopup(button)
-      })
-      button.addEventListener('mouseover', (e) => {
-        if (isToolbarButtonHoverTarget(button, e.target, POLYGON_UPLOAD_BUTTON_ID)) {
-          button.classList.add(GO_TO_BUTTON_HOVERED_CLASS)
-          showGoToTooltip(this.getTranslator()('map.uploadPolygons'), button, 'top')
-        }
-      })
-      button.addEventListener('mouseout', (e) => {
-        if (isToolbarButtonHoverTarget(button, e.target, POLYGON_UPLOAD_BUTTON_ID)) {
-          button.classList.remove(GO_TO_BUTTON_HOVERED_CLASS)
-          hideGoToTooltip()
-        }
-      })
-    }
+    mountPolygonUploadButtonView({
+      getTranslator: this.getTranslator,
+      onHideMenu: this.onHideMenu,
+    })
   }
 
   public mountNotesButton(): void {
-    const uploadButton = getPolygonUploadButton()
-    if (!uploadButton) return
-
-    const existingButton = getNotesButton()
-    if (existingButton && existingButton.previousElementSibling !== uploadButton) {
-      closeNotesPopup()
-      existingButton.remove()
-    }
-
-    if (!getNotesButton()) {
-      const button = createNotesButton(this.getTranslator()('map.notes'))
-      uploadButton.insertAdjacentElement('afterend', button)
-
-      button.addEventListener('click', (e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        e.stopImmediatePropagation()
-        this.onHideMenu()
-        closePolygonUploadPopup()
-        toggleNotesPopup(button)
-      })
-      button.addEventListener('mouseover', (e) => {
-        if (isToolbarButtonHoverTarget(button, e.target, NOTES_BUTTON_ID)) {
-          button.classList.add(GO_TO_BUTTON_HOVERED_CLASS)
-          showGoToTooltip(this.getTranslator()('map.notes'), button, 'top')
-        }
-      })
-      button.addEventListener('mouseout', (e) => {
-        if (isToolbarButtonHoverTarget(button, e.target, NOTES_BUTTON_ID)) {
-          button.classList.remove(GO_TO_BUTTON_HOVERED_CLASS)
-          hideGoToTooltip()
-        }
-      })
-    }
+    mountNotesButtonView({
+      getTranslator: this.getTranslator,
+      onHideMenu: this.onHideMenu,
+    })
   }
 }
