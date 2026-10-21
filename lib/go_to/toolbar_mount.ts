@@ -3,21 +3,18 @@
  */
 import { isElementDescendantToOrEquals, queryAllByDomId } from '@/lib/go_to_dom'
 import {
-  createGoToServiceButton,
   GO_TO_BUTTON_HIDDEN_CLASS,
   GO_TO_SERVICE_BUTTON_ICON_SVG,
   GO_TO_SERVICE_BUTTON_ID,
 } from '@/lib/go_to_service_button'
 import {
-  createSplitViewButton,
   GO_TO_SPLIT_BUTTON_HIDDEN_CLASS,
   GO_TO_SPLIT_BUTTON_ICON_SVG,
   GO_TO_SPLIT_BUTTON_ID,
 } from '@/lib/go_to_split_button'
 import { repairAllGoToToolbarIcons, type shouldRemountGoToToolbar } from '@/lib/go_to_toolbar'
-import { createNotesButton, NOTES_BUTTON_ICON_SVG, NOTES_BUTTON_ID } from '@/lib/notes_button'
+import { NOTES_BUTTON_ICON_SVG, NOTES_BUTTON_ID } from '@/lib/notes_button'
 import {
-  createPolygonUploadButton,
   POLYGON_UPLOAD_BUTTON_ICON_SVG,
   POLYGON_UPLOAD_BUTTON_ID,
 } from '@/lib/polygon_upload_button'
