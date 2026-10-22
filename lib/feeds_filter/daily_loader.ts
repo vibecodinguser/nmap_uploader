@@ -1,8 +1,10 @@
 import { getLastCardWithDate, getLastCardWithDayAge, getTargetThresholdMs } from './card_scanner'
+import { waitForNewCards } from './card_waiter'
 import { findEventCards as getEventCards } from './page_adapter'
 import { findFeedScrollableContainer, triggerFeedScrollLoad } from './scroll_scanner'
 
 export * from './card_scanner'
+export * from './card_waiter'
 export * from './scroll_scanner'
 
 export interface FeedDailyLoaderOptions {
@@ -32,49 +34,6 @@ export const createFeedDailyLoader = (
   let isTeardown = false
 
   const scrollContainer = findFeedScrollableContainer(feedContainer)
-
-  const waitForNewCards = (
-    container: HTMLElement,
-    previousCount: number,
-    timeoutMs = 3500,
-  ): Promise<number> => {
-    return new Promise((resolve) => {
-      let isResolved = false
-      let timer: ReturnType<typeof setTimeout> | null = null
-      let observer: MutationObserver | null = null
-
-      const finish = (count: number) => {
-        if (isResolved) {
-          return
-        }
-        isResolved = true
-        if (timer) {
-          clearTimeout(timer)
-          timer = null
-        }
-        if (observer) {
-          observer.disconnect()
-          observer = null
-        }
-        resolve(count)
-      }
-
-      timer = setTimeout(() => {
-        const currentCards = getEventCards(container)
-        finish(currentCards.length)
-      }, timeoutMs)
-
-      if (typeof MutationObserver !== 'undefined') {
-        observer = new MutationObserver(() => {
-          const currentCards = getEventCards(container)
-          if (currentCards.length > previousCount) {
-            finish(currentCards.length)
-          }
-        })
-        observer.observe(container, { childList: true, subtree: true })
-      }
-    })
-  }
 
   const loadUpToDays = async (targetDays: number): Promise<boolean> => {
     if (isCurrentlyLoading || isAllHistoryLoaded || isTeardown) {
