@@ -1,12 +1,13 @@
 import { ERR_NETWORK, ProcessingError } from '@/lib/errors'
 import { getHeaders, safeFetch, throwIfUnauthorized } from './auth'
-import { API_BASE_URL, YANDEX_DISK_FOLDER } from './constants'
+import { API_BASE_URL } from './constants'
 import {
   formatDiskResponseError,
   isFolderAlreadyExists,
   isParentNotFound,
   readDiskResponseError,
 } from './disk_api_errors'
+import { resolveFolderPath } from './disk_path_resolver'
 import {
   APPLICATIONS_FOLDER,
   fromDiskApiPath,
@@ -17,6 +18,7 @@ import {
 } from './disk_path_utils'
 
 export * from './disk_api_errors'
+export * from './disk_path_resolver'
 
 export const checkDirectoryExists = async ({
   apiPath,
@@ -234,27 +236,4 @@ export const ensureFolderExists = async ({
       await createDirectorySegment({ logicalPath: currentPath, token })
     }
   }
-}
-
-export const resolveFolderPath = ({
-  targetDate,
-  includeToday = true,
-}: {
-  targetDate?: string
-  includeToday?: boolean
-}): string => {
-  const basePath = YANDEX_DISK_FOLDER.replace(/\/+$/, '')
-
-  if (targetDate) {
-    return `${basePath}/${targetDate}`
-  }
-
-  if (includeToday) {
-    const todayDate = new Date()
-    const todayIso = todayDate.toISOString()
-    const todayStr = todayIso.slice(0, 10)
-    return `${basePath}/${todayStr}`
-  }
-
-  return basePath
 }
