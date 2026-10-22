@@ -2,6 +2,12 @@ import { ERR_NETWORK, ProcessingError } from '@/lib/errors'
 import { getHeaders, safeFetch, throwIfUnauthorized } from './auth'
 import { API_BASE_URL, YANDEX_DISK_FOLDER } from './constants'
 import {
+  formatDiskResponseError,
+  isFolderAlreadyExists,
+  isParentNotFound,
+  readDiskResponseError,
+} from './disk_api_errors'
+import {
   APPLICATIONS_FOLDER,
   fromDiskApiPath,
   getDiskApiPathVariants,
@@ -10,42 +16,7 @@ import {
   toDiskApiPath,
 } from './disk_path_utils'
 
-type DiskApiError = {
-  error?: string
-  message?: string
-  description?: string
-}
-
-const parseDiskApiError = (body: string): DiskApiError => {
-  try {
-    return JSON.parse(body) as DiskApiError
-  } catch {
-    return {}
-  }
-}
-
-const readDiskResponseError = async (
-  response: Response,
-): Promise<{ text: string; parsed: DiskApiError }> => {
-  const text = await response.text()
-  return { text, parsed: parseDiskApiError(text) }
-}
-
-const formatDiskResponseError = (response: Response, body: string): string => {
-  let suffix = ''
-  if (body) {
-    suffix = ` — ${body}`
-  }
-  return `${response.status} ${response.statusText}${suffix}`
-}
-
-const isParentNotFound = (status: number, parsed: DiskApiError): boolean =>
-  status === 404 || (status === 409 && parsed.error === 'DiskPathDoesntExistsError')
-
-const isFolderAlreadyExists = (status: number, parsed: DiskApiError): boolean =>
-  status === 409 &&
-  (parsed.error === 'DiskPathPointsToExistentDirectoryError' ||
-    parsed.error === 'DiskResourceAlreadyExistsError')
+export * from './disk_api_errors'
 
 export const checkDirectoryExists = async ({
   apiPath,
