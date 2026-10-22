@@ -1,18 +1,6 @@
-const RUSSIAN_MONTHS_MAP: Record<string, number> = {
-  янв: 0,
-  фев: 1,
-  мар: 2,
-  апр: 3,
-  май: 4,
-  мая: 4,
-  июн: 5,
-  июл: 6,
-  авг: 7,
-  сен: 8,
-  окт: 9,
-  ноя: 10,
-  дек: 11,
-}
+import { parseRelativeDateOffset, RUSSIAN_MONTHS_MAP } from './relative_date_parser'
+
+export * from './relative_date_parser'
 
 /**
  * Разбирает текстовую строку даты/времени Народной карты в объект Date (чистая функция).
@@ -34,33 +22,13 @@ export const parseEventDateString = (
     }
   }
 
-  // 2. Относительное время: "только что"
-  if (text.includes('только что')) {
-    return new Date(referenceTimestamp)
+  // 2. Относительное время
+  const relativeDate = parseRelativeDateOffset(text, referenceTimestamp)
+  if (relativeDate) {
+    return relativeDate
   }
 
-  // 3. Относительное время: N секунд / минут / часов / дней назад
-  const relativeMatch = text.match(/(\d+)\s*(сек|мин|час|ч\b|дн|ден)/)
-  if (relativeMatch && text.includes('назад')) {
-    const value = Number.parseInt(relativeMatch[1], 10)
-    const unit = relativeMatch[2]
-    if (!Number.isNaN(value)) {
-      if (unit.startsWith('сек')) {
-        return new Date(referenceTimestamp - value * 1000)
-      }
-      if (unit.startsWith('мин')) {
-        return new Date(referenceTimestamp - value * 60 * 1000)
-      }
-      if (unit.startsWith('час') || unit === 'ч') {
-        return new Date(referenceTimestamp - value * 3600 * 1000)
-      }
-      if (unit.startsWith('дн') || unit.startsWith('ден')) {
-        return new Date(referenceTimestamp - value * 86400 * 1000)
-      }
-    }
-  }
-
-  // 4. Одиночное время: "14:20", "09:05", "в 14:20"
+  // 3. Одиночное время: "14:20", "09:05", "в 14:20"
   const timeOnlyMatch = text.match(/^(?:в\s*)?([01]?\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?$/)
   if (timeOnlyMatch) {
     const hours = Number.parseInt(timeOnlyMatch[1], 10)
@@ -72,37 +40,7 @@ export const parseEventDateString = (
 
   const refDate = new Date(referenceTimestamp)
 
-  // 5. "сегодня [в/в,] HH:MM"
-  const todayMatch = text.match(/(?:^|[^\wа-яё])сегодня[,\s]*(?:в\s*)?(\d{1,2}):(\d{2})/)
-  if (todayMatch) {
-    const hours = Number.parseInt(todayMatch[1], 10)
-    const minutes = Number.parseInt(todayMatch[2], 10)
-    const d = new Date(referenceTimestamp)
-    d.setHours(hours, minutes, 0, 0)
-    return d
-  }
-
-  // 6. "позавчера [в/в,] HH:MM"
-  const dayBeforeMatch = text.match(/(?:^|[^\wа-яё])позавчера[,\s]*(?:в\s*)?(\d{1,2}):(\d{2})/)
-  if (dayBeforeMatch) {
-    const hours = Number.parseInt(dayBeforeMatch[1], 10)
-    const minutes = Number.parseInt(dayBeforeMatch[2], 10)
-    const d = new Date(referenceTimestamp - 2 * 86400 * 1000)
-    d.setHours(hours, minutes, 0, 0)
-    return d
-  }
-
-  // 7. "вчера [в/в,] HH:MM"
-  const yesterdayMatch = text.match(/(?:^|[^\wа-яё])вчера[,\s]*(?:в\s*)?(\d{1,2}):(\d{2})/)
-  if (yesterdayMatch) {
-    const hours = Number.parseInt(yesterdayMatch[1], 10)
-    const minutes = Number.parseInt(yesterdayMatch[2], 10)
-    const d = new Date(referenceTimestamp - 86400 * 1000)
-    d.setHours(hours, minutes, 0, 0)
-    return d
-  }
-
-  // 8. Числовой формат "DD.MM.YYYY" или "DD.MM.YY" (опционально с HH:MM)
+  // 4. Числовой формат "DD.MM.YYYY" или "DD.MM.YY" (опционально с HH:MM)
   const ddmmyyyyMatch = text.match(
     /(\d{1,2})[./](\d{1,2})[./](\d{2,4})(?:[,\s]+(?:в\s*)?(\d{1,2}):(\d{2}))?/,
   )
@@ -118,7 +56,7 @@ export const parseEventDateString = (
     return new Date(year, month, day, hours, minutes, 0, 0)
   }
 
-  // 9. Формат с названием месяца: "15 октября 2026 в 14:20"
+  // 5. Формат с названием месяца: "15 октября 2026 в 14:20"
   const monthMatch = text.match(
     /(?:^|[^а-яё0-9])(\d{1,2})\s+([а-яё]+)(?:\s+(\d{4}))?(?:[,\s]+(?:в\s*)?(\d{1,2}):(\d{2}))?/i,
   )
