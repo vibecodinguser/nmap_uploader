@@ -1,16 +1,10 @@
 import {
-  BUTTON_ANCHOR_SELECTORS,
   GoToToolbarController,
-  getNotesButton,
-  getPolygonUploadButton,
-  getSplitButton,
   hideGoToMenu,
   loadGoToToolbarSettings,
   repairToolbarIcons,
-  resolveAnchor,
   showGoToMenu,
 } from '@/lib/go_to'
-import { runWhenAnyElementExists } from '@/lib/go_to_dom'
 import { GO_TO_REFRESH_ACTION } from '@/lib/go_to_notify'
 import { GO_TO_MENU_ENABLED_STORAGE_KEY, getStoredGoToMenuEnabled } from '@/lib/go_to_settings'
 import {
@@ -19,37 +13,40 @@ import {
 } from '@/lib/go_to_split_button'
 import { ensureGoToStyles } from '@/lib/go_to_styles'
 import { observeGoToTheme } from '@/lib/go_to_theme'
-import { createTranslator, getStoredLocale, type TranslateFn } from '@/lib/i18n'
 import { LOCALE_STORAGE_KEY } from '@/lib/i18n/locale'
-import type { Locale } from '@/lib/i18n/locale.types'
 import { getStoredNotesButtonEnabled, NOTES_BUTTON_ENABLED_STORAGE_KEY } from '@/lib/notes_button'
 import { type GoToLifecycleOptions, hasGoToRefreshStorageChange } from './lifecycle_contracts'
+import { GoToToolbarMountManager } from './toolbar_mount_manager'
 
 export * from './lifecycle_contracts'
+export * from './toolbar_mount_manager'
 
 export class GoToToolbarLifecycleManager {
-  private contentLocale: Locale = 'ru'
-  private contentTranslator: TranslateFn = createTranslator(this.contentLocale)
-  private waitForAnchorCleanup?: () => void
   private cleanupThemeObserver?: () => void
   private refreshPromise?: Promise<void>
   private isRefreshScheduled = false
   public readonly controller: GoToToolbarController
+  public readonly mountManager: GoToToolbarMountManager
 
   constructor(private readonly options?: GoToLifecycleOptions) {
+    let mountMgr: GoToToolbarMountManager | undefined
+
     this.controller = new GoToToolbarController(
-      () => this.contentTranslator,
-      () => this.contentLocale,
+      () => mountMgr?.getTranslator() ?? ((key: string) => key),
+      () => mountMgr?.getLocale() ?? 'ru',
       () => showGoToMenu(),
       () => hideGoToMenu(),
       () => {},
     )
+
+    this.mountManager = new GoToToolbarMountManager(this.controller)
+    mountMgr = this.mountManager
   }
 
   public async start(): Promise<void> {
     ensureGoToStyles()
     this.cleanupThemeObserver = observeGoToTheme()
-    await this.refreshContentLocale()
+    await this.mountManager.refreshContentLocale()
 
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', this.handleVisibilityChange)
@@ -87,26 +84,12 @@ export class GoToToolbarLifecycleManager {
       this.options.runtime.onMessage.removeListener(this.handleRuntimeMessage)
     }
 
-    this.waitForAnchorCleanup?.()
+    this.mountManager.cleanup()
     this.controller.removeButtonAndMenu()
   }
 
   public async refreshContentLocale(): Promise<void> {
-    this.contentLocale = await getStoredLocale()
-    this.contentTranslator = createTranslator(this.contentLocale)
-
-    const splitButton = getSplitButton()
-    if (splitButton) {
-      splitButton.setAttribute('aria-label', this.contentTranslator('map.splitView'))
-    }
-    const uploadButton = getPolygonUploadButton()
-    if (uploadButton) {
-      uploadButton.setAttribute('aria-label', this.contentTranslator('map.uploadPolygons'))
-    }
-    const notesButton = getNotesButton()
-    if (notesButton) {
-      notesButton.setAttribute('aria-label', this.contentTranslator('map.notes'))
-    }
+    await this.mountManager.refreshContentLocale()
   }
 
   public mountToolbarAtAnchor(
@@ -114,19 +97,11 @@ export class GoToToolbarLifecycleManager {
     splitButtonEnabled: boolean,
     notesButtonEnabled: boolean,
   ): void {
-    const anchor = resolveAnchor()
-    if (anchor) {
-      this.controller.mountToolbar(anchor, menuEnabled, splitButtonEnabled, notesButtonEnabled)
-    }
+    this.mountManager.mountToolbarAtAnchor(menuEnabled, splitButtonEnabled, notesButtonEnabled)
   }
 
   public waitForAnchorAndMount(): void {
-    this.waitForAnchorCleanup?.()
-    this.waitForAnchorCleanup = runWhenAnyElementExists(BUTTON_ANCHOR_SELECTORS, (anchor) => {
-      void loadGoToToolbarSettings().then(([menuEnabled, splitEnabled, notesEnabled]) => {
-        this.controller.mountToolbar(anchor, menuEnabled, splitEnabled, notesEnabled)
-      })
-    })
+    this.mountManager.waitForAnchorAndMount()
   }
 
   public async applyEnabledState(
@@ -134,12 +109,7 @@ export class GoToToolbarLifecycleManager {
     splitButtonEnabled: boolean,
     notesButtonEnabled: boolean,
   ): Promise<void> {
-    const anchor = resolveAnchor()
-    if (anchor) {
-      this.controller.mountToolbar(anchor, menuEnabled, splitButtonEnabled, notesButtonEnabled)
-    } else {
-      this.waitForAnchorAndMount()
-    }
+    await this.mountManager.applyEnabledState(menuEnabled, splitButtonEnabled, notesButtonEnabled)
   }
 
   public refreshGoToEnabledState = async (): Promise<void> => {
