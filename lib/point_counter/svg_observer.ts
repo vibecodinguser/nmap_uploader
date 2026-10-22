@@ -1,5 +1,8 @@
 import { countPointsInPath, countPointsInPolyline } from './core'
 import type { PointCounterUi } from './dom_ui'
+import { attachCounterResetListeners } from './svg_reset_listeners'
+
+export * from './svg_reset_listeners'
 
 export interface SvgCounterObserverOptions {
   ui: PointCounterUi
@@ -39,40 +42,11 @@ export class SvgPointCounterObserver {
       attributeFilter: ['d', 'points'],
     })
 
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === 'Escape') {
-        this.resetCounter()
-      }
-    }
-
-    const onDblClick = () => {
-      this.resetCounter()
-    }
-
-    const onMouseDown = (e: MouseEvent) => {
-      const target = e.target as HTMLElement | null
-      if (!target) return
-
-      const isSidebar = target.closest('.nk-sidebar-view')
-      const isButton = target.closest('button') || target.closest('.nk-button')
-      const text = target.textContent?.toLowerCase() || ''
-      const isSaveAction =
-        text.includes('сохранить') || text.includes('отменить') || text.includes('готово')
-
-      if (isSidebar || isButton || isSaveAction) {
-        this.resetCounter()
-      }
-    }
-
-    document.addEventListener('keydown', onKeyDown)
-    document.addEventListener('dblclick', onDblClick)
-    document.addEventListener('mousedown', onMouseDown)
+    const removeResetListeners = attachCounterResetListeners(this.resetCounter)
 
     return () => {
       this.stop()
-      document.removeEventListener('keydown', onKeyDown)
-      document.removeEventListener('dblclick', onDblClick)
-      document.removeEventListener('mousedown', onMouseDown)
+      removeResetListeners()
     }
   }
 
