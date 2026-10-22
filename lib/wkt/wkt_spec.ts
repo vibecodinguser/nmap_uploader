@@ -1,144 +1,18 @@
-import type {
-  Geometry,
-  GeometryCollection,
-  LineString,
-  MultiLineString,
-  MultiPoint,
-  MultiPolygon,
-  Point,
-  Polygon,
-  Position,
-} from 'geojson'
+import type { Geometry } from 'geojson'
 import { parse as parseWkt } from 'wellknown'
-import { ERR_SHAPEFILE, ProcessingError } from '@/lib/errors'
+import { validateGeometryCoordinates } from './wkt_coords'
+import {
+  DECIMAL_COMMA_PATTERN,
+  extractWktKeyword,
+  isCrsWktKeyword,
+  isGeometryWktLine,
+  toProcessingError,
+  WKT_GEOMETRY_TYPES,
+} from './wkt_keywords'
 
-/** Поддерживаемые типы геометрии (ISO 19125-1 / OGC Simple Features). */
-export const WKT_GEOMETRY_TYPES = [
-  'POINT',
-  'LINESTRING',
-  'POLYGON',
-  'MULTIPOINT',
-  'MULTILINESTRING',
-  'MULTIPOLYGON',
-  'GEOMETRYCOLLECTION',
-] as const
+export * from './wkt_coords'
+export * from './wkt_keywords'
 
-/** Ключевые слова CRS WKT2 по OGC 18-010r11, §6.6. */
-export const WKT2_CRS_KEYWORDS = new Set([
-  'ABRIDGEDTRANSFORMATION',
-  'ANCHOR',
-  'ANCHOREPOCH',
-  'ANGLEUNIT',
-  'AREA',
-  'AXIS',
-  'AXISMAXVALUE',
-  'AXISMINVALUE',
-  'BASEENGCRS',
-  'BASEGEODCRS',
-  'BASEGEOGCRS',
-  'BASEPARAMCRS',
-  'BASEPROJCRS',
-  'BASETIMECRS',
-  'BASEVERTCRS',
-  'BBOX',
-  'BEARING',
-  'BOUNDCRS',
-  'CALENDAR',
-  'CITATION',
-  'COMPOUNDCRS',
-  'CONCATENATEDOPERATION',
-  'CONVERSION',
-  'COORDEPOCH',
-  'COORDINATEMETADATA',
-  'COORDINATEOPERATION',
-  'CS',
-  'DATUM',
-  'DEFININGTRANSFORMATION',
-  'DERIVEDPROJCRS',
-  'DERIVINGCONVERSION',
-  'DYNAMIC',
-  'EDATUM',
-  'ELLIPSOID',
-  'ENGCRS',
-  'ENGINEERINGCRS',
-  'ENGINEERINGDATUM',
-  'ENSEMBLE',
-  'ENSEMBLEACCURACY',
-  'EPOCH',
-  'FRAMEEPOCH',
-  'GEODCRS',
-  'GEODETICCRS',
-  'GEODETICDATUM',
-  'GEOGCRS',
-  'GEOGRAPHICCRS',
-  'GEOIDMODEL',
-  'ID',
-  'INTERPOLATIONCRS',
-  'LENGTHUNIT',
-  'MEMBER',
-  'MERIDIAN',
-  'METHOD',
-  'MODEL',
-  'OPERATIONACCURACY',
-  'ORDER',
-  'PARAMETER',
-  'PARAMETERFILE',
-  'PARAMETRICCRS',
-  'PARAMETRICDATUM',
-  'PARAMETRICUNIT',
-  'PDATUM',
-  'POINTMOTIONOPERATION',
-  'PRIMEM',
-  'PRIMEMERIDIAN',
-  'PROJCRS',
-  'PROJECTEDCRS',
-  'PROJECTION',
-  'RANGEMEANING',
-  'REMARK',
-  'SCALEUNIT',
-  'SCOPE',
-  'SOURCECRS',
-  'TARGETCRS',
-  'TDATUM',
-  'TEMPORALCRS',
-  'TEMPORALDATUM',
-  'TIMEUNIT',
-  'TRANSFORMATION',
-  'TRIAXIAL',
-  'UNIT',
-  'USAGE',
-  'VDATUM',
-  'VERTCRS',
-  'VERTICALCRS',
-  'VERTICALDATUM',
-  'VERTICALUNIT',
-])
-
-/** Ключевые слова CRS WKT1 (ISO 19162 / OGC 01-009) для отклонения. */
-export const WKT1_CRS_KEYWORDS = new Set([
-  'GEOGCS',
-  'PROJCS',
-  'GEOCCS',
-  'VERT_CS',
-  'COMPD_CS',
-  'LOCAL_CS',
-  'FITTED_CS',
-  'SPHEROID',
-  'PRIMEM',
-  'PROJECTION',
-  'VERT_DATUM',
-  'COMPD_CS',
-  'TOWGS84',
-])
-
-const GEOMETRY_KEYWORD_PATTERN =
-  /^(POINT|LINESTRING|POLYGON|MULTIPOINT|MULTILINESTRING|MULTIPOLYGON|GEOMETRYCOLLECTION)(?:\s+(?:ZM|Z|M))?\b/i
-
-/** Десятичный разделитель — точка, не запятая (OGC 18-010r11, §6.3.2). */
-const DECIMAL_COMMA_PATTERN = /(^|[\s([])-?\d+,\d+($|[\s)\]])/
-
-const ERR_FINITE_COORDINATE = 'недопустимое значение координаты (NaN или Infinity)'
-const ERR_POSITION_MIN_XY = 'координатная пара должна содержать минимум X и Y'
 const ERR_MISSING_GEOMETRY_KEYWORD = [
   'WKT должен начинаться с ключевого слова типа геометрии',
 ].join('')
@@ -154,157 +28,10 @@ const ERR_DECIMAL_COMMA = [
   'не запятая (OGC 18-010r11, §6.3.2)',
 ].join(' ')
 
-const toProcessingError = (message: string): ProcessingError =>
-  new ProcessingError(ERR_SHAPEFILE, message)
-
-const normalizeWktKeyword = (keyword: string): string => {
-  const withoutUnderscores = keyword.replace(/_/g, '')
-  return withoutUnderscores.toUpperCase()
-}
-
-/** Извлекает ведущее ключевое слово WKT-строки. */
-export const extractWktKeyword = (line: string): string | null => {
-  const trimmedLine = line.trim()
-  const match = trimmedLine.match(/^([A-Za-z][A-Za-z0-9_]*)/)
-  return match?.[1] ?? null
-}
-
-/** Проверяет, что ключевое слово относится к CRS WKT. */
-export const isCrsWktKeyword = (keyword: string): boolean => {
-  const normalized = normalizeWktKeyword(keyword)
-  return WKT2_CRS_KEYWORDS.has(normalized) || WKT1_CRS_KEYWORDS.has(normalized)
-}
-
-/** Проверяет, что строка описывает геометрию OGC Simple Features. */
-export const isGeometryWktLine = (line: string): boolean => {
-  const trimmedLine = line.trim()
-  return GEOMETRY_KEYWORD_PATTERN.test(trimmedLine)
-}
-
-/** latitude/longitude для геометрии WGS84. */
-export const isValidWktLatitude = (value: number): boolean => value >= -90 && value <= 90
-
-export const isValidWktLongitude = (value: number): boolean => value >= -180 && value < 180
-
-const assertFiniteCoordinate = (value: number, context: string): void => {
-  if (Number.isFinite(value)) {
-    return
-  }
-
-  throw toProcessingError(`${context}: ${ERR_FINITE_COORDINATE}`)
-}
-
-const validatePosition = (position: Position, context: string): void => {
-  if (position.length < 2) {
-    throw toProcessingError(`${context}: ${ERR_POSITION_MIN_XY}`)
-  }
-
-  const x = Number(position[0])
-  const y = Number(position[1])
-  assertFiniteCoordinate(x, `${context}.X`)
-  assertFiniteCoordinate(y, `${context}.Y`)
-
-  if (!isValidWktLongitude(x)) {
-    throw toProcessingError(`${context}: longitude ${x} вне диапазона [-180, 180)`)
-  }
-  if (!isValidWktLatitude(y)) {
-    throw toProcessingError(`${context}: latitude ${y} вне диапазона [-90, 90]`)
-  }
-}
-
-const validatePositionList = (positions: Position[], context: string): void => {
-  for (let index = 0; index < positions.length; index += 1) {
-    validatePosition(positions[index], `${context}[${index}]`)
-  }
-}
-
-const validatePolygonRings = (rings: Position[][], ringContextPrefix: string): void => {
-  for (let ringIndex = 0; ringIndex < rings.length; ringIndex += 1) {
-    validatePositionList(rings[ringIndex], `${ringContextPrefix}${ringIndex}`)
-  }
-}
-
-const validatePointGeometry = (geom: Point, context: string): void => {
-  validatePosition(geom.coordinates, context)
-}
-
-const validateLineStringGeometry = (geom: LineString, context: string): void => {
-  validatePositionList(geom.coordinates, context)
-}
-
-const validateMultiPointGeometry = (geom: MultiPoint, context: string): void => {
-  validatePositionList(geom.coordinates, context)
-}
-
-const validateMultiLineStringGeometry = (geom: MultiLineString, context: string): void => {
-  const lines = geom.coordinates
-
-  for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
-    validatePositionList(lines[lineIndex], `${context}.line${lineIndex}`)
-  }
-}
-
-const validatePolygonGeometry = (geom: Polygon, context: string): void => {
-  validatePolygonRings(geom.coordinates, `${context}.ring`)
-}
-
-const validateMultiPolygonGeometry = (geom: MultiPolygon, context: string): void => {
-  const polygons = geom.coordinates
-
-  for (let polygonIndex = 0; polygonIndex < polygons.length; polygonIndex += 1) {
-    validatePolygonRings(polygons[polygonIndex], `${context}.polygon${polygonIndex}.ring`)
-  }
-}
-
-const validateGeometryCollectionGeometry = (geom: GeometryCollection, context: string): void => {
-  const parts = geom.geometries
-
-  for (let index = 0; index < parts.length; index += 1) {
-    validateGeometryCoordinates(parts[index], `${context}.part${index}`)
-  }
-}
-
-const validateGeometryByType = (
-  geometry: Geometry,
-  geometryType: string,
-  context: string,
-): void => {
-  switch (geometryType) {
-    case 'Point':
-      validatePointGeometry(geometry as Point, context)
-      break
-    case 'LineString':
-      validateLineStringGeometry(geometry as LineString, context)
-      break
-    case 'Polygon':
-      validatePolygonGeometry(geometry as Polygon, context)
-      break
-    case 'MultiPoint':
-      validateMultiPointGeometry(geometry as MultiPoint, context)
-      break
-    case 'MultiLineString':
-      validateMultiLineStringGeometry(geometry as MultiLineString, context)
-      break
-    case 'MultiPolygon':
-      validateMultiPolygonGeometry(geometry as MultiPolygon, context)
-      break
-    case 'GeometryCollection':
-      validateGeometryCollectionGeometry(geometry as GeometryCollection, context)
-      break
-  }
-}
-
-/** Проверяет координаты GeoJSON-геометрии после разбора WKT. */
-export const validateGeometryCoordinates = (geometry: Geometry, context = 'WKT'): void => {
-  validateGeometryByType(geometry, geometry.type, context)
-}
-
 const assertNonEmptyWktLine = (trimmed: string): void => {
-  if (trimmed) {
-    return
+  if (!trimmed) {
+    throw toProcessingError('Пустая строка WKT')
   }
-
-  throw toProcessingError('Пустая строка WKT')
 }
 
 const assertGeometryKeyword = (trimmed: string): string => {
@@ -312,7 +39,6 @@ const assertGeometryKeyword = (trimmed: string): string => {
   if (keyword) {
     return keyword
   }
-
   throw toProcessingError(ERR_MISSING_GEOMETRY_KEYWORD)
 }
 
@@ -322,8 +48,7 @@ const assertNotCrsWkt = (keyword: string): void => {
       `Строка содержит CRS WKT (${keyword}); загрузчик принимает геометрию`,
       '(POINT, LINESTRING, POLYGON и т.д.), не описание системы координат (OGC 18-010r11)',
     ]
-    const message = crsWktMessageParts.join(' ')
-    throw toProcessingError(message)
+    throw toProcessingError(crsWktMessageParts.join(' '))
   }
 }
 
@@ -331,25 +56,20 @@ const assertSupportedGeometryWkt = (trimmed: string, keyword: string): void => {
   if (isGeometryWktLine(trimmed)) {
     return
   }
-
   const allowedTypes = WKT_GEOMETRY_TYPES.join(', ')
-  const message = `Неподдерживаемый тип WKT "${keyword}"; допустимы: ${allowedTypes}`
-  throw toProcessingError(message)
+  throw toProcessingError(`Неподдерживаемый тип WKT "${keyword}"; допустимы: ${allowedTypes}`)
 }
 
 const assertRoundParenthesesOnly = (trimmed: string): void => {
-  const hasSquareBrackets = trimmed.includes('[') || trimmed.includes(']')
-  if (hasSquareBrackets) {
+  if (trimmed.includes('[') || trimmed.includes(']')) {
     throw toProcessingError(ERR_SQUARE_BRACKETS_IN_GEOMETRY)
   }
 }
 
 const assertHasCoordinateParentheses = (trimmed: string): void => {
-  if (trimmed.includes('(')) {
-    return
+  if (!trimmed.includes('(')) {
+    throw toProcessingError(ERR_MISSING_PARENTHESES)
   }
-
-  throw toProcessingError(ERR_MISSING_PARENTHESES)
 }
 
 const assertDecimalPointSeparator = (trimmed: string): void => {
@@ -372,14 +92,10 @@ export const validateGeometryWktLine = (line: string): void => {
 }
 
 const getErrorMessage = (error: unknown): string => {
-  let message: string
   if (error instanceof Error) {
-    message = error.message
-  } else {
-    message = String(error)
+    return error.message
   }
-
-  return message
+  return String(error)
 }
 
 /** Разбирает и валидирует одну строку геометрии WKT. */
@@ -403,30 +119,16 @@ export const parseAndValidateGeometryWkt = (line: string): Geometry => {
 }
 
 const hasUtf8Bom = (bytes: Uint8Array): boolean => {
-  let result: boolean
   if (bytes.length >= 3) {
-    const isFirstByte = bytes[0] === 0xef
-    const isSecondByte = bytes[1] === 0xbb
-    const isThirdByte = bytes[2] === 0xbf
-    result = isFirstByte && isSecondByte && isThirdByte
-  } else {
-    result = false
+    return bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf
   }
-
-  return result
+  return false
 }
 
 /** Декодирует UTF-8 с удалением BOM (OGC 18-010r11, §6.2). */
 export const decodeUtf8WktText = (buffer: ArrayBuffer): string => {
   const bytes = new Uint8Array(buffer)
-  const hasBom = hasUtf8Bom(bytes)
-  let payload: Uint8Array
-  if (hasBom) {
-    payload = bytes.subarray(3)
-  } else {
-    payload = bytes
-  }
-
+  const payload = hasUtf8Bom(bytes) ? bytes.subarray(3) : bytes
   const decoder = new TextDecoder('utf-8')
   return decoder.decode(payload)
 }
@@ -436,9 +138,7 @@ const stripLeadingInvisibleChars = (line: string): string => {
 }
 
 const isWktGeometryLine = (line: string): boolean => {
-  let result: boolean
-  result = line.length > 0 && !line.startsWith('#')
-  return result
+  return line.length > 0 && !line.startsWith('#')
 }
 
 /** Нормализует WKT-файл: убирает BOM, комментарии и пустые строки. */
