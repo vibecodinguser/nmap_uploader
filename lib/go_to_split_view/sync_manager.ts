@@ -3,56 +3,37 @@
  */
 import { isNakarteOrigin } from '@/lib/extension_origins'
 import type { MapLocation } from '@/lib/go_to_link'
-import {
-  buildNmapsUrlFromLocation,
-  locationsEqual,
-  normalizeMapLocation,
-  normalizeMapZoom,
-} from '@/lib/go_to_map_sync'
-import {
-  calculateWheelZoomSteps,
-  isStaleNakarteZoomEcho,
-  NAKARTE_ZOOM_PUSH_GRACE_MS,
-  SYNC_DEBOUNCE_MS,
-  URL_POLL_INTERVAL_MS,
-} from '@/lib/go_to_split_view/core'
+import { normalizeMapZoom } from '@/lib/go_to_map_sync'
+import { calculateWheelZoomSteps, URL_POLL_INTERVAL_MS } from '@/lib/go_to_split_view/core'
 import type { SplitDomElements } from '@/lib/go_to_split_view/dom'
 import { NMAPS_BOUNDS_CHANGE_EVENT, parseBoundsChangeEvent } from '@/lib/nmaps_bounds_notify'
 import { NMAPS_URL_CHANGE_EVENT } from '@/lib/nmaps_url_notify'
 import { SplitCursorTracker } from './cursor_tracker'
+import { SplitLocationCoordinator } from './location_coordinator'
 import {
   NAKARTE_SYNC_MSG_SOURCE,
-  postLocationToIframe,
   readNmapsLocation,
   type SplitLocationMessage,
   wrapHistoryMethod,
 } from './split_bridge'
 
 export * from './cursor_tracker'
+export * from './location_coordinator'
 export * from './split_bridge'
 
 export class SplitSyncManager {
-  private syncTimer: ReturnType<typeof setTimeout> | undefined
   private urlPollTimer: ReturnType<typeof setInterval> | undefined
-  private pendingNakarteZoomPushTimer: ReturnType<typeof setTimeout> | undefined
   private wheelZoomAccumulator = 0
-  private lastPolledUrlLocation: MapLocation | null = null
-  private lastPushedZoom: number | null = null
-  private pendingNakarteZoomPush: MapLocation | null = null
-  private nmapsLocation: MapLocation | null = null
-  private nakarteLocation: MapLocation | null = null
   private cleanupFns: Array<() => void> = []
-  private cursorTracker: SplitCursorTracker
+  private readonly cursorTracker: SplitCursorTracker
+  private readonly locationCoordinator: SplitLocationCoordinator
 
   constructor(
     private readonly dom: SplitDomElements,
     initialLocation: MapLocation,
   ) {
     this.cursorTracker = new SplitCursorTracker(dom)
-    this.nmapsLocation = initialLocation
-    this.nakarteLocation = initialLocation
-    this.lastPolledUrlLocation = normalizeMapLocation(initialLocation)
-    this.lastPushedZoom = normalizeMapLocation(initialLocation).zoom
+    this.locationCoordinator = new SplitLocationCoordinator(dom.iframe, initialLocation)
   }
 
   public initListeners(): void {
@@ -62,7 +43,7 @@ export class SplitSyncManager {
     const restoreReplaceState = wrapHistoryMethod('replaceState', onNmapsUrlChange)
 
     const handleMouseMove = (e: MouseEvent) =>
-      this.cursorTracker.handleNmapsMouseMove(e, this.nakarteLocation)
+      this.cursorTracker.handleNmapsMouseMove(e, this.locationCoordinator.getNakarteLocation())
     const handleMouseLeave = () => this.cursorTracker.handleNmapsMouseLeave()
     const handleMessage = (e: MessageEvent) => this.handleWindowMessage(e)
     const handleWheel = (e: WheelEvent) => this.handleNmapsWheel(e)
@@ -102,9 +83,7 @@ export class SplitSyncManager {
   }
 
   public postInitialLocation(): void {
-    if (this.nmapsLocation) {
-      postLocationToIframe(this.dom.iframe, this.nmapsLocation)
-    }
+    this.locationCoordinator.postInitialLocation()
   }
 
   public hideCursorMarkers(): void {
@@ -119,129 +98,33 @@ export class SplitSyncManager {
     this.cursorTracker.hideRightCursorMarker()
   }
 
+  public pushLocationToNakarte(location: MapLocation, immediate = false): void {
+    this.locationCoordinator.pushLocationToNakarte(location, immediate)
+  }
+
   public dispose(): void {
-    clearTimeout(this.syncTimer)
-    this.syncTimer = undefined
-    this.lastPushedZoom = null
-    this.clearPendingNakarteZoomPush()
+    this.locationCoordinator.dispose()
 
     for (const cleanup of this.cleanupFns) cleanup()
     this.cleanupFns = []
-
-    this.nmapsLocation = null
-    this.nakarteLocation = null
-    this.lastPolledUrlLocation = null
-  }
-
-  private markPendingNakarteZoomPush(location: MapLocation): void {
-    this.pendingNakarteZoomPush = normalizeMapLocation(location)
-    clearTimeout(this.pendingNakarteZoomPushTimer)
-    this.pendingNakarteZoomPushTimer = setTimeout(() => {
-      this.pendingNakarteZoomPush = null
-      this.pendingNakarteZoomPushTimer = undefined
-    }, NAKARTE_ZOOM_PUSH_GRACE_MS)
-  }
-
-  private clearPendingNakarteZoomPush(): void {
-    this.pendingNakarteZoomPush = null
-    clearTimeout(this.pendingNakarteZoomPushTimer)
-    this.pendingNakarteZoomPushTimer = undefined
-  }
-
-  public pushLocationToNakarte(location: MapLocation, immediate = false): void {
-    const normalized = normalizeMapLocation(location)
-    if (locationsEqual(normalized, this.nakarteLocation)) return
-
-    this.nmapsLocation = normalized
-
-    const isPanOnlyChange =
-      this.nakarteLocation !== null &&
-      normalized.zoom === this.nakarteLocation.zoom &&
-      !locationsEqual(normalized, this.nakarteLocation)
-    const shouldSendImmediately = immediate || isPanOnlyChange
-
-    const send = (): void => {
-      const zoomChanged = this.lastPushedZoom !== null && this.lastPushedZoom !== normalized.zoom
-      this.lastPushedZoom = normalized.zoom
-
-      if (zoomChanged) {
-        this.markPendingNakarteZoomPush(normalized)
-      }
-
-      postLocationToIframe(this.dom.iframe, normalized)
-      this.nakarteLocation = normalized
-    }
-
-    clearTimeout(this.syncTimer)
-    if (shouldSendImmediately) {
-      send()
-      return
-    }
-
-    this.syncTimer = setTimeout(send, SYNC_DEBOUNCE_MS)
-  }
-
-  private scheduleSyncFromNakarte(location: MapLocation): void {
-    const normalized = normalizeMapLocation(location)
-    if (locationsEqual(normalized, this.nmapsLocation)) return
-
-    this.nakarteLocation = normalized
-    clearTimeout(this.syncTimer)
-
-    const applyToNmaps = (): void => {
-      this.updateNmapsUrl(normalized)
-      this.nmapsLocation = normalized
-    }
-
-    const isPanOnlyChange =
-      this.nmapsLocation !== null && normalized.zoom === this.nmapsLocation.zoom
-
-    if (isPanOnlyChange) {
-      applyToNmaps()
-      return
-    }
-
-    this.syncTimer = setTimeout(applyToNmaps, SYNC_DEBOUNCE_MS)
-  }
-
-  private updateNmapsUrl(location: MapLocation): void {
-    const nextHref = buildNmapsUrlFromLocation(location, window.location.href)
-    if (nextHref === window.location.href) return
-    history.replaceState(history.state, '', nextHref)
-    this.nmapsLocation = location
-  }
-
-  private resolveLocationForNakarteSync(urlLocation: MapLocation): MapLocation {
-    const normalized = normalizeMapLocation(urlLocation)
-    const urlZoomChanged =
-      this.lastPolledUrlLocation !== null && this.lastPolledUrlLocation.zoom !== normalized.zoom
-    this.lastPolledUrlLocation = normalized
-
-    if (!this.nmapsLocation || normalized.zoom === this.nmapsLocation.zoom) {
-      return normalized
-    }
-
-    if (urlZoomChanged) {
-      return normalized
-    }
-
-    return { ...normalized, zoom: this.nmapsLocation.zoom }
   }
 
   private syncNmapsLocationToNakarte(): void {
     const location = readNmapsLocation()
     if (!location) return
-    this.pushLocationToNakarte(this.resolveLocationForNakarteSync(location))
+    const resolved = this.locationCoordinator.resolveLocationForNakarteSync(location)
+    this.locationCoordinator.pushLocationToNakarte(resolved)
   }
 
   private handleNmapsBoundsChange(event: Event): void {
     const location = parseBoundsChangeEvent(event)
     if (!location) return
-    this.pushLocationToNakarte(location, true)
+    this.locationCoordinator.pushLocationToNakarte(location, true)
   }
 
   private handleNmapsWheel(event: WheelEvent): void {
-    if (!this.nmapsLocation) return
+    const nmapsLoc = this.locationCoordinator.getNmapsLocation()
+    if (!nmapsLoc) return
 
     const { steps, newAccumulator } = calculateWheelZoomSteps(
       event.deltaY,
@@ -250,10 +133,10 @@ export class SplitSyncManager {
     this.wheelZoomAccumulator = newAccumulator
     if (steps === 0) return
 
-    const nextZoom = normalizeMapZoom(this.nmapsLocation.zoom - steps)
-    if (nextZoom === this.nmapsLocation.zoom) return
+    const nextZoom = normalizeMapZoom(nmapsLoc.zoom - steps)
+    if (nextZoom === nmapsLoc.zoom) return
 
-    this.pushLocationToNakarte({ ...this.nmapsLocation, zoom: nextZoom }, true)
+    this.locationCoordinator.pushLocationToNakarte({ ...nmapsLoc, zoom: nextZoom }, true)
   }
 
   private handleWindowMessage(event: MessageEvent): void {
@@ -263,26 +146,16 @@ export class SplitSyncManager {
     if (event.source !== this.dom.iframe?.contentWindow) return
 
     if (data.type === 'location' && data.location) {
-      if (
-        this.pendingNakarteZoomPush &&
-        isStaleNakarteZoomEcho(data.location, this.pendingNakarteZoomPush)
-      ) {
-        return
-      }
-
-      if (this.pendingNakarteZoomPush && data.location.zoom === this.pendingNakarteZoomPush.zoom) {
-        this.clearPendingNakarteZoomPush()
-      }
-
-      if (!locationsEqual(data.location, this.nakarteLocation)) {
-        this.scheduleSyncFromNakarte(data.location)
-      }
+      this.locationCoordinator.handleNakarteIncomingLocation(data.location)
       return
     }
 
     if (data.type === 'cursor') {
       if (data.location) {
-        this.cursorTracker.updateLeftCursorFromGeo(data.location, this.nmapsLocation)
+        this.cursorTracker.updateLeftCursorFromGeo(
+          data.location,
+          this.locationCoordinator.getNmapsLocation(),
+        )
         return
       }
 
