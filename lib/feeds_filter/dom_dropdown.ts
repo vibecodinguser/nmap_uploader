@@ -1,14 +1,15 @@
 import { parseStaticSvg } from '@/lib/parse_static_svg'
-import { FEEDS_FILTER_POPUP_ID, FEEDS_FILTER_SELECT_ID, STATUS_FILTER_OPTIONS } from './constants'
+import { FEEDS_FILTER_SELECT_ID, STATUS_FILTER_OPTIONS } from './constants'
 import type { FeedStats, FeedStatusId } from './core'
+import { createDropdownMenu } from './dropdown_menu_builder'
+import { hidePopup, positionPopupFixed } from './dropdown_popup_position'
 import { syncFilterDropdownHeight } from './dropdown_theme'
 
+export * from './dropdown_menu_builder'
+export * from './dropdown_popup_position'
 export * from './dropdown_styles'
 export * from './dropdown_theme'
 
-/**
- * Контроллер дропдауна фильтрации статусов правок.
- */
 export interface FilterDropdownController {
   element: HTMLElement
   popupElement: HTMLElement
@@ -18,9 +19,6 @@ export interface FilterDropdownController {
   teardown: () => void
 }
 
-/**
- * Создает элемент дропдауна в стиле `nk-select nk-select_theme_islands nk-select_size_m`.
- */
 export const createFilterDropdownElement = (
   onFilterChange: (status: FeedStatusId) => void,
   initialFilter: FeedStatusId = 'all',
@@ -64,78 +62,24 @@ export const createFilterDropdownElement = (
 
   selectHost.appendChild(button)
 
-  // Попап меню
-  const popup = document.createElement('div')
-  popup.id = FEEDS_FILTER_POPUP_ID
-  popup.className = 'nk-popup nk-popup_theme_islands nmap-feeds-status-popup'
-  popup.style.display = 'none'
-
-  const menu = document.createElement('div')
-  menu.className = 'nk-menu nk-menu_theme_islands nk-menu_size_m nk-menu_mode_radio'
-  menu.setAttribute('role', 'listbox')
-  popup.appendChild(menu)
-
-  const itemMap = new Map<FeedStatusId, { itemElement: HTMLElement; countBadge: HTMLSpanElement }>()
-
+  let isPopupOpen = false
   let currentSelectedStatus = initialFilter
   let latestStats: FeedStats = { total: 0, published: 0, green: 0, yellow: 0, red: 0 }
 
-  STATUS_FILTER_OPTIONS.forEach((opt) => {
-    const item = document.createElement('div')
-    item.className = `nk-menu__item nk-menu__item_theme_islands ${
-      opt.id === initialFilter ? 'nk-menu__item_checked' : ''
-    }`
-    item.dataset.status = opt.id
-    item.setAttribute('role', 'option')
-    item.setAttribute('aria-selected', opt.id === initialFilter ? 'true' : 'false')
+  const handleSelectOption = (status: FeedStatusId): void => {
+    setActiveFilter(status)
+    closePopup()
+    onFilterChange(status)
+  }
 
-    if (opt.iconClass && opt.svgMarkup) {
-      const icon = document.createElement('span')
-      icon.className = opt.iconClass
-      icon.setAttribute('aria-hidden', 'true')
-      icon.appendChild(parseStaticSvg(opt.svgMarkup))
-      item.appendChild(icon)
-    }
-
-    const label = document.createElement('span')
-    label.textContent = opt.label
-    item.appendChild(label)
-
-    const badge = document.createElement('span')
-    badge.className = 'nmap-status-count-badge'
-    badge.textContent = '0'
-    item.appendChild(badge)
-
-    item.addEventListener(
-      'click',
-      (event) => {
-        event.preventDefault()
-        event.stopPropagation()
-        setActiveFilter(opt.id)
-        closePopup()
-        onFilterChange(opt.id)
-      },
-      true,
-    )
-
-    itemMap.set(opt.id, { itemElement: item, countBadge: badge })
-    menu.appendChild(item)
-  })
-
-  let isPopupOpen = false
+  const { popupElement: popup, itemMap } = createDropdownMenu(initialFilter, handleSelectOption)
 
   const openPopup = (): void => {
     if (!popup.parentElement) {
       document.body.appendChild(popup)
     }
 
-    const rect = button.getBoundingClientRect()
-    popup.style.position = 'fixed'
-    popup.style.top = `${Math.round(rect.bottom + 4)}px`
-    popup.style.left = `${Math.round(rect.left)}px`
-    popup.style.display = 'block'
-    popup.style.visibility = 'visible'
-    popup.style.opacity = '1'
+    positionPopupFixed({ referenceElement: button, popupElement: popup })
 
     selectHost.classList.add('nk-select_opened')
     popup.classList.add('nk-popup_visible')
@@ -155,9 +99,7 @@ export const createFilterDropdownElement = (
       return
     }
 
-    popup.style.display = 'none'
-    popup.style.visibility = 'hidden'
-    popup.classList.remove('nk-popup_visible')
+    hidePopup(popup)
     selectHost.classList.remove('nk-select_opened')
     button.setAttribute('aria-expanded', 'false')
     isPopupOpen = false
