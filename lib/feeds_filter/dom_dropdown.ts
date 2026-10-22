@@ -1,10 +1,14 @@
-import { parseStaticSvg } from '@/lib/parse_static_svg'
-import { FEEDS_FILTER_SELECT_ID, STATUS_FILTER_OPTIONS } from './constants'
+import { FEEDS_FILTER_SELECT_ID } from './constants'
 import type { FeedStats, FeedStatusId } from './core'
+import {
+  createDropdownButtonElements,
+  updateDropdownButtonDisplay,
+} from './dropdown_button_builder'
 import { createDropdownMenu } from './dropdown_menu_builder'
 import { hidePopup, positionPopupFixed } from './dropdown_popup_position'
 import { syncFilterDropdownHeight } from './dropdown_theme'
 
+export * from './dropdown_button_builder'
 export * from './dropdown_menu_builder'
 export * from './dropdown_popup_position'
 export * from './dropdown_styles'
@@ -23,44 +27,8 @@ export const createFilterDropdownElement = (
   onFilterChange: (status: FeedStatusId) => void,
   initialFilter: FeedStatusId = 'all',
 ): FilterDropdownController => {
-  const selectHost = document.createElement('span')
-  selectHost.id = FEEDS_FILTER_SELECT_ID
-  selectHost.className =
-    'nk-select nk-select_theme_islands nk-select_size_m nmap-feeds-status-select'
-
-  const button = document.createElement('button')
-  button.type = 'button'
-  button.className = 'nk-button nk-button_theme_islands nk-button_size_m nk-select__button'
-  button.setAttribute('aria-haspopup', 'listbox')
-  button.setAttribute('aria-expanded', 'false')
-  button.setAttribute('aria-label', 'Фильтр по статусу правок')
-
-  const textSpan = document.createElement('span')
-  textSpan.className = 'nk-button__text nk-select__text'
-
-  const buttonIcon = document.createElement('span')
-  buttonIcon.className = 'nk-icon'
-  buttonIcon.style.display = 'none'
-  buttonIcon.setAttribute('aria-hidden', 'true')
-  textSpan.appendChild(buttonIcon)
-
-  const buttonLabel = document.createElement('span')
-  buttonLabel.textContent = 'Все статусы'
-  textSpan.appendChild(buttonLabel)
-
-  const buttonCount = document.createElement('span')
-  buttonCount.className = 'nmap-status-count-badge'
-  buttonCount.textContent = '0'
-  textSpan.appendChild(buttonCount)
-
-  button.appendChild(textSpan)
-
-  const tickSpan = document.createElement('span')
-  tickSpan.className = 'nk-select__tick'
-  tickSpan.setAttribute('aria-hidden', 'true')
-  button.appendChild(tickSpan)
-
-  selectHost.appendChild(button)
+  const { selectHost, button, buttonLabel, buttonCount, buttonIcon } =
+    createDropdownButtonElements(FEEDS_FILTER_SELECT_ID)
 
   let isPopupOpen = false
   let currentSelectedStatus = initialFilter
@@ -152,30 +120,7 @@ export const createFilterDropdownElement = (
   })
 
   const syncButtonDisplay = (status: FeedStatusId): void => {
-    const option = STATUS_FILTER_OPTIONS.find((opt) => opt.id === status)
-    if (!option) {
-      return
-    }
-
-    buttonLabel.textContent = option.label
-
-    if (option.iconClass && option.svgMarkup) {
-      buttonIcon.className = option.iconClass
-      buttonIcon.replaceChildren(parseStaticSvg(option.svgMarkup))
-      buttonIcon.style.display = 'inline-flex'
-    } else {
-      buttonIcon.className = 'nk-icon'
-      buttonIcon.replaceChildren()
-      buttonIcon.style.display = 'none'
-    }
-
-    let countValue = latestStats.total
-    if (status === 'published') countValue = latestStats.published
-    else if (status === 'green') countValue = latestStats.green
-    else if (status === 'yellow') countValue = latestStats.yellow
-    else if (status === 'red') countValue = latestStats.red
-
-    buttonCount.textContent = String(countValue)
+    updateDropdownButtonDisplay({ buttonLabel, buttonCount, buttonIcon }, status, latestStats)
   }
 
   const setActiveFilter = (status: FeedStatusId): void => {
