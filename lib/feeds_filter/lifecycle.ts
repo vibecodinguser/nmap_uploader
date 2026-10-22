@@ -1,5 +1,6 @@
 import { FeedFilterDomAdapter } from './dom_lifecycle_adapter'
 import { isFeedContainerReadyForFilter } from './feed_mutation_scanner'
+import { attachFeedFilterDomListeners } from './feeds_filter_listeners'
 import {
   attachFilterDropdownToDom,
   ensureFeedFilterStyles,
@@ -9,15 +10,14 @@ import {
   getStoredFeedsFilterEnabled,
 } from './index'
 import {
-  CLICK_RETRY_DELAYS_MS,
   type FeedFilterLifecycleOptions,
-  isFeedTriggerClick,
   STARTUP_RETRY_DELAYS_MS,
   type StorageChangeEmitter,
 } from './lifecycle_config'
 
 export * from './dom_lifecycle_adapter'
 export * from './feed_mutation_scanner'
+export * from './feeds_filter_listeners'
 export * from './lifecycle_config'
 
 /**
@@ -31,6 +31,7 @@ export class FeedFilterLifecycleManager {
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null
   private startupTimeouts: ReturnType<typeof setTimeout>[] = []
   private readonly storageEmitter?: StorageChangeEmitter
+  private cleanupDomListeners?: () => void
 
   constructor(options?: FeedFilterLifecycleOptions) {
     this.storageEmitter = options?.storage
@@ -49,11 +50,9 @@ export class FeedFilterLifecycleManager {
   }
 
   public stop(): void {
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('resize', this.handleWindowResize)
-    }
-    if (typeof document !== 'undefined') {
-      document.removeEventListener('click', this.handleDocumentClick, true)
+    if (this.cleanupDomListeners) {
+      this.cleanupDomListeners()
+      this.cleanupDomListeners = undefined
     }
 
     if (this.storageEmitter) {
@@ -188,13 +187,11 @@ export class FeedFilterLifecycleManager {
       this.storageEmitter.onChanged.addListener(this.handleStorageChange)
     }
 
-    if (typeof document !== 'undefined') {
-      document.addEventListener('click', this.handleDocumentClick, true)
-    }
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener('resize', this.handleWindowResize)
-    }
+    this.cleanupDomListeners = attachFeedFilterDomListeners({
+      isFeatureEnabled: () => this.isFeatureEnabled,
+      checkAndAttachFilter: this.checkAndAttachFilter,
+      syncHeight: () => this.domAdapter.syncHeight(),
+    })
   }
 
   private handleStorageChange = (
@@ -207,27 +204,5 @@ export class FeedFilterLifecycleManager {
         this.setFeatureEnabled(nextValue)
       }
     }
-  }
-
-  private handleDocumentClick = (event: MouseEvent): void => {
-    if (!this.isFeatureEnabled) {
-      return
-    }
-
-    const target = event.target as HTMLElement | null
-    if (!isFeedTriggerClick(target)) {
-      return
-    }
-
-    CLICK_RETRY_DELAYS_MS.forEach((delay) => {
-      setTimeout(this.checkAndAttachFilter, delay)
-    })
-  }
-
-  private handleWindowResize = (): void => {
-    if (!this.isFeatureEnabled) {
-      return
-    }
-    this.domAdapter.syncHeight()
   }
 }
