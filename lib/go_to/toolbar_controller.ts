@@ -16,19 +16,12 @@ import {
 } from '@/lib/go_to/toolbar_mount'
 import { hideGoToTooltip, showGoToTooltip } from '@/lib/go_to_dom'
 import { createGoToServiceButton, GO_TO_SERVICE_BUTTON_ID } from '@/lib/go_to_service_button'
-import {
-  type GoToItem,
-  getActiveGoToItems,
-  getStoredGoToItems,
-  getStoredGoToMenuEnabled,
-} from '@/lib/go_to_settings'
-import { getStoredSplitButtonEnabled } from '@/lib/go_to_split_button'
+import { type GoToItem, getActiveGoToItems, getStoredGoToItems } from '@/lib/go_to_settings'
 import { teardownSplitView } from '@/lib/go_to_split_view'
 import { GO_TO_BUTTON_HOVERED_CLASS } from '@/lib/go_to_styles'
 import { removeAllGoToToolbarButtons, shouldRemountGoToToolbar } from '@/lib/go_to_toolbar'
 import type { TranslateFn } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n/locale.types'
-import { getStoredNotesButtonEnabled } from '@/lib/notes_button'
 import { closeNotesPopup, teardownNotesPopup } from '@/lib/notes_popup'
 import { closePolygonUploadPopup, teardownPolygonUploadPopup } from '@/lib/polygon_upload_popup'
 import {
@@ -38,15 +31,7 @@ import {
 } from './toolbar_buttons_mount'
 
 export * from './toolbar_buttons_mount'
-
-export type GoToToolbarSettings = readonly [boolean, boolean, boolean]
-
-export const loadGoToToolbarSettings = (): Promise<GoToToolbarSettings> => {
-  const menuEnabledPromise = getStoredGoToMenuEnabled()
-  const splitButtonEnabledPromise = getStoredSplitButtonEnabled()
-  const notesButtonEnabledPromise = getStoredNotesButtonEnabled()
-  return Promise.all([menuEnabledPromise, splitButtonEnabledPromise, notesButtonEnabledPromise])
-}
+export * from './toolbar_settings_loader'
 
 export class GoToToolbarController {
   constructor(
