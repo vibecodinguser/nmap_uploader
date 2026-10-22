@@ -16,13 +16,16 @@ import { observeGoToTheme } from '@/lib/go_to_theme'
 import { LOCALE_STORAGE_KEY } from '@/lib/i18n/locale'
 import { getStoredNotesButtonEnabled, NOTES_BUTTON_ENABLED_STORAGE_KEY } from '@/lib/notes_button'
 import { type GoToLifecycleOptions, hasGoToRefreshStorageChange } from './lifecycle_contracts'
+import { attachPageVisibilityListeners } from './page_visibility_listeners'
 import { GoToToolbarMountManager } from './toolbar_mount_manager'
 
 export * from './lifecycle_contracts'
+export * from './page_visibility_listeners'
 export * from './toolbar_mount_manager'
 
 export class GoToToolbarLifecycleManager {
   private cleanupThemeObserver?: () => void
+  private cleanupVisibilityListeners?: () => void
   private refreshPromise?: Promise<void>
   private isRefreshScheduled = false
   public readonly controller: GoToToolbarController
@@ -48,12 +51,9 @@ export class GoToToolbarLifecycleManager {
     this.cleanupThemeObserver = observeGoToTheme()
     await this.mountManager.refreshContentLocale()
 
-    if (typeof document !== 'undefined') {
-      document.addEventListener('visibilitychange', this.handleVisibilityChange)
-    }
-    if (typeof window !== 'undefined') {
-      window.addEventListener('pageshow', this.handlePageShow)
-    }
+    this.cleanupVisibilityListeners = attachPageVisibilityListeners({
+      onPageResume: this.scheduleRefresh,
+    })
 
     if (this.options?.storage) {
       this.options.storage.onChanged.addListener(this.handleStorageChange)
@@ -70,11 +70,9 @@ export class GoToToolbarLifecycleManager {
       this.cleanupThemeObserver?.()
     } catch {}
 
-    if (typeof document !== 'undefined') {
-      document.removeEventListener('visibilitychange', this.handleVisibilityChange)
-    }
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('pageshow', this.handlePageShow)
+    if (this.cleanupVisibilityListeners) {
+      this.cleanupVisibilityListeners()
+      this.cleanupVisibilityListeners = undefined
     }
 
     if (this.options?.storage) {
@@ -139,23 +137,6 @@ export class GoToToolbarLifecycleManager {
       if (this.isRefreshScheduled) {
         void this.runRefresh()
       }
-    }
-  }
-
-  private handlePageResume = (): void => {
-    repairToolbarIcons()
-    this.scheduleRefresh()
-  }
-
-  private handleVisibilityChange = (): void => {
-    if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-      this.handlePageResume()
-    }
-  }
-
-  private handlePageShow = (event: PageTransitionEvent): void => {
-    if (event.persisted) {
-      this.handlePageResume()
     }
   }
 
