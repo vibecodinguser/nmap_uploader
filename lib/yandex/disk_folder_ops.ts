@@ -1,12 +1,16 @@
 import { ERR_NETWORK, ProcessingError } from '@/lib/errors'
-import { getHeaders, safeFetch, throwIfUnauthorized } from './auth'
-import { API_BASE_URL } from './constants'
+import { getHeaders, throwIfUnauthorized } from './auth'
 import {
   formatDiskResponseError,
   isFolderAlreadyExists,
   isParentNotFound,
   readDiskResponseError,
 } from './disk_api_errors'
+import {
+  checkDirectoryExists,
+  createDirectoryAtPath,
+  directoryExistsOnDisk,
+} from './disk_dir_client'
 import { resolveFolderPath } from './disk_path_resolver'
 import {
   APPLICATIONS_FOLDER,
@@ -18,62 +22,8 @@ import {
 } from './disk_path_utils'
 
 export * from './disk_api_errors'
+export * from './disk_dir_client'
 export * from './disk_path_resolver'
-
-export const checkDirectoryExists = async ({
-  apiPath,
-  headers,
-}: {
-  apiPath: string
-  headers: Record<string, string>
-}): Promise<boolean> => {
-  const params = new URLSearchParams({ path: apiPath })
-  const response = await safeFetch(`${API_BASE_URL}?${params}`, { headers })
-  throwIfUnauthorized(response.status, 'Проверка папки на Диске')
-  if (!response.ok) {
-    return false
-  }
-
-  let data: { type?: string }
-  try {
-    data = (await response.json()) as { type?: string }
-  } catch {
-    const diskPath = fromDiskApiPath(apiPath)
-    throw new ProcessingError(ERR_NETWORK, `Некорректный ответ Яндекс.Диска для ${diskPath}`)
-  }
-
-  if (data.type === 'file') {
-    const diskPath = fromDiskApiPath(apiPath)
-    throw new ProcessingError(ERR_NETWORK, `Конфликт: по пути ${diskPath} уже существует файл`)
-  }
-  return data.type === 'dir'
-}
-
-export const directoryExistsOnDisk = async ({
-  logicalPath,
-  headers,
-}: {
-  logicalPath: string
-  headers: Record<string, string>
-}): Promise<boolean> => {
-  for (const apiPath of getDiskApiPathVariants(logicalPath)) {
-    if (await checkDirectoryExists({ apiPath, headers })) {
-      return true
-    }
-  }
-  return false
-}
-
-const createDirectoryAtPath = async ({
-  apiPath,
-  headers,
-}: {
-  apiPath: string
-  headers: Record<string, string>
-}): Promise<Response> => {
-  const params = new URLSearchParams({ path: apiPath })
-  return safeFetch(`${API_BASE_URL}?${params}`, { method: 'PUT', headers })
-}
 
 export const ensureApplicationsFolder = async ({ token }: { token: string }): Promise<void> => {
   const headers = getHeaders(token)
