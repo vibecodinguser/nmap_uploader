@@ -3,8 +3,10 @@
  */
 import { isMagentaColor, RECOLOR_MARKER } from '@/lib/stroke_color/recolor_core'
 import { isExtensionShadowNode, shouldRecolorValue } from './dom_recolor_styles'
+import { collectRoots } from './dom_roots_collector'
 
 export * from './dom_recolor_styles'
+export * from './dom_roots_collector'
 
 export const applyTargetColor = (
   element: SVGElement,
@@ -92,39 +94,6 @@ export const updateMarkedElementColor = (element: Element, toColor: string): voi
   if (changed) {
     element.setAttribute('style', next)
   }
-}
-
-export const collectRoots = (root: ParentNode): ParentNode[] => {
-  const roots: ParentNode[] = [root]
-
-  const elements =
-    root instanceof Document
-      ? root.querySelectorAll('*')
-      : root instanceof Element
-        ? root.querySelectorAll('*')
-        : []
-
-  for (const element of elements) {
-    if (element.shadowRoot) {
-      roots.push(element.shadowRoot)
-      roots.push(...collectRoots(element.shadowRoot))
-    }
-  }
-
-  if (root instanceof Document) {
-    for (const iframe of root.querySelectorAll('iframe')) {
-      try {
-        const frameDocument = iframe.contentDocument
-        if (!frameDocument) continue
-        roots.push(frameDocument)
-        roots.push(...collectRoots(frameDocument))
-      } catch {
-        // cross-origin iframe
-      }
-    }
-  }
-
-  return roots
 }
 
 export const recolorMagentaStrokesInRoot = (root: ParentNode, targetStroke: string): void => {
