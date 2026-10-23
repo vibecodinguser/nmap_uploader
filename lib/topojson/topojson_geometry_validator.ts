@@ -1,10 +1,15 @@
-import { validateArcIndexArray } from './topojson_arcs'
+import { isPlainObject, toProcessingError, validateTopoJsonBbox } from './topojson_coords'
 import {
-  isPlainObject,
-  toProcessingError,
-  validateTopoJsonBbox,
-  validateTopoJsonPosition,
-} from './topojson_coords'
+  type TopoJsonShapeValidator,
+  validateLineStringShape,
+  validateMultiLineStringShape,
+  validateMultiPointShape,
+  validateMultiPolygonShape,
+  validatePointShape,
+  validatePolygonShape,
+} from './topojson_shape_validators'
+
+export * from './topojson_shape_validators'
 
 export const TOPOJSON_GEOMETRY_TYPES = new Set([
   'Point',
@@ -63,20 +68,6 @@ const validateTopoJsonGeometryProperties = (geometry: TopoJsonGeometry, context:
   }
 }
 
-const validateMultiPointCoordinates = (
-  coordinates: unknown,
-  context: string,
-  isQuantized: boolean,
-): void => {
-  if (Array.isArray(coordinates)) {
-    for (let index = 0; index < coordinates.length; index += 1) {
-      validateTopoJsonPosition(coordinates[index], `${context}[${index}]`, isQuantized)
-    }
-  } else {
-    throw toProcessingError(`${context}: должен быть массивом позиций`)
-  }
-}
-
 const validateGeometryCollectionParts = (
   geometries: unknown,
   arcCount: number,
@@ -96,47 +87,6 @@ const validateTopoJsonGeometryOptionalBbox = (bbox: unknown, context: string): v
   if (bbox != null) {
     validateTopoJsonBbox(bbox, `${context}.bbox`)
   }
-}
-
-type TopoJsonShapeValidator = (
-  geom: TopoJsonGeometry,
-  arcCount: number,
-  isQuantized: boolean,
-  context: string,
-) => void
-
-const validatePointShape: TopoJsonShapeValidator = (geom, _arcCount, isQuantized, context) => {
-  validateTopoJsonPosition(geom.coordinates, `${context}.coordinates`, isQuantized)
-}
-
-const validateMultiPointShape: TopoJsonShapeValidator = (geom, _arcCount, isQuantized, context) => {
-  validateMultiPointCoordinates(geom.coordinates, `${context}.coordinates`, isQuantized)
-}
-
-const validateLineStringShape: TopoJsonShapeValidator = (geom, arcCount, _isQuantized, context) => {
-  validateArcIndexArray(geom.arcs, arcCount, `${context}.arcs`, 1)
-}
-
-const validateMultiLineStringShape: TopoJsonShapeValidator = (
-  geom,
-  arcCount,
-  _isQuantized,
-  context,
-) => {
-  validateArcIndexArray(geom.arcs, arcCount, `${context}.arcs`, 2)
-}
-
-const validatePolygonShape: TopoJsonShapeValidator = (geom, arcCount, _isQuantized, context) => {
-  validateArcIndexArray(geom.arcs, arcCount, `${context}.arcs`, 2)
-}
-
-const validateMultiPolygonShape: TopoJsonShapeValidator = (
-  geom,
-  arcCount,
-  _isQuantized,
-  context,
-) => {
-  validateArcIndexArray(geom.arcs, arcCount, `${context}.arcs`, 3)
 }
 
 const validateGeometryCollectionShape: TopoJsonShapeValidator = (
