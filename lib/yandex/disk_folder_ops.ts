@@ -3,7 +3,6 @@ import { getHeaders, throwIfUnauthorized } from './auth'
 import {
   formatDiskResponseError,
   isFolderAlreadyExists,
-  isParentNotFound,
   readDiskResponseError,
 } from './disk_api_errors'
 import {
@@ -12,18 +11,13 @@ import {
   directoryExistsOnDisk,
 } from './disk_dir_client'
 import { resolveFolderPath } from './disk_path_resolver'
-import {
-  APPLICATIONS_FOLDER,
-  fromDiskApiPath,
-  getDiskApiPathVariants,
-  getParentLogicalPath,
-  isApplicationsFolder,
-  toDiskApiPath,
-} from './disk_path_utils'
+import { APPLICATIONS_FOLDER, fromDiskApiPath, getDiskApiPathVariants } from './disk_path_utils'
+import { createDirectorySegment } from './disk_segment_creator'
 
 export * from './disk_api_errors'
 export * from './disk_dir_client'
 export * from './disk_path_resolver'
+export * from './disk_segment_creator'
 
 export const ensureApplicationsFolder = async ({ token }: { token: string }): Promise<void> => {
   const headers = getHeaders(token)
@@ -62,107 +56,6 @@ export const ensureApplicationsFolder = async ({ token }: { token: string }): Pr
   )
 }
 
-const throwIfForbidden = (status: number, path: string): void => {
-  if (status !== 403) {
-    return
-  }
-  const message = [
-    `Нет доступа к Яндекс.Диску (${path}).`,
-    'Проверьте права cloud_api:disk.write в OAuth-приложении и войдите заново',
-  ].join(' ')
-  throw new ProcessingError(ERR_NETWORK, message)
-}
-
-const handleMissingParent = async ({
-  logicalPath,
-  token,
-  headers,
-}: {
-  logicalPath: string
-  token: string
-  headers: Record<string, string>
-}): Promise<{ success: boolean; response?: Response; errorText?: string }> => {
-  const parentPath = getParentLogicalPath(logicalPath)
-  if (parentPath) {
-    await createDirectorySegment({ logicalPath: parentPath, token })
-  }
-
-  let lastResponse: Response | undefined
-  let lastErrorText: string | undefined
-
-  const variants = getDiskApiPathVariants(logicalPath)
-  for (const variantPath of variants) {
-    const createResponse = await createDirectoryAtPath({ apiPath: variantPath, headers })
-    if (createResponse.status === 201) {
-      return { success: true }
-    }
-
-    const { text: errorText, parsed } = await readDiskResponseError(createResponse)
-
-    const existsAlready = isFolderAlreadyExists(createResponse.status, parsed)
-    if (existsAlready && (await checkDirectoryExists({ apiPath: variantPath, headers }))) {
-      return { success: true }
-    }
-
-    lastResponse = createResponse
-    lastErrorText = errorText
-
-    if (!isParentNotFound(createResponse.status, parsed)) {
-      return { success: false, response: lastResponse, errorText: lastErrorText }
-    }
-  }
-
-  return { success: false, response: lastResponse, errorText: lastErrorText }
-}
-
-const createDirectorySegment = async ({
-  logicalPath,
-  token,
-}: {
-  logicalPath: string
-  token: string
-}): Promise<void> => {
-  const headers = getHeaders(token)
-
-  if (await directoryExistsOnDisk({ logicalPath, headers })) {
-    return
-  }
-
-  if (isApplicationsFolder(logicalPath)) {
-    await ensureApplicationsFolder({ token })
-    return
-  }
-
-  const apiPath = toDiskApiPath(logicalPath)
-  let createResponse = await createDirectoryAtPath({ apiPath, headers })
-  if (createResponse.status === 201) {
-    return
-  }
-
-  throwIfUnauthorized(createResponse.status, 'Создание папки на Диске')
-  let { text: errorText, parsed } = await readDiskResponseError(createResponse)
-
-  const existsAlready = isFolderAlreadyExists(createResponse.status, parsed)
-  if (existsAlready && (await checkDirectoryExists({ apiPath, headers }))) {
-    return
-  }
-
-  if (isParentNotFound(createResponse.status, parsed)) {
-    const parentResult = await handleMissingParent({ logicalPath, token, headers })
-    if (parentResult.success) {
-      return
-    }
-    if (parentResult.response) {
-      createResponse = parentResult.response
-      errorText = parentResult.errorText || ''
-    }
-  }
-
-  throwIfForbidden(createResponse.status, logicalPath)
-  const errorMsg = formatDiskResponseError(createResponse, errorText)
-  throw new ProcessingError(ERR_NETWORK, `Не удалось создать папку ${logicalPath}: ${errorMsg}`)
-}
-
 export const ensureFolderExists = async ({
   path,
   token,
@@ -183,7 +76,11 @@ export const ensureFolderExists = async ({
       } else {
         currentPath = segment
       }
-      await createDirectorySegment({ logicalPath: currentPath, token })
+      await createDirectorySegment({
+        logicalPath: currentPath,
+        token,
+        ensureAppFolder: ensureApplicationsFolder,
+      })
     }
   }
 }
