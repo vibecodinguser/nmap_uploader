@@ -9,16 +9,14 @@ import {
   findFeedContainer,
   getStoredFeedsFilterEnabled,
 } from './index'
-import {
-  type FeedFilterLifecycleOptions,
-  STARTUP_RETRY_DELAYS_MS,
-  type StorageChangeEmitter,
-} from './lifecycle_config'
+import type { FeedFilterLifecycleOptions, StorageChangeEmitter } from './lifecycle_config'
+import { createRetryScheduler, type RetrySchedulerController } from './retry_scheduler'
 
 export * from './dom_lifecycle_adapter'
 export * from './feed_mutation_scanner'
 export * from './feeds_filter_listeners'
 export * from './lifecycle_config'
+export * from './retry_scheduler'
 
 /**
  * Управляет полным жизненным циклом фильтра ленты правок:
@@ -28,13 +26,16 @@ export class FeedFilterLifecycleManager {
   private isFeatureEnabled = false
   private readonly domAdapter = new FeedFilterDomAdapter()
   private bodyObserver: MutationObserver | null = null
-  private heartbeatTimer: ReturnType<typeof setInterval> | null = null
-  private startupTimeouts: ReturnType<typeof setTimeout>[] = []
+  private readonly retryScheduler: RetrySchedulerController
   private readonly storageEmitter?: StorageChangeEmitter
   private cleanupDomListeners?: () => void
 
   constructor(options?: FeedFilterLifecycleOptions) {
     this.storageEmitter = options?.storage
+    this.retryScheduler = createRetryScheduler({
+      onRetry: () => this.checkAndAttachFilter(),
+      onHeartbeatTick: () => this.handleHeartbeatTick(),
+    })
   }
 
   public async start(): Promise<void> {
@@ -42,8 +43,7 @@ export class FeedFilterLifecycleManager {
 
     this.setupBodyObserver()
     this.checkAndAttachFilter()
-    this.scheduleStartupRetries()
-    this.setupHeartbeat()
+    this.retryScheduler.start()
     this.setupEventListeners()
 
     await this.initSettings()
@@ -59,15 +59,7 @@ export class FeedFilterLifecycleManager {
       this.storageEmitter.onChanged.removeListener(this.handleStorageChange)
     }
 
-    if (this.heartbeatTimer) {
-      clearInterval(this.heartbeatTimer)
-      this.heartbeatTimer = null
-    }
-
-    for (const timeoutId of this.startupTimeouts) {
-      clearTimeout(timeoutId)
-    }
-    this.startupTimeouts = []
+    this.retryScheduler.stop()
 
     if (this.bodyObserver) {
       this.bodyObserver.disconnect()
@@ -135,38 +127,24 @@ export class FeedFilterLifecycleManager {
     })
   }
 
-  private scheduleStartupRetries(): void {
-    STARTUP_RETRY_DELAYS_MS.forEach((delay) => {
-      const timer = setTimeout(() => {
-        this.checkAndAttachFilter()
-      }, delay)
-      this.startupTimeouts.push(timer)
-    })
-  }
+  private handleHeartbeatTick(): void {
+    if (!this.isFeatureEnabled) {
+      return
+    }
 
-  private setupHeartbeat(): void {
-    this.heartbeatTimer = setInterval(() => {
-      if (!this.isFeatureEnabled) {
-        return
+    const container = findFeedContainer()
+    const { ready } = isFeedContainerReadyForFilter(container)
+    if (!ready || !container) {
+      if (this.domAdapter.getActiveContainer() || document.getElementById(FEEDS_FILTER_SELECT_ID)) {
+        this.removeFilterDropdown()
       }
+      return
+    }
 
-      const container = findFeedContainer()
-      const { ready } = isFeedContainerReadyForFilter(container)
-      if (!ready || !container) {
-        if (
-          this.domAdapter.getActiveContainer() ||
-          document.getElementById(FEEDS_FILTER_SELECT_ID)
-        ) {
-          this.removeFilterDropdown()
-        }
-        return
-      }
-
-      const existingSelect = document.getElementById(FEEDS_FILTER_SELECT_ID)
-      if (!existingSelect?.isConnected || container !== this.domAdapter.getActiveContainer()) {
-        this.domAdapter.attachFilterToContainer(container, this.isFeatureEnabled)
-      }
-    }, 1000)
+    const existingSelect = document.getElementById(FEEDS_FILTER_SELECT_ID)
+    if (!existingSelect?.isConnected || container !== this.domAdapter.getActiveContainer()) {
+      this.domAdapter.attachFilterToContainer(container, this.isFeatureEnabled)
+    }
   }
 
   private async initSettings(): Promise<void> {
