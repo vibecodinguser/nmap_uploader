@@ -10,7 +10,6 @@ import {
   createDirectoryAtPath,
   directoryExistsOnDisk,
 } from './disk_dir_client'
-import { resolveFolderPath } from './disk_path_resolver'
 import { APPLICATIONS_FOLDER, fromDiskApiPath, getDiskApiPathVariants } from './disk_path_utils'
 import { createDirectorySegment } from './disk_segment_creator'
 
