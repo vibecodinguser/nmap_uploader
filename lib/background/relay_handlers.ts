@@ -1,62 +1,15 @@
 /**
  * Обработчики ретрансляции сообщений в открытые вкладки Народной карты.
  */
-import { browser } from 'wxt/browser'
 import type { MessageHandler } from '@/lib/background/message_router'
 import { runBackgroundTask } from '@/lib/background/tasks'
 import { GO_TO_REFRESH_ACTION } from '@/lib/go_to_notify'
-import { collectMapTabIds, isMapTabUrl } from '@/lib/map_tab'
-import {
-  isTrustedNmapsOrPanelSender,
-  logRejectedMessage,
-  type RuntimeMessageSender,
-} from '@/lib/message_auth'
+import { isTrustedNmapsOrPanelSender, logRejectedMessage } from '@/lib/message_auth'
 import { CLOSE_PANEL_SIDEBAR_ACTION } from '@/lib/panel_sidebar_notify'
 import { CANCEL_POINT_PICKING_ACTION, START_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
-import { reloadMapEditorTabs } from '@/lib/reload_editor_page'
+import { processRelayToMapTabs, processReloadEditor } from './relay_sender'
 
-export const relayMessageToMapTabs = async (
-  sender: RuntimeMessageSender,
-  message: Record<string, unknown>,
-): Promise<void> => {
-  const senderTabId = sender.tab?.id
-  if (senderTabId && isMapTabUrl(sender.tab?.url)) {
-    await browser.tabs.sendMessage(senderTabId, message)
-  } else {
-    const tabIds = await collectMapTabIds()
-    const sendRelayToTab = (tabId: number) => browser.tabs.sendMessage(tabId, message)
-    const promises = tabIds.map(sendRelayToTab)
-    await Promise.allSettled(promises)
-  }
-}
-
-export const processRelayToMapTabs = async (
-  sender: RuntimeMessageSender,
-  relayMessage: Record<string, unknown>,
-  sendResponse: (response: { ok: boolean }) => void,
-  logLabel: string,
-): Promise<void> => {
-  try {
-    await relayMessageToMapTabs(sender, relayMessage)
-    sendResponse({ ok: true })
-  } catch (error: unknown) {
-    console.warn(`[nmap_uploader] ${logLabel} relay failed:`, error)
-    sendResponse({ ok: false })
-  }
-}
-
-export const processReloadEditor = async (
-  sender: RuntimeMessageSender,
-  sendResponse: (response: { ok: boolean }) => void,
-): Promise<void> => {
-  try {
-    const ok = await reloadMapEditorTabs({ preferredTabId: sender.tab?.id })
-    sendResponse({ ok })
-  } catch (error: unknown) {
-    console.warn('[nmap_uploader] reloadEditorPage failed:', error)
-    sendResponse({ ok: false })
-  }
-}
+export * from './relay_sender'
 
 export const handleReloadEditor: MessageHandler = (_message, sender, sendResponse) => {
   if (isTrustedNmapsOrPanelSender(sender)) {
