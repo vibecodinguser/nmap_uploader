@@ -1,133 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createNativeTracingAdapter } from '@/lib/nmaps_native_tracing_adapter'
 import {
-  createNativeTracingAdapter,
-  type NativeTracingMap,
-} from '@/lib/nmaps_native_tracing_adapter'
-
-type Coordinate = [number, number]
-
-class FakePolygon {
-  constructor(private coordinates: Coordinate[][]) {}
-
-  getCoordinates(): Coordinate[][] {
-    return this.coordinates
-  }
-
-  setCoordinates(value: Coordinate[][]): this {
-    this.coordinates = value
-    return this
-  }
-
-  getType(): string {
-    return 'Polygon'
-  }
-
-  isTypeOf(type: string): boolean {
-    return type === 'Polygon'
-  }
-
-  isEqual(other: FakePolygon): boolean {
-    return JSON.stringify(other.getCoordinates()) === JSON.stringify(this.coordinates)
-  }
-}
-
-class FakeGeometryFactory {
-  createPoint(): object {
-    return {}
-  }
-
-  createPolyline(): object {
-    return {}
-  }
-
-  createCollection(): object {
-    return {}
-  }
-
-  createPolygon(coordinates: Coordinate[][]): FakePolygon {
-    return new FakePolygon(coordinates)
-  }
-}
-
-const nativeCandidate = {
-  getId: () => 'native',
-  getGeometry: () => new FakePolygon([[]]),
-}
-
-class FakeHotspot {
-  attrs = {
-    disabled: true,
-    hotspotWidth: 10,
-    ignoreZMax: true,
-    simplify: false,
-    zIndex: -1,
-  }
-
-  onRender(): void {}
-  onInit(): void {}
-  onUnmount(): void {}
-
-  getGeoObjectsByCoords(_coordinates: Coordinate): Promise<unknown[]> {
-    return Promise.resolve([nativeCandidate])
-  }
-}
-
-type Factory = (
-  module: { exports: Record<string, unknown> },
-  exports: Record<string, unknown>,
-  require: unknown,
-) => void
-
-type Chunk = [number[], Record<string, Factory>]
-
-const target = {
-  id: 'polygon',
-  coordinates: [
-    [0, 0],
-    [100, 0],
-    [100, 100],
-    [0, 0],
-  ] as Coordinate[],
-}
-
-const createMap = (): NativeTracingMap => ({
-  getZoom: () => 18,
-  options: {
-    get: () => ({
-      toGlobalPixels: (coordinates: Coordinate) => coordinates,
-    }),
-  },
-})
-
-const installModules = (
-  globalObject: Record<string, unknown>,
-  GeometryFactory: typeof FakeGeometryFactory = FakeGeometryFactory,
-  Hotspot: typeof FakeHotspot = FakeHotspot,
-): void => {
-  const chunks = globalObject.webpackChunknmaps as Chunk[] & {
-    push: (chunk: Chunk) => number
-  }
-  const factories: Record<string, Factory> = {}
-  chunks.push = (chunk: Chunk) => {
-    Object.assign(factories, chunk[1])
-    return 1
-  }
-  chunks.push([
-    [265],
-    {
-      48590: (_module, exports) => {
-        exports.A = GeometryFactory
-      },
-      61653: (_module, exports) => {
-        exports.A = Hotspot
-      },
-    },
-  ])
-  for (const moduleId of ['48590', '61653']) {
-    const module = { exports: {} as Record<string, unknown> }
-    factories[moduleId](module, module.exports, vi.fn())
-  }
-}
+  type Coordinate,
+  createTracingMap,
+  FakeGeometryFactory,
+  FakeHotspot,
+  type FakePolygon,
+  installTracingModules,
+  nativeCandidate,
+  tracingTarget,
+} from './nmaps_native_tracing_fixtures'
 
 describe('createNativeTracingAdapter', () => {
   beforeEach(() => {
@@ -136,10 +18,10 @@ describe('createNativeTracingAdapter', () => {
 
   it('активируется только после обнаружения обоих нативных контрактов', () => {
     const globalObject: Record<string, unknown> = {}
-    const adapter = createNativeTracingAdapter({ globalObject, getMap: createMap })
+    const adapter = createNativeTracingAdapter({ globalObject, getMap: createTracingMap })
 
     expect(adapter.getCapability()).toBe('pending')
-    installModules(globalObject)
+    installTracingModules(globalObject)
     expect(adapter.getCapability()).toBe('active')
 
     adapter.destroy()
@@ -147,9 +29,9 @@ describe('createNativeTracingAdapter', () => {
 
   it('добавляет read-only цель возле ребра и не изменяет исходных кандидатов', async () => {
     const globalObject: Record<string, unknown> = {}
-    const adapter = createNativeTracingAdapter({ globalObject, getMap: createMap })
-    installModules(globalObject)
-    adapter.setTargets([target])
+    const adapter = createNativeTracingAdapter({ globalObject, getMap: createTracingMap })
+    installTracingModules(globalObject)
+    adapter.setTargets([tracingTarget])
     const hotspot = new FakeHotspot()
     const original = await Promise.resolve([nativeCandidate])
 
@@ -163,15 +45,15 @@ describe('createNativeTracingAdapter', () => {
     expect(Object.isFrozen(result[1])).toBe(true)
     const geometry = (result[1] as { getGeometry: () => FakePolygon }).getGeometry()
     expect(geometry.getType()).toBe('Polygon')
-    expect(geometry.getCoordinates()[0]).toEqual(target.coordinates)
+    expect(geometry.getCoordinates()[0]).toEqual(tracingTarget.coordinates)
     adapter.destroy()
   })
 
   it('не добавляет цель вне hotspot-порога', async () => {
     const globalObject: Record<string, unknown> = {}
-    const adapter = createNativeTracingAdapter({ globalObject, getMap: createMap })
-    installModules(globalObject)
-    adapter.setTargets([target])
+    const adapter = createNativeTracingAdapter({ globalObject, getMap: createTracingMap })
+    installTracingModules(globalObject)
+    adapter.setTargets([tracingTarget])
 
     const result = await new FakeHotspot().getGeoObjectsByCoords([40, 20])
 
@@ -189,9 +71,9 @@ describe('createNativeTracingAdapter', () => {
       }
     }
     const globalObject: Record<string, unknown> = {}
-    const adapter = createNativeTracingAdapter({ globalObject, getMap: createMap })
-    installModules(globalObject, FakeGeometryFactory, HotspotWithDuplicate)
-    adapter.setTargets([target])
+    const adapter = createNativeTracingAdapter({ globalObject, getMap: createTracingMap })
+    installTracingModules(globalObject, FakeGeometryFactory, HotspotWithDuplicate)
+    adapter.setTargets([tracingTarget])
 
     const withTarget = await new HotspotWithDuplicate().getGeoObjectsByCoords([40, 6])
     adapter.setTargets([])
@@ -208,9 +90,9 @@ describe('createNativeTracingAdapter', () => {
 
   it('не расширяет hotspot без признаков штатного tracer-provider', async () => {
     const globalObject: Record<string, unknown> = {}
-    const adapter = createNativeTracingAdapter({ globalObject, getMap: createMap })
-    installModules(globalObject)
-    adapter.setTargets([target])
+    const adapter = createNativeTracingAdapter({ globalObject, getMap: createTracingMap })
+    installTracingModules(globalObject)
+    adapter.setTargets([tracingTarget])
     const hotspot = new FakeHotspot()
     hotspot.attrs.disabled = false
 
@@ -220,10 +102,10 @@ describe('createNativeTracingAdapter', () => {
 
   it('выбирает ближайший из нескольких полигонов', async () => {
     const globalObject: Record<string, unknown> = {}
-    const adapter = createNativeTracingAdapter({ globalObject, getMap: createMap })
-    installModules(globalObject)
+    const adapter = createNativeTracingAdapter({ globalObject, getMap: createTracingMap })
+    installTracingModules(globalObject)
     adapter.setTargets([
-      target,
+      tracingTarget,
       {
         id: 'near-second',
         coordinates: [
@@ -246,8 +128,8 @@ describe('createNativeTracingAdapter', () => {
 
   it('при равном расстоянии выбирает первую цель и добавляет один candidate', async () => {
     const globalObject: Record<string, unknown> = {}
-    const adapter = createNativeTracingAdapter({ globalObject, getMap: createMap })
-    installModules(globalObject)
+    const adapter = createNativeTracingAdapter({ globalObject, getMap: createTracingMap })
+    installTracingModules(globalObject)
     adapter.setTargets([
       {
         id: 'first',
@@ -287,8 +169,8 @@ describe('createNativeTracingAdapter', () => {
     const original = InvalidHotspot.prototype.getGeoObjectsByCoords
     const debug = vi.spyOn(console, 'debug').mockImplementation(() => {})
     const globalObject: Record<string, unknown> = {}
-    const adapter = createNativeTracingAdapter({ globalObject, getMap: createMap })
-    installModules(globalObject, FakeGeometryFactory, InvalidHotspot)
+    const adapter = createNativeTracingAdapter({ globalObject, getMap: createTracingMap })
+    installTracingModules(globalObject, FakeGeometryFactory, InvalidHotspot)
 
     await new InvalidHotspot().getGeoObjectsByCoords([40, 6])
 
@@ -301,8 +183,8 @@ describe('createNativeTracingAdapter', () => {
   it('destroy восстанавливает исходный prototype method', () => {
     const original = FakeHotspot.prototype.getGeoObjectsByCoords
     const globalObject: Record<string, unknown> = {}
-    const adapter = createNativeTracingAdapter({ globalObject, getMap: createMap })
-    installModules(globalObject)
+    const adapter = createNativeTracingAdapter({ globalObject, getMap: createTracingMap })
+    installTracingModules(globalObject)
 
     expect(FakeHotspot.prototype.getGeoObjectsByCoords).not.toBe(original)
     adapter.destroy()
