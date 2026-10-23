@@ -1,4 +1,3 @@
-import { browser } from 'wxt/browser'
 import { normalizeDisplayTargetDate } from '@/lib/date_format'
 import { isAllowedFile } from '@/lib/formats'
 import { processGeoFile } from '@/lib/geo_converters'
@@ -8,14 +7,12 @@ import {
   resolveReloadAfterUploadPreference,
   triggerEditorReloadIfNeeded,
 } from '@/lib/reload_after_upload'
-import {
-  buildExpiredSessionLogs,
-  ensureUploadAuth,
-  hasUploadAuthError,
-  prepareUploadLocale,
-} from './auth_flow'
+import { buildExpiredSessionLogs, hasUploadAuthError } from './auth_flow'
 import { createUploadLog, deriveUploadStatus } from './logs'
+import { defaultEnsureAuth, defaultUploadProcessedFiles } from './pipeline_adapters'
 import type { ProcessedFileInput, UploadAuthResult, UploadLogEntry, UploadStatus } from './types'
+
+export * from './pipeline_adapters'
 
 export const UPLOAD_PROGRESS = {
   reset: 0,
@@ -50,29 +47,6 @@ export type UploadPipelineResult = {
   ok: boolean
   status: UploadStatus
   logs: UploadLogEntry[]
-}
-
-const defaultEnsureAuth = async ({
-  onAuthenticated,
-}: {
-  onAuthenticated?: () => void
-}): Promise<UploadAuthResult> => {
-  await prepareUploadLocale()
-  return ensureUploadAuth({ onAuthenticated })
-}
-
-const defaultUploadProcessedFiles = async ({
-  processed,
-  targetDate,
-}: {
-  processed: ProcessedFileInput
-  targetDate?: string
-}) => {
-  return (await browser.runtime.sendMessage({
-    action: 'uploadProcessedFiles',
-    files: [processed],
-    targetDate,
-  })) as { logs?: UploadLogEntry[]; ok?: boolean }
 }
 
 export const executeUploadPipeline = async ({
