@@ -9,7 +9,9 @@ import {
   clearSplitLayout,
   LEFT_CURSOR_OVERLAY_CLASS,
   mountSplitDomElements,
+  RIGHT_CURSOR_OVERLAY_CLASS,
   readNmapsLocation,
+  SPLIT_ROOT_ID,
   type SplitDomElements,
   type SplitLayoutState,
   SplitSyncManager,
@@ -39,14 +41,22 @@ const cleanupDomAndSync = (): void => {
   syncManager?.dispose()
   syncManager = null
 
+  // Удаляем инстанс и любые дубликаты/остатки в DOM
   domElements?.splitRoot.remove()
-  document.querySelector(`.${LEFT_CURSOR_OVERLAY_CLASS}`)?.remove()
+  document.getElementById(SPLIT_ROOT_ID)?.remove()
+  document.querySelectorAll('.nmap-uploader-split').forEach((el) => {
+    el.remove()
+  })
+  document.querySelectorAll(`.${LEFT_CURSOR_OVERLAY_CLASS}`).forEach((el) => {
+    el.remove()
+  })
+  document.querySelectorAll(`.${RIGHT_CURSOR_OVERLAY_CLASS}`).forEach((el) => {
+    el.remove()
+  })
   domElements = null
 
-  if (layoutState) {
-    clearSplitLayout(layoutState)
-    layoutState = null
-  }
+  clearSplitLayout(layoutState)
+  layoutState = null
 }
 
 const mountSplitView = (): boolean => {

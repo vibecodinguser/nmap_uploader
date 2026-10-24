@@ -76,6 +76,18 @@ export const clearNakRootResize = (targetResizedElements: ResizedElementStyle[])
     element.style.maxWidth = maxWidth
     element.removeAttribute(SPLIT_RESIZED_ATTR)
   }
+
+  // Защита: сброс инлайн-стилей у всех элементов, если они были затронуты или пересозданы
+  for (const selector of NAK_ROOT_SELECTORS) {
+    const elements = document.querySelectorAll(selector)
+    elements.forEach((el) => {
+      if (el instanceof HTMLElement && el.hasAttribute(SPLIT_RESIZED_ATTR)) {
+        el.style.width = ''
+        el.style.maxWidth = ''
+        el.removeAttribute(SPLIT_RESIZED_ATTR)
+      }
+    })
+  }
 }
 
 export type SplitLayoutState = {
@@ -99,14 +111,28 @@ export const applySplitLayout = (): SplitLayoutState => {
   return state
 }
 
-export const clearSplitLayout = (state: SplitLayoutState): void => {
+export const clearSplitLayout = (state?: SplitLayoutState | null): void => {
   document.documentElement.classList.remove(GO_TO_SPLIT_ACTIVE_CLASS)
-  document.documentElement.style.overflow = state.savedHtmlOverflow
-  document.body.style.overflow = state.savedBodyOverflow
-  clearNakRootResize(state.resizedElements)
-  state.resizedElements = []
-  state.savedHtmlOverflow = ''
-  state.savedBodyOverflow = ''
+  document.body.classList.remove(GO_TO_SPLIT_ACTIVE_CLASS)
+
+  if (state) {
+    document.documentElement.style.overflow = state.savedHtmlOverflow
+    document.body.style.overflow = state.savedBodyOverflow
+    clearNakRootResize(state.resizedElements)
+    state.resizedElements = []
+    state.savedHtmlOverflow = ''
+    state.savedBodyOverflow = ''
+  } else {
+    document.documentElement.style.overflow = ''
+    document.body.style.overflow = ''
+    clearNakRootResize([])
+  }
+
+  // Гарантированно восстанавливаем ширину html и body
+  document.documentElement.style.width = ''
+  document.documentElement.style.maxWidth = ''
+  document.body.style.width = ''
+  document.body.style.maxWidth = ''
 }
 
 export type SplitDomElements = {
