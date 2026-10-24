@@ -24,6 +24,8 @@ export const NAK_ROOT_SELECTORS = [
   '.nk-map-editor-view',
 ] as const
 
+export type SplitViewStatus = 'closed' | 'opening' | 'open' | 'closing'
+
 export type PanelDimensions = {
   width: number
   height: number

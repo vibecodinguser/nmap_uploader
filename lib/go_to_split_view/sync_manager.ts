@@ -102,6 +102,10 @@ export class SplitSyncManager {
     this.locationCoordinator.pushLocationToNakarte(location, immediate)
   }
 
+  public getNmapsLocation(): MapLocation | null {
+    return this.locationCoordinator.getNmapsLocation()
+  }
+
   public dispose(): void {
     this.locationCoordinator.dispose()
 

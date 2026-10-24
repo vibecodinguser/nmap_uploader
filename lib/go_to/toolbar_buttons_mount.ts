@@ -39,7 +39,8 @@ export const mountSplitButtonView = ({ getTranslator, onHideMenu }: ToolbarActio
     const btn = createSplitViewButton(label)
     goToServiceButton.insertAdjacentElement('afterend', btn)
     const created = getSplitButton()
-    if (created) {
+    if (created && !created.dataset.nmapSplitBound) {
+      created.dataset.nmapSplitBound = 'true'
       created.addEventListener('click', (e) => {
         e.preventDefault()
         e.stopPropagation()
@@ -61,6 +62,19 @@ export const mountSplitButtonView = ({ getTranslator, onHideMenu }: ToolbarActio
         }
       })
     }
+  }
+
+  const existingButton = getSplitButton()
+  if (existingButton && !existingButton.dataset.nmapSplitBound) {
+    existingButton.dataset.nmapSplitBound = 'true'
+    existingButton.addEventListener('click', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      onHideMenu()
+      closePolygonUploadPopup()
+      closeNotesPopup()
+      toggleSplitView()
+    })
   }
 
   showSplitButton()
