@@ -6,6 +6,7 @@ import type { MapLocation } from '@/lib/go_to_link'
 import { clampMarkerPosition } from '@/lib/go_to_split_view/core'
 import {
   getLeftPanelSize,
+  getNmapsMapViewportBounds,
   getRightPanelSize,
   type SplitDomElements,
   setMarkerElementPosition,
@@ -66,7 +67,11 @@ export class SplitCursorTracker {
       return
     }
 
-    const pixel = latLngToPanelPixel(location, nmapsLocation, panel)
+    const mapBounds = getNmapsMapViewportBounds()
+    const pixel = latLngToPanelPixel(location, nmapsLocation, panel, 'spherical', {
+      cx: mapBounds.cx,
+      cy: mapBounds.cy,
+    })
     if (!pixel) {
       this.hideLeftCursorMarker()
       return
@@ -100,7 +105,11 @@ export class SplitCursorTracker {
       return
     }
 
-    const cursor = mouseToLatLng(clientX, clientY, view, panel)
+    const mapBounds = getNmapsMapViewportBounds()
+    const cursor = mouseToLatLng(clientX, clientY, view, panel, 'spherical', {
+      cx: mapBounds.cx,
+      cy: mapBounds.cy,
+    })
     this.updateRightCursorFromGeo(cursor, nakarteLocation)
   }
 

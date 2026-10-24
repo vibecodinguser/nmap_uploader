@@ -108,8 +108,8 @@ export const subscribeToMapEvents = (map: YmapsMapLike): void => {
       const zoom = map.getZoom()
       if (isValidMapView(center, zoom)) {
         notifyNmapsBoundsChange({
-          latitude: center[0],
-          longitude: center[1],
+          latitude: center[1],
+          longitude: center[0],
           zoom,
         })
       }

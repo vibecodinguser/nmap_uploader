@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { centerMapOnLocation, NmapsObjectDrawer } from '@/lib/nmaps'
+import { centerMapOnLocation, NmapsObjectDrawer, requestMapRepaint } from '@/lib/nmaps'
 
 describe('nmaps repaint & object_drawer', () => {
   beforeEach(() => {
@@ -10,6 +10,26 @@ describe('nmaps repaint & object_drawer', () => {
   afterEach(() => {
     vi.clearAllTimers()
     vi.useRealTimers()
+  })
+
+  describe('requestMapRepaint', () => {
+    it('синхронно вызывает fitToViewport и центрирует карту при передаче detail с координатами', () => {
+      const fitMock = vi.fn()
+      const setCenterMock = vi.fn()
+      const mockMap = {
+        container: { fitToViewport: fitMock },
+        setCenter: setCenterMock,
+      } as any
+
+      const event = new CustomEvent('nmaps:mapResize', {
+        detail: { latitude: 55.75, longitude: 37.61, zoom: 16 },
+      })
+
+      requestMapRepaint(event, () => mockMap)
+
+      expect(fitMock).toHaveBeenCalled()
+      expect(setCenterMock).toHaveBeenCalledWith([37.61, 55.75], 16, { duration: 0 })
+    })
   })
 
   describe('centerMapOnLocation', () => {

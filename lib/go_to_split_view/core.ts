@@ -4,16 +4,23 @@
 import type { MapLocation } from '@/lib/go_to_link'
 
 export const SPLIT_ROOT_ID = 'nmapUploaderSplit'
+export const SPLIT_BANNER_ID = 'nmapUploaderSplitBanner'
 export const LEFT_CURSOR_OVERLAY_CLASS = 'nmap-uploader-split__left-cursor-overlay'
 export const RIGHT_CURSOR_OVERLAY_CLASS = 'nmap-uploader-split__cursor-overlay'
 export const CURSOR_MARKER_CLASS = 'nmap-uploader-split__cursor-marker'
 export const CURSOR_MARKER_VISIBLE_CLASS = 'nmap-uploader-split__cursor-marker--visible'
 export const CURSOR_MARKER_REMOTE_CLASS = 'nmap-uploader-split__cursor-marker--remote'
 
+export const SPLIT_HEADER_SELECTORS = [
+  '.nk-header-view.nk-header-view_shading',
+  '.nk-header-view',
+] as const
+
 export const SYNC_DEBOUNCE_MS = 40
 export const URL_POLL_INTERVAL_MS = 120
 export const WHEEL_ZOOM_STEP_THRESHOLD = 50
 export const NAKARTE_ZOOM_PUSH_GRACE_MS = 450
+export const SPLIT_OPENING_GRACE_MS = 800
 export const STALE_ZOOM_CENTER_EPSILON = 1e-4
 export const SPLIT_RESIZED_ATTR = 'data-nmap-uploader-split-resized'
 export const CURSOR_MARKER_RADIUS = 8
@@ -22,6 +29,10 @@ export const NAK_ROOT_SELECTORS = [
   '.nk-app-view',
   '.nk-layout-view',
   '.nk-map-editor-view',
+  '.nk-map-view',
+  '.nk-map',
+  "[class*='ymaps-2'][class*='-map']",
+  '.ymaps-2-1-map',
 ] as const
 
 export type SplitViewStatus = 'closed' | 'opening' | 'open' | 'closing'

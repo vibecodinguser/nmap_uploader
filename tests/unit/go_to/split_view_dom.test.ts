@@ -13,6 +13,7 @@ import {
   clearNakRootResize,
   clearSplitLayout,
   createCursorOverlay,
+  getNmapsMapViewportBounds,
   mountSplitDomElements,
   setMarkerElementPosition,
 } from '@/lib/go_to_split_view/dom'
@@ -87,5 +88,29 @@ describe('go_to_split_view/dom', () => {
     expect(dom.iframe.src).toBe('https://nakarte.me/#test')
     expect(dom.leftOverlay.isConnected).toBe(true)
     expect(dom.splitRoot.isConnected).toBe(true)
+  })
+
+  it('getNmapsMapViewportBounds возвращает реальный центр контейнера карты', () => {
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1600 })
+    Object.defineProperty(window, 'innerHeight', { writable: true, configurable: true, value: 900 })
+
+    const map = document.createElement('div')
+    map.className = 'nk-map'
+    map.getBoundingClientRect = () => ({
+      left: 100,
+      top: 50,
+      width: 600,
+      height: 400,
+      right: 700,
+      bottom: 450,
+      x: 100,
+      y: 50,
+      toJSON: () => {},
+    })
+    document.body.appendChild(map)
+
+    const bounds = getNmapsMapViewportBounds()
+    expect(bounds.cx).toBe(400) // 100 + 300
+    expect(bounds.cy).toBe(250) // 50 + 200
   })
 })

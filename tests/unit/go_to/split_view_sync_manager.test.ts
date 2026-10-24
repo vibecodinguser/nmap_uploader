@@ -55,4 +55,29 @@ describe('go_to_split_view/sync_manager', () => {
 
     expect(() => manager.dispose()).not.toThrow()
   })
+
+  it('игнорирует промежуточные boundschange от НЯК в период открытия сплита', () => {
+    const dom = mountSplitDomElements('https://nakarte.me')
+    const postMessageSpy = vi.spyOn(dom.iframe.contentWindow!, 'postMessage')
+    const initialLocation = { longitude: 39.115112, latitude: 44.987153, zoom: 18 }
+    const manager = new SplitSyncManager(dom, initialLocation)
+    manager.initListeners()
+
+    // Спровоцированный сжатием окна ложный boundschange
+    const fakeResizeEvent = new CustomEvent('nmaps:boundsChange', {
+      detail: { latitude: 44.98713, longitude: 39.12882, zoom: 18 },
+    })
+    document.dispatchEvent(fakeResizeEvent)
+
+    // В период открытия сплита ложные координаты не должны улетать в iframe
+    expect(postMessageSpy).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'set_location',
+        location: expect.objectContaining({ longitude: 39.12882 }),
+      }),
+      expect.anything(),
+    )
+
+    manager.dispose()
+  })
 })

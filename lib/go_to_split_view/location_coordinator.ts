@@ -7,6 +7,7 @@ import {
 import {
   isStaleNakarteZoomEcho,
   NAKARTE_ZOOM_PUSH_GRACE_MS,
+  SPLIT_OPENING_GRACE_MS,
   SYNC_DEBOUNCE_MS,
 } from '@/lib/go_to_split_view/core'
 import { postLocationToIframe } from './split_bridge'
@@ -14,20 +15,27 @@ import { postLocationToIframe } from './split_bridge'
 export class SplitLocationCoordinator {
   private syncTimer: ReturnType<typeof setTimeout> | undefined
   private pendingNakarteZoomPushTimer: ReturnType<typeof setTimeout> | undefined
-  private lastPolledUrlLocation: MapLocation | null = null
   private lastPushedZoom: number | null = null
   private pendingNakarteZoomPush: MapLocation | null = null
   private nmapsLocation: MapLocation | null = null
   private nakarteLocation: MapLocation | null = null
+  private readonly initialLocation: MapLocation
+  private openingGraceEndTime: number
 
   constructor(
     private readonly iframe: HTMLIFrameElement,
     initialLocation: MapLocation,
+    openingGraceMs: number = SPLIT_OPENING_GRACE_MS,
   ) {
-    this.nmapsLocation = initialLocation
-    this.nakarteLocation = initialLocation
-    this.lastPolledUrlLocation = normalizeMapLocation(initialLocation)
-    this.lastPushedZoom = normalizeMapLocation(initialLocation).zoom
+    this.initialLocation = normalizeMapLocation(initialLocation)
+    this.nmapsLocation = this.initialLocation
+    this.nakarteLocation = this.initialLocation
+    this.lastPushedZoom = this.initialLocation.zoom
+    this.openingGraceEndTime = Date.now() + openingGraceMs
+  }
+
+  public isOpeningGracePeriod(): boolean {
+    return Date.now() < this.openingGraceEndTime
   }
 
   public getNmapsLocation(): MapLocation | null {
@@ -39,12 +47,19 @@ export class SplitLocationCoordinator {
   }
 
   public postInitialLocation(): void {
-    if (this.nmapsLocation) {
-      postLocationToIframe(this.iframe, this.nmapsLocation)
+    const loc = this.initialLocation ?? this.nmapsLocation
+    if (loc) {
+      postLocationToIframe(this.iframe, loc)
+      this.nakarteLocation = loc
+      this.nmapsLocation = loc
     }
   }
 
   public pushLocationToNakarte(location: MapLocation, immediate = false): void {
+    if (this.isOpeningGracePeriod() && !locationsEqual(location, this.initialLocation)) {
+      return
+    }
+
     const normalized = normalizeMapLocation(location)
     if (locationsEqual(normalized, this.nakarteLocation)) return
 
@@ -78,6 +93,10 @@ export class SplitLocationCoordinator {
   }
 
   public handleNakarteIncomingLocation(location: MapLocation): void {
+    if (this.isOpeningGracePeriod() && !locationsEqual(location, this.initialLocation)) {
+      return
+    }
+
     if (
       this.pendingNakarteZoomPush &&
       isStaleNakarteZoomEcho(location, this.pendingNakarteZoomPush)
@@ -95,9 +114,7 @@ export class SplitLocationCoordinator {
   }
 
   public resolveLocationForNakarteSync(urlLocation: MapLocation): MapLocation {
-    const normalized = normalizeMapLocation(urlLocation)
-    this.lastPolledUrlLocation = normalized
-    return normalized
+    return normalizeMapLocation(urlLocation)
   }
 
   public dispose(): void {
@@ -108,7 +125,6 @@ export class SplitLocationCoordinator {
 
     this.nmapsLocation = null
     this.nakarteLocation = null
-    this.lastPolledUrlLocation = null
   }
 
   private markPendingNakarteZoomPush(location: MapLocation): void {

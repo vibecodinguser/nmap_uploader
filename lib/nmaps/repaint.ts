@@ -2,26 +2,33 @@ import { findActiveMap, type YmapsMapLike, type YmapsMapWithContainer } from './
 
 export const dispatchWindowResize = (): void => {
   if (typeof globalThis === 'undefined') return
-  const w = globalThis.innerWidth
-  const h = globalThis.innerHeight
-
-  Object.defineProperty(globalThis, 'innerWidth', { value: w + 1, configurable: true })
-  Object.defineProperty(globalThis, 'innerHeight', { value: h + 1, configurable: true })
-
-  const intervals = [0, 100, 200, 300, 500, 800]
-  intervals.forEach((delay) => {
-    if (delay === 0) {
-      globalThis.dispatchEvent(new Event('resize'))
-    } else {
-      setTimeout(() => globalThis.dispatchEvent(new Event('resize')), delay)
-    }
-  })
-
-  setTimeout(() => {
-    delete (globalThis as unknown as Record<string, unknown>).innerWidth
-    delete (globalThis as unknown as Record<string, unknown>).innerHeight
+  try {
     globalThis.dispatchEvent(new Event('resize'))
-  }, 1000)
+  } catch (e: unknown) {
+    console.debug(e)
+  }
+}
+
+type CenterableMap = {
+  setCenter?: (center: [number, number], zoom?: number, options?: { duration?: number }) => unknown
+  panTo?: (center: [number, number], zoom?: number, options?: { duration?: number }) => unknown
+  moveTo?: (center: [number, number], zoom?: number, options?: { duration?: number }) => unknown
+}
+
+const applyMapCenter = (
+  map: unknown,
+  center: [number, number],
+  zoom?: number,
+  duration = 0,
+): boolean => {
+  const m = map as CenterableMap | null | undefined
+  if (!m) return false
+  const fn = m.setCenter ?? m.panTo ?? m.moveTo
+  if (typeof fn === 'function') {
+    fn.call(m, center, zoom, { duration })
+    return true
+  }
+  return false
 }
 
 export const requestMapRepaint = (
@@ -44,43 +51,42 @@ export const requestMapRepaint = (
       }
     }
 
-    let center: [number, number] | undefined
-    let zoom: number | undefined
+    const targetLat =
+      detail && typeof detail.latitude === 'number' && !Number.isNaN(detail.latitude)
+        ? (detail.latitude as number)
+        : undefined
+    const targetLon =
+      detail && typeof detail.longitude === 'number' && !Number.isNaN(detail.longitude)
+        ? (detail.longitude as number)
+        : undefined
+    const targetCenter: [number, number] | undefined =
+      targetLat !== undefined && targetLon !== undefined ? [targetLon, targetLat] : undefined
+    const targetZoom =
+      detail?.zoom !== undefined && !Number.isNaN(Number(detail.zoom))
+        ? Number(detail.zoom)
+        : undefined
 
-    if (detail && typeof detail.latitude === 'number' && typeof detail.longitude === 'number') {
-      const targetCenter = [detail.longitude, detail.latitude]
-      const targetZoom = Number(detail.zoom)
-
-      setTimeout(() => {
-        const activeMap = activeMapGetter()
-        if (activeMap && typeof (activeMap as Record<string, unknown>).setCenter === 'function') {
-          try {
-            ;(activeMap as Record<string, any>).setCenter(targetCenter, targetZoom, { duration: 0 })
-          } catch (e: unknown) {
-            console.debug(e)
-          }
-        }
-      }, 200)
-    } else {
+    const fitAndCenter = () => {
       try {
-        center = map.getCenter()
-        zoom = map.getZoom()
+        const activeMap = activeMapGetter()
+        if (!activeMap) return
+
+        const container = (activeMap as unknown as YmapsMapWithContainer)?.container
+        container?.fitToViewport?.()
+
+        const centerToApply = targetCenter ?? activeMap.getCenter?.()
+        const zoomToApply = targetZoom ?? activeMap.getZoom?.()
+
+        if (centerToApply && zoomToApply !== undefined) {
+          applyMapCenter(activeMap, centerToApply, zoomToApply, 0)
+        }
       } catch (e: unknown) {
         console.debug(e)
       }
     }
 
-    const container = (map as unknown as YmapsMapWithContainer).container
-    container?.fitToViewport?.()
-
-    if (center && zoom !== undefined) {
-      const centerMethod = ['setCenter', 'panTo', 'moveTo'].find(
-        (m) => typeof (map as Record<string, unknown>)[m] === 'function',
-      )
-      if (centerMethod) {
-        ;(map as Record<string, any>)[centerMethod](center, zoom, { duration: 0 })
-      }
-    }
+    fitAndCenter()
+    requestAnimationFrame(fitAndCenter)
   } catch (err: unknown) {
     console.debug(err)
   }
@@ -98,18 +104,8 @@ export const centerMapOnLocation = (
 
   if (!Number.isNaN(lat) && !Number.isNaN(lon)) {
     const map = activeMapGetter()
-    if (map) {
-      try {
-        const centerMethod = ['setCenter', 'panTo', 'moveTo'].find(
-          (m) => typeof (map as Record<string, any>)[m] === 'function',
-        )
-        if (centerMethod) {
-          ;(map as Record<string, any>)[centerMethod]([lon, lat], z, { duration: dur })
-          return
-        }
-      } catch {
-        // fallback
-      }
+    if (map && applyMapCenter(map, [lon, lat], z, dur)) {
+      return
     }
     if (typeof globalThis !== 'undefined' && globalThis.location) {
       globalThis.location.hash = `#!/?z=${z}&ll=${lon},${lat}`

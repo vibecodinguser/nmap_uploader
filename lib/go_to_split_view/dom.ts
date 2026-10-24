@@ -9,6 +9,8 @@ import {
   type PanelDimensions,
   type PixelPosition,
   type ResizedElementStyle,
+  SPLIT_BANNER_ID,
+  SPLIT_HEADER_SELECTORS,
   SPLIT_RESIZED_ATTR,
   SPLIT_ROOT_ID,
 } from '@/lib/go_to_split_view/core'
@@ -22,6 +24,109 @@ export const getSplitPanelSize = (): PanelDimensions => ({
 
 export const getLeftPanelSize = (): PanelDimensions => getSplitPanelSize()
 export const getRightPanelSize = (): PanelDimensions => getSplitPanelSize()
+
+export type NmapsViewportBounds = {
+  cx: number
+  cy: number
+  width: number
+  height: number
+  left: number
+  top: number
+}
+
+export const getNmapsMapViewportBounds = (): NmapsViewportBounds => {
+  const panel = getLeftPanelSize()
+  const fallback: NmapsViewportBounds = {
+    cx: panel.width / 2,
+    cy: panel.height / 2,
+    width: panel.width,
+    height: panel.height,
+    left: 0,
+    top: 0,
+  }
+
+  if (typeof document === 'undefined') return fallback
+
+  // 1. Проверяем наличие центрального прицела (crosshair)
+  const crosshair = document.querySelector(
+    '.nk-map-crosshair, [class*="crosshair"], .ymaps-map-crosshair',
+  )
+  if (crosshair instanceof HTMLElement) {
+    const rect = crosshair.getBoundingClientRect()
+    if (rect.width > 0 || rect.height > 0) {
+      return {
+        cx: rect.left + rect.width / 2,
+        cy: rect.top + rect.height / 2,
+        width: panel.width,
+        height: panel.height,
+        left: 0,
+        top: 0,
+      }
+    }
+  }
+
+  // 2. Ищем реальный контейнер карты Яндекс (ymaps / nk-map)
+  const mapSelectors = [
+    "[class*='ymaps-2'][class*='-map']",
+    "[class*='ymaps'][class*='map']",
+    '.ymaps-2-1-map',
+    '.ymaps-map',
+    '.nk-map',
+    '.nk-map-view',
+  ]
+
+  for (const selector of mapSelectors) {
+    const candidate = document.querySelector(selector)
+    if (candidate instanceof HTMLElement) {
+      const rect = candidate.getBoundingClientRect()
+      // Контейнер карты левой панели должен находиться в пределах левой половины экрана (0..panel.width)
+      if (rect.width > 0 && rect.height > 0 && rect.left < panel.width) {
+        const effectiveWidth = Math.min(rect.width, panel.width - Math.max(0, rect.left))
+        const cx = rect.left + effectiveWidth / 2
+        if (cx > 0 && cx < panel.width) {
+          return {
+            cx,
+            cy: rect.top + rect.height / 2,
+            width: effectiveWidth,
+            height: rect.height,
+            left: rect.left,
+            top: rect.top,
+          }
+        }
+      }
+    }
+  }
+
+  // 3. Проверяем, есть ли открытый левый сайдбар/панель инструментов НЯК
+  const sidebarSelectors = [
+    '.nk-sidebar-view',
+    '.nk-app-view__sidebar',
+    '.nk-toolbar-view',
+    '[class*="sidebar-view"]',
+  ]
+  for (const selector of sidebarSelectors) {
+    const sidebar = document.querySelector(selector)
+    if (sidebar instanceof HTMLElement) {
+      const rect = sidebar.getBoundingClientRect()
+      if (rect.width > 50 && rect.left >= 0 && rect.right < panel.width) {
+        const availableWidth = panel.width - rect.right
+        const cx = rect.right + availableWidth / 2
+        if (cx > 0 && cx < panel.width) {
+          return {
+            cx,
+            cy: panel.height / 2,
+            width: availableWidth,
+            height: panel.height,
+            left: rect.right,
+            top: 0,
+          }
+        }
+      }
+    }
+  }
+
+  return fallback
+}
 
 export const createCursorOverlay = (className: string, isRemote: boolean): HTMLElement => {
   const overlay = document.createElement('div')
@@ -133,6 +238,11 @@ export const clearSplitLayout = (state?: SplitLayoutState | null): void => {
   document.documentElement.style.maxWidth = ''
   document.body.style.width = ''
   document.body.style.maxWidth = ''
+
+  // Форсируем reflow браузера, чтобы сброс стилей гарантированно применился к DOM перед перерасчетом вьюпорта
+  if (typeof document !== 'undefined' && document.documentElement) {
+    void document.documentElement.offsetHeight
+  }
 }
 
 export type SplitDomElements = {
@@ -188,4 +298,39 @@ export const mountSplitDomElements = (
     rightCursorMarker,
     leftOverlay,
   }
+}
+
+export const findHeaderContainer = (): HTMLElement | null => {
+  for (const selector of SPLIT_HEADER_SELECTORS) {
+    const el = document.querySelector<HTMLElement>(selector)
+    if (el) return el
+  }
+  return null
+}
+
+export const mountSplitNoticeBanner = (text: string): HTMLElement => {
+  unmountSplitNoticeBanner()
+
+  const banner = document.createElement('div')
+  banner.id = SPLIT_BANNER_ID
+  banner.className = 'nmap-uploader-split-banner'
+  banner.textContent = text
+  banner.setAttribute('role', 'status')
+  banner.setAttribute('aria-live', 'polite')
+
+  const header = findHeaderContainer()
+  if (header) {
+    const rect = header.getBoundingClientRect()
+    if (rect.width > 0 && rect.height > 0) {
+      banner.style.top = `${rect.top + rect.height / 2}px`
+      banner.style.left = `${rect.left + rect.width / 2}px`
+    }
+  }
+
+  document.body.appendChild(banner)
+  return banner
+}
+
+export const unmountSplitNoticeBanner = (): void => {
+  document.getElementById(SPLIT_BANNER_ID)?.remove()
 }

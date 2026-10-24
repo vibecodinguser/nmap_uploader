@@ -73,11 +73,14 @@ export const mouseToLatLng = (
   view: MapLocation,
   panel: MapViewPixels,
   projection: 'spherical' | 'elliptical' = 'spherical',
+  customCenter?: { cx: number; cy: number },
 ): MapLocation => {
   const centerX = lngToPixelX(view.longitude, view.zoom)
   const centerY = latToPixelY(view.latitude, view.zoom, projection)
-  const worldX = centerX + (localX - panel.width / 2)
-  const worldY = centerY + (localY - panel.height / 2)
+  const originX = customCenter ? customCenter.cx : panel.width / 2
+  const originY = customCenter ? customCenter.cy : panel.height / 2
+  const worldX = centerX + (localX - originX)
+  const worldY = centerY + (localY - originY)
 
   return {
     longitude: pixelToLng(worldX, view.zoom),
@@ -91,6 +94,7 @@ export const latLngToPanelPixel = (
   view: MapLocation,
   panel: MapViewPixels,
   projection: 'spherical' | 'elliptical' = 'spherical',
+  customCenter?: { cx: number; cy: number },
 ): { x: number; y: number } | null => {
   let result: { x: number; y: number } | null = null
   if (Number.isFinite(location.longitude) && Number.isFinite(location.latitude)) {
@@ -98,10 +102,12 @@ export const latLngToPanelPixel = (
     const centerY = latToPixelY(view.latitude, view.zoom, projection)
     const pointX = lngToPixelX(location.longitude, view.zoom)
     const pointY = latToPixelY(location.latitude, view.zoom, projection)
+    const originX = customCenter ? customCenter.cx : panel.width / 2
+    const originY = customCenter ? customCenter.cy : panel.height / 2
 
     result = {
-      x: panel.width / 2 + (pointX - centerX),
-      y: panel.height / 2 + (pointY - centerY),
+      x: originX + (pointX - centerX),
+      y: originY + (pointY - centerY),
     }
   }
   return result

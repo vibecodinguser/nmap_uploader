@@ -137,7 +137,7 @@ describe('nmaps-location-main.content', () => {
     const mapElement = document.createElement('div')
     mapElement.className = 'ymaps-map'
     const mapInstance = {
-      getCenter: () => [55.7, 37.6] as [number, number],
+      getCenter: () => [37.6, 55.7] as [number, number],
       getZoom: () => 12,
       events: {
         add: (event: string, handlerFn: (...args: unknown[]) => void) => {
@@ -166,7 +166,7 @@ describe('nmaps-location-main.content', () => {
   it('перерисовывает карту по событию resize панели', () => {
     const resizeSpy = vi.spyOn(window, 'dispatchEvent')
     const mapInstance = {
-      getCenter: () => [55.7, 37.6] as [number, number],
+      getCenter: () => [37.6, 55.7] as [number, number],
       getZoom: () => 12,
       events: { add: vi.fn(), remove: vi.fn() },
       container: { fitToViewport: vi.fn() },
@@ -188,7 +188,7 @@ describe('nmaps-location-main.content', () => {
 
   it('передаёт все snapTargets штатному tracer-provider без DOM-перехвата', async () => {
     const mapInstance = {
-      getCenter: () => [55.7, 37.6] as [number, number],
+      getCenter: () => [37.6, 55.7] as [number, number],
       getZoom: () => 18,
       events: { add: vi.fn(), remove: vi.fn() },
       options: {

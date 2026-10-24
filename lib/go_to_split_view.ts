@@ -9,13 +9,16 @@ import {
   clearSplitLayout,
   LEFT_CURSOR_OVERLAY_CLASS,
   mountSplitDomElements,
+  mountSplitNoticeBanner,
   RIGHT_CURSOR_OVERLAY_CLASS,
   readNmapsLocation,
+  SPLIT_BANNER_ID,
   SPLIT_ROOT_ID,
   type SplitDomElements,
   type SplitLayoutState,
   SplitSyncManager,
   type SplitViewStatus,
+  unmountSplitNoticeBanner,
   updateSplitButtonState,
 } from '@/lib/go_to_split_view/index'
 import { notifyNmapsMapResize } from '@/lib/nmaps_map_resize_notify'
@@ -30,10 +33,9 @@ let syncManager: SplitSyncManager | null = null
 
 /** Даёт браузеру применить layout, затем просит ymaps пересчитать тайлы с явным указанием координат. */
 const scheduleNmapsMapResize = (location?: MapLocation): void => {
+  notifyNmapsMapResize(location)
   requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      notifyNmapsMapResize(location)
-    })
+    notifyNmapsMapResize(location)
   })
 }
 
@@ -41,7 +43,9 @@ const cleanupDomAndSync = (): void => {
   syncManager?.dispose()
   syncManager = null
 
-  // Удаляем инстанс и любые дубликаты/остатки в DOM
+  // Удаляем баннер и инстанс splitRoot
+  unmountSplitNoticeBanner()
+  document.getElementById(SPLIT_BANNER_ID)?.remove()
   domElements?.splitRoot.remove()
   document.getElementById(SPLIT_ROOT_ID)?.remove()
   document.querySelectorAll('.nmap-uploader-split').forEach((el) => {
@@ -79,6 +83,9 @@ const mountSplitView = (): boolean => {
 
     syncManager = new SplitSyncManager(domElements, location)
     syncManager.initListeners()
+
+    // Показываем сообщение по центру хедера Народной карты
+    mountSplitNoticeBanner('Режим корректно работает до зума 18 (Ограничение сервиса Nakarte)')
 
     // Передаем точные координаты для пересчета тайлов и фиксации центра без сдвига
     scheduleNmapsMapResize(location)

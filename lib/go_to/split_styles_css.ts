@@ -14,7 +14,13 @@ html.nmap-uploader-split-active body {
   overflow: hidden !important;
 }
 
-html.nmap-uploader-split-active .nk-app-view {
+html.nmap-uploader-split-active .nk-app-view,
+html.nmap-uploader-split-active .nk-layout-view,
+html.nmap-uploader-split-active .nk-map-editor-view,
+html.nmap-uploader-split-active .nk-map-view,
+html.nmap-uploader-split-active .nk-map,
+html.nmap-uploader-split-active [class*="ymaps-2"][class*="-map"],
+html.nmap-uploader-split-active .ymaps-2-1-map {
   width: 50vw !important;
   max-width: 50vw !important;
 }
@@ -87,5 +93,30 @@ html.nmap-uploader-split-active .nk-app-view {
 .nmap-uploader-split__cursor-marker--visible {
   opacity: 1;
   visibility: visible;
+}
+
+.nmap-uploader-split-banner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  position: fixed;
+  top: 18px;
+  left: 25vw;
+  transform: translate(-50%, -50%);
+  background: rgba(33, 33, 33, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  padding: 5px 14px;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  z-index: 2147483647 !important;
+  user-select: none;
+  white-space: nowrap;
 }
 `

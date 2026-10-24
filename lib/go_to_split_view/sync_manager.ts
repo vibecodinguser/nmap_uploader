@@ -118,6 +118,7 @@ export class SplitSyncManager {
   }
 
   private syncNmapsLocationToNakarte(): void {
+    if (this.locationCoordinator.isOpeningGracePeriod()) return
     const location = readNmapsLocation()
     if (!location) return
     const resolved = this.locationCoordinator.resolveLocationForNakarteSync(location)
@@ -125,6 +126,7 @@ export class SplitSyncManager {
   }
 
   private handleNmapsBoundsChange(event: Event): void {
+    if (this.locationCoordinator.isOpeningGracePeriod()) return
     const location = parseBoundsChangeEvent(event)
     if (!location) return
     this.locationCoordinator.pushLocationToNakarte(location, true)

@@ -25,22 +25,67 @@ let globalActiveMapInstance: YmapsMapLike | null = null
 
 const getActiveMap = (): YmapsMapLike | null => globalActiveMapInstance ?? findActiveMap()
 
+type MapConstructorLike = {
+  new (...args: unknown[]): unknown
+  prototype: unknown
+  __intercepted?: boolean
+} & Record<string, unknown>
+
+interface YmapsGlobalLike {
+  Map?: MapConstructorLike
+  ready?: (cb: () => void) => void
+  __mapGetterConfigured?: boolean
+  __readyHooked?: boolean
+}
+
 const interceptYmaps = (): void => {
   if (typeof globalThis === 'undefined') return
-  const ymaps = (globalThis as unknown as Record<string, any>).ymaps
-  if (!ymaps || ymaps.__mapInterceptSetupDone) return
-  ymaps.__mapInterceptSetupDone = true
+  const g = globalThis as unknown as Record<string, unknown>
+  const ymaps = g.ymaps as YmapsGlobalLike | undefined
+  if (!ymaps) return
 
-  const _Map = ymaps.Map
-  if (_Map && !_Map.__intercepted) {
-    const OriginalMap = _Map
-    ymaps.Map = function (this: unknown, ...args: unknown[]) {
-      const instance = new OriginalMap(...args)
+  const wrapConstructor = (OriginalMap: unknown): MapConstructorLike => {
+    if (typeof OriginalMap !== 'function') return OriginalMap as MapConstructorLike
+    const mapFn = OriginalMap as MapConstructorLike
+    if (mapFn.__intercepted) return mapFn
+
+    const InterceptedMap = function (this: unknown, ...args: unknown[]) {
+      const instance = new mapFn(...args)
       globalActiveMapInstance = instance as YmapsMapLike
+      subscribeToMapEvents(instance as YmapsMapLike)
       return instance
-    }
-    ymaps.Map.__intercepted = true
-    ymaps.Map.prototype = OriginalMap.prototype
+    } as unknown as MapConstructorLike
+
+    InterceptedMap.__intercepted = true
+    InterceptedMap.prototype = mapFn.prototype
+    Object.assign(InterceptedMap, mapFn)
+    return InterceptedMap
+  }
+
+  if (ymaps.Map) {
+    ymaps.Map = wrapConstructor(ymaps.Map)
+  } else if (!ymaps.__mapGetterConfigured) {
+    ymaps.__mapGetterConfigured = true
+    let internalMap: MapConstructorLike | undefined
+    Object.defineProperty(ymaps, 'Map', {
+      configurable: true,
+      enumerable: true,
+      get: () => internalMap,
+      set: (val: unknown) => {
+        internalMap = wrapConstructor(val)
+      },
+    })
+  }
+
+  if (typeof ymaps.ready === 'function' && !ymaps.__readyHooked) {
+    ymaps.__readyHooked = true
+    try {
+      ymaps.ready(() => {
+        if (ymaps.Map && !ymaps.Map.__intercepted) {
+          ymaps.Map = wrapConstructor(ymaps.Map)
+        }
+      })
+    } catch {}
   }
 }
 
@@ -49,6 +94,7 @@ const startMapDiscovery = (): void => {
 
   const poll = (): void => {
     if (Date.now() - startedAt <= 30_000) {
+      interceptYmaps()
       const map = findActiveMap()
       if (map) {
         globalActiveMapInstance = map
@@ -80,7 +126,27 @@ export default defineContentScript({
   world: 'MAIN',
 
   main() {
-    interceptYmaps()
+    const g = globalThis as unknown as Record<string, unknown>
+    if (g.ymaps) {
+      interceptYmaps()
+    } else {
+      let internalYmaps: unknown
+      try {
+        Object.defineProperty(g, 'ymaps', {
+          configurable: true,
+          enumerable: true,
+          get: () => internalYmaps,
+          set: (val: unknown) => {
+            internalYmaps = val
+            if (val) {
+              interceptYmaps()
+            }
+          },
+        })
+      } catch {
+        interceptYmaps()
+      }
+    }
 
     const windowWithTracingAdapter = globalThis as typeof globalThis & {
       __nmapNativeTracingAdapter__?: NativeTracingAdapter
@@ -143,13 +209,20 @@ export default defineContentScript({
         (e) => {
           const map = getActiveMap()
           if (!map) return null
-          const m = map as Record<string, any>
+          const m = map as Record<string, unknown> & {
+            converter?: { pageToGlobal: (coords: [number, number]) => [number, number] }
+            options?: {
+              get: (name: string) => {
+                fromGlobalPixels: (pixels: [number, number], zoom: number) => [number, number]
+              }
+            }
+          }
           if (m.converter && m.options) {
             const projection = m.options.get('projection')
             const globalPixels = m.converter.pageToGlobal([e.clientX, e.clientY])
-            return projection.fromGlobalPixels(globalPixels, m.getZoom())
+            return projection.fromGlobalPixels(globalPixels, map.getZoom())
           }
-          return m.getCenter()
+          return map.getCenter()
         },
       )
 
