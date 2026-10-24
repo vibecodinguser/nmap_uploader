@@ -40,6 +40,17 @@ describe('buildNakarteHash', () => {
       'm=12/55.7123456/37.6123456&l=S/K',
     )
   })
+
+  it('сохраняет существующие параметры и пользовательские слои из currentHash', () => {
+    const currentHash = '#m=10/50.0/30.0&l=Otm/Y&n=track123&q=searchPoint'
+    const nextHash = buildNakarteHash(
+      { longitude: 37.6, latitude: 55.7, zoom: 15 },
+      'S/K',
+      currentHash,
+    )
+
+    expect(nextHash).toBe('m=15/55.7000000/37.6000000&l=Otm/Y&n=track123&q=searchPoint')
+  })
 })
 
 describe('buildNmapsUrlFromLocation', () => {

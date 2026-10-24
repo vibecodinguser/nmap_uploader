@@ -91,10 +91,29 @@ export const normalizeMapLocation = (location: MapLocation): MapLocation => ({
 
 const NAKARTE_COORD_PRECISION = 7
 
-/** Собирает hash nakarte (#m=z/lat/lon&l=...) в формате редактора. */
-export const buildNakarteHash = (location: MapLocation, layers = 'S/K'): string => {
+/** Собирает hash nakarte (#m=z/lat/lon&...) с сохранением всех существующих параметров. */
+export const buildNakarteHash = (
+  location: MapLocation,
+  defaultLayers = 'S/K',
+  currentHash = '',
+): string => {
   const normalized = normalizeMapLocation(location)
   const lat = normalized.latitude.toFixed(NAKARTE_COORD_PRECISION)
   const lng = normalized.longitude.toFixed(NAKARTE_COORD_PRECISION)
-  return `m=${normalized.zoom}/${lat}/${lng}&l=${layers}`
+  const newMapPart = `m=${normalized.zoom}/${lat}/${lng}`
+
+  const cleanHash = currentHash.replace(/^#+/u, '')
+  if (!cleanHash) {
+    return `${newMapPart}&l=${defaultLayers}`
+  }
+
+  const parts = cleanHash.split('&').filter((part) => part.length > 0)
+  const nonMapParts = parts.filter((part) => !part.startsWith('m='))
+
+  const hasLayers = nonMapParts.some((part) => part.startsWith('l='))
+  if (!hasLayers) {
+    nonMapParts.unshift(`l=${defaultLayers}`)
+  }
+
+  return [newMapPart, ...nonMapParts].join('&')
 }

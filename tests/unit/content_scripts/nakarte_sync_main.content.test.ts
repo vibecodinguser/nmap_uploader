@@ -62,6 +62,33 @@ describe('nakarte-sync-main.content', () => {
     expect(window.location.hash).toBe('#m=12/55.7123456/37.6123456&l=S/K')
   })
 
+  it('сохраняет пользовательские параметры (треки, маркеры, кастомные слои) при set_location', () => {
+    restoreIframe = mockIframeWindow()
+    Object.defineProperty(window, 'parent', {
+      configurable: true,
+      value: window,
+    })
+    window.location.hash = '#m=10/55.0/37.0&l=Otm&n=myTrack&q=pinLocation'
+
+    nakarteSyncMainScript.main?.(ctx)
+
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data: {
+          source: NMAP_UPLOADER_MSG_SOURCE,
+          type: 'set_location',
+          location: { longitude: 37.6123456, latitude: 55.7123456, zoom: 14 },
+        },
+        origin: NMAPS_ORIGIN,
+        source: window.parent,
+      }),
+    )
+
+    expect(window.location.hash).toBe(
+      '#m=14/55.7123456/37.6123456&l=Otm&n=myTrack&q=pinLocation',
+    )
+  })
+
   it('игнорирует сообщения с чужим origin', () => {
     restoreIframe = mockIframeWindow()
     Object.defineProperty(window, 'parent', {

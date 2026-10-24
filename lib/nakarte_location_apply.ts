@@ -15,10 +15,11 @@ export const readLayersFromNakarteHash = (hash: string): string => {
 /** Применяет вид карты через replaceState без перезагрузки iframe (MAIN world nakarte). */
 export const applyNakarteLocationToPage = (location: MapLocation): void => {
   const normalized = normalizeMapLocation(location)
-  const layers = normalized.layer
+  const currentHash = window.location.hash
+  const defaultLayers = normalized.layer
     ? mapNmapsLayerToNakarte(normalized.layer)
-    : readLayersFromNakarteHash(window.location.hash)
-  const nextHash = buildNakarteHash(normalized, layers)
+    : readLayersFromNakarteHash(currentHash)
+  const nextHash = buildNakarteHash(normalized, defaultLayers, currentHash)
   const nextHref = `${window.location.origin}${window.location.pathname}${window.location.search}#${nextHash}`
   if (window.location.href === nextHref) return
 
