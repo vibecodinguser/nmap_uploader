@@ -22,10 +22,8 @@ describe('GoTo Links Core (TDD slice: pure URL parsing and templating)', () => {
 
   it('генерирует ссылку на сторонний геосервис по шаблону источника', () => {
     const source: GoToSource = {
-      id: 'osm',
-      title: 'OpenStreetMap',
+      displayName: 'OpenStreetMap',
       linkTemplate: 'https://www.openstreetmap.org/#map={zoom}/{lat}/{lon}',
-      order: 1,
     }
 
     const location: MapLocation = {

@@ -5,7 +5,7 @@ import {
   createTracingMap,
   FakeGeometryFactory,
   FakeHotspot,
-  type FakePolygon,
+  FakePolygon,
   installTracingModules,
   nativeCandidate,
   tracingTarget,
