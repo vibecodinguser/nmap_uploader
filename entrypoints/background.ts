@@ -101,4 +101,8 @@ const initBackground = (): void => {
 }
 
 // noinspection JSUnusedGlobalSymbols
-export default defineBackground(initBackground)
+export default defineBackground({
+  main() {
+    initBackground()
+  },
+})

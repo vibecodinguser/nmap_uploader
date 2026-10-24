@@ -17,8 +17,6 @@ import { calculateBoundingBox, type NotePoint } from '@/lib/notes'
 const ICON_SIZE = 16
 const ICON_SIZE_SMALL = 14
 
-export type { NotePoint }
-
 export type NoteListItemProps = {
   p: NotePoint
   isExpanded: boolean
