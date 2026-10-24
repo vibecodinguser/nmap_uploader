@@ -58,6 +58,14 @@ export class SplitCursorTracker {
       return
     }
 
+    if (
+      location.zoom !== undefined &&
+      Math.round(location.zoom) !== Math.round(nmapsLocation.zoom)
+    ) {
+      this.hideLeftCursorMarker()
+      return
+    }
+
     const pixel = latLngToPanelPixel(location, nmapsLocation, panel)
     if (!pixel) {
       this.hideLeftCursorMarker()
@@ -68,9 +76,22 @@ export class SplitCursorTracker {
     setMarkerElementPosition(this.dom.leftCursorMarker, clamped)
   }
 
-  public handleNmapsMouseMove(event: MouseEvent, nakarteLocation: MapLocation | null): void {
-    const view = readNmapsLocation()
-    if (!view) return
+  public handleNmapsMouseMove(
+    event: MouseEvent,
+    nmapsLocation: MapLocation | null,
+    nakarteLocation: MapLocation | null,
+  ): void {
+    const view = nmapsLocation ?? readNmapsLocation()
+    if (!view || !nakarteLocation) {
+      this.hideRightCursorMarker()
+      return
+    }
+
+    // Если зумы карт различаются в момент анимации, скрываем маркер во избежание ложного смещения
+    if (Math.round(view.zoom) !== Math.round(nakarteLocation.zoom)) {
+      this.hideRightCursorMarker()
+      return
+    }
 
     const panel = getLeftPanelSize()
     const { clientX, clientY } = event

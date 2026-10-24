@@ -96,19 +96,8 @@ export class SplitLocationCoordinator {
 
   public resolveLocationForNakarteSync(urlLocation: MapLocation): MapLocation {
     const normalized = normalizeMapLocation(urlLocation)
-    const urlZoomChanged =
-      this.lastPolledUrlLocation !== null && this.lastPolledUrlLocation.zoom !== normalized.zoom
     this.lastPolledUrlLocation = normalized
-
-    if (!this.nmapsLocation || normalized.zoom === this.nmapsLocation.zoom) {
-      return normalized
-    }
-
-    if (urlZoomChanged) {
-      return normalized
-    }
-
-    return { ...normalized, zoom: this.nmapsLocation.zoom }
+    return normalized
   }
 
   public dispose(): void {

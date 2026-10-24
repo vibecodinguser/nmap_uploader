@@ -43,7 +43,11 @@ export class SplitSyncManager {
     const restoreReplaceState = wrapHistoryMethod('replaceState', onNmapsUrlChange)
 
     const handleMouseMove = (e: MouseEvent) =>
-      this.cursorTracker.handleNmapsMouseMove(e, this.locationCoordinator.getNakarteLocation())
+      this.cursorTracker.handleNmapsMouseMove(
+        e,
+        this.locationCoordinator.getNmapsLocation(),
+        this.locationCoordinator.getNakarteLocation(),
+      )
     const handleMouseLeave = () => this.cursorTracker.handleNmapsMouseLeave()
     const handleMessage = (e: MessageEvent) => this.handleWindowMessage(e)
     const handleWheel = (e: WheelEvent) => this.handleNmapsWheel(e)
