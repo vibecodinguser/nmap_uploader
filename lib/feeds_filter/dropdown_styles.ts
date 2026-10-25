@@ -4,11 +4,15 @@ import { FEED_CARD_HIDDEN_STYLES, FEED_POPUP_MENU_STYLES } from './dropdown_popu
 export * from './dropdown_popup_styles'
 
 export const FEED_SELECT_BUTTON_STYLES = `
+    #nmap-uploader-feeds-filter-select,
     .nmap-feeds-status-select {
       display: inline-block !important;
       vertical-align: middle !important;
       margin-left: 8px !important;
       position: relative !important;
+      width: 200px !important;
+      min-width: 200px !important;
+      max-width: 200px !important;
       font-family: var(--nk-user-bar-font-family, "Yandex Sans Text", "YS Text", -apple-system, BlinkMacSystemFont, Arial, sans-serif);
       pointer-events: auto !important;
       box-sizing: border-box !important;
@@ -19,14 +23,16 @@ export const FEED_SELECT_BUTTON_STYLES = `
     }
     .nmap-feeds-status-select .nk-select__button {
       position: relative !important;
-      display: inline-flex !important;
+      display: flex !important;
+      flex-direction: row !important;
       align-items: center !important;
+      justify-content: flex-start !important;
       width: 100% !important;
       height: var(--nmap-feeds-select-height, 28px) !important;
       min-height: var(--nmap-feeds-select-height, 28px) !important;
       max-height: var(--nmap-feeds-select-height, 28px) !important;
       line-height: var(--nmap-feeds-select-height, 28px) !important;
-      padding: 0 25px 0 0 !important;
+      padding: 0 25px 0 10px !important;
       border: var(--nmap-feeds-select-border, 1px solid rgba(255, 255, 255, 0.4)) !important;
       border-radius: var(--nmap-feeds-select-radius, 4px) !important;
       outline: 0 !important;
@@ -41,7 +47,8 @@ export const FEED_SELECT_BUTTON_STYLES = `
       user-select: none !important;
       pointer-events: auto !important;
       text-align: left !important;
-      vertical-align: top !important;
+      vertical-align: middle !important;
+      overflow: hidden !important;
       transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
     }
     .nmap-feeds-status-select .nk-select__button::before {
@@ -53,23 +60,105 @@ export const FEED_SELECT_BUTTON_STYLES = `
     }
     .nmap-feeds-status-select.nk-select_opened .nk-select__button,
     .nmap-feeds-status-select .nk-select__button:focus {
+      outline: 0 !important;
+      box-shadow: none !important;
       background: var(--nmap-feeds-select-focus-bg, rgba(255, 255, 255, 0.12)) !important;
-      border-color: #ffcc00 !important;
-      box-shadow: 0 0 0 1px #ffcc00, inset 0 0 0 1px #ffcc00 !important;
+      border-color: var(--nmap-feeds-select-hover-border, rgba(255, 255, 255, 0.6)) !important;
     }
     .nmap-feeds-status-select .nk-select__text {
       position: relative !important;
-      display: inline-flex !important;
+      display: flex !important;
+      flex-direction: row !important;
       align-items: center !important;
+      flex-wrap: nowrap !important;
       gap: 6px !important;
-      margin: 0 0 0 10px !important;
+      margin: 0 !important;
+      padding: 0 !important;
       height: 100% !important;
-      line-height: inherit !important;
+      width: calc(100% - 20px) !important;
+      max-width: calc(100% - 20px) !important;
+      line-height: normal !important;
       pointer-events: none !important;
       z-index: 1 !important;
-      vertical-align: top !important;
+      vertical-align: middle !important;
       color: inherit !important;
+      overflow: hidden !important;
+      white-space: nowrap !important;
+      box-sizing: border-box !important;
     }
+    .nmap-feeds-status-select .nk-select__text > span {
+      display: inline-flex !important;
+      align-items: center !important;
+      line-height: normal !important;
+      vertical-align: middle !important;
+    }
+    .nmap-feeds-status-select .nmap-feeds-button-label,
+    .nmap-feeds-status-select .nk-select__text > span:not(.nk-icon):not(.nmap-feeds-button-spinner):not(.nmap-status-count-badge) {
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      white-space: nowrap !important;
+      flex: 0 1 auto !important;
+    }
+    .nmap-feeds-status-select .nk-icon,
+    .nmap-feeds-status-select .nk-commit-state-view {
+      display: inline-flex !important;
+      position: static !important;
+      float: none !important;
+      align-items: center !important;
+      justify-content: center !important;
+      width: 18px !important;
+      height: 18px !important;
+      min-width: 18px !important;
+      min-height: 18px !important;
+      max-width: 18px !important;
+      max-height: 18px !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      flex-shrink: 0 !important;
+      vertical-align: middle !important;
+      background: transparent !important;
+    }
+    .nmap-feeds-status-select .nk-icon svg,
+    .nmap-feeds-status-select .nk-commit-state-view svg {
+      display: block !important;
+      width: 18px !important;
+      height: 18px !important;
+      margin: 0 !important;
+      flex-shrink: 0 !important;
+    }
+    .nmap-feeds-status-select .nk-icon[hidden],
+    .nmap-feeds-status-select .nk-icon.nmap-hidden,
+    .nmap-feeds-status-select .nk-icon[style*="display: none"] {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+      min-width: 0 !important;
+      min-height: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+    .nmap-feeds-status-select .nmap-status-count-badge {
+      display: inline-block !important;
+      margin-left: 2px !important;
+      font-size: 11px !important;
+      font-weight: 500 !important;
+      padding: 0 !important;
+      border: none !important;
+      outline: none !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      color: inherit !important;
+      opacity: 0.65 !important;
+      flex-shrink: 0 !important;
+      line-height: normal !important;
+      white-space: nowrap !important;
+    }
+
     .nmap-feeds-status-select .nk-select__tick {
       position: absolute !important;
       top: 0 !important;
@@ -89,6 +178,41 @@ export const FEED_SELECT_BUTTON_STYLES = `
     }
     .nmap-feeds-status-select.nk-select_opened .nk-select__tick {
       transform: rotate(180deg) !important;
+    }
+    .nmap-feeds-button-spinner {
+      display: inline-block !important;
+      width: 14px !important;
+      height: 14px !important;
+      min-width: 14px !important;
+      min-height: 14px !important;
+      border: 2px solid rgba(255, 255, 255, 0.3) !important;
+      border-radius: 50% !important;
+      border-top-color: #ffcc00 !important;
+      animation: nmap-feeds-spin 0.8s linear infinite !important;
+      flex-shrink: 0 !important;
+      box-sizing: border-box !important;
+      vertical-align: middle !important;
+      margin: 0 !important;
+    }
+    .nmap-feeds-button-spinner[hidden],
+    .nmap-feeds-button-spinner.nmap-hidden,
+    .nmap-feeds-button-spinner[style*="display: none"] {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+      min-width: 0 !important;
+      min-height: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+    @keyframes nmap-feeds-spin {
+      to {
+        transform: rotate(360deg);
+      }
     }
 `
 

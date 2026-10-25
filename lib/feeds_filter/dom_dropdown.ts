@@ -1,10 +1,11 @@
-import { FEEDS_FILTER_SELECT_ID } from './constants'
+import { DEFAULT_HISTORY_PERIOD_DAYS, FEEDS_FILTER_SELECT_ID } from './constants'
 import type { FeedStats, FeedStatusId } from './core'
 import {
   createDropdownButtonElements,
+  setDropdownButtonLoading,
   updateDropdownButtonDisplay,
 } from './dropdown_button_builder'
-import { createDropdownMenu } from './dropdown_menu_builder'
+import { createDropdownMenu, type DropdownPeriodDisplayState } from './dropdown_menu_builder'
 import { hidePopup, positionPopupFixed } from './dropdown_popup_position'
 import { syncFilterDropdownHeight } from './dropdown_theme'
 
@@ -14,11 +15,19 @@ export * from './dropdown_popup_position'
 export * from './dropdown_styles'
 export * from './dropdown_theme'
 
+export interface FilterDropdownOptions {
+  initialDays?: number
+  onPeriodChange?: (days: number) => void
+  onStopLoading?: () => void
+}
+
 export interface FilterDropdownController {
   element: HTMLElement
   popupElement: HTMLElement
   updateCounters: (stats: FeedStats) => void
   setActiveFilter: (status: FeedStatusId) => void
+  setLoadingState: (isLoading: boolean) => void
+  updatePeriodState: (state: DropdownPeriodDisplayState) => void
   syncHeight: (referenceSelect?: HTMLElement | null) => number
   teardown: () => void
 }
@@ -26,8 +35,9 @@ export interface FilterDropdownController {
 export const createFilterDropdownElement = (
   onFilterChange: (status: FeedStatusId) => void,
   initialFilter: FeedStatusId = 'all',
+  options?: FilterDropdownOptions,
 ): FilterDropdownController => {
-  const { selectHost, button, buttonLabel, buttonCount, buttonIcon } =
+  const { selectHost, button, buttonLabel, buttonCount, buttonIcon, buttonSpinner } =
     createDropdownButtonElements(FEEDS_FILTER_SELECT_ID)
 
   let isPopupOpen = false
@@ -40,11 +50,28 @@ export const createFilterDropdownElement = (
     onFilterChange(status)
   }
 
-  const { popupElement: popup, itemMap } = createDropdownMenu(initialFilter, handleSelectOption)
+  const {
+    popupElement: popup,
+    itemMap,
+    updatePeriodDisplay,
+  } = createDropdownMenu({
+    initialFilter,
+    initialDays: options?.initialDays ?? DEFAULT_HISTORY_PERIOD_DAYS,
+    onSelect: handleSelectOption,
+    onSelectPeriod: options?.onPeriodChange,
+    onStopLoading: options?.onStopLoading,
+  })
 
   const openPopup = (): void => {
     if (!popup.parentElement) {
       document.body.appendChild(popup)
+    }
+
+    for (let i = 0; i < selectHost.style.length; i++) {
+      const prop = selectHost.style[i]
+      if (prop.startsWith('--nmap-feeds-')) {
+        popup.style.setProperty(prop, selectHost.style.getPropertyValue(prop))
+      }
     }
 
     positionPopupFixed({ referenceElement: button, popupElement: popup })
@@ -129,6 +156,7 @@ export const createFilterDropdownElement = (
     itemMap.forEach(({ itemElement }, id) => {
       const isChecked = id === status
       itemElement.classList.toggle('nk-menu__item_checked', isChecked)
+      itemElement.classList.toggle('nk-menu-item_checked', isChecked)
       itemElement.setAttribute('aria-selected', isChecked ? 'true' : 'false')
     })
 
@@ -156,11 +184,19 @@ export const createFilterDropdownElement = (
     syncButtonDisplay(currentSelectedStatus)
   }
 
-  const syncHeight = (referenceSelect?: HTMLElement | null): number => {
-    return syncFilterDropdownHeight(selectHost, referenceSelect)
+  const setLoadingState = (isLoading: boolean): void => {
+    setDropdownButtonLoading({ buttonSpinner }, isLoading)
   }
 
-  syncFilterDropdownHeight(selectHost)
+  const updatePeriodState = (state: DropdownPeriodDisplayState): void => {
+    updatePeriodDisplay(state)
+  }
+
+  const syncHeight = (referenceSelect?: HTMLElement | null): number => {
+    return syncFilterDropdownHeight(selectHost, referenceSelect, popup)
+  }
+
+  syncFilterDropdownHeight(selectHost, null, popup)
   syncButtonDisplay(initialFilter)
 
   const teardown = (): void => {
@@ -174,6 +210,8 @@ export const createFilterDropdownElement = (
     popupElement: popup,
     updateCounters,
     setActiveFilter,
+    setLoadingState,
+    updatePeriodState,
     syncHeight,
     teardown,
   }

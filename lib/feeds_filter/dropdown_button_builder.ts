@@ -8,10 +8,11 @@ export interface DropdownButtonElements {
   buttonLabel: HTMLSpanElement
   buttonCount: HTMLSpanElement
   buttonIcon: HTMLSpanElement
+  buttonSpinner: HTMLSpanElement
 }
 
 /**
- * Создает DOM структуру селекта фильтра статусов Народной карты (кнопка, иконка, лейбл, счетчик).
+ * Создает DOM структуру селекта фильтра статусов Народной карты (кнопка, иконка, лейбл, счетчик, спиннер).
  */
 export const createDropdownButtonElements = (selectId: string): DropdownButtonElements => {
   const selectHost = document.createElement('span')
@@ -29,13 +30,22 @@ export const createDropdownButtonElements = (selectId: string): DropdownButtonEl
   const textSpan = document.createElement('span')
   textSpan.className = 'nk-button__text nk-select__text'
 
+  const buttonSpinner = document.createElement('span')
+  buttonSpinner.className = 'nmap-feeds-button-spinner nmap-hidden'
+  buttonSpinner.style.display = 'none'
+  buttonSpinner.setAttribute('hidden', 'true')
+  buttonSpinner.setAttribute('aria-hidden', 'true')
+  textSpan.appendChild(buttonSpinner)
+
   const buttonIcon = document.createElement('span')
-  buttonIcon.className = 'nk-icon'
+  buttonIcon.className = 'nk-icon nmap-hidden'
   buttonIcon.style.display = 'none'
+  buttonIcon.setAttribute('hidden', 'true')
   buttonIcon.setAttribute('aria-hidden', 'true')
   textSpan.appendChild(buttonIcon)
 
   const buttonLabel = document.createElement('span')
+  buttonLabel.className = 'nmap-feeds-button-label'
   buttonLabel.textContent = 'Все статусы'
   textSpan.appendChild(buttonLabel)
 
@@ -59,6 +69,25 @@ export const createDropdownButtonElements = (selectId: string): DropdownButtonEl
     buttonLabel,
     buttonCount,
     buttonIcon,
+    buttonSpinner,
+  }
+}
+
+/**
+ * Управляет видимостью спиннера на кнопке селекта.
+ */
+export const setDropdownButtonLoading = (
+  elements: Pick<DropdownButtonElements, 'buttonSpinner'>,
+  isLoading: boolean,
+): void => {
+  if (isLoading) {
+    elements.buttonSpinner.classList.remove('nmap-hidden')
+    elements.buttonSpinner.removeAttribute('hidden')
+    elements.buttonSpinner.style.display = 'inline-block'
+  } else {
+    elements.buttonSpinner.classList.add('nmap-hidden')
+    elements.buttonSpinner.setAttribute('hidden', 'true')
+    elements.buttonSpinner.style.display = 'none'
   }
 }
 
@@ -80,10 +109,13 @@ export const updateDropdownButtonDisplay = (
   if (option.iconClass && option.svgMarkup) {
     elements.buttonIcon.className = option.iconClass
     elements.buttonIcon.replaceChildren(parseStaticSvg(option.svgMarkup))
+    elements.buttonIcon.classList.remove('nmap-hidden')
+    elements.buttonIcon.removeAttribute('hidden')
     elements.buttonIcon.style.display = 'inline-flex'
   } else {
-    elements.buttonIcon.className = 'nk-icon'
+    elements.buttonIcon.className = 'nk-icon nmap-hidden'
     elements.buttonIcon.replaceChildren()
+    elements.buttonIcon.setAttribute('hidden', 'true')
     elements.buttonIcon.style.display = 'none'
   }
 

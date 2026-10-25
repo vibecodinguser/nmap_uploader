@@ -71,4 +71,66 @@ describe('FeedsFilter DOM Dropdown (TDD slice)', () => {
     expect(height).toBe(32)
     expect(el.style.getPropertyValue('--nmap-feeds-select-height')).toBe('32px')
   })
+
+  it('создает секцию выбора периода в попапе и реагирует на клики и изменение состояния', () => {
+    const onFilterChange = vi.fn()
+    const onPeriodChange = vi.fn()
+    const onStopLoading = vi.fn()
+
+    const controller = createFilterDropdownElement(onFilterChange, 'all', {
+      initialDays: 1,
+      onPeriodChange,
+      onStopLoading,
+    })
+
+    const popup = controller.popupElement
+    const periodSection = popup.querySelector('.nmap-feeds-period-section')
+    expect(periodSection).not.toBeNull()
+
+    // Кнопки 1 дн., 3 дн., 7 дн.
+    const periodButtons = popup.querySelectorAll<HTMLButtonElement>('.nmap-feeds-period-btn')
+    expect(periodButtons.length).toBe(3)
+    expect(periodButtons[0].textContent).toBe('1 дн.')
+    expect(periodButtons[1].textContent).toBe('3 дн.')
+    expect(periodButtons[2].textContent).toBe('7 дн.')
+    expect(periodButtons[0].classList.contains('nmap-feeds-period-btn_active')).toBe(true)
+
+    // Клик по 3 дн.
+    periodButtons[1].click()
+    expect(onPeriodChange).toHaveBeenCalledWith(3)
+
+    // Кнопка остановки
+    const stopBtn = popup.querySelector<HTMLButtonElement>('.nmap-feeds-period-stop-btn')
+    expect(stopBtn).not.toBeNull()
+    expect(stopBtn?.style.display).toBe('none')
+
+    // Обновление состояния во время загрузки
+    controller.updatePeriodState({
+      activeDays: 3,
+      targetDays: 3,
+      isLoading: true,
+      loadedCardsCount: 15,
+    })
+
+    const statusText = popup.querySelector('.nmap-feeds-period-status-text')
+    expect(statusText?.textContent).toContain('Загрузка (3 дн.): 15 шт.')
+    expect(stopBtn?.style.display).toBe('inline-block')
+
+    // Клик по «Остановить»
+    stopBtn?.click()
+    expect(onStopLoading).toHaveBeenCalledTimes(1)
+
+    // Спиннер кнопки
+    const spinner = controller.element.querySelector<HTMLElement>('.nmap-feeds-button-spinner')
+    expect(spinner).not.toBeNull()
+    expect(spinner?.style.display).toBe('none')
+
+    controller.setLoadingState(true)
+    expect(spinner?.style.display).toBe('inline-block')
+
+    controller.setLoadingState(false)
+    expect(spinner?.style.display).toBe('none')
+
+    controller.teardown()
+  })
 })

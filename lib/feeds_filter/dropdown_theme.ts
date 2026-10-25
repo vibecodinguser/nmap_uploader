@@ -4,6 +4,7 @@
 export const syncFilterDropdownHeight = (
   dropdownElement: HTMLElement,
   referenceSelect?: HTMLElement | null,
+  popupElement?: HTMLElement | null,
 ): number => {
   const target = referenceSelect
   let measuredHeight = 0
@@ -41,6 +42,11 @@ export const syncFilterDropdownHeight = (
     button.style.maxHeight = heightPx
   }
 
+  const setProperty = (name: string, value: string) => {
+    dropdownElement.style.setProperty(name, value)
+    popupElement?.style.setProperty(name, value)
+  }
+
   if (target && typeof window !== 'undefined') {
     const targetButton =
       target.querySelector<HTMLElement>(
@@ -51,7 +57,7 @@ export const syncFilterDropdownHeight = (
     const color = targetComputed.color
     if (color) {
       dropdownElement.style.setProperty('--nmap-feeds-select-color', color)
-      dropdownElement.style.setProperty('--nmap-feeds-popup-color', color)
+      setProperty('--nmap-feeds-popup-color', color)
     }
 
     const borderRadius = targetComputed.borderRadius
@@ -88,16 +94,35 @@ export const syncFilterDropdownHeight = (
       color === '#ededed'
 
     if (!isLightText && color && color !== 'inherit') {
-      dropdownElement.style.setProperty(
+      setProperty(
         '--nmap-feeds-select-tick',
         "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='6'%3E%3Cpath fill='%23000' d='M10.3 0L5.5 4.7.7 0 0 .7 5.5 6 11 .7z'/%3E%3C/svg%3E\")",
       )
-      dropdownElement.style.setProperty('--nmap-feeds-popup-bg', '#ffffff')
-      dropdownElement.style.setProperty('--nmap-feeds-popup-color', '#000000')
-      dropdownElement.style.setProperty('--nmap-feeds-popup-border', 'rgba(0, 0, 0, 0.15)')
-      dropdownElement.style.setProperty('--nmap-feeds-popup-hover-bg', 'rgba(0, 0, 0, 0.05)')
-      dropdownElement.style.setProperty('--nmap-feeds-popup-checked-bg', 'rgba(0, 0, 0, 0.08)')
-      dropdownElement.style.setProperty('--nmap-feeds-badge-bg', 'rgba(0, 0, 0, 0.08)')
+      setProperty('--nmap-feeds-popup-bg', '#ffffff')
+      setProperty('--nmap-feeds-popup-color', '#000000')
+      setProperty('--nmap-feeds-popup-border', 'rgba(0, 0, 0, 0.15)')
+      setProperty('--nmap-feeds-popup-hover-bg', 'rgba(0, 0, 0, 0.05)')
+      setProperty('--nmap-feeds-popup-checked-bg', 'rgba(0, 0, 0, 0.08)')
+      setProperty('--nmap-feeds-badge-bg', 'rgba(0, 0, 0, 0.08)')
+      setProperty('--nmap-feeds-period-btn-border', 'rgba(0, 0, 0, 0.2)')
+      setProperty('--nmap-feeds-period-btn-bg', '#ffffff')
+      setProperty('--nmap-feeds-period-active-bg', '#fff8d6')
+      setProperty('--nmap-feeds-period-active-color', '#000000')
+    } else if (isLightText) {
+      setProperty(
+        '--nmap-feeds-select-tick',
+        "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='6'%3E%3Cpath fill='%23fff' d='M10.3 0L5.5 4.7.7 0 0 .7 5.5 6 11 .7z'/%3E%3C/svg%3E\")",
+      )
+      setProperty('--nmap-feeds-popup-bg', '#2b2b2b')
+      setProperty('--nmap-feeds-popup-color', '#ffffff')
+      setProperty('--nmap-feeds-popup-border', 'rgba(255, 255, 255, 0.15)')
+      setProperty('--nmap-feeds-popup-hover-bg', 'rgba(255, 255, 255, 0.08)')
+      setProperty('--nmap-feeds-popup-checked-bg', 'rgba(255, 255, 255, 0.15)')
+      setProperty('--nmap-feeds-badge-bg', 'rgba(255, 255, 255, 0.16)')
+      setProperty('--nmap-feeds-period-btn-border', 'rgba(255, 255, 255, 0.25)')
+      setProperty('--nmap-feeds-period-btn-bg', 'transparent')
+      setProperty('--nmap-feeds-period-active-bg', 'rgba(255, 204, 0, 0.2)')
+      setProperty('--nmap-feeds-period-active-color', '#ffcc00')
     }
   }
 

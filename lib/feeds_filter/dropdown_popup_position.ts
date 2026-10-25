@@ -13,6 +13,11 @@ export const positionPopupFixed = ({
   popupElement.style.position = 'fixed'
   popupElement.style.top = `${Math.round(rect.bottom + offsetY)}px`
   popupElement.style.left = `${Math.round(rect.left)}px`
+  if (rect.width > 0) {
+    const widthPx = `${Math.round(rect.width)}px`
+    popupElement.style.width = widthPx
+    popupElement.style.maxWidth = widthPx
+  }
   popupElement.style.display = 'block'
   popupElement.style.visibility = 'visible'
   popupElement.style.opacity = '1'

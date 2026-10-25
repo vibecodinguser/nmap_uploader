@@ -4,15 +4,18 @@ export const FEED_POPUP_MENU_STYLES = `
     .nmap-feeds-status-popup {
       position: fixed !important;
       z-index: 2147483647 !important;
-      min-width: 175px !important;
-      background: var(--nmap-feeds-popup-bg, #2b2b2b) !important;
-      color: var(--nmap-feeds-popup-color, #ffffff) !important;
-      border-radius: 6px !important;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45) !important;
-      border: 1px solid var(--nmap-feeds-popup-border, rgba(255, 255, 255, 0.15)) !important;
-      padding: 4px 0 !important;
-      font-family: var(--nk-user-bar-font-family, "Yandex Sans Text", "YS Text", -apple-system, BlinkMacSystemFont, Arial, sans-serif) !important;
+      width: 200px !important;
+      min-width: 200px !important;
+      max-width: 200px !important;
+      background: #333333 !important;
+      color: #bfbfbf !important;
+      border-radius: 4px !important;
+      box-shadow: rgba(0, 0, 0, 0.1) 0px 0px 0px 1px, rgba(0, 0, 0, 0.4) 0px 10px 20px -5px !important;
+      border: 0px none !important;
+      padding: 0px !important;
+      font-family: "Yandex Sans Text", Arial, Helvetica, sans-serif !important;
       font-size: 13px !important;
+      line-height: 15px !important;
       box-sizing: border-box !important;
       pointer-events: auto !important;
     }
@@ -21,22 +24,59 @@ export const FEED_POPUP_MENU_STYLES = `
       visibility: visible !important;
       opacity: 1 !important;
     }
+    .nmap-feeds-status-popup .nk-popup__content {
+      padding: 4px 0 !important;
+      background: transparent !important;
+      border-radius: 4px !important;
+    }
+    .nmap-feeds-status-popup .nk-menu {
+      background: #333333 !important;
+      color: #bfbfbf !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+    .nmap-feeds-status-popup .nk-menu-item,
     .nmap-feeds-status-popup .nk-menu__item {
       display: flex !important;
+      flex-direction: row !important;
       align-items: center !important;
+      flex-wrap: nowrap !important;
       gap: 8px !important;
-      padding: 6px 12px !important;
+      padding: 6px 14px !important;
       cursor: pointer !important;
       user-select: none !important;
-      color: inherit !important;
-      transition: background-color 0.1s ease !important;
+      color: #bfbfbf !important;
+      background: transparent !important;
+      box-sizing: border-box !important;
+      white-space: nowrap !important;
+      transition: background-color 0.1s ease, color 0.1s ease !important;
     }
-    .nmap-feeds-status-popup .nk-menu__item:hover {
-      background-color: var(--nmap-feeds-popup-hover-bg, rgba(255, 255, 255, 0.08)) !important;
+    .nmap-feeds-status-popup .nk-menu-item::before,
+    .nmap-feeds-status-popup .nk-menu__item::before {
+      display: none !important;
     }
+    .nmap-feeds-status-popup .nk-menu-item:hover,
+    .nmap-feeds-status-popup .nk-menu__item:hover,
+    .nmap-feeds-status-popup .nk-menu-item_hovered {
+      background-color: #4d4d4d !important;
+      color: #ffffff !important;
+    }
+    .nmap-feeds-status-popup .nk-menu-item_checked,
     .nmap-feeds-status-popup .nk-menu__item_checked {
-      background-color: var(--nmap-feeds-popup-checked-bg, rgba(255, 255, 255, 0.15)) !important;
-      font-weight: 600 !important;
+      background-color: #444444 !important;
+      color: #ffffff !important;
+      font-weight: 500 !important;
+    }
+    .nmap-feeds-status-popup .nk-menu__text,
+    .nmap-feeds-status-popup .nk-menu-item__text {
+      color: inherit !important;
+      flex: 1 1 auto !important;
+      display: inline-block !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      white-space: nowrap !important;
     }
     .nmap-feeds-status-select .nk-commit-state-view,
     .nmap-feeds-status-popup .nk-commit-state-view {
@@ -67,12 +107,104 @@ export const FEED_POPUP_MENU_STYLES = `
     .nmap-status-count-badge {
       margin-left: auto !important;
       font-size: 11px !important;
-      font-weight: 600 !important;
-      padding: 1px 6px !important;
-      border-radius: 10px !important;
-      background: var(--nmap-feeds-badge-bg, rgba(255, 255, 255, 0.16)) !important;
+      font-weight: 500 !important;
+      padding: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      border: none !important;
+      outline: none !important;
+      box-shadow: none !important;
       color: inherit !important;
+      opacity: 0.65 !important;
+      flex-shrink: 0 !important;
     }
+
+    .nmap-feeds-period-section {
+      border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+      margin-top: 4px !important;
+      padding: 8px 14px 8px 14px !important;
+      box-sizing: border-box !important;
+      background: #333333 !important;
+      color: #bfbfbf !important;
+    }
+    .nmap-feeds-period-header {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      font-size: 11px !important;
+      font-weight: 600 !important;
+      opacity: 0.65 !important;
+      margin-bottom: 6px !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.5px !important;
+      color: #bfbfbf !important;
+    }
+    .nmap-feeds-period-buttons {
+      display: flex !important;
+      gap: 6px !important;
+      margin-bottom: 6px !important;
+    }
+    .nmap-feeds-period-btn {
+      flex: 1 1 0 !important;
+      padding: 4px 0 !important;
+      border-radius: 4px !important;
+      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+      background: transparent !important;
+      color: #bfbfbf !important;
+      font-size: 12px !important;
+      font-family: inherit !important;
+      font-weight: 500 !important;
+      cursor: pointer !important;
+      text-align: center !important;
+      transition: all 0.15s ease !important;
+      user-select: none !important;
+    }
+    .nmap-feeds-period-btn:hover {
+      background: #4d4d4d !important;
+      border-color: rgba(255, 255, 255, 0.4) !important;
+      color: #ffffff !important;
+    }
+    .nmap-feeds-period-btn.nmap-feeds-period-btn_active {
+      background: rgba(255, 204, 0, 0.15) !important;
+      border-color: #ffcc00 !important;
+      color: #ffcc00 !important;
+      font-weight: 600 !important;
+    }
+    .nmap-feeds-period-status-row {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      gap: 8px !important;
+      font-size: 11px !important;
+      min-height: 22px !important;
+      margin-top: 4px !important;
+      color: #999999 !important;
+    }
+    .nmap-feeds-period-status-text {
+      flex: 1 !important;
+      color: inherit !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+    }
+    .nmap-feeds-period-stop-btn {
+      padding: 2px 6px !important;
+      font-size: 11px !important;
+      border-radius: 3px !important;
+      border: 1px solid rgba(255, 100, 100, 0.5) !important;
+      background: rgba(255, 100, 100, 0.15) !important;
+      color: #ff9999 !important;
+      cursor: pointer !important;
+      white-space: nowrap !important;
+      transition: all 0.15s ease !important;
+    }
+    .nmap-feeds-period-stop-btn:hover {
+      background: rgba(255, 100, 100, 0.3) !important;
+      border-color: #ff6464 !important;
+      color: #ffffff !important;
+    }
+
+
 `
 
 export const FEED_CARD_HIDDEN_STYLES = `

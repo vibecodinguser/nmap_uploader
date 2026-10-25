@@ -1,27 +1,37 @@
 import { getLastCardWithDate, getLastCardWithDayAge, getTargetThresholdMs } from './card_scanner'
 import { waitForNewCards } from './card_waiter'
 import { findEventCards as getEventCards } from './page_adapter'
-import { findFeedScrollableContainer, triggerFeedScrollLoad } from './scroll_scanner'
+import { triggerFeedScrollLoad } from './scroll_scanner'
 
 export * from './card_scanner'
 export * from './card_waiter'
 export * from './scroll_scanner'
 
+export interface FeedDailyLoaderProgress {
+  loadedCardsCount: number
+  targetDays: number
+  isFinished: boolean
+}
+
 export interface FeedDailyLoaderOptions {
   maxStepsPerDay?: number
   stepDelayMs?: number
-  onProgress?: (loadedCount: number, targetDays: number) => void
+  initialDays?: number
+  onProgress?: (progress: FeedDailyLoaderProgress) => void
+  onStateChange?: (isLoading: boolean) => void
 }
 
 export interface FeedDailyLoaderController {
   loadUpToDays: (days: number) => Promise<boolean>
+  stopLoading: () => void
   getLoadedDaysCount: () => number
+  getTargetDays: () => number
   isLoading: () => boolean
   teardown: () => void
 }
 
 /**
- * Создает контроллер автоматической загрузки событий ленты за сутки.
+ * Создает контроллер автоматической загрузки событий ленты за заданный период в днях.
  */
 export const createFeedDailyLoader = (
   feedContainer: HTMLElement,
@@ -29,32 +39,52 @@ export const createFeedDailyLoader = (
 ): FeedDailyLoaderController => {
   const openedTimestamp = Date.now()
   let loadedDaysCount = 1
+  let currentTargetDays = options?.initialDays ?? 1
   let isCurrentlyLoading = false
   let isAllHistoryLoaded = false
   let isTeardown = false
+  let isAbortRequested = false
+  let abortController = new AbortController()
 
-  const scrollContainer = findFeedScrollableContainer(feedContainer)
+  const stopLoading = (): void => {
+    isAbortRequested = true
+    abortController.abort()
+    abortController = new AbortController()
+  }
 
   const loadUpToDays = async (targetDays: number): Promise<boolean> => {
-    if (isCurrentlyLoading || isAllHistoryLoaded || isTeardown) {
+    if (isTeardown || isAllHistoryLoaded) {
       return false
     }
 
+    currentTargetDays = targetDays
+    if (isCurrentlyLoading) {
+      return true
+    }
+
     isCurrentlyLoading = true
+    isAbortRequested = false
+    options?.onStateChange?.(true)
+
     const maxSteps = options?.maxStepsPerDay ?? 60
     const stepDelayMs = options?.stepDelayMs ?? 200
-    const targetThresholdMs = getTargetThresholdMs(targetDays, openedTimestamp)
 
     try {
       let currentStep = 0
       let consecutiveStalls = 0
       const maxStalls = 3
 
-      while (currentStep < maxSteps && !isTeardown) {
+      while (currentStep < maxSteps && !isTeardown && !isAbortRequested) {
         const cards = getEventCards(feedContainer)
+        const targetThresholdMs = getTargetThresholdMs(currentTargetDays, openedTimestamp)
+
         if (cards.length === 0) {
           triggerFeedScrollLoad(feedContainer)
-          const newCount = await waitForNewCards(feedContainer, 0, 2500)
+          const newCount = await waitForNewCards(feedContainer, 0, 2500, abortController.signal)
+          if (isTeardown || isAbortRequested) {
+            break
+          }
+
           if (newCount === 0) {
             consecutiveStalls += 1
             if (consecutiveStalls >= maxStalls) {
@@ -69,7 +99,7 @@ export const createFeedDailyLoader = (
 
         // 1. Приоритетная проверка по дням Народной карты (nk-date-time nk-date-time_mode_relative)
         const lastDayInfo = getLastCardWithDayAge(cards, openedTimestamp)
-        if (lastDayInfo && lastDayInfo.dayAge >= targetDays) {
+        if (lastDayInfo && lastDayInfo.dayAge >= currentTargetDays) {
           break
         }
 
@@ -80,23 +110,37 @@ export const createFeedDailyLoader = (
         }
 
         currentStep += 1
-        options?.onProgress?.(cards.length, targetDays)
+        options?.onProgress?.({
+          loadedCardsCount: cards.length,
+          targetDays: currentTargetDays,
+          isFinished: false,
+        })
 
         const prevCardCount = cards.length
         triggerFeedScrollLoad(feedContainer)
 
-        const nextCardCount = await waitForNewCards(feedContainer, prevCardCount, 3500)
+        const nextCardCount = await waitForNewCards(
+          feedContainer,
+          prevCardCount,
+          3500,
+          abortController.signal,
+        )
+        if (isTeardown || isAbortRequested) {
+          break
+        }
+
         if (nextCardCount <= prevCardCount) {
           consecutiveStalls += 1
           triggerFeedScrollLoad(feedContainer)
 
           if (consecutiveStalls >= maxStalls) {
-            if (lastDayInfo && lastDayInfo.dayAge >= targetDays) {
+            if (lastDayInfo && lastDayInfo.dayAge >= currentTargetDays) {
               break
             }
             if (lastDateInfo && lastDateInfo.date.getTime() < targetThresholdMs) {
               break
             }
+            isAllHistoryLoaded = true
             break
           }
         } else {
@@ -108,44 +152,34 @@ export const createFeedDailyLoader = (
         }
       }
 
-      loadedDaysCount = Math.max(loadedDaysCount, targetDays)
+      const finalCards = getEventCards(feedContainer)
+      loadedDaysCount = Math.max(loadedDaysCount, currentTargetDays)
+      options?.onProgress?.({
+        loadedCardsCount: finalCards.length,
+        targetDays: currentTargetDays,
+        isFinished: true,
+      })
       return true
     } finally {
       isCurrentlyLoading = false
+      options?.onStateChange?.(false)
     }
   }
 
-  const handleScroll = (): void => {
-    if (isCurrentlyLoading || isAllHistoryLoaded || isTeardown) {
-      return
-    }
-
-    const isNearBottom =
-      scrollContainer.scrollTop + scrollContainer.clientHeight >=
-        scrollContainer.scrollHeight - 250 ||
-      feedContainer.scrollTop + feedContainer.clientHeight >= feedContainer.scrollHeight - 250
-
-    if (isNearBottom) {
-      const nextDays = loadedDaysCount + 1
-      void loadUpToDays(nextDays)
-    }
-  }
-
-  feedContainer.addEventListener('scroll', handleScroll, { capture: true, passive: true })
-  scrollContainer.addEventListener('scroll', handleScroll, { passive: true })
-
-  // Инициализация: загрузка правок за первые сутки при открытии ленты
-  void loadUpToDays(1)
+  // Запуск загрузки первого периода (по умолчанию 1 день) при инициализации
+  void loadUpToDays(currentTargetDays)
 
   const teardown = (): void => {
     isTeardown = true
-    feedContainer.removeEventListener('scroll', handleScroll, { capture: true })
-    scrollContainer.removeEventListener('scroll', handleScroll)
+    isAbortRequested = true
+    abortController.abort()
   }
 
   return {
     loadUpToDays,
+    stopLoading,
     getLoadedDaysCount: () => loadedDaysCount,
+    getTargetDays: () => currentTargetDays,
     isLoading: () => isCurrentlyLoading,
     teardown,
   }

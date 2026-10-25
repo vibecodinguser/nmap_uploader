@@ -8,6 +8,7 @@ export const waitForNewCards = (
   container: HTMLElement,
   previousCount: number,
   timeoutMs = 3500,
+  signal?: AbortSignal,
 ): Promise<number> => {
   return new Promise((resolve) => {
     let isResolved = false
@@ -27,8 +28,20 @@ export const waitForNewCards = (
         observer.disconnect()
         observer = null
       }
+      signal?.removeEventListener('abort', handleAbort)
       resolve(count)
     }
+
+    const handleAbort = () => {
+      finish(getEventCards(container).length)
+    }
+
+    if (signal?.aborted) {
+      finish(getEventCards(container).length)
+      return
+    }
+
+    signal?.addEventListener('abort', handleAbort)
 
     timer = setTimeout(() => {
       const currentCards = getEventCards(container)

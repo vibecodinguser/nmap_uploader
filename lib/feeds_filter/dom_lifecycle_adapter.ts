@@ -109,13 +109,25 @@ export class FeedFilterDomAdapter {
     }
 
     if (!this.currentDropdownController) {
-      this.currentDropdownController = createFilterDropdownElement((selectedStatus) => {
-        this.currentFilter = selectedStatus
-        if (this.activeFeedContainer) {
-          const stats = applyFilter(this.activeFeedContainer, this.currentFilter)
-          this.currentDropdownController?.updateCounters(stats)
-        }
-      }, this.currentFilter)
+      this.currentDropdownController = createFilterDropdownElement(
+        (selectedStatus) => {
+          this.currentFilter = selectedStatus
+          if (this.activeFeedContainer) {
+            const stats = applyFilter(this.activeFeedContainer, this.currentFilter)
+            this.currentDropdownController?.updateCounters(stats)
+          }
+        },
+        this.currentFilter,
+        {
+          initialDays: 1,
+          onPeriodChange: (days) => {
+            void this.currentDailyLoader?.loadUpToDays(days)
+          },
+          onStopLoading: () => {
+            this.currentDailyLoader?.stopLoading()
+          },
+        },
+      )
     }
 
     const isAttached = attachFilterDropdownToDom(
@@ -134,7 +146,24 @@ export class FeedFilterDomAdapter {
     if (!this.currentDailyLoader || !this.currentObserver) {
       this.disconnectFeedObserver()
       this.activeFeedContainer = feedContainer
-      this.currentDailyLoader = createFeedDailyLoader(feedContainer)
+      this.currentDailyLoader = createFeedDailyLoader(feedContainer, {
+        initialDays: 1,
+        onStateChange: (isLoading) => {
+          this.currentDropdownController?.setLoadingState(isLoading)
+        },
+        onProgress: (progress) => {
+          this.currentDropdownController?.updatePeriodState({
+            activeDays: progress.targetDays,
+            targetDays: progress.targetDays,
+            isLoading: !progress.isFinished,
+            loadedCardsCount: progress.loadedCardsCount,
+          })
+          if (this.activeFeedContainer) {
+            const stats = applyFilter(this.activeFeedContainer, this.currentFilter)
+            this.currentDropdownController?.updateCounters(stats)
+          }
+        },
+      })
 
       this.currentObserver = new MutationObserver((mutations) => {
         const { hasNewEventCards, shouldCheckPlacement } = analyzeFeedMutations(mutations)

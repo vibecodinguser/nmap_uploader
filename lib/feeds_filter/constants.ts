@@ -14,6 +14,10 @@ export const FEEDS_FILTER_POPUP_ID = 'nmap-uploader-feeds-filter-popup'
 export const FEEDS_FILTER_STYLES_ID = 'nmap-uploader-feeds-filter-styles'
 export const FEED_HIDDEN_CLASS = 'nmap-uploader-feed-event-hidden'
 
+export const HISTORY_PERIOD_OPTIONS = [1, 3, 7] as const
+export type HistoryPeriodDays = (typeof HISTORY_PERIOD_OPTIONS)[number]
+export const DEFAULT_HISTORY_PERIOD_DAYS: HistoryPeriodDays = 1
+
 export const STATUS_FILTER_OPTIONS: readonly StatusFilterOption[] = [
   { id: 'all', label: 'Все статусы' },
   {

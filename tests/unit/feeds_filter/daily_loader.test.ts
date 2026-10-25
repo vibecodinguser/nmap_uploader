@@ -110,5 +110,57 @@ describe('feeds_filter daily_loader and scroll_scanner', () => {
       loader.teardown()
       expect(loader.isLoading()).toBe(false)
     })
+
+    it('позволяет остановить активную загрузку через stopLoading', async () => {
+      const container = document.createElement('div')
+      container.className = 'nk-user-feeds-view'
+      const card = document.createElement('div')
+      card.className = 'nk-event-view'
+      card.innerHTML = '<span class="nk-date-time nk-event-view__date">5 минут назад</span>'
+      container.appendChild(card)
+
+      const loader = createFeedDailyLoader(container, { maxStepsPerDay: 50, stepDelayMs: 50 })
+      expect(loader.isLoading()).toBe(true)
+
+      loader.stopLoading()
+
+      await act(async () => {
+        await new Promise((res) => setTimeout(res, 60))
+      })
+
+      expect(loader.isLoading()).toBe(false)
+      loader.teardown()
+    })
+
+    it('не увеличивает период загрузки при скролле контейнера пользователем', async () => {
+      const container = document.createElement('div')
+      container.className = 'nk-user-feeds-view'
+      const oldCard = document.createElement('div')
+      oldCard.className = 'nk-event-view'
+      oldCard.innerHTML = '<span class="nk-date-time nk-event-view__date">вчера, 12:00</span>'
+      container.appendChild(oldCard)
+
+      const loader = createFeedDailyLoader(container, { initialDays: 1, stepDelayMs: 0 })
+
+      await act(async () => {
+        await new Promise((res) => setTimeout(res, 20))
+      })
+
+      expect(loader.getTargetDays()).toBe(1)
+      expect(loader.getLoadedDaysCount()).toBe(1)
+
+      // Имитируем скролл в самый низ
+      container.scrollTop = 5000
+      container.dispatchEvent(new Event('scroll'))
+
+      await act(async () => {
+        await new Promise((res) => setTimeout(res, 20))
+      })
+
+      // Период НЕ должен увеличиться автоматически
+      expect(loader.getTargetDays()).toBe(1)
+      expect(loader.isLoading()).toBe(false)
+      loader.teardown()
+    })
   })
 })
