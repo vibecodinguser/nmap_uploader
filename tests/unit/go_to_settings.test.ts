@@ -62,6 +62,7 @@ describe('getDefaultGoToItems', () => {
       'Mapillary',
       'Copernicus',
       'Here',
+      'Etomesto',
     ])
   })
 })

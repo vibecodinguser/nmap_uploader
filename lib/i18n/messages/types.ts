@@ -140,6 +140,7 @@ export type Messages = {
   }
   goToSources: {
     Rosreestr: string
+    Etomesto: string
   }
   background: {
     mapPageLoadTimeout: string

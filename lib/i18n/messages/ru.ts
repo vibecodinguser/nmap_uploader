@@ -138,6 +138,7 @@ export const ruMessages = {
   },
   goToSources: {
     Rosreestr: 'Портал НСПД',
+    Etomesto: 'ЭтоМесто',
   },
   background: {
     mapPageLoadTimeout: 'Страница n.maps.yandex.ru не успела загрузиться',

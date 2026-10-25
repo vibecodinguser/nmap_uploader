@@ -6,6 +6,8 @@ describe('getGoToSourceDisplayName', () => {
     expect(getGoToSourceDisplayName('Google')).toBe('Google Maps')
     expect(getGoToSourceDisplayName('Rosreestr')).toBe('Портал НСПД')
     expect(getGoToSourceDisplayName('Rosreestr', 'en')).toBe('NSPD Portal')
+    expect(getGoToSourceDisplayName('Etomesto')).toBe('ЭтоМесто')
+    expect(getGoToSourceDisplayName('Etomesto', 'en')).toBe('EtoMesto')
   })
 
   it('возвращает исходное имя для неизвестного источника', () => {
@@ -24,6 +26,9 @@ describe('getGoToSourceIconUrl', () => {
     expect(getGoToSourceIconUrl('2GIS')).toBe('https://favicon.yandex.net/favicon/2gis.ru?stub=1')
     expect(getGoToSourceIconUrl('OpenStreetMap')).toBe(
       'https://favicon.yandex.net/favicon/www.openstreetmap.org?stub=1',
+    )
+    expect(getGoToSourceIconUrl('Etomesto')).toBe(
+      'https://favicon.yandex.net/favicon/etomesto.com?stub=1',
     )
   })
 

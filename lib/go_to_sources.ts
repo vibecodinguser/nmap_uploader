@@ -60,6 +60,10 @@ export const GO_TO_SOURCES: Record<string, GoToSource> = {
     linkTemplate: 'https://wego.here.com/?map={lat},{lon},{zoom},satellite&x=ep',
     displayName: 'Here Maps ',
   },
+  Etomesto: {
+    linkTemplate: 'https://etomesto.com/map-index/?x={lon}&y={lat}',
+    displayName: 'ЭтоМесто',
+  },
 }
 
 export const GO_TO_SOURCE_NAMES = Object.keys(GO_TO_SOURCES)

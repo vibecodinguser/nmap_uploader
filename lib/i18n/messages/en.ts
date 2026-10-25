@@ -138,6 +138,7 @@ export const enMessages = {
   },
   goToSources: {
     Rosreestr: 'NSPD Portal',
+    Etomesto: 'EtoMesto',
   },
   background: {
     mapPageLoadTimeout: 'n.maps.yandex.ru page did not finish loading in time',

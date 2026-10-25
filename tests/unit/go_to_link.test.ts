@@ -93,4 +93,14 @@ describe('buildGoToLink', () => {
     expect(link).toContain(`coordinate_x=${resolved.longitude}`)
     expect(link).toContain(`coordinate_y=${resolved.latitude}`)
   })
+
+  it('подставляет координаты в шаблон ЭтоМесто (etomesto.com)', () => {
+    const link = buildGoToLink(
+      GO_TO_SOURCES.Etomesto,
+      { longitude: 37.6, latitude: 55.7, zoom: 12 },
+      new Date('2026-06-08T12:00:00Z'),
+    )
+
+    expect(link).toBe('https://etomesto.com/map-index/?x=37.6&y=55.7')
+  })
 })
