@@ -99,30 +99,30 @@ html.nmap-uploader-split-active .ymaps-2-1-map {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
   position: fixed;
-  top: 18px;
+  top: 22px;
   left: 25vw;
   transform: translate(-50%, -50%);
-  background: rgba(33, 33, 33, 0.92);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  height: 38px;
+  line-height: 38px;
+  padding: 0 16px;
+  background-color: rgba(0, 0, 0, 0.5);
   color: #fff;
+  font-family: "Yandex Sans Text", Arial, Helvetica, sans-serif;
   font-size: 13px;
-  font-weight: 500;
-  line-height: 1.4;
-  padding: 5px 14px;
-  border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  font-weight: 400;
+  border-radius: 19px;
+  box-shadow: 0 3px 0 0 rgba(0, 0, 0, 0.05);
   pointer-events: none;
   z-index: 2147483647 !important;
   user-select: none;
   white-space: nowrap;
+  box-sizing: border-box;
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .nmap-uploader-split-banner--warning {
-  background: rgba(220, 38, 38, 0.92);
-  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.4);
+  background-color: rgba(220, 38, 38, 0.85);
+  box-shadow: 0 3px 0 0 rgba(220, 38, 38, 0.2);
 }
 `
