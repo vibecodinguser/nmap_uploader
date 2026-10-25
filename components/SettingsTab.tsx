@@ -13,7 +13,6 @@ import type { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
 import type { useSplitViewButton } from '@/hooks/useSplitViewButton'
 import type { ThemeMode } from '@/hooks/useTheme'
 import { LOCALE_OPTIONS } from '@/lib/i18n/locale'
-import type { Locale } from '@/lib/i18n/locale.types'
 
 type ReloadAfterUploadSettings = Pick<
   ReturnType<typeof useReloadAfterUpload>,

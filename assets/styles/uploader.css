@@ -969,10 +969,7 @@ body {
 
 .point-date-popover {
   position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
-  bottom: auto;
+  inset: calc(100% + 6px) 0 auto;
   width: 100%;
   margin: 0;
   z-index: 1000;
@@ -985,6 +982,7 @@ body {
   font-family: var(--font-family), sans-serif;
 }
 
+/* stylelint-disable-next-line selector-class-pattern -- react-day-picker classes */
 .point-date-popover :is(button, .rdp-root, .rdp-caption_label, .rdp-weekday, .rdp-day_button),
 .point-date-input :is(input, button) {
   font-family: var(--font-family), sans-serif;
