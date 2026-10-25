@@ -140,7 +140,7 @@ export const GO_TO_STYLES = `
 
 .nmap-uploader-polygon-popup__content {
   width: 100%;
-  height: min(560px, calc(100vh - 80px));
+  height: min(580px, calc(100vh - 80px));
   max-height: inherit;
   overflow: hidden;
 }
