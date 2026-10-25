@@ -77,16 +77,23 @@ const applyThemeColors = (element: HTMLElement, colors: GoToThemeColors): void =
 }
 
 export const applyGoToTheme = (element: HTMLElement): void => {
-  if (!element.classList.contains('nmap-uploader-popup--tooltip')) {
-    const colors = readGoToThemeColors()
-    applyThemeColors(element, colors)
+  if (element.classList.contains('nmap-uploader-popup--tooltip')) {
+    const isDark = resolvedExtensionTheme === 'dark'
+    element.classList.toggle('nmap-uploader-tooltip--dark', isDark)
+    return
   }
+  const colors = readGoToThemeColors()
+  applyThemeColors(element, colors)
 }
 
 export const syncGoToTheme = (): void => {
   const colors = readGoToThemeColors()
   for (const element of document.querySelectorAll<HTMLElement>(GO_TO_THEME_TARGETS)) {
     applyThemeColors(element, colors)
+  }
+  const tooltip = document.querySelector<HTMLElement>('.nmap-uploader-popup--tooltip')
+  if (tooltip) {
+    applyGoToTheme(tooltip)
   }
 }
 

@@ -20,6 +20,8 @@ export const createGoToServiceButton = (): HTMLAnchorElement => {
   const button = document.createElement('a')
   button.id = GO_TO_SERVICE_BUTTON_ID
   button.setAttribute('aria-disabled', 'false')
+  button.setAttribute('aria-haspopup', 'menu')
+  button.setAttribute('aria-expanded', 'false')
   button.className = GO_TO_SERVICE_BUTTON_CLASS
   button.appendChild(createGoToIconHost())
   return button

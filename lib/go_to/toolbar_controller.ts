@@ -105,27 +105,32 @@ export class GoToToolbarController {
     if (!existingServiceButton) {
       const goToServiceButtonElement = createGoToServiceButton()
       parent.insertAdjacentElement('afterend', goToServiceButtonElement)
-      const createdServiceButton = getServiceButton()
-      if (createdServiceButton) {
-        createdServiceButton.addEventListener('click', () => {
-          closePolygonUploadPopup()
-          closeNotesPopup()
-          this.onOpenMenu()
-        })
-        createdServiceButton.addEventListener('mouseover', (e) => {
-          if (isToolbarButtonHoverTarget(createdServiceButton, e.target, GO_TO_SERVICE_BUTTON_ID)) {
-            createdServiceButton.classList.add(GO_TO_BUTTON_HOVERED_CLASS)
-            const label = this.getTranslator()('map.externalGeoservices')
-            showGoToTooltip(label, createdServiceButton, 'top')
-          }
-        })
-        createdServiceButton.addEventListener('mouseout', (e) => {
-          if (isToolbarButtonHoverTarget(createdServiceButton, e.target, GO_TO_SERVICE_BUTTON_ID)) {
-            createdServiceButton.classList.remove(GO_TO_BUTTON_HOVERED_CLASS)
-            hideGoToTooltip()
-          }
-        })
-      }
+    }
+
+    const serviceButton = getServiceButton()
+    if (serviceButton && !serviceButton.dataset.nmapGoToBound) {
+      serviceButton.dataset.nmapGoToBound = 'true'
+      serviceButton.addEventListener('click', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        e.stopImmediatePropagation()
+        closePolygonUploadPopup()
+        closeNotesPopup()
+        this.onOpenMenu()
+      })
+      serviceButton.addEventListener('mouseover', (e) => {
+        if (isToolbarButtonHoverTarget(serviceButton, e.target, GO_TO_SERVICE_BUTTON_ID)) {
+          serviceButton.classList.add(GO_TO_BUTTON_HOVERED_CLASS)
+          const label = this.getTranslator()('map.externalGeoservices')
+          showGoToTooltip(label, serviceButton, 'top')
+        }
+      })
+      serviceButton.addEventListener('mouseout', (e) => {
+        if (isToolbarButtonHoverTarget(serviceButton, e.target, GO_TO_SERVICE_BUTTON_ID)) {
+          serviceButton.classList.remove(GO_TO_BUTTON_HOVERED_CLASS)
+          hideGoToTooltip()
+        }
+      })
     }
 
     if (menuEnabled) {

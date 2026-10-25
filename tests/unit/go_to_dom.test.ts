@@ -162,7 +162,7 @@ describe('showGoToTooltip / hideGoToTooltip', () => {
     showGoToTooltip('Подсказка', target, 'top')
 
     const tooltip = document.getElementById(TOOLTIP_ID)
-    expect(tooltip?.style.left).toBe('100px')
+    expect(tooltip?.style.left).toBe('60px')
     expect(tooltip?.style.top).toBe('171px')
 
     rectSpy.mockRestore()

@@ -90,9 +90,45 @@ export const renderMenuItems = (
   }
 }
 
+const positionMenu = (): void => {
+  const menu = getMenu()
+  const button = getServiceButton()
+  if (!menu || !button) return
+
+  const documentRoot = document.documentElement
+  const buttonRect = button.getBoundingClientRect()
+  menu.style.bottom = `${documentRoot.clientHeight - buttonRect.top + 10}px`
+  menu.style.left = `${Math.max(buttonRect.left, 12)}px`
+}
+
+const handleDocumentPointerDown = (event: PointerEvent): void => {
+  const target = event.target
+  if (!(target instanceof Node)) return
+  const menu = getMenu()
+  const button = getServiceButton()
+  if (menu?.contains(target) || button?.contains(target)) return
+  hideGoToMenu()
+}
+
+const handleDocumentKeyDown = (event: KeyboardEvent): void => {
+  if (event.key === 'Escape') {
+    hideGoToMenu()
+  }
+}
+
 export const hideGoToMenu = (): void => {
-  document.documentElement.removeEventListener('click', hideGoToMenu, true)
-  getMenu()?.classList.remove(GO_TO_POPUP_VISIBLE_CLASS)
+  document.removeEventListener('pointerdown', handleDocumentPointerDown, true)
+  document.removeEventListener('keydown', handleDocumentKeyDown)
+  window.removeEventListener('resize', positionMenu)
+
+  const menu = getMenu()
+  if (menu) {
+    menu.classList.remove(GO_TO_POPUP_VISIBLE_CLASS)
+  }
+  const button = getServiceButton()
+  if (button) {
+    button.setAttribute('aria-expanded', 'false')
+  }
   hideGoToTooltip()
 }
 
@@ -109,10 +145,13 @@ export const showGoToMenu = (): void => {
   void refreshGoToThemeFromStorage().then(() => {
     syncGoToTheme()
     menu.classList.add(GO_TO_POPUP_VISIBLE_CLASS)
-    const documentRoot = document.documentElement
-    menu.style.bottom = `${documentRoot.clientHeight - button.getBoundingClientRect().top + 10}px`
-    menu.style.left = `${button.getBoundingClientRect().left}px`
-    documentRoot.addEventListener('click', hideGoToMenu, true)
+    button.setAttribute('aria-expanded', 'true')
+    positionMenu()
+
+    document.addEventListener('pointerdown', handleDocumentPointerDown, true)
+    document.addEventListener('keydown', handleDocumentKeyDown)
+    window.addEventListener('resize', positionMenu)
+
     hideGoToTooltip()
   })
 }

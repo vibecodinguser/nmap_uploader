@@ -21,7 +21,14 @@ describe('mouseToLatLng / latLngToPanelPixel', () => {
 
   it('корректно учитывает смещенный геометрический центр панели/контейнера', () => {
     const customCenter = { cx: 250, cy: 350 }
-    const centerPoint = mouseToLatLng(customCenter.cx, customCenter.cy, view, panel, 'spherical', customCenter)
+    const centerPoint = mouseToLatLng(
+      customCenter.cx,
+      customCenter.cy,
+      view,
+      panel,
+      'spherical',
+      customCenter,
+    )
     expect(centerPoint.longitude).toBeCloseTo(view.longitude, 5)
     expect(centerPoint.latitude).toBeCloseTo(view.latitude, 5)
 

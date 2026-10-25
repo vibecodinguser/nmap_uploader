@@ -1,10 +1,10 @@
+import { GoToToolbarController, loadGoToToolbarSettings, repairToolbarIcons } from '@/lib/go_to'
 import {
-  GoToToolbarController,
   hideGoToMenu,
-  loadGoToToolbarSettings,
-  repairToolbarIcons,
+  openGoToLink,
+  renderMenuItems,
   showGoToMenu,
-} from '@/lib/go_to'
+} from '@/lib/go_to/menu_controller'
 import { GO_TO_REFRESH_ACTION } from '@/lib/go_to_notify'
 import { GO_TO_MENU_ENABLED_STORAGE_KEY, getStoredGoToMenuEnabled } from '@/lib/go_to_settings'
 import {
@@ -39,7 +39,11 @@ export class GoToToolbarLifecycleManager {
       () => mountMgr?.getLocale() ?? 'ru',
       () => showGoToMenu(),
       () => hideGoToMenu(),
-      () => {},
+      (items) => {
+        renderMenuItems(items, mountMgr?.getLocale() ?? 'ru', (sourceName, keepFocus) => {
+          openGoToLink(sourceName, keepFocus, hideGoToMenu)
+        })
+      },
     )
 
     this.mountManager = new GoToToolbarMountManager(this.controller)

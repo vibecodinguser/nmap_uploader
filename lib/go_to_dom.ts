@@ -1,4 +1,5 @@
 import { GO_TO_POPUP_VISIBLE_CLASS } from '@/lib/go_to_styles'
+import { applyGoToTheme } from '@/lib/go_to_theme'
 
 export const queryAllByDomId = (id: string): HTMLElement[] => {
   const elements = document.querySelectorAll<HTMLElement>(`[id="${id}"]`)
@@ -81,11 +82,12 @@ const getTooltipContentElement = (): HTMLElement | null =>
 const createTooltipElement = (): HTMLElement => {
   const tooltip = document.createElement('div')
   tooltip.id = TOOLTIP_ID
-  tooltip.className = 'nmap-uploader-popup nmap-uploader-popup--tooltip'
+  tooltip.className =
+    'nk-popup nk-popup_theme_islands nk-popup_view_tooltip nmap-uploader-popup nmap-uploader-popup--tooltip'
   tooltip.setAttribute('role', 'tooltip')
 
   const content = document.createElement('div')
-  content.className = 'nmap-uploader-popup__content'
+  content.className = 'nk-popup__content nmap-uploader-popup__content'
   tooltip.appendChild(content)
 
   return tooltip
@@ -109,12 +111,13 @@ export const showGoToTooltip = (
   position: 'left' | 'right' | 'top' | 'bottom',
 ): void => {
   const tooltip = ensureTooltipElement()
+  applyGoToTheme(tooltip)
   const content = getTooltipContentElement()
   if (content) {
     content.textContent = text
 
     const gap = 5
-    tooltip.classList.add(GO_TO_POPUP_VISIBLE_CLASS)
+    tooltip.classList.add('nk-popup_visible', GO_TO_POPUP_VISIBLE_CLASS)
     const tooltipRect = tooltip.getBoundingClientRect()
     const alignRect = alignTo.getBoundingClientRect()
 
@@ -124,31 +127,34 @@ export const showGoToTooltip = (
     switch (position) {
       case 'left':
         left = alignRect.left - gap - tooltipRect.width
-        top = alignRect.top
+        top = alignRect.top + (alignRect.height - tooltipRect.height) / 2
         break
       case 'right':
         left = alignRect.right + gap
-        top = alignRect.top
+        top = alignRect.top + (alignRect.height - tooltipRect.height) / 2
         break
       case 'top':
-        left = alignRect.left
+        left = alignRect.left + (alignRect.width - tooltipRect.width) / 2
         top = alignRect.top - gap - tooltipRect.height
         break
       case 'bottom':
-        left = alignRect.left
+        left = alignRect.left + (alignRect.width - tooltipRect.width) / 2
         top = alignRect.top + alignRect.height + gap
         break
       default:
         break
     }
 
+    const docWidth = document.documentElement.offsetWidth
+    if (docWidth && left + tooltipRect.width > docWidth - 8) {
+      left = Math.max(8, docWidth - tooltipRect.width - 8)
+    }
+    if (left < 8) {
+      left = 8
+    }
+
     tooltip.style.left = `${left}px`
     tooltip.style.top = `${top}px`
-
-    const box = tooltip.getBoundingClientRect()
-    if (box.right > document.documentElement.offsetWidth) {
-      tooltip.style.left = `${box.left - (box.right - document.documentElement.offsetWidth)}px`
-    }
   }
 }
 
@@ -156,7 +162,7 @@ export const hideGoToTooltip = (): void => {
   const tooltip = getTooltipElement()
   const content = getTooltipContentElement()
   if (tooltip && content) {
-    tooltip.classList.remove(GO_TO_POPUP_VISIBLE_CLASS)
+    tooltip.classList.remove('nk-popup_visible', GO_TO_POPUP_VISIBLE_CLASS)
     content.textContent = ''
   }
 }

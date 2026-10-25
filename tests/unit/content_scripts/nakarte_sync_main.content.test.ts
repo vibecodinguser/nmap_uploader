@@ -84,9 +84,7 @@ describe('nakarte-sync-main.content', () => {
       }),
     )
 
-    expect(window.location.hash).toBe(
-      '#m=14/55.7123456/37.6123456&l=Otm&n=myTrack&q=pinLocation',
-    )
+    expect(window.location.hash).toBe('#m=14/55.7123456/37.6123456&l=Otm&n=myTrack&q=pinLocation')
   })
 
   it('игнорирует сообщения с чужим origin', () => {

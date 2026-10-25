@@ -59,19 +59,43 @@ export const GO_TO_STYLES = `
   padding: 4px 0;
 }
 
+@keyframes nmapTooltipFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .nmap-uploader-popup--tooltip {
-  z-index: 11001;
-  padding: 6px 10px;
+  position: fixed;
+  z-index: 111001;
+  padding: 0;
+  box-sizing: border-box;
   border-radius: 4px;
-  background: #3d3d3d;
+  background: rgba(0, 0, 0, 0.8);
   color: #fff;
   font:
-    13px/16px "YS Text",
-    arial,
-    helvetica,
+    400 12px/15px "Yandex Sans Text",
+    Arial,
+    Helvetica,
     sans-serif;
+  box-shadow:
+    rgba(0, 0, 0, 0.1) 0px 0px 0px 1px,
+    rgba(0, 0, 0, 0.4) 0px 10px 20px -5px;
+  pointer-events: none;
+  animation: nmapTooltipFadeIn 0.1s ease-out forwards;
+}
+
+.nmap-uploader-popup--tooltip .nmap-uploader-popup__content,
+.nmap-uploader-popup--tooltip .nk-popup__content {
+  padding: 6px 8px 8px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 15px;
+  color: #fff;
   white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .nmap-uploader-menu {
@@ -85,9 +109,10 @@ export const GO_TO_STYLES = `
   display: block;
   padding: 8px 12px 8px 36px;
   font:
-    13px/16px "YS Text",
-    arial,
-    helvetica,
+    13px/16px "Yandex Sans Text",
+    "YS Text",
+    Arial,
+    Helvetica,
     sans-serif;
   color: inherit;
   cursor: pointer;
