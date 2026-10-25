@@ -968,15 +968,26 @@ body {
 }
 
 .point-date-popover {
-  position: fixed;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  bottom: auto;
+  width: 100%;
+  margin: 0;
   z-index: 1000;
   box-sizing: border-box;
   align-items: center;
-  min-width: 378px;
   padding: 0.75rem;
   border-radius: var(--radius);
   box-shadow: var(--elevation-sm);
   pointer-events: auto;
+  font-family: var(--font-family), sans-serif;
+}
+
+.point-date-popover :is(button, .rdp-root, .rdp-caption_label, .rdp-weekday, .rdp-day_button),
+.point-date-input :is(input, button) {
+  font-family: var(--font-family), sans-serif;
 }
 
 :is(.point-date-popover-status, .point-date-legend) {

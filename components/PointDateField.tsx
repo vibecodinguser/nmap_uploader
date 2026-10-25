@@ -1,7 +1,6 @@
 import { Calendar } from 'lucide-react'
 import {
   type ChangeEvent,
-  type CSSProperties,
   type RefObject,
   useCallback,
   useEffect,
@@ -20,8 +19,6 @@ import {
   parseDateDisplay,
 } from '@/lib/date_format'
 import 'react-day-picker/style.css'
-
-const POPOVER_WIDTH = 378
 
 const DAY_PICKER_LOCALES = {
   en: enUS,
@@ -61,60 +58,13 @@ function getCalendarAriaControls(isOpen: boolean, popoverId: string): string | u
   return result
 }
 
-function removeLayoutListeners(): void {
-  window.removeEventListener('resize', dispatchLayoutChange)
-  window.removeEventListener('scroll', dispatchLayoutChange, true)
-}
-
-type LayoutEffectRegistration = {
-  updatePopoverPosition: () => void
-}
-
 type PointerDownRegistration = {
   containerRef: RefObject<HTMLDivElement | null>
   closeCalendar: () => void
 }
 
-const layoutEffectRegistrations = new Set<LayoutEffectRegistration>()
 const pointerDownRegistrations = new Set<PointerDownRegistration>()
-
-let layoutGlobalListenersAttached = false
 let pointerDownGlobalListenerAttached = false
-
-function onLayoutChange(updatePopoverPosition: () => void): void {
-  updatePopoverPosition()
-}
-
-function dispatchLayoutChange(): void {
-  for (const registration of layoutEffectRegistrations) {
-    onLayoutChange(registration.updatePopoverPosition)
-  }
-}
-
-function attachLayoutGlobalListeners(): void {
-  if (!layoutGlobalListenersAttached) {
-    window.addEventListener('resize', dispatchLayoutChange)
-    window.addEventListener('scroll', dispatchLayoutChange, true)
-    layoutGlobalListenersAttached = true
-  }
-}
-
-function detachLayoutGlobalListeners(): void {
-  if (layoutGlobalListenersAttached && layoutEffectRegistrations.size === 0) {
-    removeLayoutListeners()
-    layoutGlobalListenersAttached = false
-  }
-}
-
-function registerLayoutEffect(registration: LayoutEffectRegistration): void {
-  layoutEffectRegistrations.add(registration)
-  attachLayoutGlobalListeners()
-}
-
-function unregisterLayoutEffect(registration: LayoutEffectRegistration): void {
-  layoutEffectRegistrations.delete(registration)
-  detachLayoutGlobalListeners()
-}
 
 function dispatchPointerDown(event: PointerEvent): void {
   for (const registration of pointerDownRegistrations) {
@@ -144,30 +94,6 @@ function registerPointerDown(registration: PointerDownRegistration): void {
 function unregisterPointerDown(registration: PointerDownRegistration): void {
   pointerDownRegistrations.delete(registration)
   detachPointerDownGlobalListener()
-}
-
-function runLayoutEffect(
-  isOpen: boolean,
-  updatePopoverPosition: () => void,
-): LayoutEffectRegistration | null {
-  let registration: LayoutEffectRegistration | null = null
-  if (isOpen) {
-    updatePopoverPosition()
-    registration = { updatePopoverPosition }
-    registerLayoutEffect(registration)
-  }
-  return registration
-}
-
-function cleanupLayoutEffect(registration: LayoutEffectRegistration | null): void {
-  if (registration) {
-    unregisterLayoutEffect(registration)
-  }
-}
-
-function runStoredLayoutCleanup(registrationRef: RefObject<LayoutEffectRegistration | null>): void {
-  cleanupLayoutEffect(registrationRef.current)
-  registrationRef.current = null
 }
 
 function onPointerDown(
@@ -233,17 +159,11 @@ export const PointDateField = ({
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLDivElement>(null)
   const [isOpen, setIsOpen] = useState(false)
-  const [popoverStyle, setPopoverStyle] = useState<CSSProperties>({})
   const { occupiedDates, isLoading, refreshOccupiedDates } = useOccupiedDates()
   const selectedDate = parseDateDisplay(value)
   const inputClassName = getInputClassName(centerPlaceholderWithButton)
   const calendarAriaControls = getCalendarAriaControls(isOpen, popoverId)
-  const layoutRegistrationRef = useRef<LayoutEffectRegistration | null>(null)
   const pointerDownRegistrationRef = useRef<PointerDownRegistration | null>(null)
-
-  const cleanupStoredLayoutEffect = useCallback(function cleanupStoredLayoutEffect(): void {
-    runStoredLayoutCleanup(layoutRegistrationRef)
-  }, [])
 
   const cleanupStoredPointerDownEffect = useCallback(
     function cleanupStoredPointerDownEffect(): void {
@@ -265,38 +185,6 @@ export const PointDateField = ({
       }
     },
     [disabled, refreshOccupiedDates],
-  )
-
-  const updatePopoverPosition = useCallback(function updatePopoverPosition(): void {
-    const input = inputRef.current
-    if (input) {
-      const rect = input.getBoundingClientRect()
-      const gap = 6
-      const viewportPadding = 8
-      const popoverWidth = Math.min(POPOVER_WIDTH, window.innerWidth - viewportPadding * 2)
-      let left = rect.left
-
-      if (left + popoverWidth > window.innerWidth - viewportPadding) {
-        left = window.innerWidth - viewportPadding - popoverWidth
-      }
-      if (left < viewportPadding) {
-        left = viewportPadding
-      }
-
-      setPopoverStyle({
-        top: rect.bottom + gap,
-        left,
-        width: popoverWidth,
-      })
-    }
-  }, [])
-
-  useEffect(
-    function subscribeLayout(): () => void {
-      layoutRegistrationRef.current = runLayoutEffect(isOpen, updatePopoverPosition)
-      return cleanupStoredLayoutEffect
-    },
-    [isOpen, updatePopoverPosition, cleanupStoredLayoutEffect],
   )
 
   useEffect(
@@ -397,7 +285,6 @@ export const PointDateField = ({
             className="point-date-popover"
             id={popoverId}
             aria-label={t('dateField.calendarAria')}
-            style={popoverStyle}
             open
           >
             {isLoading && (
