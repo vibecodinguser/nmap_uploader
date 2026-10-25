@@ -5,6 +5,8 @@ import type { MapLocation } from '@/lib/go_to_link'
 
 export const SPLIT_ROOT_ID = 'nmapUploaderSplit'
 export const SPLIT_BANNER_ID = 'nmapUploaderSplitBanner'
+export const SPLIT_BANNER_WARNING_CLASS = 'nmap-uploader-split-banner--warning'
+export const SPLIT_MAX_RECOMMENDED_ZOOM = 18
 export const LEFT_CURSOR_OVERLAY_CLASS = 'nmap-uploader-split__left-cursor-overlay'
 export const RIGHT_CURSOR_OVERLAY_CLASS = 'nmap-uploader-split__cursor-overlay'
 export const CURSOR_MARKER_CLASS = 'nmap-uploader-split__cursor-marker'

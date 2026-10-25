@@ -58,7 +58,10 @@ describe('go_to_split_view/sync_manager', () => {
 
   it('игнорирует промежуточные boundschange от НЯК в период открытия сплита', () => {
     const dom = mountSplitDomElements('https://nakarte.me')
-    const postMessageSpy = vi.spyOn(dom.iframe.contentWindow!, 'postMessage')
+    if (!dom.iframe.contentWindow) {
+      throw new Error('contentWindow is not available')
+    }
+    const postMessageSpy = vi.spyOn(dom.iframe.contentWindow, 'postMessage')
     const initialLocation = { longitude: 39.115112, latitude: 44.987153, zoom: 18 }
     const manager = new SplitSyncManager(dom, initialLocation)
     manager.initListeners()
@@ -79,5 +82,57 @@ describe('go_to_split_view/sync_manager', () => {
     )
 
     manager.dispose()
+  })
+
+  it('динамически обновляет класс предупреждения на баннере при изменении зума', () => {
+    const banner = document.createElement('div')
+    banner.id = 'nmapUploaderSplitBanner'
+    banner.className = 'nmap-uploader-split-banner'
+    document.body.appendChild(banner)
+
+    const dom = mountSplitDomElements('https://nakarte.me')
+    const manager = new SplitSyncManager(dom, { longitude: 37.61, latitude: 55.75, zoom: 19 })
+    manager.initListeners()
+    expect(banner.classList.contains('nmap-uploader-split-banner--warning')).toBe(true)
+
+    // При имитации колесика мыши (zoom out до 18)
+    const wheelEvent = new WheelEvent('wheel', { deltaY: 100 })
+    window.dispatchEvent(wheelEvent)
+    expect(banner.classList.contains('nmap-uploader-split-banner--warning')).toBe(false)
+
+    manager.dispose()
+  })
+
+  it('не откатывает зум Народной карты назад, если nmaps зум > 18, а от Nakarte пришел зум <= 18', () => {
+    vi.useFakeTimers()
+    window.location.hash = '!/?z=19&ll=37.61,55.75'
+    const dom = mountSplitDomElements('https://nakarte.me')
+    const manager = new SplitSyncManager(dom, { longitude: 37.61, latitude: 55.75, zoom: 19 })
+    manager.initListeners()
+
+    // Проматываем период открытия сплита (grace period 800мс)
+    vi.advanceTimersByTime(1000)
+
+    // Имитируем входящее сообщение от iframe Nakarte с зумом 18 (лимит тайлов Nakarte)
+    const msgEvent = new MessageEvent('message', {
+      origin: 'https://nakarte.me',
+      source: dom.iframe.contentWindow,
+      data: {
+        source: 'nakarte_sync',
+        type: 'location',
+        location: { longitude: 37.62, latitude: 55.76, zoom: 18 },
+      },
+    })
+    window.dispatchEvent(msgEvent)
+
+    // Проматываем debounce синхронизации
+    vi.advanceTimersByTime(100)
+
+    // Проверяем, что в hash Народной карты координаты обновились, но зум сохранился на 19
+    expect(window.location.hash).toContain('z=19')
+    expect(window.location.hash).toContain('37.62%2C55.76')
+
+    manager.dispose()
+    vi.useRealTimers()
   })
 })

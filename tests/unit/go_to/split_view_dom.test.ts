@@ -15,7 +15,10 @@ import {
   createCursorOverlay,
   getNmapsMapViewportBounds,
   mountSplitDomElements,
+  mountSplitNoticeBanner,
   setMarkerElementPosition,
+  unmountSplitNoticeBanner,
+  updateSplitNoticeBannerZoom,
 } from '@/lib/go_to_split_view/dom'
 import { GO_TO_SPLIT_ACTIVE_CLASS } from '@/lib/go_to_styles'
 
@@ -112,5 +115,20 @@ describe('go_to_split_view/dom', () => {
     const bounds = getNmapsMapViewportBounds()
     expect(bounds.cx).toBe(400) // 100 + 300
     expect(bounds.cy).toBe(250) // 50 + 200
+  })
+
+  it('mountSplitNoticeBanner монтирует баннер и переключает warning класс при зуме > 18', () => {
+    const banner = mountSplitNoticeBanner('Тестовое сообщение', 19)
+    expect(banner.textContent).toBe('Тестовое сообщение')
+    expect(banner.classList.contains('nmap-uploader-split-banner--warning')).toBe(true)
+
+    updateSplitNoticeBannerZoom(18)
+    expect(banner.classList.contains('nmap-uploader-split-banner--warning')).toBe(false)
+
+    updateSplitNoticeBannerZoom(20)
+    expect(banner.classList.contains('nmap-uploader-split-banner--warning')).toBe(true)
+
+    unmountSplitNoticeBanner()
+    expect(document.getElementById('nmapUploaderSplitBanner')).toBeNull()
   })
 })

@@ -5,7 +5,7 @@ import { isNakarteOrigin } from '@/lib/extension_origins'
 import type { MapLocation } from '@/lib/go_to_link'
 import { normalizeMapZoom } from '@/lib/go_to_map_sync'
 import { calculateWheelZoomSteps, URL_POLL_INTERVAL_MS } from '@/lib/go_to_split_view/core'
-import type { SplitDomElements } from '@/lib/go_to_split_view/dom'
+import { type SplitDomElements, updateSplitNoticeBannerZoom } from '@/lib/go_to_split_view/dom'
 import { NMAPS_BOUNDS_CHANGE_EVENT, parseBoundsChangeEvent } from '@/lib/nmaps_bounds_notify'
 import { NMAPS_URL_CHANGE_EVENT } from '@/lib/nmaps_url_notify'
 import { SplitCursorTracker } from './cursor_tracker'
@@ -34,6 +34,7 @@ export class SplitSyncManager {
   ) {
     this.cursorTracker = new SplitCursorTracker(dom)
     this.locationCoordinator = new SplitLocationCoordinator(dom.iframe, initialLocation)
+    updateSplitNoticeBannerZoom(initialLocation.zoom)
   }
 
   public initListeners(): void {
@@ -121,6 +122,7 @@ export class SplitSyncManager {
     if (this.locationCoordinator.isOpeningGracePeriod()) return
     const location = readNmapsLocation()
     if (!location) return
+    updateSplitNoticeBannerZoom(location.zoom)
     const resolved = this.locationCoordinator.resolveLocationForNakarteSync(location)
     this.locationCoordinator.pushLocationToNakarte(resolved)
   }
@@ -129,6 +131,7 @@ export class SplitSyncManager {
     if (this.locationCoordinator.isOpeningGracePeriod()) return
     const location = parseBoundsChangeEvent(event)
     if (!location) return
+    updateSplitNoticeBannerZoom(location.zoom)
     this.locationCoordinator.pushLocationToNakarte(location, true)
   }
 
@@ -146,6 +149,7 @@ export class SplitSyncManager {
     const nextZoom = normalizeMapZoom(nmapsLoc.zoom - steps)
     if (nextZoom === nmapsLoc.zoom) return
 
+    updateSplitNoticeBannerZoom(nextZoom)
     this.locationCoordinator.pushLocationToNakarte({ ...nmapsLoc, zoom: nextZoom }, true)
   }
 
@@ -156,6 +160,9 @@ export class SplitSyncManager {
     if (event.source !== this.dom.iframe?.contentWindow) return
 
     if (data.type === 'location' && data.location) {
+      if (typeof data.location.zoom === 'number') {
+        updateSplitNoticeBannerZoom(data.location.zoom)
+      }
       this.locationCoordinator.handleNakarteIncomingLocation(data.location)
       return
     }

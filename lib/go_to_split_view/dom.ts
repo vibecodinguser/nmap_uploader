@@ -10,7 +10,9 @@ import {
   type PixelPosition,
   type ResizedElementStyle,
   SPLIT_BANNER_ID,
+  SPLIT_BANNER_WARNING_CLASS,
   SPLIT_HEADER_SELECTORS,
+  SPLIT_MAX_RECOMMENDED_ZOOM,
   SPLIT_RESIZED_ATTR,
   SPLIT_ROOT_ID,
 } from '@/lib/go_to_split_view/core'
@@ -308,12 +310,21 @@ export const findHeaderContainer = (): HTMLElement | null => {
   return null
 }
 
-export const mountSplitNoticeBanner = (text: string): HTMLElement => {
+export const updateSplitNoticeBannerZoom = (zoom: number): void => {
+  const banner = document.getElementById(SPLIT_BANNER_ID)
+  if (!banner) return
+  banner.classList.toggle(SPLIT_BANNER_WARNING_CLASS, zoom > SPLIT_MAX_RECOMMENDED_ZOOM)
+}
+
+export const mountSplitNoticeBanner = (text: string, initialZoom?: number): HTMLElement => {
   unmountSplitNoticeBanner()
 
   const banner = document.createElement('div')
   banner.id = SPLIT_BANNER_ID
   banner.className = 'nmap-uploader-split-banner'
+  if (typeof initialZoom === 'number' && initialZoom > SPLIT_MAX_RECOMMENDED_ZOOM) {
+    banner.classList.add(SPLIT_BANNER_WARNING_CLASS)
+  }
   banner.textContent = text
   banner.setAttribute('role', 'status')
   banner.setAttribute('aria-live', 'polite')

@@ -118,5 +118,11 @@ html.nmap-uploader-split-active .ymaps-2-1-map {
   z-index: 2147483647 !important;
   user-select: none;
   white-space: nowrap;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.nmap-uploader-split-banner--warning {
+  background: rgba(220, 38, 38, 0.92);
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.4);
 }
 `

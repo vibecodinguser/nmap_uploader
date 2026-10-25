@@ -3,7 +3,7 @@
  */
 import { latLngToPanelPixel, mouseToLatLng } from '@/lib/go_to_geo_projection'
 import type { MapLocation } from '@/lib/go_to_link'
-import { clampMarkerPosition } from '@/lib/go_to_split_view/core'
+import { clampMarkerPosition, SPLIT_MAX_RECOMMENDED_ZOOM } from '@/lib/go_to_split_view/core'
 import {
   getLeftPanelSize,
   getNmapsMapViewportBounds,
@@ -59,9 +59,12 @@ export class SplitCursorTracker {
       return
     }
 
+    const hasDifferentZooms =
+      location.zoom !== undefined && Math.round(location.zoom) !== Math.round(nmapsLocation.zoom)
     if (
-      location.zoom !== undefined &&
-      Math.round(location.zoom) !== Math.round(nmapsLocation.zoom)
+      hasDifferentZooms &&
+      location.zoom <= SPLIT_MAX_RECOMMENDED_ZOOM &&
+      nmapsLocation.zoom <= SPLIT_MAX_RECOMMENDED_ZOOM
     ) {
       this.hideLeftCursorMarker()
       return
@@ -92,8 +95,13 @@ export class SplitCursorTracker {
       return
     }
 
-    // Если зумы карт различаются в момент анимации, скрываем маркер во избежание ложного смещения
-    if (Math.round(view.zoom) !== Math.round(nakarteLocation.zoom)) {
+    // Если зумы карт различаются в момент анимации (в диапазоне до 18), скрываем маркер во избежание ложного смещения
+    const hasDifferentZooms = Math.round(view.zoom) !== Math.round(nakarteLocation.zoom)
+    if (
+      hasDifferentZooms &&
+      view.zoom <= SPLIT_MAX_RECOMMENDED_ZOOM &&
+      nakarteLocation.zoom <= SPLIT_MAX_RECOMMENDED_ZOOM
+    ) {
       this.hideRightCursorMarker()
       return
     }

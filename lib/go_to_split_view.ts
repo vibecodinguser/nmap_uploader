@@ -85,7 +85,10 @@ const mountSplitView = (): boolean => {
     syncManager.initListeners()
 
     // Показываем сообщение по центру хедера Народной карты
-    mountSplitNoticeBanner('Режим корректно работает до зума 18 (Ограничение сервиса Nakarte)')
+    mountSplitNoticeBanner(
+      'Режим корректно работает до зума 18 (Ограничение сервиса Nakarte)',
+      location.zoom,
+    )
 
     // Передаем точные координаты для пересчета тайлов и фиксации центра без сдвига
     scheduleNmapsMapResize(location)

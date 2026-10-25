@@ -7,6 +7,7 @@ import {
 import {
   isStaleNakarteZoomEcho,
   NAKARTE_ZOOM_PUSH_GRACE_MS,
+  SPLIT_MAX_RECOMMENDED_ZOOM,
   SPLIT_OPENING_GRACE_MS,
   SYNC_DEBOUNCE_MS,
 } from '@/lib/go_to_split_view/core'
@@ -108,8 +109,20 @@ export class SplitLocationCoordinator {
       this.clearPendingNakarteZoomPush()
     }
 
-    if (!locationsEqual(location, this.nakarteLocation)) {
-      this.scheduleSyncFromNakarte(location)
+    const targetZoom =
+      this.nmapsLocation &&
+      this.nmapsLocation.zoom > SPLIT_MAX_RECOMMENDED_ZOOM &&
+      location.zoom <= SPLIT_MAX_RECOMMENDED_ZOOM
+        ? this.nmapsLocation.zoom
+        : location.zoom
+
+    const resolvedLocation: MapLocation = {
+      ...location,
+      zoom: targetZoom,
+    }
+
+    if (!locationsEqual(resolvedLocation, this.nakarteLocation)) {
+      this.scheduleSyncFromNakarte(resolvedLocation)
     }
   }
 
