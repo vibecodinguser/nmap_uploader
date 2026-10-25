@@ -9,7 +9,7 @@ export const FEED_SELECT_BUTTON_STYLES = `
       vertical-align: middle !important;
       margin-left: 8px !important;
       position: relative !important;
-      font-family: var(--nk-user-bar-font-family, "YS Text", -apple-system, BlinkMacSystemFont, Arial, sans-serif);
+      font-family: var(--nk-user-bar-font-family, "Yandex Sans Text", "YS Text", -apple-system, BlinkMacSystemFont, Arial, sans-serif);
       pointer-events: auto !important;
       box-sizing: border-box !important;
       height: var(--nmap-feeds-select-height, 28px) !important;

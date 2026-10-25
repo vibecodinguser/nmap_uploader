@@ -11,7 +11,7 @@ export const FEED_POPUP_MENU_STYLES = `
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45) !important;
       border: 1px solid var(--nmap-feeds-popup-border, rgba(255, 255, 255, 0.15)) !important;
       padding: 4px 0 !important;
-      font-family: var(--nk-user-bar-font-family, "YS Text", -apple-system, BlinkMacSystemFont, Arial, sans-serif) !important;
+      font-family: var(--nk-user-bar-font-family, "Yandex Sans Text", "YS Text", -apple-system, BlinkMacSystemFont, Arial, sans-serif) !important;
       font-size: 13px !important;
       box-sizing: border-box !important;
       pointer-events: auto !important;

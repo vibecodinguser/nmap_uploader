@@ -33,7 +33,7 @@ export class PointCounterUi {
       border-radius: 19px;
       line-height: 38px;
       white-space: nowrap;
-      font-family: "YS Text", Arial, sans-serif;
+      font-family: "Yandex Sans Text", "YS Text", Arial, Helvetica, sans-serif;
       font-size: 13px;
       z-index: 9999;
       pointer-events: none;

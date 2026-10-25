@@ -12,7 +12,7 @@
   --nk-user-bar-font-size: 13px;
   --nk-user-bar-line-height: 16px;
   --nk-user-bar-font-weight: 400;
-  --nk-user-bar-font-family: "YS Text", arial, helvetica, sans-serif;
+  --nk-user-bar-font-family: "Yandex Sans Text", "YS Text", arial, helvetica, sans-serif;
   --success: #16a34a;
   --error: #dc2626;
   --transition-ui: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1630,7 +1630,7 @@ body {
   padding: 6px 12px;
   border-radius: 8px;
   font-size: 13px;
-  font-family: "YS Text", Arial, sans-serif;
+  font-family: "Yandex Sans Text", "YS Text", Arial, sans-serif;
   white-space: nowrap;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   pointer-events: none;

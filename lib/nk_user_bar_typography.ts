@@ -10,7 +10,7 @@ export const NK_USER_BAR_TYPOGRAPHY_FALLBACK: NkUserBarTypography = {
   fontSize: '13px',
   lineHeight: '16px',
   fontWeight: '400',
-  fontFamily: 'YS Text, Arial, Helvetica, sans-serif',
+  fontFamily: '"Yandex Sans Text", "YS Text", Arial, Helvetica, sans-serif',
 }
 
 const NK_USER_BAR_SELECTORS = [
