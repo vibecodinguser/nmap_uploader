@@ -6,7 +6,7 @@ export const renderPickerSvg = (
   accumulatedPixels: { x: number; y: number }[],
   geomType: string,
 ): void => {
-  svg.innerHTML = ''
+  svg.replaceChildren()
   if (accumulatedPixels.length === 0) return
 
   const pointsStr = accumulatedPixels.map((p) => `${p.x},${p.y}`).join(' ')

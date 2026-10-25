@@ -1,12 +1,12 @@
 import type { Plugin } from 'vite'
 
-const DANGEROUS_INNER_HTML = /domElement\.innerHTML = key;/g
+const DANGEROUS_INNER_HTML = /domElement\.innerHTML\s*=\s*key/g
 
 const SAFE_INNER_HTML_REPLACEMENT =
-  '{const __amoParsed=new DOMParser().parseFromString(String(key),"text/html");domElement.replaceChildren();for(const __amoNode of __amoParsed.body.childNodes)domElement.appendChild(domElement.ownerDocument.importNode(__amoNode,true));}'
+  '((__el, __html) => { const __p = new DOMParser().parseFromString(String(__html), "text/html"); __el.replaceChildren(); for (const __n of __p.body.childNodes) __el.appendChild(__el.ownerDocument.importNode(__n, true)); })(domElement, key)'
 
 const SCRIPT_INNER_HTML_BLOCK =
-  /nextResource = ownerDocument\.createElement\("div"\);\s*nextResource\.innerHTML = "<script>\\x3c\/script>";\s*nextResource = nextResource\.removeChild\(\s*nextResource\.firstChild\s*\);/g
+  /nextResource\s*=\s*ownerDocument\.createElement\("div"\);\s*nextResource\.innerHTML\s*=\s*"<script>(?:\\x3c|<)\/script>";\s*nextResource\s*=\s*nextResource\.removeChild\(\s*nextResource\.firstChild\s*\);/g
 
 const SCRIPT_DIRECT_CREATE = 'nextResource = ownerDocument.createElement("script");'
 
