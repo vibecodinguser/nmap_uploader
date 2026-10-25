@@ -61,7 +61,7 @@ export const ruMessages = {
     openCalendarAria: 'Открыть календарь',
     calendarAria: 'Календарь',
     loadingDates: 'Загрузка дат…',
-    occupiedLegend: 'Дата с заметкой в Блокноте картографа',
+    occupiedLegend: 'Уже есть заметка с этой датой',
   },
   upload: {
     dropzoneAria: 'Зона загрузки файлов',
