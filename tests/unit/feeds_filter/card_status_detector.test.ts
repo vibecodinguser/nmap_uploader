@@ -1,7 +1,11 @@
 // @vitest-environment happy-dom
 
 import { beforeEach, describe, expect, it } from 'vitest'
-import { getCommitStateStatus, getEventCardStatus } from '@/lib/feeds_filter/card_status_detector'
+import {
+  getCommitStateStatus,
+  getEventCardAction,
+  getEventCardStatus,
+} from '@/lib/feeds_filter/card_status_detector'
 
 describe('feeds_filter card_status_detector', () => {
   beforeEach(() => {
@@ -143,6 +147,43 @@ describe('feeds_filter card_status_detector', () => {
       const cardUnknown = document.createElement('div')
       cardUnknown.innerHTML = '<span class="nk-badge nk-event-view__badge">Неизвестно</span>'
       expect(getEventCardStatus(cardUnknown)).toBe('other')
+    })
+  })
+
+  describe('getEventCardAction', () => {
+    it('определяет действие "delete" при наличии бейджа nk-badge_color_red с текстом "удалён"', () => {
+      const card = document.createElement('div')
+      card.className = 'nk-event-view'
+      card.innerHTML = '<div class="nk-badge nk-badge_color_red nk-event-view__badge">удалён</div>'
+
+      expect(getEventCardAction(card)).toBe('delete')
+    })
+
+    it('определяет действие "create" при наличии бейджа nk-badge_color_green с текстом "создан"', () => {
+      const card = document.createElement('div')
+      card.className = 'nk-event-view'
+      card.innerHTML =
+        '<div class="nk-badge nk-badge_color_green nk-event-view__badge">создан</div>'
+
+      expect(getEventCardAction(card)).toBe('create')
+    })
+
+    it('определяет действие "edit", если у правки нет бейджа статуса действия', () => {
+      const card = document.createElement('div')
+      card.className = 'nk-event-view'
+      card.innerHTML =
+        '<span class="nk-icon nk-icon_id_commit-approved nk-commit-state-view nk-event-view__commit-state"></span>'
+
+      expect(getEventCardAction(card)).toBe('edit')
+    })
+
+    it('возвращает "edit", если бейдж имеет другой текст или цвет', () => {
+      const card = document.createElement('div')
+      card.className = 'nk-event-view'
+      card.innerHTML =
+        '<div class="nk-badge nk-badge_color_yellow nk-event-view__badge">другое</div>'
+
+      expect(getEventCardAction(card)).toBe('edit')
     })
   })
 })

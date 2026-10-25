@@ -72,3 +72,35 @@ export const getEventCardStatus = (card: HTMLElement): FeedStatusId | 'other' =>
 export const extractCardStatus = (card: HTMLElement): FeedItemStatus => {
   return getEventCardStatus(card)
 }
+
+/**
+ * Определяет действие карточки (удаления, редактирование, создание) по бейджу nk-event-view__badge.
+ */
+export const getEventCardAction = (card: HTMLElement): 'delete' | 'edit' | 'create' => {
+  const badge = card.querySelector<HTMLElement>(
+    '.nk-event-view__badge, .nk-badge, [class*="badge"]',
+  )
+  if (!badge) {
+    return 'edit'
+  }
+
+  const badgeClass = (badge.className || '').toLowerCase()
+  const text = (badge.textContent || '').trim().toLowerCase()
+
+  if (badgeClass.includes('nk-badge_color_red') && text === 'удалён') {
+    return 'delete'
+  }
+
+  if (badgeClass.includes('nk-badge_color_green') && text === 'создан') {
+    return 'create'
+  }
+
+  return 'edit'
+}
+
+/**
+ * Извлекает действие над объектом из карточки события.
+ */
+export const extractCardAction = (card: HTMLElement): 'delete' | 'edit' | 'create' => {
+  return getEventCardAction(card)
+}

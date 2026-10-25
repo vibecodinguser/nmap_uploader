@@ -140,3 +140,91 @@ export const attachFilterDropdownToDom = (
   }
   return true
 }
+
+/**
+ * Ищет секцию фильтров действий nk-user-events-view__filters в интерфейсе ленты.
+ */
+export const findActionFilterContainer = (container?: HTMLElement | null): HTMLElement | null => {
+  const selectors = [
+    '.nk-user-events-view__filters.nk-section.nk-section_level_1',
+    '.nk-user-events-view__filters',
+    '[class*="user-events-view__filters"]',
+  ]
+
+  if (container) {
+    for (const selector of selectors) {
+      const found = container.querySelector<HTMLElement>(selector)
+      if (found) return found
+    }
+    for (const selector of selectors) {
+      if (container.matches(selector)) return container
+    }
+  }
+
+  for (const selector of selectors) {
+    const found = document.querySelector<HTMLElement>(selector)
+    if (found) return found
+  }
+
+  return null
+}
+
+/**
+ * Размещает дропдаун фильтра действий внутри секции nk-user-events-view__filters.
+ */
+export const attachActionFilterDropdownToDom = (
+  actionDropdownElement: HTMLElement,
+  container: HTMLElement,
+): boolean => {
+  if (!container || !actionDropdownElement) {
+    return false
+  }
+
+  const filtersSection = findActionFilterContainer(container)
+  if (!filtersSection) {
+    if (actionDropdownElement.parentElement) {
+      actionDropdownElement.style.display = 'none'
+    }
+    return false
+  }
+
+  const categoryFilter = filtersSection.querySelector<HTMLElement>(
+    '.nk-user-events-view__category-group-filter',
+  )
+
+  actionDropdownElement.style.display = ''
+
+  const referenceSelect = categoryFilter || findTargetSelect(container)
+
+  if (categoryFilter) {
+    if (categoryFilter.nextElementSibling !== actionDropdownElement) {
+      try {
+        categoryFilter.insertAdjacentElement('afterend', actionDropdownElement)
+      } catch (error) {
+        console.warn(
+          '[nmap-uploader] Ошибка при размещении селекта действий рядом с categoryFilter:',
+          error,
+        )
+        return false
+      }
+    }
+  } else if (!filtersSection.contains(actionDropdownElement)) {
+    try {
+      filtersSection.appendChild(actionDropdownElement)
+    } catch (error) {
+      console.warn(
+        '[nmap-uploader] Ошибка при размещении селекта действий в filtersSection:',
+        error,
+      )
+      return false
+    }
+  }
+
+  syncFilterDropdownHeight(actionDropdownElement, referenceSelect)
+  if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+    window.requestAnimationFrame(() => {
+      syncFilterDropdownHeight(actionDropdownElement, referenceSelect)
+    })
+  }
+  return true
+}

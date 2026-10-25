@@ -1,13 +1,18 @@
 import { analyzeFeedMutations, isFeedContainerReadyForFilter } from './feed_mutation_scanner'
 import {
-  applyFeedFilterToDom,
+  type ActionFilterDropdownController,
+  applyCombinedFeedFilterToDom,
+  attachActionFilterDropdownToDom,
   attachFilterDropdownToDom,
+  createActionFilterDropdownElement,
   createFeedDailyLoader,
   createFilterDropdownElement,
+  FEEDS_ACTION_FILTER_POPUP_ID,
+  FEEDS_ACTION_FILTER_SELECT_ID,
   FEEDS_FILTER_POPUP_ID,
   FEEDS_FILTER_SELECT_ID,
+  type FeedActionId,
   type FeedDailyLoaderController,
-  type FeedStats,
   type FeedStatusId,
   type FilterDropdownController,
   findFeedContainer,
@@ -17,9 +22,11 @@ import {
 
 export class FeedFilterDomAdapter {
   private currentFilter: FeedStatusId = 'all'
+  private currentActionFilter: FeedActionId = 'all'
   private currentObserver: MutationObserver | null = null
   private activeFeedContainer: HTMLElement | null = null
   private currentDropdownController: FilterDropdownController | null = null
+  private currentActionDropdownController: ActionFilterDropdownController | null = null
   private currentDailyLoader: FeedDailyLoaderController | null = null
 
   public getActiveContainer(): HTMLElement | null {
@@ -28,6 +35,10 @@ export class FeedFilterDomAdapter {
 
   public getDropdownController(): FilterDropdownController | null {
     return this.currentDropdownController
+  }
+
+  public getActionDropdownController(): ActionFilterDropdownController | null {
+    return this.currentActionDropdownController
   }
 
   public checkAndAttach(isFeatureEnabled: boolean): void {
@@ -53,6 +64,11 @@ export class FeedFilterDomAdapter {
       this.currentDropdownController = null
     }
 
+    if (this.currentActionDropdownController) {
+      this.currentActionDropdownController.teardown()
+      this.currentActionDropdownController = null
+    }
+
     const existingSelect = document.getElementById(FEEDS_FILTER_SELECT_ID)
     if (existingSelect) {
       existingSelect.remove()
@@ -61,6 +77,16 @@ export class FeedFilterDomAdapter {
     const existingPopup = document.getElementById(FEEDS_FILTER_POPUP_ID)
     if (existingPopup) {
       existingPopup.remove()
+    }
+
+    const existingActionSelect = document.getElementById(FEEDS_ACTION_FILTER_SELECT_ID)
+    if (existingActionSelect) {
+      existingActionSelect.remove()
+    }
+
+    const existingActionPopup = document.getElementById(FEEDS_ACTION_FILTER_POPUP_ID)
+    if (existingActionPopup) {
+      existingActionPopup.remove()
     }
 
     const hiddenCards = document.querySelectorAll('.nmap-uploader-feed-event-hidden')
@@ -104,8 +130,12 @@ export class FeedFilterDomAdapter {
 
     this.activeFeedContainer = feedContainer
 
-    const applyFilter = (container: HTMLElement, filter: FeedStatusId): FeedStats => {
-      return applyFeedFilterToDom({ container, filter })
+    const applyFilters = (container: HTMLElement) => {
+      return applyCombinedFeedFilterToDom({
+        container,
+        statusFilter: this.currentFilter,
+        actionFilter: this.currentActionFilter,
+      })
     }
 
     if (!this.currentDropdownController) {
@@ -113,8 +143,9 @@ export class FeedFilterDomAdapter {
         (selectedStatus) => {
           this.currentFilter = selectedStatus
           if (this.activeFeedContainer) {
-            const stats = applyFilter(this.activeFeedContainer, this.currentFilter)
-            this.currentDropdownController?.updateCounters(stats)
+            const { statusStats, actionStats } = applyFilters(this.activeFeedContainer)
+            this.currentDropdownController?.updateCounters(statusStats)
+            this.currentActionDropdownController?.updateCounters(actionStats)
           }
         },
         this.currentFilter,
@@ -130,6 +161,17 @@ export class FeedFilterDomAdapter {
       )
     }
 
+    if (!this.currentActionDropdownController) {
+      this.currentActionDropdownController = createActionFilterDropdownElement((selectedAction) => {
+        this.currentActionFilter = selectedAction
+        if (this.activeFeedContainer) {
+          const { statusStats, actionStats } = applyFilters(this.activeFeedContainer)
+          this.currentDropdownController?.updateCounters(statusStats)
+          this.currentActionDropdownController?.updateCounters(actionStats)
+        }
+      }, this.currentActionFilter)
+    }
+
     const isAttached = attachFilterDropdownToDom(
       this.currentDropdownController.element,
       feedContainer,
@@ -140,8 +182,12 @@ export class FeedFilterDomAdapter {
       return
     }
 
-    const initialStats = applyFilter(feedContainer, this.currentFilter)
-    this.currentDropdownController.updateCounters(initialStats)
+    // Прикрепляем фильтр действий к секции nk-user-events-view__filters при ее наличии
+    attachActionFilterDropdownToDom(this.currentActionDropdownController.element, feedContainer)
+
+    const initialStats = applyFilters(feedContainer)
+    this.currentDropdownController.updateCounters(initialStats.statusStats)
+    this.currentActionDropdownController.updateCounters(initialStats.actionStats)
 
     if (!this.currentDailyLoader || !this.currentObserver) {
       this.disconnectFeedObserver()
@@ -159,8 +205,9 @@ export class FeedFilterDomAdapter {
             loadedCardsCount: progress.loadedCardsCount,
           })
           if (this.activeFeedContainer) {
-            const stats = applyFilter(this.activeFeedContainer, this.currentFilter)
-            this.currentDropdownController?.updateCounters(stats)
+            const { statusStats, actionStats } = applyFilters(this.activeFeedContainer)
+            this.currentDropdownController?.updateCounters(statusStats)
+            this.currentActionDropdownController?.updateCounters(actionStats)
           }
         },
       })
@@ -180,11 +227,18 @@ export class FeedFilterDomAdapter {
               this.activeFeedContainer,
             )
           }
+          if (this.currentActionDropdownController) {
+            attachActionFilterDropdownToDom(
+              this.currentActionDropdownController.element,
+              this.activeFeedContainer,
+            )
+          }
         }
 
-        if (hasNewEventCards && this.activeFeedContainer && this.currentDropdownController) {
-          const stats = applyFilter(this.activeFeedContainer, this.currentFilter)
-          this.currentDropdownController.updateCounters(stats)
+        if (hasNewEventCards && this.activeFeedContainer) {
+          const { statusStats, actionStats } = applyFilters(this.activeFeedContainer)
+          this.currentDropdownController?.updateCounters(statusStats)
+          this.currentActionDropdownController?.updateCounters(actionStats)
         }
       })
 
@@ -198,5 +252,6 @@ export class FeedFilterDomAdapter {
 
   public syncHeight(): void {
     this.currentDropdownController?.syncHeight()
+    this.currentActionDropdownController?.syncHeight()
   }
 }

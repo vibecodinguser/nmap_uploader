@@ -1,6 +1,9 @@
 export type FeedStatusId = 'all' | 'published' | 'green' | 'yellow' | 'red'
 export type FeedItemStatus = FeedStatusId | 'other'
 
+export type FeedActionId = 'all' | 'delete' | 'edit' | 'create'
+export type FeedItemAction = 'delete' | 'edit' | 'create'
+
 export interface FeedStats {
   total: number
   published: number
@@ -9,14 +12,28 @@ export interface FeedStats {
   red: number
 }
 
+export interface FeedActionsStats {
+  total: number
+  delete: number
+  edit: number
+  create: number
+}
+
 export interface FeedEventItem {
   id: string
   status: FeedItemStatus
+  action?: FeedItemAction
 }
 
 export type FilterFeedEventsInput = {
   events: readonly FeedEventItem[]
   filter: FeedStatusId
+}
+
+export type FilterCombinedFeedEventsInput = {
+  events: readonly FeedEventItem[]
+  statusFilter: FeedStatusId
+  actionFilter: FeedActionId
 }
 
 /**
@@ -44,6 +61,43 @@ export const calculateFeedStats = (events: readonly FeedEventItem[]): FeedStats 
   }
 
   return stats
+}
+
+/**
+ * Вычисляет статистику по действиям правок (чистая функция).
+ */
+export const calculateFeedActionsStats = (events: readonly FeedEventItem[]): FeedActionsStats => {
+  const stats: FeedActionsStats = {
+    total: events.length,
+    delete: 0,
+    edit: 0,
+    create: 0,
+  }
+
+  for (const event of events) {
+    if (event.action === 'delete') {
+      stats.delete += 1
+    } else if (event.action === 'create') {
+      stats.create += 1
+    } else if (event.action === 'edit') {
+      stats.edit += 1
+    }
+  }
+
+  return stats
+}
+
+/**
+ * Проверяет видимость карточки по пересечению фильтров статуса и действия (Логическое И).
+ */
+export const isCardVisibleByCombinedFilter = (
+  item: { status: FeedItemStatus; action?: FeedItemAction },
+  statusFilter: FeedStatusId,
+  actionFilter: FeedActionId,
+): boolean => {
+  const statusMatches = statusFilter === 'all' || item.status === statusFilter
+  const actionMatches = actionFilter === 'all' || item.action === actionFilter
+  return statusMatches && actionMatches
 }
 
 /**

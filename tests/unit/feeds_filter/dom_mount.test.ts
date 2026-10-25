@@ -1,7 +1,9 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest'
 import {
+  attachActionFilterDropdownToDom,
   attachFilterDropdownToDom,
+  findActionFilterContainer,
   findFeedContainer,
   findFeedHeader,
   findTargetSelect,
@@ -140,6 +142,53 @@ describe('feeds_filter/dom_mount', () => {
       root.appendChild(feedView)
 
       expect(findFeedContainer(root)).toBe(feedView)
+    })
+  })
+
+  describe('findActionFilterContainer и attachActionFilterDropdownToDom', () => {
+    it('находит секцию nk-user-events-view__filters nk-section nk-section_level_1 и монтирует в нее дропдаун действий', () => {
+      const container = document.createElement('div')
+      container.className = 'nk-user-feeds-view'
+
+      const filtersSection = document.createElement('div')
+      filtersSection.className = 'nk-user-events-view__filters nk-section nk-section_level_1'
+      container.appendChild(filtersSection)
+
+      const actionDropdown = document.createElement('div')
+      actionDropdown.id = 'nmap-feeds-action-select'
+
+      const attached = attachActionFilterDropdownToDom(actionDropdown, container)
+      expect(findActionFilterContainer(container)).toBe(filtersSection)
+      expect(attached).toBe(true)
+      expect(filtersSection.contains(actionDropdown)).toBe(true)
+    })
+
+    it('монтирует дропдаун действий в один ряд сразу после category-group-filter при его наличии', () => {
+      const container = document.createElement('div')
+      container.className = 'nk-user-feeds-view'
+
+      const filtersSection = document.createElement('div')
+      filtersSection.className = 'nk-user-events-view__filters nk-section nk-section_level_1'
+      const categoryFilter = document.createElement('div')
+      categoryFilter.className = 'nk-select nk-user-events-view__category-group-filter'
+      filtersSection.appendChild(categoryFilter)
+      container.appendChild(filtersSection)
+
+      const actionDropdown = document.createElement('div')
+      actionDropdown.id = 'nmap-feeds-action-select'
+
+      const attached = attachActionFilterDropdownToDom(actionDropdown, container)
+      expect(attached).toBe(true)
+      expect(categoryFilter.nextElementSibling).toBe(actionDropdown)
+    })
+
+    it('возвращает false, если секция фильтров действий отсутствует', () => {
+      const container = document.createElement('div')
+      container.className = 'nk-user-feeds-view'
+
+      const actionDropdown = document.createElement('div')
+      const attached = attachActionFilterDropdownToDom(actionDropdown, container)
+      expect(attached).toBe(false)
     })
   })
 })

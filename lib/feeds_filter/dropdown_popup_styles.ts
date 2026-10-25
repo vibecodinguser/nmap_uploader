@@ -1,7 +1,10 @@
 import { FEED_HIDDEN_CLASS } from './constants'
 
 export const FEED_POPUP_MENU_STYLES = `
-    .nmap-feeds-status-popup {
+    #nmap-uploader-feeds-filter-popup,
+    #nmap-uploader-feeds-action-filter-popup,
+    .nmap-feeds-status-popup,
+    .nmap-feeds-action-popup {
       position: fixed !important;
       z-index: 2147483647 !important;
       width: 200px !important;
@@ -19,17 +22,26 @@ export const FEED_POPUP_MENU_STYLES = `
       box-sizing: border-box !important;
       pointer-events: auto !important;
     }
-    .nmap-feeds-status-popup.nk-popup_visible {
+    #nmap-uploader-feeds-filter-popup.nk-popup_visible,
+    #nmap-uploader-feeds-action-filter-popup.nk-popup_visible,
+    .nmap-feeds-status-popup.nk-popup_visible,
+    .nmap-feeds-action-popup.nk-popup_visible {
       display: block !important;
       visibility: visible !important;
       opacity: 1 !important;
     }
-    .nmap-feeds-status-popup .nk-popup__content {
+    #nmap-uploader-feeds-filter-popup .nk-popup__content,
+    #nmap-uploader-feeds-action-filter-popup .nk-popup__content,
+    .nmap-feeds-status-popup .nk-popup__content,
+    .nmap-feeds-action-popup .nk-popup__content {
       padding: 4px 0 !important;
       background: transparent !important;
       border-radius: 4px !important;
     }
-    .nmap-feeds-status-popup .nk-menu {
+    #nmap-uploader-feeds-filter-popup .nk-menu,
+    #nmap-uploader-feeds-action-filter-popup .nk-menu,
+    .nmap-feeds-status-popup .nk-menu,
+    .nmap-feeds-action-popup .nk-menu {
       background: #333333 !important;
       color: #bfbfbf !important;
       border: none !important;
@@ -37,8 +49,14 @@ export const FEED_POPUP_MENU_STYLES = `
       padding: 0 !important;
       margin: 0 !important;
     }
+    #nmap-uploader-feeds-filter-popup .nk-menu-item,
+    #nmap-uploader-feeds-action-filter-popup .nk-menu-item,
+    #nmap-uploader-feeds-filter-popup .nk-menu__item,
+    #nmap-uploader-feeds-action-filter-popup .nk-menu__item,
     .nmap-feeds-status-popup .nk-menu-item,
-    .nmap-feeds-status-popup .nk-menu__item {
+    .nmap-feeds-action-popup .nk-menu-item,
+    .nmap-feeds-status-popup .nk-menu__item,
+    .nmap-feeds-action-popup .nk-menu__item {
       display: flex !important;
       flex-direction: row !important;
       align-items: center !important;
@@ -53,24 +71,49 @@ export const FEED_POPUP_MENU_STYLES = `
       white-space: nowrap !important;
       transition: background-color 0.1s ease, color 0.1s ease !important;
     }
+    #nmap-uploader-feeds-filter-popup .nk-menu-item::before,
+    #nmap-uploader-feeds-action-filter-popup .nk-menu-item::before,
+    #nmap-uploader-feeds-filter-popup .nk-menu__item::before,
+    #nmap-uploader-feeds-action-filter-popup .nk-menu__item::before,
     .nmap-feeds-status-popup .nk-menu-item::before,
-    .nmap-feeds-status-popup .nk-menu__item::before {
+    .nmap-feeds-action-popup .nk-menu-item::before,
+    .nmap-feeds-status-popup .nk-menu__item::before,
+    .nmap-feeds-action-popup .nk-menu__item::before {
       display: none !important;
     }
+    #nmap-uploader-feeds-filter-popup .nk-menu-item:hover,
+    #nmap-uploader-feeds-action-filter-popup .nk-menu-item:hover,
+    #nmap-uploader-feeds-filter-popup .nk-menu__item:hover,
+    #nmap-uploader-feeds-action-filter-popup .nk-menu__item:hover,
     .nmap-feeds-status-popup .nk-menu-item:hover,
+    .nmap-feeds-action-popup .nk-menu-item:hover,
     .nmap-feeds-status-popup .nk-menu__item:hover,
-    .nmap-feeds-status-popup .nk-menu-item_hovered {
+    .nmap-feeds-action-popup .nk-menu__item:hover,
+    .nmap-feeds-status-popup .nk-menu-item_hovered,
+    .nmap-feeds-action-popup .nk-menu-item_hovered {
       background-color: #4d4d4d !important;
       color: #ffffff !important;
     }
+    #nmap-uploader-feeds-filter-popup .nk-menu-item_checked,
+    #nmap-uploader-feeds-action-filter-popup .nk-menu-item_checked,
+    #nmap-uploader-feeds-filter-popup .nk-menu__item_checked,
+    #nmap-uploader-feeds-action-filter-popup .nk-menu__item_checked,
     .nmap-feeds-status-popup .nk-menu-item_checked,
-    .nmap-feeds-status-popup .nk-menu__item_checked {
+    .nmap-feeds-action-popup .nk-menu-item_checked,
+    .nmap-feeds-status-popup .nk-menu__item_checked,
+    .nmap-feeds-action-popup .nk-menu__item_checked {
       background-color: #444444 !important;
       color: #ffffff !important;
       font-weight: 500 !important;
     }
+    #nmap-uploader-feeds-filter-popup .nk-menu__text,
+    #nmap-uploader-feeds-action-filter-popup .nk-menu__text,
+    #nmap-uploader-feeds-filter-popup .nk-menu-item__text,
+    #nmap-uploader-feeds-action-filter-popup .nk-menu-item__text,
     .nmap-feeds-status-popup .nk-menu__text,
-    .nmap-feeds-status-popup .nk-menu-item__text {
+    .nmap-feeds-action-popup .nk-menu__text,
+    .nmap-feeds-status-popup .nk-menu-item__text,
+    .nmap-feeds-action-popup .nk-menu-item__text {
       color: inherit !important;
       flex: 1 1 auto !important;
       display: inline-block !important;

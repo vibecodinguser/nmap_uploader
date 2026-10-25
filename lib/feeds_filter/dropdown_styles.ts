@@ -5,7 +5,9 @@ export * from './dropdown_popup_styles'
 
 export const FEED_SELECT_BUTTON_STYLES = `
     #nmap-uploader-feeds-filter-select,
-    .nmap-feeds-status-select {
+    #nmap-uploader-feeds-action-filter-select,
+    .nmap-feeds-status-select,
+    .nmap-feeds-action-select {
       display: inline-block !important;
       vertical-align: middle !important;
       margin-left: 8px !important;
@@ -21,7 +23,53 @@ export const FEED_SELECT_BUTTON_STYLES = `
       opacity: 1 !important;
       z-index: 10 !important;
     }
-    .nmap-feeds-status-select .nk-select__button {
+    .nk-user-events-view__filters {
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      justify-content: flex-start !important;
+      gap: 8px !important;
+      overflow: visible !important;
+      box-sizing: border-box !important;
+    }
+    .nk-user-events-view__filters .nk-user-events-view__category-group-filter {
+      flex: 0 0 auto !important;
+      margin: 0 !important;
+      width: auto !important;
+      box-sizing: border-box !important;
+    }
+    .nk-user-events-view__filters #nmap-uploader-feeds-action-filter-select,
+    .nk-user-events-view__filters .nmap-feeds-action-select {
+      flex: 0 0 200px !important;
+      margin: 0 !important;
+    }
+    .nmap-action-marker {
+      display: inline-block !important;
+      width: 8px !important;
+      height: 8px !important;
+      min-width: 8px !important;
+      min-height: 8px !important;
+      border-radius: 50% !important;
+      margin: 0 !important;
+      flex: 0 0 8px !important;
+      flex-shrink: 0 !important;
+      vertical-align: middle !important;
+      box-sizing: border-box !important;
+    }
+    .nmap-action-marker.nmap-hidden,
+    .nmap-action-marker[hidden] {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      opacity: 0 !important;
+      visibility: hidden !important;
+    }
+    #nmap-uploader-feeds-filter-select .nk-select__button,
+    #nmap-uploader-feeds-action-filter-select .nk-select__button,
+    .nmap-feeds-status-select .nk-select__button,
+    .nmap-feeds-action-select .nk-select__button {
       position: relative !important;
       display: flex !important;
       flex-direction: row !important;
@@ -51,21 +99,36 @@ export const FEED_SELECT_BUTTON_STYLES = `
       overflow: hidden !important;
       transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
     }
-    .nmap-feeds-status-select .nk-select__button::before {
+    #nmap-uploader-feeds-filter-select .nk-select__button::before,
+    #nmap-uploader-feeds-action-filter-select .nk-select__button::before,
+    .nmap-feeds-status-select .nk-select__button::before,
+    .nmap-feeds-action-select .nk-select__button::before {
       display: none !important;
     }
-    .nmap-feeds-status-select .nk-select__button:hover {
+    #nmap-uploader-feeds-filter-select .nk-select__button:hover,
+    #nmap-uploader-feeds-action-filter-select .nk-select__button:hover,
+    .nmap-feeds-status-select .nk-select__button:hover,
+    .nmap-feeds-action-select .nk-select__button:hover {
       background: var(--nmap-feeds-select-hover-bg, rgba(255, 255, 255, 0.08)) !important;
       border-color: var(--nmap-feeds-select-hover-border, rgba(255, 255, 255, 0.6)) !important;
     }
+    #nmap-uploader-feeds-filter-select.nk-select_opened .nk-select__button,
+    #nmap-uploader-feeds-action-filter-select.nk-select_opened .nk-select__button,
     .nmap-feeds-status-select.nk-select_opened .nk-select__button,
-    .nmap-feeds-status-select .nk-select__button:focus {
+    .nmap-feeds-action-select.nk-select_opened .nk-select__button,
+    #nmap-uploader-feeds-filter-select .nk-select__button:focus,
+    #nmap-uploader-feeds-action-filter-select .nk-select__button:focus,
+    .nmap-feeds-status-select .nk-select__button:focus,
+    .nmap-feeds-action-select .nk-select__button:focus {
       outline: 0 !important;
       box-shadow: none !important;
       background: var(--nmap-feeds-select-focus-bg, rgba(255, 255, 255, 0.12)) !important;
       border-color: var(--nmap-feeds-select-hover-border, rgba(255, 255, 255, 0.6)) !important;
     }
-    .nmap-feeds-status-select .nk-select__text {
+    #nmap-uploader-feeds-filter-select .nk-select__text,
+    #nmap-uploader-feeds-action-filter-select .nk-select__text,
+    .nmap-feeds-status-select .nk-select__text,
+    .nmap-feeds-action-select .nk-select__text {
       position: relative !important;
       display: flex !important;
       flex-direction: row !important;
@@ -86,14 +149,23 @@ export const FEED_SELECT_BUTTON_STYLES = `
       white-space: nowrap !important;
       box-sizing: border-box !important;
     }
-    .nmap-feeds-status-select .nk-select__text > span {
+    #nmap-uploader-feeds-filter-select .nk-select__text > span,
+    #nmap-uploader-feeds-action-filter-select .nk-select__text > span,
+    .nmap-feeds-status-select .nk-select__text > span,
+    .nmap-feeds-action-select .nk-select__text > span {
       display: inline-flex !important;
       align-items: center !important;
       line-height: normal !important;
       vertical-align: middle !important;
     }
+    #nmap-uploader-feeds-filter-select .nmap-feeds-button-label,
+    #nmap-uploader-feeds-action-filter-select .nmap-feeds-button-label,
     .nmap-feeds-status-select .nmap-feeds-button-label,
-    .nmap-feeds-status-select .nk-select__text > span:not(.nk-icon):not(.nmap-feeds-button-spinner):not(.nmap-status-count-badge) {
+    .nmap-feeds-action-select .nmap-feeds-button-label,
+    #nmap-uploader-feeds-filter-select .nk-select__text > span:not(.nk-icon):not(.nmap-feeds-button-spinner):not(.nmap-status-count-badge):not(.nmap-action-marker),
+    #nmap-uploader-feeds-action-filter-select .nk-select__text > span:not(.nk-icon):not(.nmap-feeds-button-spinner):not(.nmap-status-count-badge):not(.nmap-action-marker),
+    .nmap-feeds-status-select .nk-select__text > span:not(.nk-icon):not(.nmap-feeds-button-spinner):not(.nmap-status-count-badge):not(.nmap-action-marker),
+    .nmap-feeds-action-select .nk-select__text > span:not(.nk-icon):not(.nmap-feeds-button-spinner):not(.nmap-status-count-badge):not(.nmap-action-marker) {
       overflow: hidden !important;
       text-overflow: ellipsis !important;
       white-space: nowrap !important;
@@ -141,7 +213,10 @@ export const FEED_SELECT_BUTTON_STYLES = `
       visibility: hidden !important;
       pointer-events: none !important;
     }
-    .nmap-feeds-status-select .nmap-status-count-badge {
+    #nmap-uploader-feeds-filter-select .nmap-status-count-badge,
+    #nmap-uploader-feeds-action-filter-select .nmap-status-count-badge,
+    .nmap-feeds-status-select .nmap-status-count-badge,
+    .nmap-feeds-action-select .nmap-status-count-badge {
       display: inline-block !important;
       margin-left: 2px !important;
       font-size: 11px !important;
@@ -159,7 +234,10 @@ export const FEED_SELECT_BUTTON_STYLES = `
       white-space: nowrap !important;
     }
 
-    .nmap-feeds-status-select .nk-select__tick {
+    #nmap-uploader-feeds-filter-select .nk-select__tick,
+    #nmap-uploader-feeds-action-filter-select .nk-select__tick,
+    .nmap-feeds-status-select .nk-select__tick,
+    .nmap-feeds-action-select .nk-select__tick {
       position: absolute !important;
       top: 0 !important;
       right: 0 !important;
@@ -176,7 +254,10 @@ export const FEED_SELECT_BUTTON_STYLES = `
       background-position: center center !important;
       transition: transform 0.15s ease-out !important;
     }
-    .nmap-feeds-status-select.nk-select_opened .nk-select__tick {
+    #nmap-uploader-feeds-filter-select.nk-select_opened .nk-select__tick,
+    #nmap-uploader-feeds-action-filter-select.nk-select_opened .nk-select__tick,
+    .nmap-feeds-status-select.nk-select_opened .nk-select__tick,
+    .nmap-feeds-action-select.nk-select_opened .nk-select__tick {
       transform: rotate(180deg) !important;
     }
     .nmap-feeds-button-spinner {
