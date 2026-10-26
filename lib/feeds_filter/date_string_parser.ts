@@ -28,21 +28,22 @@ export const parseEventDateString = (
     return relativeDate
   }
 
-  // 3. Одиночное время: "14:20", "09:05", "в 14:20"
-  const timeOnlyMatch = text.match(/^(?:в\s*)?([01]?\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?$/)
+  // 3. Одиночное время: "14:20", "09:05", "в 14:20", "14:20:15"
+  const timeOnlyMatch = text.match(/^(?:в\s*)?([01]?\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/)
   if (timeOnlyMatch) {
     const hours = Number.parseInt(timeOnlyMatch[1], 10)
     const minutes = Number.parseInt(timeOnlyMatch[2], 10)
+    const seconds = timeOnlyMatch[3] ? Number.parseInt(timeOnlyMatch[3], 10) : 0
     const d = new Date(referenceTimestamp)
-    d.setHours(hours, minutes, 0, 0)
+    d.setHours(hours, minutes, seconds, 0)
     return d
   }
 
   const refDate = new Date(referenceTimestamp)
 
-  // 4. Числовой формат "DD.MM.YYYY" или "DD.MM.YY" (опционально с HH:MM)
+  // 4. Числовой формат "DD.MM.YYYY" или "DD.MM.YY" (опционально с HH:MM[:SS])
   const ddmmyyyyMatch = text.match(
-    /(\d{1,2})[./](\d{1,2})[./](\d{2,4})(?:[,\s]+(?:в\s*)?(\d{1,2}):(\d{2}))?/,
+    /(\d{1,2})[./](\d{1,2})[./](\d{2,4})(?:[,\s]+(?:в\s*)?(\d{1,2}):(\d{2})(?::(\d{2}))?)?/,
   )
   if (ddmmyyyyMatch) {
     const day = Number.parseInt(ddmmyyyyMatch[1], 10)
@@ -53,12 +54,13 @@ export const parseEventDateString = (
     }
     const hours = ddmmyyyyMatch[4] ? Number.parseInt(ddmmyyyyMatch[4], 10) : 12
     const minutes = ddmmyyyyMatch[5] ? Number.parseInt(ddmmyyyyMatch[5], 10) : 0
-    return new Date(year, month, day, hours, minutes, 0, 0)
+    const seconds = ddmmyyyyMatch[6] ? Number.parseInt(ddmmyyyyMatch[6], 10) : 0
+    return new Date(year, month, day, hours, minutes, seconds, 0)
   }
 
-  // 5. Формат с названием месяца: "15 октября 2026 в 14:20"
+  // 5. Формат с названием месяца: "15 октября 2026 в 14:20:30", "26 октября 2026 г., 18:30", "8 окт. 2026 23:24"
   const monthMatch = text.match(
-    /(?:^|[^а-яё0-9])(\d{1,2})\s+([а-яё]+)(?:\s+(\d{4}))?(?:[,\s]+(?:в\s*)?(\d{1,2}):(\d{2}))?/i,
+    /(?:^|[^а-яё0-9])(\d{1,2})\s+([а-яё]+)\.?(?:\s+(\d{4}))?(?:\s*(?:г\.?|года))?(?:[,\s]+(?:в\s*)?(\d{1,2}):(\d{2})(?::(\d{2}))?)?/i,
   )
   if (monthMatch && monthMatch.index !== undefined) {
     const matchStart = monthMatch.index
@@ -76,12 +78,13 @@ export const parseEventDateString = (
         const hasExplicitYear = Boolean(monthMatch[3])
         const hasExplicitTime = Boolean(monthMatch[4])
 
-        if (hasExplicitYear || hasExplicitTime || text.length <= 30) {
+        if (hasExplicitYear || hasExplicitTime || text.length <= 35) {
           const year = monthMatch[3] ? Number.parseInt(monthMatch[3], 10) : refDate.getFullYear()
           const hours = monthMatch[4] ? Number.parseInt(monthMatch[4], 10) : 12
           const minutes = monthMatch[5] ? Number.parseInt(monthMatch[5], 10) : 0
+          const seconds = monthMatch[6] ? Number.parseInt(monthMatch[6], 10) : 0
 
-          const candidate = new Date(year, month, day, hours, minutes, 0, 0)
+          const candidate = new Date(year, month, day, hours, minutes, seconds, 0)
           if (!monthMatch[3] && candidate.getTime() > referenceTimestamp + 2 * 86400 * 1000) {
             candidate.setFullYear(year - 1)
           }
@@ -145,7 +148,28 @@ export const calculateDayAgeFromDateText = (
     }
   }
 
-  // 6. Календарные даты ("14 октября", "10.10.2026")
+  // 6. Недели назад: "неделю назад", "N недели/недель назад"
+  const weekMatch = text.match(/(?:(\d+)\s*)?недел\w*\s*назад/)
+  if (weekMatch) {
+    const weeks = weekMatch[1] ? Number.parseInt(weekMatch[1], 10) : 1
+    return weeks * 7
+  }
+
+  // 7. Месяцы назад: "месяц назад", "N месяцев назад"
+  const monthAgoMatch = text.match(/(?:(\d+)\s*)?месяц\w*\s*назад/)
+  if (monthAgoMatch) {
+    const months = monthAgoMatch[1] ? Number.parseInt(monthAgoMatch[1], 10) : 1
+    return months * 30
+  }
+
+  // 8. Годы назад: "год назад", "N года/лет назад"
+  const yearAgoMatch = text.match(/(?:(\d+)\s*)?(?:год\w*|лет)\s*назад/)
+  if (yearAgoMatch) {
+    const years = yearAgoMatch[1] ? Number.parseInt(yearAgoMatch[1], 10) : 1
+    return years * 365
+  }
+
+  // 9. Календарные даты ("14 октября", "10.10.2026", "8 октября 2026 23:24")
   const parsed = parseEventDateString(text, referenceTimestamp)
   if (parsed) {
     const refDate = new Date(referenceTimestamp)

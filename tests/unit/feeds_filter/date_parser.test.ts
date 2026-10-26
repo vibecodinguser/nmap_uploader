@@ -146,25 +146,58 @@ describe('feeds_filter date parsing and threshold', () => {
   })
 
   describe('getTargetThresholdMs', () => {
-    it('рассчитывает порог для 1 суток так, чтобы покрывать весь сегодняшний день с 00:00 и 24 часа', () => {
-      const ref = new Date('2026-10-15T21:30:00.000Z').getTime()
+    it('рассчитывает календарный порог для 1 суток как 00:00:00 сегодняшнего дня', () => {
+      const ref = new Date('2026-10-15T21:30:00.000').getTime()
       const threshold = getTargetThresholdMs(1, ref)
 
-      const twentyFourHoursAgo = ref - 24 * 3600 * 1000
-      expect(threshold).toBe(twentyFourHoursAgo)
-      expect(threshold).toBeLessThan(new Date('2026-10-15T00:00:00.000Z').getTime())
+      const startOfToday = new Date(ref)
+      startOfToday.setHours(0, 0, 0, 0)
+      expect(threshold).toBe(startOfToday.getTime())
     })
 
-    it('для утреннего времени рассчитывает порог не позже 24 часов назад', () => {
-      const ref = new Date('2026-10-15T05:00:00.000Z').getTime()
-      const threshold = getTargetThresholdMs(1, ref)
-      const twentyFourHoursAgo = ref - 24 * 3600 * 1000
-      expect(threshold).toBe(twentyFourHoursAgo)
+    it('рассчитывает календарный порог для 3 суток как 00:00:00 позавчера (2 дня назад)', () => {
+      const ref = new Date('2026-10-15T05:00:00.000').getTime()
+      const threshold = getTargetThresholdMs(3, ref)
+
+      const startOfToday = new Date(ref)
+      startOfToday.setHours(0, 0, 0, 0)
+      const twoDaysAgo = startOfToday.getTime() - 2 * 24 * 3600 * 1000
+      expect(threshold).toBe(twoDaysAgo)
+    })
+
+    it('рассчитывает календарный порог для 7 суток как 00:00:00 за 6 дней до сегодня', () => {
+      const ref = new Date('2026-10-15T12:00:00.000').getTime()
+      const threshold = getTargetThresholdMs(7, ref)
+
+      const startOfToday = new Date(ref)
+      startOfToday.setHours(0, 0, 0, 0)
+      const sixDaysAgo = startOfToday.getTime() - 6 * 24 * 3600 * 1000
+      expect(threshold).toBe(sixDaysAgo)
     })
   })
 
-  describe('getEventCardDayAge and getEventCardDateText', () => {
-    it('извлекает текст даты из .nk-date-time.nk-event-view__date', () => {
+  describe('getEventCardDayAge and getEventCardDateText with title and relative classes', () => {
+    it('приоритетно извлекает дату и время из атрибута title у .nk-date-time.nk-date-time_mode_relative.nk-event-view__date', () => {
+      const fixedNow = new Date('2026-10-26T20:00:00.000').getTime()
+      const card = document.createElement('div')
+      card.className = 'nk-event-view'
+      card.innerHTML = `
+        <span class="nk-date-time nk-date-time_mode_relative nk-event-view__date" title="26.10.2026, 18:30:15">2 часа назад</span>
+      `
+      expect(getEventCardDateText(card)).toBe('26.10.2026, 18:30:15')
+      expect(getEventCardDayAge(card, fixedNow)).toBe(0)
+
+      // Для вчерашнего title
+      const yesterdayCard = document.createElement('div')
+      yesterdayCard.className = 'nk-event-view'
+      yesterdayCard.innerHTML = `
+        <span class="nk-date-time nk-date-time_mode_relative nk-event-view__date" title="25.10.2026, 23:50:00">вчера</span>
+      `
+      expect(getEventCardDateText(yesterdayCard)).toBe('25.10.2026, 23:50:00')
+      expect(getEventCardDayAge(yesterdayCard, fixedNow)).toBe(1)
+    })
+
+    it('извлекает текст даты из .nk-date-time.nk-event-view__date при отсутствии title', () => {
       const card = document.createElement('div')
       card.className = 'nk-event-view'
       card.innerHTML = `
@@ -207,7 +240,7 @@ describe('feeds_filter date parsing and threshold', () => {
       expect(getEventCardDayAge(card2Days)).toBe(2)
     })
 
-    it('определяет давность N дней для "N дня/дней назад"', () => {
+    it('определяет давность N дней для "N дня/дней назад", недель и месяцев', () => {
       const card3Days = document.createElement('div')
       card3Days.innerHTML = `<span class="nk-date-time nk-event-view__date">3 дня назад</span>`
       expect(getEventCardDayAge(card3Days)).toBe(3)
@@ -215,6 +248,30 @@ describe('feeds_filter date parsing and threshold', () => {
       const card10Days = document.createElement('div')
       card10Days.innerHTML = `<span class="nk-date-time nk-event-view__date">10 дней назад</span>`
       expect(getEventCardDayAge(card10Days)).toBe(10)
+
+      // Недели (со скриншота пользователя: "3 недели назад")
+      const card1Week = document.createElement('div')
+      card1Week.innerHTML = `<span class="nk-date-time nk-event-view__date">неделю назад</span>`
+      expect(getEventCardDayAge(card1Week)).toBe(7)
+
+      const card3Weeks = document.createElement('div')
+      card3Weeks.innerHTML = `<span class="nk-date-time nk-date-time_mode_relative nk-event-view__date">3 недели назад</span>`
+      expect(getEventCardDayAge(card3Weeks)).toBe(21)
+
+      const cardMonth = document.createElement('div')
+      cardMonth.innerHTML = `<span class="nk-date-time nk-event-view__date">месяц назад</span>`
+      expect(getEventCardDayAge(cardMonth)).toBe(30)
+    })
+
+    it('парсит дату со скриншота "8 октября 2026 23:24" в title и рассчитывает корректный dayAge', () => {
+      const ref = new Date('2026-10-26T22:30:00.000').getTime()
+      const card = document.createElement('div')
+      card.className = 'nk-event-view'
+      card.innerHTML = `
+        <span class="nk-date-time nk-date-time_mode_relative nk-event-view__date" title="8 октября 2026 23:24">3 недели назад</span>
+      `
+      expect(getEventCardDateText(card)).toBe('8 октября 2026 23:24')
+      expect(getEventCardDayAge(card, ref)).toBe(18)
     })
   })
 

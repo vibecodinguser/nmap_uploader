@@ -1,10 +1,5 @@
 import { parseStaticSvg } from '@/lib/parse_static_svg'
-import {
-  DEFAULT_HISTORY_PERIOD_DAYS,
-  FEEDS_FILTER_POPUP_ID,
-  HISTORY_PERIOD_OPTIONS,
-  STATUS_FILTER_OPTIONS,
-} from './constants'
+import { FEEDS_FILTER_POPUP_ID, HISTORY_PERIOD_OPTIONS, STATUS_FILTER_OPTIONS } from './constants'
 import type { FeedStatusId } from './core'
 
 export interface DropdownMenuItemState {
@@ -36,7 +31,7 @@ export interface DropdownMenuOptions {
 
 export const createDropdownMenu = ({
   initialFilter,
-  initialDays = DEFAULT_HISTORY_PERIOD_DAYS,
+  initialDays,
   onSelect,
   onSelectPeriod,
   onStopLoading,
@@ -121,12 +116,11 @@ export const createDropdownMenu = ({
   HISTORY_PERIOD_OPTIONS.forEach((days) => {
     const btn = document.createElement('button')
     btn.type = 'button'
-    btn.className = `nmap-feeds-period-btn ${
-      days === initialDays ? 'nmap-feeds-period-btn_active' : ''
-    }`
+    const isInitiallyActive = initialDays !== undefined && days === initialDays
+    btn.className = `nmap-feeds-period-btn ${isInitiallyActive ? 'nmap-feeds-period-btn_active' : ''}`
     btn.textContent = `${days} дн.`
     btn.setAttribute('aria-label', `Загрузить историю за ${days} дн.`)
-    btn.setAttribute('aria-pressed', days === initialDays ? 'true' : 'false')
+    btn.setAttribute('aria-pressed', isInitiallyActive ? 'true' : 'false')
 
     btn.addEventListener('click', (event) => {
       event.preventDefault()
@@ -144,7 +138,7 @@ export const createDropdownMenu = ({
 
   const statusText = document.createElement('span')
   statusText.className = 'nmap-feeds-period-status-text'
-  statusText.textContent = `Период: ${initialDays} дн.`
+  statusText.textContent = initialDays ? `Период: ${initialDays} дн.` : 'По умолчанию'
   statusRow.appendChild(statusText)
 
   const stopBtn = document.createElement('button')
@@ -175,8 +169,11 @@ export const createDropdownMenu = ({
       const targetDays = state.targetDays ?? state.activeDays
       statusText.textContent = `Загрузка (${targetDays} дн.): ${state.loadedCardsCount} шт.`
       stopBtn.style.display = 'inline-block'
-    } else {
+    } else if (state.activeDays) {
       statusText.textContent = `Загружено за ${state.activeDays} дн. (${state.loadedCardsCount} шт.)`
+      stopBtn.style.display = 'none'
+    } else {
+      statusText.textContent = 'По умолчанию'
       stopBtn.style.display = 'none'
     }
   }

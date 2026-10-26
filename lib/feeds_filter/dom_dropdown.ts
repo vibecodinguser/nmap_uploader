@@ -1,4 +1,4 @@
-import { DEFAULT_HISTORY_PERIOD_DAYS, FEEDS_FILTER_SELECT_ID } from './constants'
+import { FEEDS_FILTER_SELECT_ID } from './constants'
 import type { FeedStats, FeedStatusId } from './core'
 import {
   createDropdownButtonElements,
@@ -56,7 +56,7 @@ export const createFilterDropdownElement = (
     updatePeriodDisplay,
   } = createDropdownMenu({
     initialFilter,
-    initialDays: options?.initialDays ?? DEFAULT_HISTORY_PERIOD_DAYS,
+    initialDays: options?.initialDays,
     onSelect: handleSelectOption,
     onSelectPeriod: options?.onPeriodChange,
     onStopLoading: options?.onStopLoading,

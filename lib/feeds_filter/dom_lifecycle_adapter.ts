@@ -150,7 +150,6 @@ export class FeedFilterDomAdapter {
         },
         this.currentFilter,
         {
-          initialDays: 1,
           onPeriodChange: (days) => {
             void this.currentDailyLoader?.loadUpToDays(days)
           },
@@ -193,7 +192,7 @@ export class FeedFilterDomAdapter {
       this.disconnectFeedObserver()
       this.activeFeedContainer = feedContainer
       this.currentDailyLoader = createFeedDailyLoader(feedContainer, {
-        initialDays: 1,
+        autoStart: false,
         onStateChange: (isLoading) => {
           this.currentDropdownController?.setLoadingState(isLoading)
         },

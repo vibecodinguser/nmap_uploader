@@ -1,4 +1,4 @@
-import { getLastCardWithDate, getLastCardWithDayAge, getTargetThresholdMs } from './card_scanner'
+import { hasCardOlderThanPeriod } from './card_scanner'
 import { waitForNewCards } from './card_waiter'
 import { findEventCards as getEventCards } from './page_adapter'
 import { triggerFeedScrollLoad } from './scroll_scanner'
@@ -17,6 +17,7 @@ export interface FeedDailyLoaderOptions {
   maxStepsPerDay?: number
   stepDelayMs?: number
   initialDays?: number
+  autoStart?: boolean
   onProgress?: (progress: FeedDailyLoaderProgress) => void
   onStateChange?: (isLoading: boolean) => void
 }
@@ -76,7 +77,6 @@ export const createFeedDailyLoader = (
 
       while (currentStep < maxSteps && !isTeardown && !isAbortRequested) {
         const cards = getEventCards(feedContainer)
-        const targetThresholdMs = getTargetThresholdMs(currentTargetDays, openedTimestamp)
 
         if (cards.length === 0) {
           triggerFeedScrollLoad(feedContainer)
@@ -97,15 +97,8 @@ export const createFeedDailyLoader = (
           continue
         }
 
-        // 1. Приоритетная проверка по дням Народной карты (nk-date-time nk-date-time_mode_relative)
-        const lastDayInfo = getLastCardWithDayAge(cards, openedTimestamp)
-        if (lastDayInfo && lastDayInfo.dayAge >= currentTargetDays) {
-          break
-        }
-
-        // 2. Резервная проверка по миллисекундам даты
-        const lastDateInfo = getLastCardWithDate(cards, openedTimestamp)
-        if (lastDateInfo && lastDateInfo.date.getTime() < targetThresholdMs) {
+        // Приоритетная проверка границы календарного периода (1, 3 или 7 дней)
+        if (hasCardOlderThanPeriod(cards, currentTargetDays, openedTimestamp)) {
           break
         }
 
@@ -134,10 +127,8 @@ export const createFeedDailyLoader = (
           triggerFeedScrollLoad(feedContainer)
 
           if (consecutiveStalls >= maxStalls) {
-            if (lastDayInfo && lastDayInfo.dayAge >= currentTargetDays) {
-              break
-            }
-            if (lastDateInfo && lastDateInfo.date.getTime() < targetThresholdMs) {
+            const currentCards = getEventCards(feedContainer)
+            if (hasCardOlderThanPeriod(currentCards, currentTargetDays, openedTimestamp)) {
               break
             }
             isAllHistoryLoaded = true
@@ -166,8 +157,10 @@ export const createFeedDailyLoader = (
     }
   }
 
-  // Запуск загрузки первого периода (по умолчанию 1 день) при инициализации
-  void loadUpToDays(currentTargetDays)
+  // Запуск загрузки первого периода только при явном флаге autoStart (по умолчанию выключен)
+  if (options?.autoStart) {
+    void loadUpToDays(currentTargetDays)
+  }
 
   const teardown = (): void => {
     isTeardown = true
