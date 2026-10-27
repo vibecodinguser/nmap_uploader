@@ -21,6 +21,7 @@ vi.mock('@/hooks/useGoToLinks', () => ({ useGoToLinks: () => ({}) }))
 vi.mock('@/hooks/useReloadAfterUpload', () => ({ useReloadAfterUpload: () => false }))
 vi.mock('@/hooks/useSplitViewButton', () => ({ useSplitViewButton: () => false }))
 vi.mock('@/hooks/useNotesButton', () => ({ useNotesButton: () => false }))
+vi.mock('@/hooks/useNspdButton', () => ({ useNspdButton: () => false }))
 vi.mock('@/hooks/useFeedsFilter', () => ({
   useFeedsFilter: () => ({ isEnabled: true, isLoaded: true, setIsEnabled: vi.fn() }),
 }))

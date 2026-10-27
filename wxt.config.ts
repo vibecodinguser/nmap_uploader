@@ -48,11 +48,17 @@ const baseManifest = {
     manifestHostPattern('login.yandex.ru/*'),
     manifestHostPattern('avatars.yandex.net/*'),
     manifestHostPattern('nakarte.me/*'),
+    manifestHostPattern('nspd.gov.ru/*'),
+    manifestHostPattern('*.nspd.gov.ru/*'),
   ],
   web_accessible_resources: [
     {
       resources: ['panel.html', 'polygon-upload.html', 'notes.html', 'chunks/*', 'assets/*'],
-      matches: [manifestHostPattern('n.maps.yandex.ru/*')],
+      matches: [
+        manifestHostPattern('n.maps.yandex.ru/*'),
+        manifestHostPattern('nspd.gov.ru/*'),
+        manifestHostPattern('*.nspd.gov.ru/*'),
+      ],
     },
   ],
   action: {

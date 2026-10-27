@@ -105,6 +105,8 @@ export type Messages = {
     splitViewAria: string
     notesButton: string
     notesButtonAria: string
+    nspdButton: string
+    nspdButtonAria: string
     feedsFilter: string
     feedsFilterAria: string
     goToButton: string
@@ -134,6 +136,7 @@ export type Messages = {
     splitView: string
     uploadPolygons: string
     notes: string
+    openNspd: string
     externalGeoservices: string
     mapLocationError: string
     nakarteCompareError: string

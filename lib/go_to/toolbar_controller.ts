@@ -7,6 +7,7 @@ import {
   getButtonInsertParent,
   getGoToToolbarMountState,
   getNotesButton,
+  getNspdButton,
   getServiceButton,
   getSplitButton,
   hideGoToServiceButton,
@@ -26,6 +27,7 @@ import { closeNotesPopup, teardownNotesPopup } from '@/lib/notes_popup'
 import { closePolygonUploadPopup, teardownPolygonUploadPopup } from '@/lib/polygon_upload_popup'
 import {
   mountNotesButtonView,
+  mountNspdButtonView,
   mountPolygonUploadButtonView,
   mountSplitButtonView,
 } from './toolbar_buttons_mount'
@@ -70,6 +72,10 @@ export class GoToToolbarController {
     getNotesButton()?.remove()
   }
 
+  public removeNspdButton(): void {
+    getNspdButton()?.remove()
+  }
+
   public removeButtonAndMenu(): void {
     hideGoToTooltip()
     this.removeMenu()
@@ -90,6 +96,7 @@ export class GoToToolbarController {
     menuEnabled: boolean,
     splitButtonEnabled: boolean,
     notesButtonEnabled: boolean,
+    nspdButtonEnabled: boolean,
   ): void {
     const parent = getButtonInsertParent(anchor)
     if (!parent) return
@@ -154,6 +161,12 @@ export class GoToToolbarController {
       this.removeNotesButton()
     }
 
+    if (nspdButtonEnabled) {
+      this.mountNspdButton()
+    } else {
+      this.removeNspdButton()
+    }
+
     repairToolbarIcons()
   }
 
@@ -173,6 +186,13 @@ export class GoToToolbarController {
 
   public mountNotesButton(): void {
     mountNotesButtonView({
+      getTranslator: this.getTranslator,
+      onHideMenu: this.onHideMenu,
+    })
+  }
+
+  public mountNspdButton(): void {
+    mountNspdButtonView({
       getTranslator: this.getTranslator,
       onHideMenu: this.onHideMenu,
     })

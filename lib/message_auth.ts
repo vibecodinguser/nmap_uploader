@@ -35,11 +35,20 @@ export const isPanelSender = (sender: RuntimeMessageSender): boolean => {
 export const isNmapsContentSender = (sender: RuntimeMessageSender): boolean =>
   sender.tab?.url?.startsWith(NMAPS_TAB_URL_PREFIX) ?? false
 
+export const isNspdContentSender = (sender: RuntimeMessageSender): boolean => {
+  const tabUrl = sender.tab?.url
+  if (!tabUrl) return false
+  return tabUrl.startsWith('https://nspd.gov.ru/') || tabUrl.startsWith('https://www.nspd.gov.ru/')
+}
+
 export const isTrustedPanelSender = (sender: RuntimeMessageSender): boolean =>
   isExtensionSender(sender) && isPanelSender(sender)
 
 export const isTrustedNmapsOrPanelSender = (sender: RuntimeMessageSender): boolean =>
   isExtensionSender(sender) && (isPanelSender(sender) || isNmapsContentSender(sender))
+
+export const isTrustedNspdSender = (sender: RuntimeMessageSender): boolean =>
+  isExtensionSender(sender) && isNspdContentSender(sender)
 
 export const logRejectedMessage = (action: string, sender: RuntimeMessageSender): void => {
   console.warn(`[nmap_uploader] отклонено сообщение "${action}"`, {

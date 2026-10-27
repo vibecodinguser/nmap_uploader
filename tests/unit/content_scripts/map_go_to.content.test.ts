@@ -14,6 +14,7 @@ import {
 import { GO_TO_POPUP_VISIBLE_CLASS } from '@/lib/go_to_styles'
 import { NOTES_BUTTON_ENABLED_STORAGE_KEY, NOTES_BUTTON_ID } from '@/lib/notes_button'
 import { NOTES_POPUP_ID } from '@/lib/notes_popup'
+import { NSPD_BUTTON_ENABLED_STORAGE_KEY, NSPD_BUTTON_ID } from '@/lib/nspd/nspd_button'
 import { POLYGON_UPLOAD_BUTTON_ID } from '@/lib/polygon_upload_button'
 import { POLYGON_UPLOAD_POPUP_ID } from '@/lib/polygon_upload_popup'
 import { createContentScriptContext } from '@/tests/setup/content_script_context'
@@ -96,6 +97,7 @@ describe('map-go-to.content', () => {
       [GO_TO_MENU_ENABLED_STORAGE_KEY]: true,
       [GO_TO_SPLIT_BUTTON_ENABLED_STORAGE_KEY]: true,
       [NOTES_BUTTON_ENABLED_STORAGE_KEY]: true,
+      [NSPD_BUTTON_ENABLED_STORAGE_KEY]: true,
     })
 
     mountNmapsToolbarAnchor()
@@ -110,7 +112,35 @@ describe('map-go-to.content', () => {
       const notesButton = document.getElementById(NOTES_BUTTON_ID)
       expect(notesButton).not.toBeNull()
       expect(notesButton?.previousElementSibling?.id).toBe(POLYGON_UPLOAD_BUTTON_ID)
+      const nspdButton = document.getElementById(NSPD_BUTTON_ID)
+      expect(nspdButton).not.toBeNull()
+      expect(nspdButton?.previousElementSibling?.id).toBe(NOTES_BUTTON_ID)
     })
+  })
+
+  it('по умолчанию не монтирует кнопку NSPD', async () => {
+    mountNmapsToolbarAnchor()
+    mapGoToScript.main?.(ctx)
+
+    await vi.waitFor(() => {
+      expect(document.getElementById(GO_TO_SERVICE_BUTTON_ID)).not.toBeNull()
+    })
+
+    expect(document.getElementById(NSPD_BUTTON_ID)).toBeNull()
+  })
+
+  it('открывает вкладку nspd.gov.ru по клику на кнопку NSPD', async () => {
+    await browser.storage.local.set({
+      [NSPD_BUTTON_ENABLED_STORAGE_KEY]: true,
+    })
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+    mountNmapsToolbarAnchor()
+    mapGoToScript.main?.(ctx)
+
+    await vi.waitFor(() => expect(document.getElementById(NSPD_BUTTON_ID)).not.toBeNull())
+
+    document.getElementById(NSPD_BUTTON_ID)?.click()
+    expect(openSpy).toHaveBeenCalled()
   })
 
   it('открывает заметки справа от загрузки и закрывает попап загрузки', async () => {

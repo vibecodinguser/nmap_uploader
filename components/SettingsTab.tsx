@@ -9,6 +9,7 @@ import type { useFeedsFilter } from '@/hooks/useFeedsFilter'
 import type { useGoToLinks } from '@/hooks/useGoToLinks'
 import { useLocale } from '@/hooks/useLocale'
 import type { useNotesButton } from '@/hooks/useNotesButton'
+import type { useNspdButton } from '@/hooks/useNspdButton'
 import type { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
 import type { useSplitViewButton } from '@/hooks/useSplitViewButton'
 import type { ThemeMode } from '@/hooks/useTheme'
@@ -40,6 +41,11 @@ type NotesButtonSettings = Pick<
   'isEnabled' | 'isLoaded' | 'setIsEnabled'
 >
 
+type NspdButtonSettings = Pick<
+  ReturnType<typeof useNspdButton>,
+  'isEnabled' | 'isLoaded' | 'setIsEnabled'
+>
+
 type FeedsFilterSettings = Pick<
   ReturnType<typeof useFeedsFilter>,
   'isEnabled' | 'isLoaded' | 'setIsEnabled'
@@ -55,6 +61,7 @@ type SettingsTabProps = {
   reloadAfterUpload: ReloadAfterUploadSettings
   splitViewButton: SplitViewButtonSettings
   notesButton: NotesButtonSettings
+  nspdButton: NspdButtonSettings
   feedsFilter?: FeedsFilterSettings
   goToLinks: GoToLinksSettingsState
 }
@@ -67,6 +74,7 @@ export const SettingsTab = ({
   reloadAfterUpload,
   splitViewButton,
   notesButton,
+  nspdButton,
   feedsFilter,
   goToLinks,
 }: SettingsTabProps) => {
@@ -87,6 +95,11 @@ export const SettingsTab = ({
     isLoaded: isNotesButtonLoaded,
     setIsEnabled: setNotesButtonEnabled,
   } = notesButton
+  const {
+    isEnabled: isNspdButtonEnabled,
+    isLoaded: isNspdButtonLoaded,
+    setIsEnabled: setNspdButtonEnabled,
+  } = nspdButton
 
   const isFeedsFilterEnabled = feedsFilter?.isEnabled ?? false
   const isFeedsFilterLoaded = feedsFilter?.isLoaded ?? true
@@ -112,6 +125,7 @@ export const SettingsTab = ({
 
   const isSplitViewButtonDisabled = !isSplitViewButtonLoaded
   const isNotesButtonDisabled = !isNotesButtonLoaded
+  const isNspdButtonDisabled = !isNspdButtonLoaded
   const isReloadAfterUploadDisabled = !isReloadAfterUploadLoaded || !canChangeReloadAfterUpload
 
   return (
@@ -172,6 +186,15 @@ export const SettingsTab = ({
         checked={isNotesButtonEnabled}
         disabled={isNotesButtonDisabled}
         onChange={setNotesButtonEnabled}
+      />
+
+      <SettingsToggleRow
+        id="settings-nspd-button"
+        title={t('settings.nspdButton')}
+        ariaLabel={t('settings.nspdButtonAria')}
+        checked={isNspdButtonEnabled}
+        disabled={isNspdButtonDisabled}
+        onChange={setNspdButtonEnabled}
       />
 
       <SettingsToggleRow

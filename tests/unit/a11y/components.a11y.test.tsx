@@ -47,6 +47,11 @@ const settingsTabProps = {
     isLoaded: true,
     setIsEnabled: noop,
   },
+  nspdButton: {
+    isEnabled: false,
+    isLoaded: true,
+    setIsEnabled: noop,
+  },
   goToLinks: {
     isMenuEnabled: true,
     isLoaded: true,

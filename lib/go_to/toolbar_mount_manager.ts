@@ -48,18 +48,25 @@ export class GoToToolbarMountManager {
     menuEnabled: boolean,
     splitButtonEnabled: boolean,
     notesButtonEnabled: boolean,
+    nspdButtonEnabled: boolean,
   ): void {
     const anchor = resolveAnchor()
     if (anchor) {
-      this.controller.mountToolbar(anchor, menuEnabled, splitButtonEnabled, notesButtonEnabled)
+      this.controller.mountToolbar(
+        anchor,
+        menuEnabled,
+        splitButtonEnabled,
+        notesButtonEnabled,
+        nspdButtonEnabled,
+      )
     }
   }
 
   public waitForAnchorAndMount(): void {
     this.waitForAnchorCleanup?.()
     this.waitForAnchorCleanup = runWhenAnyElementExists(BUTTON_ANCHOR_SELECTORS, (anchor) => {
-      void loadGoToToolbarSettings().then(([menuEnabled, splitEnabled, notesEnabled]) => {
-        this.controller.mountToolbar(anchor, menuEnabled, splitEnabled, notesEnabled)
+      void loadGoToToolbarSettings().then(([menuEnabled, splitEnabled, notesEnabled, nspdEnabled]) => {
+        this.controller.mountToolbar(anchor, menuEnabled, splitEnabled, notesEnabled, nspdEnabled)
       })
     })
   }
@@ -68,10 +75,17 @@ export class GoToToolbarMountManager {
     menuEnabled: boolean,
     splitButtonEnabled: boolean,
     notesButtonEnabled: boolean,
+    nspdButtonEnabled: boolean,
   ): Promise<void> {
     const anchor = resolveAnchor()
     if (anchor) {
-      this.controller.mountToolbar(anchor, menuEnabled, splitButtonEnabled, notesButtonEnabled)
+      this.controller.mountToolbar(
+        anchor,
+        menuEnabled,
+        splitButtonEnabled,
+        notesButtonEnabled,
+        nspdButtonEnabled,
+      )
     } else {
       this.waitForAnchorAndMount()
     }

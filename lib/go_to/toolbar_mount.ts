@@ -14,6 +14,7 @@ import {
 } from '@/lib/go_to_split_button'
 import { repairAllGoToToolbarIcons, type shouldRemountGoToToolbar } from '@/lib/go_to_toolbar'
 import { NOTES_BUTTON_ICON_SVG, NOTES_BUTTON_ID } from '@/lib/notes_button'
+import { NSPD_BUTTON_ICON_SVG, NSPD_BUTTON_ID } from '@/lib/nspd/nspd_button'
 import {
   POLYGON_UPLOAD_BUTTON_ICON_SVG,
   POLYGON_UPLOAD_BUTTON_ID,
@@ -56,6 +57,9 @@ export const getPolygonUploadButton = (): HTMLButtonElement | null =>
 
 export const getNotesButton = (): HTMLButtonElement | null =>
   document.getElementById(NOTES_BUTTON_ID) as HTMLButtonElement | null
+
+export const getNspdButton = (): HTMLButtonElement | null =>
+  document.getElementById(NSPD_BUTTON_ID) as HTMLButtonElement | null
 
 export const isButtonMountedInToolbar = (button: HTMLElement, anchor: Element): boolean => {
   const goToServiceButton = getServiceButton()
@@ -164,5 +168,6 @@ export const repairToolbarIcons = (): void => {
     [GO_TO_SPLIT_BUTTON_ID]: GO_TO_SPLIT_BUTTON_ICON_SVG,
     [POLYGON_UPLOAD_BUTTON_ID]: POLYGON_UPLOAD_BUTTON_ICON_SVG,
     [NOTES_BUTTON_ID]: NOTES_BUTTON_ICON_SVG,
+    [NSPD_BUTTON_ID]: NSPD_BUTTON_ICON_SVG,
   })
 }

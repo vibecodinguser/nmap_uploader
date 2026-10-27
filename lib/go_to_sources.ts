@@ -30,7 +30,7 @@ export const GO_TO_SOURCES: Record<string, GoToSource> = {
   },
   Rosreestr: {
     linkTemplate:
-      'https://nspd.gov.ru/map?thematic=PKK&theme_id=1&is_copy_url=true&coordinate_x={lon}&coordinate_y={lat}&zoom={zoom}&baseLayerId=235&active_layers=36048',
+      'https://nspd.gov.ru/map?thematic=PKK&coordinate_x={lon}&coordinate_y={lat}&zoom={zoom}&theme_id=1&baseLayerId=235&is_copy_url=true&active_layers=875831',
     maxZoom: 20,
     convert: true,
     displayName: 'Портал НСПД',

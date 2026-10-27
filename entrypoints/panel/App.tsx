@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useFeedsFilter } from '@/hooks/useFeedsFilter'
 import { useGoToLinks } from '@/hooks/useGoToLinks'
 import { useNotesButton } from '@/hooks/useNotesButton'
+import { useNspdButton } from '@/hooks/useNspdButton'
 import { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
 import { useSplitViewButton } from '@/hooks/useSplitViewButton'
 import { useStrokeColor } from '@/hooks/useStrokeColor'
@@ -21,6 +22,7 @@ export const App = ({ themeTarget }: AppProps) => {
   const reloadAfterUpload = useReloadAfterUpload(user?.id)
   const splitViewButton = useSplitViewButton()
   const notesButton = useNotesButton()
+  const nspdButton = useNspdButton()
   const feedsFilter = useFeedsFilter()
   const goToLinks = useGoToLinks()
 
@@ -46,6 +48,7 @@ export const App = ({ themeTarget }: AppProps) => {
           reloadAfterUpload={reloadAfterUpload}
           splitViewButton={splitViewButton}
           notesButton={notesButton}
+          nspdButton={nspdButton}
           feedsFilter={feedsFilter}
           goToLinks={goToLinks}
         />

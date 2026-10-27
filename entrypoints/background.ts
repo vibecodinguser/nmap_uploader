@@ -1,6 +1,7 @@
 import { type Browser, browser } from 'wxt/browser'
 import { defineBackground } from 'wxt/utils/define-background'
 import {
+  CLOSE_CURRENT_TAB_ACTION,
   configureInstalledSidePanel,
   createMessageRouter,
   ensurePanelSidebarRegistered,
@@ -8,6 +9,7 @@ import {
   handleApplyStrokeColor,
   handleCancelPointPicking,
   handleCenterMap,
+  handleCloseCurrentTab,
   handleClosePanel,
   handleDrawMapObjects,
   handleEnsureAuth,
@@ -22,10 +24,12 @@ import {
   handleSetTrackerDate,
   handleStartPointPicking,
   handleUpload,
+  handleUploadNspdGeoJson,
   type MessageHandler,
   openPanel,
   persistYandexBrowserFlag,
   runBackgroundTask,
+  UPLOAD_NSPD_GEOJSON_ACTION,
 } from '@/lib/background'
 import { GO_TO_REFRESH_ACTION } from '@/lib/go_to_notify'
 import { syncLocaleFromStorage } from '@/lib/i18n'
@@ -67,6 +71,8 @@ const messageHandlers: Record<string, MessageHandler> = {
   DRAW_MAP_OBJECTS: handleDrawMapObjects,
   GET_DRAW_MAP_OBJECTS: handleGetDrawMapObjects,
   SET_TRACKER_DATE: handleSetTrackerDate,
+  [UPLOAD_NSPD_GEOJSON_ACTION]: handleUploadNspdGeoJson,
+  [CLOSE_CURRENT_TAB_ACTION]: handleCloseCurrentTab,
 }
 
 const backgroundMessageRouter = createMessageRouter({ handlers: messageHandlers })

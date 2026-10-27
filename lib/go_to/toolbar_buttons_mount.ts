@@ -3,6 +3,7 @@
  */
 import {
   getNotesButton,
+  getNspdButton,
   getPolygonUploadButton,
   getServiceButton,
   getSplitButton,
@@ -17,6 +18,7 @@ import { GO_TO_BUTTON_HOVERED_CLASS } from '@/lib/go_to_styles'
 import type { TranslateFn } from '@/lib/i18n'
 import { createNotesButton, NOTES_BUTTON_ID } from '@/lib/notes_button'
 import { closeNotesPopup, toggleNotesPopup } from '@/lib/notes_popup'
+import { buildNspdMapUrl, createNspdButton, NSPD_BUTTON_ID } from '@/lib/nspd/nspd_button'
 import { createPolygonUploadButton, POLYGON_UPLOAD_BUTTON_ID } from '@/lib/polygon_upload_button'
 import { closePolygonUploadPopup, togglePolygonUploadPopup } from '@/lib/polygon_upload_popup'
 
@@ -152,6 +154,51 @@ export const mountNotesButtonView = ({ getTranslator, onHideMenu }: ToolbarActio
     })
     button.addEventListener('mouseout', (e) => {
       if (isToolbarButtonHoverTarget(button, e.target, NOTES_BUTTON_ID)) {
+        button.classList.remove(GO_TO_BUTTON_HOVERED_CLASS)
+        hideGoToTooltip()
+      }
+    })
+  }
+}
+
+export const mountNspdButtonView = ({ getTranslator, onHideMenu }: ToolbarActionContext): void => {
+  const insertAfter =
+    getNotesButton() ?? getPolygonUploadButton() ?? getSplitButton() ?? getServiceButton()
+  if (!insertAfter) return
+
+  const existingButton = getNspdButton()
+  if (existingButton && existingButton.previousElementSibling !== insertAfter) {
+    existingButton.remove()
+  }
+
+  if (!getNspdButton()) {
+    const label = getTranslator()('map.openNspd')
+    const button = createNspdButton(label)
+    insertAfter.insertAdjacentElement('afterend', button)
+
+    button.addEventListener('click', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      e.stopImmediatePropagation()
+      onHideMenu()
+      closePolygonUploadPopup()
+      closeNotesPopup()
+
+      const nspdUrl =
+        buildNspdMapUrl(window.location.href) ??
+        'https://nspd.gov.ru/map?thematic=PKK&theme_id=1&baseLayerId=235&is_copy_url=true&active_layers=875831'
+      window.open(nspdUrl, '_blank')
+    })
+
+    button.addEventListener('mouseover', (e) => {
+      if (isToolbarButtonHoverTarget(button, e.target, NSPD_BUTTON_ID)) {
+        button.classList.add(GO_TO_BUTTON_HOVERED_CLASS)
+        showGoToTooltip(getTranslator()('map.openNspd'), button, 'top')
+      }
+    })
+
+    button.addEventListener('mouseout', (e) => {
+      if (isToolbarButtonHoverTarget(button, e.target, NSPD_BUTTON_ID)) {
         button.classList.remove(GO_TO_BUTTON_HOVERED_CLASS)
         hideGoToTooltip()
       }

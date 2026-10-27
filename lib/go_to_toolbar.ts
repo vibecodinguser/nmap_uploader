@@ -2,6 +2,7 @@ import { queryAllByDomId } from '@/lib/go_to_dom'
 import { GO_TO_SERVICE_BUTTON_ID } from '@/lib/go_to_service_button'
 import { GO_TO_SPLIT_BUTTON_ID } from '@/lib/go_to_split_button'
 import { NOTES_BUTTON_ID } from '@/lib/notes_button'
+import { NSPD_BUTTON_ID } from '@/lib/nspd/nspd_button'
 import { parseStaticSvg } from '@/lib/parse_static_svg'
 import { POLYGON_UPLOAD_BUTTON_ID } from '@/lib/polygon_upload_button'
 
@@ -54,6 +55,7 @@ export const removeAllGoToToolbarButtons = (): void => {
     GO_TO_SPLIT_BUTTON_ID,
     POLYGON_UPLOAD_BUTTON_ID,
     NOTES_BUTTON_ID,
+    NSPD_BUTTON_ID,
   ]) {
     removeButtonsById(id)
   }
