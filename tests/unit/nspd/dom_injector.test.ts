@@ -5,7 +5,9 @@ import {
   findCadastralElements,
   NSPD_ACTION_BUTTON_CLASS,
   NSPD_FLOATING_WIDGET_ID,
+  NSPD_TOAST_CONTAINER_ID,
   scanAndMountNspdButtons,
+  showNspdToast,
   updateFloatingWidget,
 } from '@/lib/nspd/dom_injector'
 
@@ -73,5 +75,27 @@ describe('NSPD dom injector', () => {
     expect(widget?.textContent).toContain('В Блокнот картографа')
     expect(widget?.style.left).toBe('50%')
     expect(widget?.style.transform).toBe('translateX(-50%)')
+  })
+
+  it('отображает информационные и успешные всплывающие уведомления по центру под плавающим виджетом', () => {
+    showNspdToast('Кликните по участку или объекту на карте для выбора контура', 'info')
+    showNspdToast('Полигон 77:01:0001001:1234 успешно сохранён в Блокнот!', 'success', 2000)
+
+    const container = document.getElementById(NSPD_TOAST_CONTAINER_ID)
+    expect(container).not.toBeNull()
+    expect(container?.style.top).toBe('152px')
+    expect(container?.style.left).toBe('50%')
+    expect(container?.style.right).toBe('auto')
+    expect(container?.style.transform).toBe('translateX(-50%)')
+    expect(container?.children).toHaveLength(2)
+    const [infoToast, successToast] = Array.from(container?.children ?? []) as HTMLElement[]
+    expect(infoToast.style.background).toContain('#d32f2f')
+    expect(successToast.style.background).toContain('#d32f2f')
+    expect(container?.textContent).toContain(
+      'Кликните по участку или объекту на карте для выбора контура',
+    )
+    expect(container?.textContent).toContain(
+      'Полигон 77:01:0001001:1234 успешно сохранён в Блокнот!',
+    )
   })
 })

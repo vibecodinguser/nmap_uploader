@@ -55,7 +55,7 @@ describe('nmaps repaint & object_drawer', () => {
   })
 
   describe('NmapsObjectDrawer', () => {
-    it('корректно создает GeoObjectCollection и добавляет геообъекты', () => {
+    it('отрисовывает только несохранённые геообъекты (без id) с прозрачной интерактивностью', () => {
       const addMock = vi.fn()
       const removeAllMock = vi.fn()
       const geoObjectsAddMock = vi.fn()
@@ -89,7 +89,7 @@ describe('nmaps repaint & object_drawer', () => {
         {
           points: [
             {
-              id: '1',
+              id: 'saved-polygon',
               geomType: 'Polygon',
               geomCoords: [
                 [37, 55],
@@ -97,24 +97,96 @@ describe('nmaps repaint & object_drawer', () => {
               ],
             },
             {
-              id: '2',
+              localId: 'temp-1',
+              geomType: 'Polygon',
+              geomCoords: [
+                [37, 55],
+                [38, 56],
+              ],
+            },
+            {
+              localId: 'temp-2',
               geomType: 'LineString',
               geomCoords: [
                 [37, 55],
                 [38, 56],
               ],
             },
-            { id: '3', geomType: 'Point', latitude: 55, longitude: 37 },
+            { localId: 'temp-3', geomType: 'Point', latitude: 55, longitude: 37 },
           ],
           snapTargets: [],
         },
         () => mockMap,
       )
 
-      expect(mockYmaps.GeoObjectCollection).toHaveBeenCalledTimes(1)
+      expect(mockYmaps.GeoObjectCollection).toHaveBeenCalledWith(
+        {},
+        expect.objectContaining({
+          interactivityModel: 'default#transparent',
+        }),
+      )
+      expect(mockYmaps.Polygon).toHaveBeenCalledWith(
+        expect.any(Array),
+        expect.any(Object),
+        expect.objectContaining({
+          fill: true,
+          interactivityModel: 'default#transparent',
+        }),
+      )
       expect(geoObjectsAddMock).toHaveBeenCalledWith(mockCollection)
       expect(removeAllMock).toHaveBeenCalledTimes(1)
       expect(addMock).toHaveBeenCalledTimes(3)
+    })
+
+    it('не создаёт коллекцию и очищает существующую, если все объекты уже сохранены (имеют id)', () => {
+      const addMock = vi.fn()
+      const removeAllMock = vi.fn()
+      const geoObjectsAddMock = vi.fn()
+
+      const mockCollection = {
+        add: addMock,
+        removeAll: removeAllMock,
+      }
+
+      const mockMap = {
+        geoObjects: {
+          add: geoObjectsAddMock,
+        },
+      } as any
+
+      const mockYmaps = {
+        GeoObjectCollection: vi.fn(function (this: any) {
+          return mockCollection
+        }),
+        Polygon: vi.fn(),
+        Polyline: vi.fn(),
+        Placemark: vi.fn(),
+      }
+
+      ;(globalThis as any).ymaps = mockYmaps
+
+      const drawer = new NmapsObjectDrawer()
+      drawer.drawObjects(
+        {
+          points: [
+            {
+              id: 'saved-nspd-polygon',
+              geomType: 'Polygon',
+              geomCoords: [
+                [37, 55],
+                [38, 55],
+                [38, 56],
+                [37, 55],
+              ],
+            },
+          ],
+          snapTargets: [],
+        },
+        () => mockMap,
+      )
+
+      expect(mockYmaps.GeoObjectCollection).not.toHaveBeenCalled()
+      expect(addMock).not.toHaveBeenCalled()
     })
   })
 })

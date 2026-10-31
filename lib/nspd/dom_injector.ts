@@ -17,29 +17,37 @@ export const NSPD_FLOATING_WIDGET_ID = 'nmapNspdFloatingWidget'
 /** Показывает временное уведомление на странице НСПД. */
 export const showNspdToast = (
   message: string,
-  type: 'success' | 'error' | 'info' = 'info',
+  _type: 'success' | 'error' | 'info' = 'info',
   durationMs = 4000,
 ): void => {
   let container = document.getElementById(NSPD_TOAST_CONTAINER_ID)
   if (!container) {
     container = document.createElement('div')
     container.id = NSPD_TOAST_CONTAINER_ID
-    container.style.cssText = `
-      position: fixed !important;
-      top: 24px !important;
-      right: 24px !important;
-      z-index: 9999999 !important;
-      display: flex !important;
-      flex-direction: column !important;
-      gap: 10px !important;
-      pointer-events: none !important;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-    `
     document.body.appendChild(container)
   }
 
+  const widget = document.getElementById(NSPD_FLOATING_WIDGET_ID)
+  const widgetBottom = widget?.getBoundingClientRect().bottom ?? 0
+  const topPx = widgetBottom > 0 ? Math.round(widgetBottom + 16) : 152
+
+  container.style.cssText = `
+    position: fixed !important;
+    top: ${topPx}px !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    z-index: 9999999 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 10px !important;
+    pointer-events: none !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  `
+
   const toast = document.createElement('div')
-  const bg = type === 'success' ? '#2e7d32' : type === 'error' ? '#d32f2f' : '#1976d2'
+  const bg = '#d32f2f'
   toast.style.cssText = `
     background: ${bg} !important;
     color: #ffffff !important;
@@ -49,10 +57,12 @@ export const showNspdToast = (
     font-weight: 500 !important;
     box-shadow: 0 4px 14px rgba(0,0,0,0.3) !important;
     max-width: 380px !important;
+    text-align: center !important;
     pointer-events: auto !important;
     transition: opacity 0.3s ease, transform 0.3s ease !important;
     display: flex !important;
     align-items: center !important;
+    justify-content: center !important;
     gap: 8px !important;
   `
   toast.textContent = message
@@ -274,9 +284,9 @@ export const updateFloatingWidget = (cadNum: string | null): void => {
     widget.appendChild(label)
 
     const uploadBtn = createNspdUploadButton(() => handleUploadNspdObjects(cadNum, uploadBtn))
-    uploadBtn.style.margin = '0 !important'
-    uploadBtn.style.padding = '6px 12px !important'
-    uploadBtn.style.fontSize = '12px !important'
+    uploadBtn.style.setProperty('margin', '0', 'important')
+    uploadBtn.style.setProperty('padding', '6px 12px', 'important')
+    uploadBtn.style.setProperty('font-size', '12px', 'important')
     widget.appendChild(uploadBtn)
   } else {
     const uploadBtn = createNspdUploadButton(() => {
@@ -284,15 +294,12 @@ export const updateFloatingWidget = (cadNum: string | null): void => {
       if (recent.length > 0) {
         handleUploadNspdObjects(null, uploadBtn)
       } else {
-        showNspdToast(
-          'Кликните по участку или объекту на карте для выбора контура',
-          'info',
-        )
+        showNspdToast('Кликните по участку или объекту на карте для выбора контура', 'info')
       }
     })
-    uploadBtn.style.margin = '0 !important'
-    uploadBtn.style.padding = '6px 14px !important'
-    uploadBtn.style.fontSize = '13px !important'
+    uploadBtn.style.setProperty('margin', '0', 'important')
+    uploadBtn.style.setProperty('padding', '6px 14px', 'important')
+    uploadBtn.style.setProperty('font-size', '13px', 'important')
     widget.appendChild(uploadBtn)
   }
 }
