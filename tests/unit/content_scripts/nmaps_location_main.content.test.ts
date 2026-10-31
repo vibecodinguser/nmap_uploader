@@ -248,4 +248,71 @@ describe('nmaps-location-main.content', () => {
     expect(withoutTarget).toEqual([])
     expect(document.querySelector('[data-nmap-snap-marker]')).toBeNull()
   })
+
+  it('перехватывает карту через ymaps.modules и активирует трассировку без DOM-свойств', async () => {
+    class FakeGeoCollection {
+      add = vi.fn()
+      removeAll = vi.fn()
+    }
+
+    class DynamicMap {
+      events = { add: vi.fn(), remove: vi.fn() }
+      geoObjects = { add: vi.fn() }
+      options = {
+        get: () => ({
+          toGlobalPixels: (coords: Coordinate) => coords,
+        }),
+      }
+      getCenter(): [number, number] {
+        return [37.6, 55.7]
+      }
+      getZoom(): number {
+        return 18
+      }
+    }
+
+    const fakeYmaps = {
+      GeoObjectCollection: FakeGeoCollection,
+      modules: {
+        require: (modules: string[], callback: (MapConstructor: unknown) => void) => {
+          if (modules.includes('Map')) {
+            callback(DynamicMap)
+          }
+        },
+      },
+    }
+    ;(globalThis as unknown as Record<string, unknown>).ymaps = fakeYmaps
+
+    runMain()
+    vi.runAllTimers()
+    installFakeNmapsModules()
+
+    // Экземпляр создается модульной системой Яндекса без привязки к DOM
+    const mapInstance = new DynamicMap()
+    mapInstance.getZoom()
+
+    document.dispatchEvent(
+      new CustomEvent('nmaps:drawObjects', {
+        detail: JSON.stringify({
+          points: [],
+          snapTargets: [
+            {
+              id: 'sample',
+              coordinates: [
+                [0, 0],
+                [100, 0],
+                [100, 100],
+                [0, 0],
+              ],
+            },
+          ],
+        }),
+      }),
+    )
+
+    const result = await new FakeHotspot().getGeoObjectsByCoords([50, 5])
+    expect(result.map((item) => (item as { getId: () => string }).getId())).toContain(
+      'nmap-uploader:note:sample',
+    )
+  })
 })

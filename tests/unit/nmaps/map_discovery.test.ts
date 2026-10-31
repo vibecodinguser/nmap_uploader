@@ -1,8 +1,9 @@
 // @vitest-environment happy-dom
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   findMapInElement,
   hasYmapsEventsAdd,
+  hookYmapsModuleMap,
   isNonNullObject,
   isYmapsMapLike,
 } from '@/lib/nmaps/map_discovery'
@@ -46,5 +47,48 @@ describe('nmaps/map_discovery', () => {
     }
     ;(el as unknown as Record<string, unknown>).__ymaps_instance__ = fakeMap
     expect(findMapInElement(el)).toBe(fakeMap)
+  })
+
+  it('hookYmapsModuleMap возвращает false если modules.require отсутствует', () => {
+    expect(hookYmapsModuleMap(null, () => {})).toBe(false)
+    expect(hookYmapsModuleMap({}, () => {})).toBe(false)
+    expect(hookYmapsModuleMap({ modules: {} }, () => {})).toBe(false)
+  })
+
+  it('hookYmapsModuleMap перехватывает экземпляр карты при вызове методов прототипа', () => {
+    let capturedMap: unknown = null
+    const onInstance = (map: unknown) => {
+      capturedMap = map
+    }
+
+    class FakeMap {
+      options = { get: () => null }
+      events = { add: () => {}, remove: () => {} }
+      getCenter() {
+        return [55.75, 37.61]
+      }
+      getZoom() {
+        return 16
+      }
+    }
+
+    const fakeYmaps = {
+      modules: {
+        require: (modules: string[], callback: (MapConstructor: unknown) => void) => {
+          if (modules.includes('Map')) {
+            callback(FakeMap)
+          }
+        },
+      },
+    }
+
+    const hooked = hookYmapsModuleMap(fakeYmaps, onInstance)
+    expect(hooked).toBe(true)
+
+    const mapInstance = new FakeMap()
+    // Экземпляр перехватывается либо через конструктор, либо при вызове getZoom
+    mapInstance.getZoom()
+
+    expect(capturedMap).toBe(mapInstance)
   })
 })

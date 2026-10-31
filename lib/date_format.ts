@@ -59,7 +59,7 @@ export const formatDateDisplayInput = (value: string): string => {
 /** Разбирает DD-MM-YYYY в Date (полночь локального времени). */
 export const parseDateDisplay = (value: string): Date | undefined => {
   const trimmedValue = value.trim()
-  const match = trimmedValue.match(/^(\d{2})-(\d{2})-(\d{4})$/)
+  const match = trimmedValue.match(/^(\d{2})[-./](\d{2})[-./](\d{4})$/)
   let result: Date | undefined
   if (match) {
     const [, day, month, year] = match
@@ -67,6 +67,8 @@ export const parseDateDisplay = (value: string): Date | undefined => {
     if (isValidTargetDate(iso)) {
       result = new Date(`${iso}T00:00:00`)
     }
+  } else if (isValidTargetDate(trimmedValue)) {
+    result = new Date(`${trimmedValue}T00:00:00`)
   }
   return result
 }

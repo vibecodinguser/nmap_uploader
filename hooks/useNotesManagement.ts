@@ -116,7 +116,8 @@ export const useNotesManagement = ({
           setPoints((prev) => (prev.length === 0 ? prev : []))
         }
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error('[nmap_uploader notes] download error:', error)
         if (isMounted) setPoints((prev) => (prev.length === 0 ? prev : []))
       })
       .finally(() => {
@@ -177,6 +178,10 @@ export const useNotesManagement = ({
 
     if (lastDispatchedRef.current === detailString) return
     lastDispatchedRef.current = detailString
+
+    if (typeof window !== 'undefined' && window.parent && window.parent !== window) {
+      window.parent.postMessage({ action: 'DRAW_MAP_OBJECTS', detail }, '*')
+    }
 
     document.dispatchEvent(
       new CustomEvent('nmaps:drawObjects', {

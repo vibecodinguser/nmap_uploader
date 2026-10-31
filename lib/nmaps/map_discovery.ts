@@ -17,13 +17,65 @@ export type YmapsMapLike = {
   }
 }
 
+export type YmapsModulesLike = {
+  require: (
+    modules: string[],
+    successCallback: (MapConstructor: unknown) => void,
+    errorCallback?: () => void,
+  ) => void
+}
+
 export type YmapsGlobal = {
   Map?: new (...args: unknown[]) => YmapsMapLike
   ready?: (callback: () => void) => void
+  modules?: YmapsModulesLike
 }
 
 export type YmapsMapWithContainer = {
   container?: { fitToViewport?: () => void }
+}
+
+const HOOKED_MAP_PROTO_KEY = '__nmaps_proto_hooked__'
+
+export const hookYmapsModuleMap = (
+  ymaps: unknown,
+  onInstance: (map: YmapsMapLike) => void,
+): boolean => {
+  if (!isNonNullObject(ymaps)) return false
+  const candidate = ymaps as YmapsGlobal
+  const modules = candidate.modules
+  if (!modules || typeof modules.require !== 'function') return false
+
+  try {
+    modules.require(['Map'], (MapConstructor: unknown) => {
+      if (!MapConstructor || typeof MapConstructor !== 'function') return
+      const proto = (MapConstructor as { prototype?: Record<string, unknown> }).prototype
+      if (!proto || proto[HOOKED_MAP_PROTO_KEY]) return
+      proto[HOOKED_MAP_PROTO_KEY] = true
+
+      const handleInstance = (instance: unknown): void => {
+        if (isYmapsMapLike(instance)) {
+          onInstance(instance)
+        }
+      }
+
+      // Перехватываем только безопасные геттеры, не трогая конструктор и приватные методы
+      const safeMethods = ['getZoom', 'getCenter'] as const
+
+      for (const methodName of safeMethods) {
+        const origMethod = proto[methodName]
+        if (typeof origMethod === 'function') {
+          proto[methodName] = function (this: unknown, ...args: unknown[]) {
+            handleInstance(this)
+            return Reflect.apply(origMethod as (...a: unknown[]) => unknown, this, args)
+          }
+        }
+      }
+    })
+    return true
+  } catch {
+    return false
+  }
 }
 
 export const isNonNullObject = (value: unknown): value is Record<string, unknown> => {

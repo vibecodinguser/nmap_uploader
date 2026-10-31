@@ -164,19 +164,32 @@ export default defineContentScript({
     }
 
     let lastTrackerDate = ''
+    let trackerInterval: ReturnType<typeof setInterval> | null = null
+
     const checkTrackerDate = () => {
-      lastTrackerDate = checkAndNotifyTrackerDate({
-        lastDate: lastTrackerDate,
-        onDateChange: (newDate) => {
-          sendTrackerDateToIframe(newDate, new URL(browser.runtime.getURL('/')).origin)
-          browser.runtime
-            .sendMessage({ action: 'TRACKER_DATE_CHANGED', date: newDate })
-            .catch(() => {})
-        },
-      })
+      try {
+        if (!browser.runtime?.id) {
+          if (trackerInterval) clearInterval(trackerInterval)
+          return
+        }
+        lastTrackerDate = checkAndNotifyTrackerDate({
+          lastDate: lastTrackerDate,
+          onDateChange: (newDate) => {
+            try {
+              if (!browser.runtime?.id) return
+              sendTrackerDateToIframe(newDate, new URL(browser.runtime.getURL('/')).origin)
+              browser.runtime
+                .sendMessage({ action: 'TRACKER_DATE_CHANGED', date: newDate })
+                .catch(() => {})
+            } catch {}
+          },
+        })
+      } catch {
+        if (trackerInterval) clearInterval(trackerInterval)
+      }
     }
 
-    const trackerInterval = setInterval(checkTrackerDate, 1000)
+    trackerInterval = setInterval(checkTrackerDate, 1000)
     checkTrackerDate()
 
     document.addEventListener(NMAPS_POINT_PICKED_EVENT, handlePointPicked)

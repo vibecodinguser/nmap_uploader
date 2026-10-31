@@ -81,11 +81,13 @@ export const createDrawMapObjectsFromNmapIndex = (
     let geomType = 'Point'
 
     if (path?.length) {
-      geomType =
-        path.length > 2 && coordinatesEqual(path[0], path.at(-1) as [number, number])
-          ? 'Polygon'
-          : 'LineString'
+      const isClosed = path.length > 2 && coordinatesEqual(path[0], path.at(-1) as [number, number])
+      const isPolygonCandidate = normalizePolygonCoordinates(path) !== null
+      geomType = isClosed || isPolygonCandidate ? 'Polygon' : 'LineString'
     }
+
+    const normalizedCoords =
+      geomType === 'Polygon' && path ? (normalizePolygonCoordinates(path) ?? path) : path
 
     return {
       id,
@@ -96,7 +98,7 @@ export const createDrawMapObjectsFromNmapIndex = (
       noteTime: point.note_time,
       noteDesc: point.note_desc,
       geomType,
-      geomCoords: path ?? [point.coords],
+      geomCoords: normalizedCoords ?? [point.coords],
     }
   })
 

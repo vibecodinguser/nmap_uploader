@@ -23,6 +23,7 @@ import {
   handleReloadEditor,
   handleSetTrackerDate,
   handleStartPointPicking,
+  handleTrackerDateChanged,
   handleUpload,
   handleUploadNspdGeoJson,
   type MessageHandler,
@@ -71,6 +72,7 @@ const messageHandlers: Record<string, MessageHandler> = {
   DRAW_MAP_OBJECTS: handleDrawMapObjects,
   GET_DRAW_MAP_OBJECTS: handleGetDrawMapObjects,
   SET_TRACKER_DATE: handleSetTrackerDate,
+  TRACKER_DATE_CHANGED: handleTrackerDateChanged,
   [UPLOAD_NSPD_GEOJSON_ACTION]: handleUploadNspdGeoJson,
   [CLOSE_CURRENT_TAB_ACTION]: handleCloseCurrentTab,
 }

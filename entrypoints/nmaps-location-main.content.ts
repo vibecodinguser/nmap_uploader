@@ -2,6 +2,7 @@ import { defineContentScript } from 'wxt/utils/define-content-script'
 import {
   centerMapOnLocation,
   findActiveMap,
+  hookYmapsModuleMap,
   NmapsObjectDrawer,
   PointPickerOverlay,
   requestMapRepaint,
@@ -23,6 +24,13 @@ import { notifyNmapsUrlChange } from '@/lib/nmaps_url_notify'
 
 let globalActiveMapInstance: YmapsMapLike | null = null
 
+const handleMapInstanceFound = (instance: YmapsMapLike): void => {
+  if (globalActiveMapInstance !== instance) {
+    globalActiveMapInstance = instance
+    subscribeToMapEvents(instance)
+  }
+}
+
 const getActiveMap = (): YmapsMapLike | null => globalActiveMapInstance ?? findActiveMap()
 
 type MapConstructorLike = {
@@ -34,6 +42,13 @@ type MapConstructorLike = {
 interface YmapsGlobalLike {
   Map?: MapConstructorLike
   ready?: (cb: () => void) => void
+  modules?: {
+    require?: (
+      modules: string[],
+      successCallback: (MapConstructor: unknown) => void,
+      errorCallback?: () => void,
+    ) => void
+  }
   __mapGetterConfigured?: boolean
   __readyHooked?: boolean
 }
@@ -51,8 +66,7 @@ const interceptYmaps = (): void => {
 
     const InterceptedMap = function (this: unknown, ...args: unknown[]) {
       const instance = new mapFn(...args)
-      globalActiveMapInstance = instance as YmapsMapLike
-      subscribeToMapEvents(instance as YmapsMapLike)
+      handleMapInstanceFound(instance as YmapsMapLike)
       return instance
     } as unknown as MapConstructorLike
 
@@ -81,6 +95,7 @@ const interceptYmaps = (): void => {
     ymaps.__readyHooked = true
     try {
       ymaps.ready(() => {
+        hookYmapsModuleMap(ymaps, handleMapInstanceFound)
         if (ymaps.Map && !ymaps.Map.__intercepted) {
           ymaps.Map = wrapConstructor(ymaps.Map)
         }
@@ -97,9 +112,12 @@ const startMapDiscovery = (): void => {
       interceptYmaps()
       const map = findActiveMap()
       if (map) {
-        globalActiveMapInstance = map
-        subscribeToMapEvents(map)
+        handleMapInstanceFound(map)
       } else {
+        const g = globalThis as unknown as Record<string, unknown>
+        if (g.ymaps) {
+          hookYmapsModuleMap(g.ymaps, handleMapInstanceFound)
+        }
         setTimeout(poll, 500)
       }
     }
@@ -172,12 +190,22 @@ export default defineContentScript({
 
     document.addEventListener(NMAPS_MAP_RESIZE_EVENT, (e) => requestMapRepaint(e, getActiveMap))
 
-    document.addEventListener('nmaps:drawObjects', (event: Event) => {
-      const detail = parseDrawMapObjectsDetail((event as CustomEvent).detail)
+    const applyMapObjectsDetail = (rawDetail: unknown): void => {
+      const detail = parseDrawMapObjectsDetail(rawDetail)
       if (!detail) return
 
       tracingAdapter.setTargets(detail.snapTargets)
       drawer.drawObjects(detail, getActiveMap)
+    }
+
+    document.addEventListener('nmaps:drawObjects', (event: Event) => {
+      applyMapObjectsDetail((event as CustomEvent).detail)
+    })
+
+    globalThis.addEventListener('message', (event: MessageEvent) => {
+      if (event.data?.action === 'DRAW_MAP_OBJECTS' && event.data.detail) {
+        applyMapObjectsDetail(event.data.detail)
+      }
     })
 
     document.addEventListener('nmaps:centerMap', (event: Event) => {

@@ -12,6 +12,7 @@ import {
   logRejectedMessage,
 } from '@/lib/message_auth'
 import { type DrawMapObjectsDetail, loadDrawMapObjectsForDate } from '@/lib/nmaps_draw_objects'
+import { extractTrackerDate } from '@/lib/notes/date_utils'
 import { downloadIndexJson, getStoredAuth } from '@/lib/yandex/client'
 
 let lastDrawMapObjects: DrawMapObjectsDetail | null = null
@@ -89,7 +90,10 @@ export const handleGetDrawMapObjects: MessageHandler = (_message, sender, sendRe
   if (isTrustedNmapsOrPanelSender(sender)) {
     const loadDrawMapObjects = async () => {
       try {
-        if (!lastDrawMapObjects) {
+        if (
+          !lastDrawMapObjects ||
+          (lastDrawMapObjects.points.length === 0 && lastDrawMapObjects.snapTargets.length === 0)
+        ) {
           const [{ notes_selected_date: selectedDate }, auth] = await Promise.all([
             browser.storage.local.get('notes_selected_date'),
             getStoredAuth(),
@@ -112,5 +116,36 @@ export const handleGetDrawMapObjects: MessageHandler = (_message, sender, sendRe
     logRejectedMessage('GET_DRAW_MAP_OBJECTS', sender)
     sendResponse({ points: [], snapTargets: [] })
   }
+  return true
+}
+
+export const handleTrackerDateChanged: MessageHandler = (message, sender) => {
+  const rawDate = message.date as string | undefined
+  const date = extractTrackerDate(rawDate)
+  if (!date) return false
+
+  const task = async () => {
+    await browser.storage.local.set({ notes_selected_date: date })
+    const auth = await getStoredAuth()
+    if (!auth?.token) return
+
+    const detail = await loadDrawMapObjectsForDate({
+      selectedDate: date,
+      token: auth.token,
+      downloadIndex: downloadIndexJson,
+    })
+    lastDrawMapObjects = detail
+    await processRelayToMapTabs(
+      sender,
+      {
+        action: 'DRAW_MAP_OBJECTS',
+        ...detail,
+      },
+      () => {},
+      'TRACKER_DATE_CHANGED',
+    )
+  }
+
+  runBackgroundTask(task(), 'TRACKER_DATE_CHANGED')
   return true
 }

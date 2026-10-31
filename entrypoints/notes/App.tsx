@@ -11,6 +11,25 @@ export const NotesPopupApp = () => {
   })
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.parent && window.parent !== window) {
+      try {
+        const origLog = console.log
+        console.log = (...args: unknown[]) => {
+          origLog(...args)
+          try {
+            window.parent.console.log(...args)
+          } catch {}
+        }
+        const origError = console.error
+        console.error = (...args: unknown[]) => {
+          origError(...args)
+          try {
+            window.parent.console.error(...args)
+          } catch {}
+        }
+      } catch {}
+    }
+
     const handlePointerDown = (): void => {
       window.parent.postMessage({ action: 'RESET_POINT_COUNTER' }, '*')
     }
