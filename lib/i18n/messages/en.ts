@@ -172,8 +172,10 @@ export const enMessages = {
     noteExtendedDescPlaceholder: 'Extended note description (optional)',
   },
   mapPointCounter: {
-    points: 'Points: {count}',
-    pointsLeft: 'Points left: {count}',
+    points: 'Vertices: {count}',
+    pointsLeft: 'Vertices left: {count}',
+    limitReached: 'Vertex limit reached',
+    limitExceeded: 'Limit exceeded by: {count}',
     keyPressed: 'Key pressed: {key}',
     doubleClick: 'Double click',
   },

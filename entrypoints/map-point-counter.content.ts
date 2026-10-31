@@ -1,6 +1,7 @@
 import { defineContentScript } from 'wxt/utils/define-content-script'
 import { createTranslator, type TranslateFn } from '@/lib/i18n'
 import {
+  isCounterResetTarget,
   PointCounterUi,
   patchCanvasForPointCounter,
   SvgPointCounterObserver,
@@ -21,26 +22,29 @@ export default defineContentScript({
     ui.ensureCreated()
 
     let lastMapInteractionTime = 0
+    let svgObserver: SvgPointCounterObserver | null = null
 
-    document.addEventListener(
-      'pointerdown',
-      (e) => {
-        const target = e.target as HTMLElement | null
-        if (
-          target &&
-          (target.closest('ymaps') ||
-            target.tagName.toLowerCase() === 'canvas' ||
-            target.tagName.toLowerCase() === 'svg')
-        ) {
-          lastMapInteractionTime = Date.now()
-        }
-      },
-      true,
-    )
+    const handleUserInteraction = (e: Event) => {
+      const target = e.target as HTMLElement | null
+      if (!target) return
+
+      if (isCounterResetTarget(target)) {
+        lastMapInteractionTime = 0
+        return
+      }
+
+      lastMapInteractionTime = Date.now()
+      svgObserver?.checkSystemBanner()
+    }
+
+    document.addEventListener('pointerdown', handleUserInteraction, true)
+    document.addEventListener('mousedown', handleUserInteraction, true)
+    document.addEventListener('click', handleUserInteraction, true)
+    document.addEventListener('keydown', handleUserInteraction, true)
 
     const getLastMapInteractionTime = () => lastMapInteractionTime
 
-    const svgObserver = new SvgPointCounterObserver({
+    svgObserver = new SvgPointCounterObserver({
       ui,
       getLastMapInteractionTime,
     })

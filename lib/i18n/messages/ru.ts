@@ -172,8 +172,10 @@ export const ruMessages = {
     noteExtendedDescPlaceholder: 'Расширенное описание заметки (необязательно)',
   },
   mapPointCounter: {
-    points: 'Точек: {count}',
-    pointsLeft: 'Точек осталось: {count}',
+    points: 'Вершин: {count}',
+    pointsLeft: 'Вершин осталось: {count}',
+    limitReached: 'Достигнут лимит на количество вершин',
+    limitExceeded: 'Лимит превышен на: {count}',
     keyPressed: 'Нажата клавиша {key}',
     doubleClick: 'Двойной клик',
   },

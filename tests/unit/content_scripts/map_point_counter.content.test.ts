@@ -79,11 +79,17 @@ describe('map-point-counter.content', () => {
 
     await new Promise((r) => setTimeout(r, 0))
 
-    // Добавляем еще точки (скачок не должен быть > 2)
-    path.setAttribute('d', 'M0 0 L10 10 L20 20') // 3 точки
+    // Добавляем еще точки (3 сырые точки пути -> 2 зафиксированные вершины с вычетом курсора)
+    path.setAttribute('d', 'M0 0 L10 10 L20 20')
     await new Promise((r) => setTimeout(r, 0))
 
     expect(wrapper?.style.display).toBe('block')
-    expect(textSpan?.textContent).toBe('Точек осталось: 497')
+    expect(textSpan?.textContent).toBe('Вершин осталось: 498')
+
+    // Удаляем точку (остаток доступных вершин увеличивается)
+    path.setAttribute('d', 'M0 0 L10 10')
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(textSpan?.textContent).toBe('Вершин осталось: 499')
   })
 })

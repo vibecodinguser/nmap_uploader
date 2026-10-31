@@ -1,21 +1,49 @@
 import { describe, expect, it } from 'vitest'
 import {
+  calculateExceededPoints,
   calculateRemainingPoints,
   countPointsInPath,
   countPointsInPolyline,
+  getCounterStatus,
   getCounterThemeStyle,
   isEditorDrawingStrokeStyle,
   MAX_POINTS_LIMIT,
+  normalizeActiveDrawingPoints,
 } from '@/lib/point_counter/core'
 
 describe('point_counter/core', () => {
+  describe('normalizeActiveDrawingPoints', () => {
+    it('возвращает 0 или 1 точку без изменений', () => {
+      expect(normalizeActiveDrawingPoints(0)).toBe(0)
+      expect(normalizeActiveDrawingPoints(1)).toBe(1)
+    })
+
+    it('вычитает 1 динамическую точку курсора для линий и полигонов от 2 точек', () => {
+      expect(normalizeActiveDrawingPoints(2)).toBe(1)
+      expect(normalizeActiveDrawingPoints(5)).toBe(4)
+      expect(normalizeActiveDrawingPoints(500)).toBe(499)
+    })
+  })
+
   describe('countPointsInPath', () => {
     it('считает пары координат в строке d', () => {
       expect(countPointsInPath('M 10 20 L 30 40 L 50 60')).toBe(3)
       expect(countPointsInPath('M10,20L30,40')).toBe(2)
       expect(countPointsInPath('M 10.5 -20.2 L -30.1 40.8')).toBe(2)
+      expect(countPointsInPath('M.5 .5 L-.3 .8')).toBe(2)
       expect(countPointsInPath('')).toBe(0)
       expect(countPointsInPath('no numbers')).toBe(0)
+    })
+
+    it('корректно считает вершины в путях со скруглениями (кривые Безье и дуги)', () => {
+      // 1 точка M + 2 точки L + 1 вершина дуги Безье (команда C из 6 параметров) = 4 вершины
+      expect(countPointsInPath('M 10 20 L 30 40 L 50 60 C 55 65 70 80 90 100')).toBe(4)
+
+      // 1 точка M + 1 дуга A (7 параметров) = 2 вершины
+      expect(countPointsInPath('M 0 0 A 25 25 0 0 1 50 50')).toBe(2)
+
+      // Путь с горизонтальными и вертикальными сегментами (H, V)
+      expect(countPointsInPath('M 0 0 H 50 V 50 Z')).toBe(3)
     })
   })
 
@@ -33,10 +61,35 @@ describe('point_counter/core', () => {
     })
   })
 
+  describe('calculateExceededPoints', () => {
+    it('считает количество точек свыше лимита', () => {
+      expect(calculateExceededPoints(490, MAX_POINTS_LIMIT)).toBe(0)
+      expect(calculateExceededPoints(500, MAX_POINTS_LIMIT)).toBe(0)
+      expect(calculateExceededPoints(501, MAX_POINTS_LIMIT)).toBe(1)
+      expect(calculateExceededPoints(515, MAX_POINTS_LIMIT)).toBe(15)
+    })
+  })
+
+  describe('getCounterStatus', () => {
+    it('возвращает remaining при запасе вершин', () => {
+      expect(getCounterStatus(100)).toEqual({ type: 'remaining', count: 400 })
+      expect(getCounterStatus(499)).toEqual({ type: 'remaining', count: 1 })
+    })
+
+    it('возвращает limitReached при точном достижении лимита (500)', () => {
+      expect(getCounterStatus(500)).toEqual({ type: 'limitReached' })
+    })
+
+    it('возвращает limitExceeded при превышении лимита', () => {
+      expect(getCounterStatus(501)).toEqual({ type: 'limitExceeded', count: 1 })
+      expect(getCounterStatus(525)).toEqual({ type: 'limitExceeded', count: 25 })
+    })
+  })
+
   describe('getCounterThemeStyle', () => {
     it('возвращает красный цвет при критическом остатке (<= 50)', () => {
       const style = getCounterThemeStyle(50)
-      expect(style.backgroundColor).toContain('255, 50, 50')
+      expect(style.backgroundColor).toContain('235, 32, 32')
       expect(style.color).toBe('white')
     })
 
