@@ -7,7 +7,11 @@ import {
 } from './core'
 import type { PointCounterUi } from './dom_ui'
 import { attachCounterResetListeners } from './svg_reset_listeners'
-import { getThrottledSystemRemainingVertices, resetSystemRemainingCache } from './system_banner'
+import {
+  getThrottledSystemRemainingVertices,
+  resetSystemRemainingCache,
+  setSystemBannerSuppressed,
+} from './system_banner'
 
 export * from './svg_reset_listeners'
 
@@ -46,22 +50,31 @@ export const isMapDrawingSvgElement = (el: Element | null): boolean => {
 export interface SvgCounterObserverOptions {
   ui: PointCounterUi
   getLastMapInteractionTime: () => number
+  isCounterEnabled?: () => boolean
 }
 
 export class SvgPointCounterObserver {
   private candidatePaths = new Map<Element, number>()
   private activePath: Element | null = null
   private observer: MutationObserver | null = null
+  private hasShownSystemStatus = false
   private readonly ui: PointCounterUi
   private readonly getLastMapInteractionTime: () => number
+  private readonly isCounterEnabled?: () => boolean
 
-  constructor({ ui, getLastMapInteractionTime }: SvgCounterObserverOptions) {
+  constructor({ ui, getLastMapInteractionTime, isCounterEnabled }: SvgCounterObserverOptions) {
     this.ui = ui
     this.getLastMapInteractionTime = getLastMapInteractionTime
+    this.isCounterEnabled = isCounterEnabled
   }
 
   public start(): () => void {
     if (typeof document === 'undefined') return () => {}
+
+    const shouldSuppress = this.isCounterEnabled ? this.isCounterEnabled() : true
+    if (shouldSuppress) {
+      setSystemBannerSuppressed(true)
+    }
 
     this.observer = new MutationObserver((mutations) => {
       let hasExternalMutations = false
@@ -78,7 +91,7 @@ export class SvgPointCounterObserver {
       }
       if (!hasExternalMutations) return
 
-      if (this.checkSystemBanner()) return
+      if (this.checkSystemBanner(true)) return
 
       for (const mutation of mutations) {
         if (
@@ -116,11 +129,26 @@ export class SvgPointCounterObserver {
   }
 
   public checkSystemBanner(force = false): boolean {
-    const remaining = getThrottledSystemRemainingVertices(undefined, force)
+    const shouldHide = this.isCounterEnabled ? this.isCounterEnabled() : true
+    const remaining = getThrottledSystemRemainingVertices(undefined, force, shouldHide)
     if (remaining !== null) {
+      this.hasShownSystemStatus = true
       this.ui.showRemaining(remaining)
       return true
     }
+
+    if (this.hasShownSystemStatus) {
+      this.hasShownSystemStatus = false
+      if (this.activePath && this.candidatePaths.has(this.activePath)) {
+        const points = this.candidatePaths.get(this.activePath) || 0
+        if (points > 0 && points <= MAX_OBSERVED_POINTS) {
+          this.ui.show(normalizeActiveDrawingPoints(points))
+          return false
+        }
+      }
+      this.ui.hide()
+    }
+
     return false
   }
 
@@ -130,10 +158,12 @@ export class SvgPointCounterObserver {
       this.observer = null
     }
     this.resetCounter()
+    setSystemBannerSuppressed(false)
   }
 
   public resetCounter = (): void => {
     resetSystemRemainingCache()
+    this.hasShownSystemStatus = false
     this.ui.hide()
     this.candidatePaths.clear()
     this.activePath = null
@@ -186,6 +216,9 @@ export class SvgPointCounterObserver {
         this.ui.show(normalizeActiveDrawingPoints(maxPoints))
         return
       }
+
+      this.hasShownSystemStatus = false
+      resetSystemRemainingCache()
 
       if (typeof window !== 'undefined') {
         window.setTimeout(() => {

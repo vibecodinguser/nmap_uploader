@@ -52,6 +52,11 @@ const settingsTabProps = {
     isLoaded: true,
     setIsEnabled: noop,
   },
+  pointCounter: {
+    isEnabled: true,
+    isLoaded: true,
+    setIsEnabled: noop,
+  },
   goToLinks: {
     isMenuEnabled: true,
     isLoaded: true,

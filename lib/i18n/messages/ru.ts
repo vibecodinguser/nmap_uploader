@@ -107,6 +107,8 @@ export const ruMessages = {
     nspdButtonAria: 'НСПД',
     feedsFilter: 'Фильтр истории правок',
     feedsFilterAria: 'Фильтр истории правок',
+    pointCounter: 'Счётчик вершин контура',
+    pointCounterAria: 'Счётчик вершин контура',
     goToButton: 'Внешние геосервисы',
     showButtonAria: 'Отображать кнопку',
     activeCount: '{active} из {total} активны',

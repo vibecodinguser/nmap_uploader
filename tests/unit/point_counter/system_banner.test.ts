@@ -2,7 +2,12 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
   findSystemRemainingVertices,
+  getSystemBannerContainer,
+  HIDER_ATTR,
+  HIDER_STYLE_ID,
   parseSystemLimitText,
+  restoreSystemBanners,
+  setSystemBannerSuppressed,
 } from '@/lib/point_counter/system_banner'
 
 describe('point_counter/system_banner', () => {
@@ -25,7 +30,10 @@ describe('point_counter/system_banner', () => {
 
     it('возвращает 0 при исчерпании лимита', () => {
       expect(parseSystemLimitText('Лимит — 500 вершин. Лимит достигнут')).toBe(0)
+      expect(parseSystemLimitText('Лимит достигнут')).toBe(0)
+      expect(parseSystemLimitText('Лимит исчерпан')).toBe(0)
       expect(parseSystemLimitText('Нельзя нарисовать больше вершин')).toBe(0)
+      expect(parseSystemLimitText('Нельзя нарисовать больше')).toBe(0)
       expect(parseSystemLimitText('Limit reached')).toBe(0)
     })
 
@@ -75,6 +83,74 @@ describe('point_counter/system_banner', () => {
       document.body.appendChild(normalDiv)
 
       expect(findSystemRemainingVertices(document)).toBeNull()
+    })
+
+    it('скрывает системное сообщение при shouldHide = true и не затрагивает тулбар с кнопками', () => {
+      const toolbar = document.createElement('div')
+      toolbar.className = 'nk-on-map-toolbar'
+
+      const button = document.createElement('button')
+      button.className = 'nk-button'
+      toolbar.appendChild(button)
+
+      const warning = document.createElement('div')
+      warning.className = 'nk-toolbar__message-warning'
+      warning.textContent = 'Лимит — 500 вершин. Можно нарисовать ещё 11 вершин'
+      toolbar.appendChild(warning)
+      document.body.appendChild(toolbar)
+
+      const remaining = findSystemRemainingVertices(document, true)
+      expect(remaining).toBe(11)
+
+      // Сообщение скрыто
+      expect(warning.style.display).toBe('none')
+      expect(warning.getAttribute('data-nmap-hidden-system-banner')).toBe('true')
+
+      // Сам тулбар остается видимым!
+      expect(toolbar.style.display).not.toBe('none')
+
+      // Восстановление видимости
+      restoreSystemBanners(document)
+      expect(warning.style.display).toBe('')
+      expect(warning.getAttribute('data-nmap-hidden-system-banner')).toBeNull()
+    })
+
+    it('getSystemBannerContainer определяет контейнер сообщения безопасно', () => {
+      const toolbar = document.createElement('div')
+      toolbar.className = 'nk-on-map-toolbar'
+      const btn = document.createElement('button')
+      toolbar.appendChild(btn)
+
+      const message = document.createElement('div')
+      message.className = 'nk-toolbar__message'
+      toolbar.appendChild(message)
+
+      expect(getSystemBannerContainer(toolbar)).toBe(message)
+      expect(getSystemBannerContainer(message)).toBe(message)
+    })
+
+    it('скрывает сообщение об исчерпании лимита ("Лимит достигнут")', () => {
+      const toolbar = document.createElement('div')
+      toolbar.className = 'nk-on-map-toolbar'
+
+      const alert = document.createElement('div')
+      alert.className = 'nk-toolbar__message-alert'
+      alert.textContent = 'Лимит достигнут'
+      toolbar.appendChild(alert)
+      document.body.appendChild(toolbar)
+
+      const remaining = findSystemRemainingVertices(document, true)
+      expect(remaining).toBe(0)
+      expect(alert.style.display).toBe('none')
+    })
+
+    it('setSystemBannerSuppressed управляет атрибутом документа и внедрением CSS-стилей', () => {
+      setSystemBannerSuppressed(true)
+      expect(document.documentElement.getAttribute(HIDER_ATTR)).toBe('true')
+      expect(document.getElementById(HIDER_STYLE_ID)).not.toBeNull()
+
+      setSystemBannerSuppressed(false)
+      expect(document.documentElement.getAttribute(HIDER_ATTR)).toBeNull()
     })
   })
 })

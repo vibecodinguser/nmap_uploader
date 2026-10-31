@@ -10,6 +10,7 @@ import type { useGoToLinks } from '@/hooks/useGoToLinks'
 import { useLocale } from '@/hooks/useLocale'
 import type { useNotesButton } from '@/hooks/useNotesButton'
 import type { useNspdButton } from '@/hooks/useNspdButton'
+import type { usePointCounter } from '@/hooks/usePointCounter'
 import type { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
 import type { useSplitViewButton } from '@/hooks/useSplitViewButton'
 import type { ThemeMode } from '@/hooks/useTheme'
@@ -51,6 +52,11 @@ type FeedsFilterSettings = Pick<
   'isEnabled' | 'isLoaded' | 'setIsEnabled'
 >
 
+type PointCounterSettings = Pick<
+  ReturnType<typeof usePointCounter>,
+  'isEnabled' | 'isLoaded' | 'setIsEnabled'
+>
+
 const SETTINGS_BACK_ICON_SIZE = 18
 
 type SettingsTabProps = {
@@ -63,6 +69,7 @@ type SettingsTabProps = {
   notesButton: NotesButtonSettings
   nspdButton: NspdButtonSettings
   feedsFilter?: FeedsFilterSettings
+  pointCounter?: PointCounterSettings
   goToLinks: GoToLinksSettingsState
 }
 
@@ -76,6 +83,7 @@ export const SettingsTab = ({
   notesButton,
   nspdButton,
   feedsFilter,
+  pointCounter,
   goToLinks,
 }: SettingsTabProps) => {
   const { locale, setLocale, t } = useLocale()
@@ -104,6 +112,10 @@ export const SettingsTab = ({
   const isFeedsFilterEnabled = feedsFilter?.isEnabled ?? false
   const isFeedsFilterLoaded = feedsFilter?.isLoaded ?? true
   const isFeedsFilterDisabled = !isFeedsFilterLoaded
+
+  const isPointCounterEnabled = pointCounter?.isEnabled ?? true
+  const isPointCounterLoaded = pointCounter?.isLoaded ?? true
+  const isPointCounterDisabled = !isPointCounterLoaded
 
   const themeModeOptions = useMemo(
     () => [
@@ -204,6 +216,15 @@ export const SettingsTab = ({
         checked={isFeedsFilterEnabled}
         disabled={isFeedsFilterDisabled}
         onChange={(checked) => feedsFilter?.setIsEnabled(checked)}
+      />
+
+      <SettingsToggleRow
+        id="settings-point-counter"
+        title={t('settings.pointCounter')}
+        ariaLabel={t('settings.pointCounterAria')}
+        checked={isPointCounterEnabled}
+        disabled={isPointCounterDisabled}
+        onChange={(checked) => pointCounter?.setIsEnabled(checked)}
       />
 
       <GoToLinksSettings {...goToLinks} />

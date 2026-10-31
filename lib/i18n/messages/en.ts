@@ -107,6 +107,8 @@ export const enMessages = {
     nspdButtonAria: 'NSPD',
     feedsFilter: 'Edits history filter',
     feedsFilterAria: 'Edits history filter',
+    pointCounter: 'Contour vertex counter',
+    pointCounterAria: 'Contour vertex counter',
     goToButton: 'External geoservices',
     showButtonAria: 'Show button',
     activeCount: '{active} of {total} active',

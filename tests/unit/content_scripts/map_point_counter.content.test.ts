@@ -92,4 +92,39 @@ describe('map-point-counter.content', () => {
 
     expect(textSpan?.textContent).toBe('Вершин осталось: 499')
   })
+
+  it('скрывает и отключает счетчик при получении POINT_COUNTER_STATE_MSG с enabled: false', async () => {
+    mapPointCounterScript.main?.(ctx)
+
+    const wrapper = document.getElementById('nmap-point-counter-wrapper')
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    path.setAttribute('d', 'M0 0')
+    svg.appendChild(path)
+    document.body.appendChild(svg)
+
+    svg.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    await new Promise((r) => setTimeout(r, 0))
+
+    path.setAttribute('d', 'M0 0 L10 10 L20 20')
+    await new Promise((r) => setTimeout(r, 0))
+    expect(wrapper?.style.display).toBe('block')
+
+    // Получаем сообщение об отключении
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data: { type: 'nmap:point-counter-state', enabled: false },
+        source: window,
+      }),
+    )
+
+    await new Promise((r) => setTimeout(r, 0))
+    expect(wrapper?.style.display).toBe('none')
+
+    // Дальнейшие мутации не вызывают показ счетчика
+    path.setAttribute('d', 'M0 0 L10 10 L20 20 L30 30')
+    await new Promise((r) => setTimeout(r, 0))
+    expect(wrapper?.style.display).toBe('none')
+  })
 })

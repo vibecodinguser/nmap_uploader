@@ -6,6 +6,7 @@ import { useFeedsFilter } from '@/hooks/useFeedsFilter'
 import { useGoToLinks } from '@/hooks/useGoToLinks'
 import { useNotesButton } from '@/hooks/useNotesButton'
 import { useNspdButton } from '@/hooks/useNspdButton'
+import { usePointCounter } from '@/hooks/usePointCounter'
 import { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
 import { useSplitViewButton } from '@/hooks/useSplitViewButton'
 import { useStrokeColor } from '@/hooks/useStrokeColor'
@@ -24,6 +25,7 @@ export const App = ({ themeTarget }: AppProps) => {
   const notesButton = useNotesButton()
   const nspdButton = useNspdButton()
   const feedsFilter = useFeedsFilter()
+  const pointCounter = usePointCounter()
   const goToLinks = useGoToLinks()
 
   const triggerLogin = async () => {
@@ -50,6 +52,7 @@ export const App = ({ themeTarget }: AppProps) => {
           notesButton={notesButton}
           nspdButton={nspdButton}
           feedsFilter={feedsFilter}
+          pointCounter={pointCounter}
           goToLinks={goToLinks}
         />
       </main>

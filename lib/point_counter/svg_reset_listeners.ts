@@ -1,4 +1,33 @@
 import { resetCanvasPointCounter } from './canvas_patch'
+import { resetSystemRemainingCache } from './system_banner'
+
+/**
+ * Проверяет, является ли кнопка действием Undo (отмена последней операции на тулбаре карты).
+ */
+export const isUndoToolbarAction = (target: HTMLElement | null): boolean => {
+  if (!target) return false
+  const buttonEl = (target.closest('button, .nk-button, [role="button"]') || target) as HTMLElement
+
+  const inToolbar = Boolean(buttonEl.closest('[class*="on-map-toolbar"], .nk-on-map-toolbar'))
+  if (!inToolbar) return false
+
+  const classNames = `${buttonEl.className} ${target.className}`.toLowerCase()
+  const title = (buttonEl.getAttribute('title') || target.getAttribute('title') || '').toLowerCase()
+  const ariaLabel = (
+    buttonEl.getAttribute('aria-label') ||
+    target.getAttribute('aria-label') ||
+    ''
+  ).toLowerCase()
+
+  return (
+    classNames.includes('undo') ||
+    classNames.includes('nk-icon_id_undo') ||
+    title.includes('отменить') ||
+    title.includes('undo') ||
+    ariaLabel.includes('отменить') ||
+    ariaLabel.includes('undo')
+  )
+}
 
 /**
  * Проверяет, является ли целевой элемент кнопкой сброса/перерисовки/завершения.
@@ -7,6 +36,10 @@ export const isCounterResetTarget = (target: HTMLElement | null): boolean => {
   if (!target) return false
 
   const buttonEl = (target.closest('button, .nk-button, [role="button"]') || target) as HTMLElement
+
+  if (isUndoToolbarAction(target)) {
+    return false
+  }
 
   const text = (buttonEl.textContent || target.textContent || '').trim().toLowerCase()
   const title = (buttonEl.getAttribute('title') || target.getAttribute('title') || '').toLowerCase()
@@ -99,6 +132,14 @@ export const attachCounterResetListeners = (onReset: () => void): (() => void) =
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === 'Escape') {
       triggerReset()
+      return
+    }
+
+    if (
+      (e.ctrlKey || e.metaKey) &&
+      (e.key === 'z' || e.key === 'Z' || e.key === 'я' || e.key === 'Я')
+    ) {
+      resetSystemRemainingCache()
     }
   }
 
@@ -106,6 +147,11 @@ export const attachCounterResetListeners = (onReset: () => void): (() => void) =
     const target = e.target as HTMLElement | null
     if (isCounterResetTarget(target)) {
       triggerReset()
+      return
+    }
+
+    if (isUndoToolbarAction(target)) {
+      resetSystemRemainingCache()
     }
   }
 

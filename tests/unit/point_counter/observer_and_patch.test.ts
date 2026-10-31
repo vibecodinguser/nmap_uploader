@@ -403,5 +403,54 @@ describe('point_counter svg_observer & canvas_patch', () => {
 
       cleanup()
     })
+
+    it('сбрасывает счетчик при нажатии на кнопку "Отменить" в боковой панели (Cancel)', () => {
+      const onReset = vi.fn()
+      const cleanup = attachCounterResetListeners(onReset)
+
+      const sidebar = document.createElement('div')
+      sidebar.className = 'nk-sidebar-view'
+
+      const cancelBtn = document.createElement('button')
+      cancelBtn.className = 'nk-button'
+      cancelBtn.textContent = 'Отменить'
+      sidebar.appendChild(cancelBtn)
+      document.body.appendChild(sidebar)
+
+      cancelBtn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+      expect(onReset).toHaveBeenCalled()
+
+      cleanup()
+    })
+
+    it('скрывает тост, если после отмены превышения системный баннер исчез', () => {
+      const observer = new SvgPointCounterObserver({
+        ui,
+        getLastMapInteractionTime,
+      })
+      const cleanup = observer.start()
+
+      const toolbar = document.createElement('div')
+      toolbar.className = 'nk-on-map-toolbar'
+
+      const warning = document.createElement('div')
+      warning.className = 'nk-toolbar__message-warning'
+      warning.textContent = 'Лимит превышен на 5 вершин'
+      toolbar.appendChild(warning)
+      document.body.appendChild(toolbar)
+
+      // Баннер есть -> тост отображает статус превышения
+      expect(observer.checkSystemBanner(true)).toBe(true)
+      expect(ui.isVisible()).toBe(true)
+
+      // Пользователь нажал "Отменить" -> баннер удален Яндексом
+      warning.remove()
+
+      // При следующей проверке тост должен скрыться
+      expect(observer.checkSystemBanner(true)).toBe(false)
+      expect(ui.isVisible()).toBe(false)
+
+      cleanup()
+    })
   })
 })

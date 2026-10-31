@@ -9,6 +9,7 @@ import type { PointCounterUi } from './dom_ui'
 export interface CanvasCounterPatchOptions {
   ui: PointCounterUi
   getLastMapInteractionTime: () => number
+  isEnabled?: () => boolean
 }
 
 let resetCanvasCounterFn: (() => void) | null = null
@@ -20,6 +21,7 @@ export const resetCanvasPointCounter = (): void => {
 export const patchCanvasForPointCounter = ({
   ui,
   getLastMapInteractionTime,
+  isEnabled,
 }: CanvasCounterPatchOptions): void => {
   if (typeof CanvasRenderingContext2D === 'undefined') return
 
@@ -171,6 +173,10 @@ export const patchCanvasForPointCounter = ({
   }
 
   proto.stroke = function (this: CanvasRenderingContext2D, ...args: [path?: Path2D]) {
+    if (isEnabled && !isEnabled()) {
+      return (originalStroke as (...a: unknown[]) => void).apply(this, args)
+    }
+
     if (Date.now() - getLastMapInteractionTime() > MAP_INTERACTION_TIMEOUT_MS) {
       return (originalStroke as (...a: unknown[]) => void).apply(this, args)
     }
