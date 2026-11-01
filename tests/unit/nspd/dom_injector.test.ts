@@ -4,6 +4,7 @@ import {
   createNspdUploadButton,
   findCadastralElements,
   NSPD_ACTION_BUTTON_CLASS,
+  NSPD_FLOATING_LABEL_ID,
   NSPD_FLOATING_WIDGET_ID,
   NSPD_TOAST_CONTAINER_ID,
   scanAndMountNspdButtons,
@@ -46,6 +47,21 @@ describe('NSPD dom injector', () => {
     expect(items[0].element.className).toBe('value')
   })
 
+  it('находит элементы с реестровым номером в карточке', () => {
+    const root = document.createElement('div')
+    root.innerHTML = `
+      <div class="card">
+        <span class="label">Реестровый номер:</span>
+        <span class="value">50:00-6.1234</span>
+      </div>
+    `
+    document.body.appendChild(root)
+
+    const items = findCadastralElements()
+    expect(items).toHaveLength(1)
+    expect(items[0].cadNum).toBe('50:00-6.1234')
+  })
+
   it('монтирует кнопку в карточку рядом с кадастровым номером и создает плавающий виджет', () => {
     const card = document.createElement('div')
     card.className = 'pkk-card'
@@ -75,10 +91,16 @@ describe('NSPD dom injector', () => {
     expect(widget?.textContent).toContain('В Блокнот картографа')
     expect(widget?.style.left).toBe('50%')
     expect(widget?.style.transform).toBe('translateX(-50%)')
+
+    // При передаче реестрового номера лейбл выводится над виджетом
+    updateFloatingWidget('50:00-6.789')
+    const regLabel = document.getElementById(NSPD_FLOATING_LABEL_ID)
+    expect(regLabel).not.toBeNull()
+    expect(regLabel?.textContent).toBe('Реестровый номер: 50:00-6.789')
   })
 
-  it('отображает информационные и успешные всплывающие уведомления по центру под плавающим виджетом', () => {
-    showNspdToast('Кликните по участку или объекту на карте для выбора контура', 'info')
+  it('отображает предупреждающие и успешные всплывающие уведомления по центру под плавающим виджетом', () => {
+    showNspdToast('Кликните по участку или объекту на карте для выбора контура', 'error')
     showNspdToast('Полигон 77:01:0001001:1234 успешно сохранён в Блокнот!', 'success', 2000)
 
     const container = document.getElementById(NSPD_TOAST_CONTAINER_ID)
@@ -88,9 +110,9 @@ describe('NSPD dom injector', () => {
     expect(container?.style.right).toBe('auto')
     expect(container?.style.transform).toBe('translateX(-50%)')
     expect(container?.children).toHaveLength(2)
-    const [infoToast, successToast] = Array.from(container?.children ?? []) as HTMLElement[]
-    expect(infoToast.style.background).toContain('#d32f2f')
-    expect(successToast.style.background).toContain('#d32f2f')
+    const [errorToast, successToast] = Array.from(container?.children ?? []) as HTMLElement[]
+    expect(errorToast.style.background).toContain('#d32f2f')
+    expect(successToast.style.background).toContain('#2e7d32')
     expect(container?.textContent).toContain(
       'Кликните по участку или объекту на карте для выбора контура',
     )

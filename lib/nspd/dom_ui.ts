@@ -3,16 +3,25 @@
  * кнопки сохранения и плавающий виджет над картой.
  */
 
+import { CADASTRAL_NUMBER_REGEX } from '@/lib/nspd/extractor'
+
 export const NSPD_ACTION_BUTTON_CLASS = 'nmap-nspd-upload-btn'
 export const NSPD_TOAST_CONTAINER_ID = 'nmapNspdToastContainer'
 export const NSPD_FLOATING_WIDGET_ID = 'nmapNspdFloatingWidget'
+export const NSPD_FLOATING_LABEL_ID = 'nmapNspdFloatingWidgetLabel'
 
 export type NspdToastType = 'success' | 'error' | 'info'
+
+const TOAST_BG_COLORS: Record<NspdToastType, string> = {
+  success: '#2e7d32',
+  error: '#d32f2f',
+  info: '#333333',
+}
 
 /** Показывает временное уведомление на странице НСПД. */
 export const showNspdToast = (
   message: string,
-  _type: NspdToastType = 'info',
+  type: NspdToastType = 'info',
   durationMs = 4000,
 ): void => {
   if (typeof document === 'undefined') return
@@ -44,7 +53,7 @@ export const showNspdToast = (
   `
 
   const toast = document.createElement('div')
-  const bg = '#d32f2f'
+  const bg = TOAST_BG_COLORS[type] ?? '#333333'
   toast.style.cssText = `
     background: ${bg} !important;
     color: #ffffff !important;
@@ -124,8 +133,8 @@ export const createNspdUploadButton = (onUpload: () => void): HTMLButtonElement 
 
 /** Отображает или обновляет плавающий виджет с кнопкой действия в верхней части экрана карты. */
 export const updateFloatingWidget = (
-  cadNum: string | null,
-  onUpload: (cadNum: string | null, btn: HTMLButtonElement) => void,
+  identifier: string | null,
+  onUpload: (identifier: string | null, btn: HTMLButtonElement) => void,
 ): void => {
   if (typeof document === 'undefined' || !document.body) return
 
@@ -152,29 +161,69 @@ export const updateFloatingWidget = (
     document.body.appendChild(widget)
   }
 
-  const currentKey = cadNum ?? '__initial__'
+  const currentKey = identifier ?? '__initial__'
   if (widget.dataset.activeCadNum === currentKey) return
   widget.dataset.activeCadNum = currentKey
   widget.style.display = 'flex'
   widget.innerHTML = ''
 
-  if (cadNum) {
-    const label = document.createElement('span')
-    label.style.cssText =
-      'font-size: 13px !important; font-weight: 600 !important; color: #111111 !important;'
-    label.textContent = cadNum
-    widget.appendChild(label)
+  const isCadastral = Boolean(identifier && CADASTRAL_NUMBER_REGEX.test(identifier))
+  const isRegistry = Boolean(identifier && !isCadastral)
 
-    const uploadBtn = createNspdUploadButton(() => onUpload(cadNum, uploadBtn))
-    uploadBtn.style.setProperty('margin', '0', 'important')
-    uploadBtn.style.setProperty('padding', '6px 12px', 'important')
-    uploadBtn.style.setProperty('font-size', '12px', 'important')
-    widget.appendChild(uploadBtn)
-  } else {
-    const uploadBtn = createNspdUploadButton(() => onUpload(null, uploadBtn))
+  if (isRegistry) {
+    let labelEl = document.getElementById(NSPD_FLOATING_LABEL_ID)
+    if (!labelEl) {
+      labelEl = document.createElement('div')
+      labelEl.id = NSPD_FLOATING_LABEL_ID
+      widget.insertAdjacentElement('beforebegin', labelEl)
+    }
+    labelEl.style.cssText = `
+      position: fixed !important;
+      top: 50px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      z-index: 999999 !important;
+      background: #ffffff !important;
+      border: 1px solid #ffd700 !important;
+      border-radius: 6px !important;
+      padding: 4px 12px !important;
+      font-size: 13px !important;
+      font-weight: 600 !important;
+      color: #111111 !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+      pointer-events: auto !important;
+      white-space: nowrap !important;
+    `
+    labelEl.textContent = `Реестровый номер: ${identifier}`
+    labelEl.style.display = 'block'
+
+    const uploadBtn = createNspdUploadButton(() => onUpload(identifier, uploadBtn))
     uploadBtn.style.setProperty('margin', '0', 'important')
     uploadBtn.style.setProperty('padding', '6px 14px', 'important')
     uploadBtn.style.setProperty('font-size', '13px', 'important')
     widget.appendChild(uploadBtn)
+  } else {
+    document.getElementById(NSPD_FLOATING_LABEL_ID)?.remove()
+
+    if (isCadastral) {
+      const label = document.createElement('span')
+      label.style.cssText =
+        'font-size: 13px !important; font-weight: 600 !important; color: #111111 !important;'
+      label.textContent = identifier
+      widget.appendChild(label)
+
+      const uploadBtn = createNspdUploadButton(() => onUpload(identifier, uploadBtn))
+      uploadBtn.style.setProperty('margin', '0', 'important')
+      uploadBtn.style.setProperty('padding', '6px 12px', 'important')
+      uploadBtn.style.setProperty('font-size', '12px', 'important')
+      widget.appendChild(uploadBtn)
+    } else {
+      const uploadBtn = createNspdUploadButton(() => onUpload(null, uploadBtn))
+      uploadBtn.style.setProperty('margin', '0', 'important')
+      uploadBtn.style.setProperty('padding', '6px 14px', 'important')
+      uploadBtn.style.setProperty('font-size', '13px', 'important')
+      widget.appendChild(uploadBtn)
+    }
   }
 }

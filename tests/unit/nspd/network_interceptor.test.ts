@@ -24,6 +24,23 @@ describe('NSPD network interceptor', () => {
     expect(nspdFeatureStore.getByCadastralNumber('77:01:0001001:123')).toBeDefined()
   })
 
+  it('извлекает и сохраняет объекты с реестровым номером из ответа API', () => {
+    const payload = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [37.6, 55.7] },
+          properties: { reg_num: '50:00-6.1234' },
+        },
+      ],
+    }
+
+    const count = inspectAndStorePayload(payload)
+    expect(count).toBe(1)
+    expect(nspdFeatureStore.getByRegistryNumber('50:00-6.1234')).toBeDefined()
+  })
+
   it('извлекает объекты из вложенных списков в ответе API', () => {
     const payload = {
       result: {

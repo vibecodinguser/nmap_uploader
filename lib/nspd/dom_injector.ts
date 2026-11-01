@@ -5,6 +5,7 @@ import { browser } from 'wxt/browser'
 import {
   createNspdUploadButton,
   NSPD_ACTION_BUTTON_CLASS,
+  NSPD_FLOATING_LABEL_ID,
   NSPD_FLOATING_WIDGET_ID,
   NSPD_TOAST_CONTAINER_ID,
   updateFloatingWidget as renderFloatingWidget,
@@ -13,6 +14,7 @@ import {
 import {
   buildGeoJsonFromNspdObjects,
   CADASTRAL_NUMBER_REGEX,
+  extractRegistryNumber,
   sanitizeCadastralFileName,
 } from '@/lib/nspd/extractor'
 import { nspdFeatureStore } from '@/lib/nspd/feature_store'
@@ -21,6 +23,7 @@ import { inspectAndStorePayload } from '@/lib/nspd/network_interceptor'
 export {
   createNspdUploadButton,
   NSPD_ACTION_BUTTON_CLASS,
+  NSPD_FLOATING_LABEL_ID,
   NSPD_FLOATING_WIDGET_ID,
   NSPD_TOAST_CONTAINER_ID,
   showNspdToast,
@@ -49,7 +52,7 @@ export const tryFetchNspdGeometry = async (cadNum: string): Promise<boolean> => 
 
 /** Выполняет отправку полигонов в расширение и завершает работу с вкладкой. */
 export const handleUploadNspdObjects = async (
-  cadastralNumber: string | null,
+  identifier: string | null,
   btn: HTMLButtonElement,
 ): Promise<void> => {
   const span = btn.querySelector('span')
@@ -61,12 +64,12 @@ export const handleUploadNspdObjects = async (
   btn.disabled = true
 
   try {
-    let rawObjects = nspdFeatureStore.resolveObjectsForUpload(cadastralNumber)
+    let rawObjects = nspdFeatureStore.resolveObjectsForUpload(identifier)
 
-    if (rawObjects.length === 0 && cadastralNumber) {
+    if (rawObjects.length === 0 && identifier) {
       // Попытка фонового дозапроса геометрии у API
-      await tryFetchNspdGeometry(cadastralNumber)
-      rawObjects = nspdFeatureStore.resolveObjectsForUpload(cadastralNumber)
+      await tryFetchNspdGeometry(identifier)
+      rawObjects = nspdFeatureStore.resolveObjectsForUpload(identifier)
     }
 
     if (rawObjects.length === 0) {
@@ -79,7 +82,7 @@ export const handleUploadNspdObjects = async (
 
     const { featureCollection, primaryName } = buildGeoJsonFromNspdObjects(
       rawObjects,
-      cadastralNumber ?? undefined,
+      identifier ?? undefined,
     )
 
     if (featureCollection.features.length === 0) {
@@ -117,7 +120,7 @@ export const handleUploadNspdObjects = async (
   }
 }
 
-/** Ищет листовые элементы DOM, содержащие кадастровый номер. */
+/** Ищет листовые элементы DOM, содержащие кадастровый или реестровый номер. */
 export const findCadastralElements = (): Array<{ element: HTMLElement; cadNum: string }> => {
   const results: Array<{ element: HTMLElement; cadNum: string }> = []
   if (typeof document === 'undefined' || !document.body) return results
@@ -127,16 +130,20 @@ export const findCadastralElements = (): Array<{ element: HTMLElement; cadNum: s
 
   while (node) {
     const text = node.textContent ?? ''
-    const match = text.match(CADASTRAL_NUMBER_REGEX)
-    if (match) {
+    const cadMatch = text.match(CADASTRAL_NUMBER_REGEX)
+    const regMatch = !cadMatch ? extractRegistryNumber(text) : null
+    const foundNum = cadMatch ? cadMatch[0] : regMatch
+
+    if (foundNum) {
       const parent = node.parentElement
       if (
         parent &&
         !parent.closest(`.${NSPD_ACTION_BUTTON_CLASS}`) &&
         !parent.closest(`#${NSPD_TOAST_CONTAINER_ID}`) &&
-        !parent.closest(`#${NSPD_FLOATING_WIDGET_ID}`)
+        !parent.closest(`#${NSPD_FLOATING_WIDGET_ID}`) &&
+        !parent.closest(`#${NSPD_FLOATING_LABEL_ID}`)
       ) {
-        results.push({ element: parent, cadNum: match[0] })
+        results.push({ element: parent, cadNum: foundNum })
       }
     }
     node = walker.nextNode()
@@ -145,9 +152,23 @@ export const findCadastralElements = (): Array<{ element: HTMLElement; cadNum: s
   return results
 }
 
+/** Синхронизирует плавающий виджет с последним выбранным объектом или кадастровым номером. */
+export const syncFloatingWidgetWithRecent = (): void => {
+  const items = findCadastralElements()
+  if (items.length > 0) {
+    updateFloatingWidget(items[0].cadNum)
+    return
+  }
+  const recent = nspdFeatureStore.getRecent()[0]
+  const recentId = recent?.cadastralNumber ?? recent?.registryNumber ?? null
+  if (recentId) {
+    updateFloatingWidget(recentId)
+  }
+}
+
 /** Отображает или обновляет плавающий виджет с кнопкой действия. */
-export const updateFloatingWidget = (cadNum: string | null): void => {
-  renderFloatingWidget(cadNum, (num, btn) => {
+export const updateFloatingWidget = (identifier: string | null): void => {
+  renderFloatingWidget(identifier, (num, btn) => {
     if (num) {
       void handleUploadNspdObjects(num, btn)
     } else {
@@ -155,7 +176,7 @@ export const updateFloatingWidget = (cadNum: string | null): void => {
       if (recent.length > 0) {
         void handleUploadNspdObjects(null, btn)
       } else {
-        showNspdToast('Кликните по участку или объекту на карте для выбора контура', 'info')
+        showNspdToast('Кликните по участку или объекту на карте для выбора контура', 'error')
       }
     }
   })
@@ -169,6 +190,12 @@ export const scanAndMountNspdButtons = (): number => {
   if (items.length > 0) {
     const primary = items[0]
     updateFloatingWidget(primary.cadNum)
+  } else {
+    const recent = nspdFeatureStore.getRecent()[0]
+    const recentId = recent?.cadastralNumber ?? recent?.registryNumber
+    if (recentId) {
+      updateFloatingWidget(recentId)
+    }
   }
 
   for (const { element, cadNum } of items) {
@@ -196,6 +223,14 @@ export const startNspdDomObserver = (): (() => void) => {
     scanAndMountNspdButtons()
   })
 
+  const handleFeatureStored = () => {
+    syncFloatingWidgetWithRecent()
+  }
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('nmap:nspd-feature-stored', handleFeatureStored)
+  }
+
   if (document.body) {
     observer.observe(document.body, {
       childList: true,
@@ -205,6 +240,10 @@ export const startNspdDomObserver = (): (() => void) => {
 
   return () => {
     observer.disconnect()
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('nmap:nspd-feature-stored', handleFeatureStored)
+    }
+    document.getElementById(NSPD_FLOATING_LABEL_ID)?.remove()
     document.getElementById(NSPD_FLOATING_WIDGET_ID)?.remove()
     document.getElementById(NSPD_TOAST_CONTAINER_ID)?.remove()
   }

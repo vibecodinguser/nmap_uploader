@@ -2,7 +2,7 @@
  * Модуль перехвата сетевых ответов nspd.gov.ru с геоданными.
  */
 import type { Feature, Geometry } from 'geojson'
-import { extractCadastralNumber } from '@/lib/nspd/extractor'
+import { extractCadastralNumber, extractRegistryNumber } from '@/lib/nspd/extractor'
 import { nspdFeatureStore } from '@/lib/nspd/feature_store'
 
 export const NSPD_INTERCEPTOR_SOURCE = 'NMAP_NSPD_INTERCEPTOR'
@@ -121,6 +121,7 @@ export const inspectAndStorePayload = (payload: unknown): number => {
             geometry: feature.geometry,
             properties: feature.properties ?? {},
             cadastralNumber: extractCadastralNumber(feature.properties) ?? undefined,
+            registryNumber: extractRegistryNumber(feature.properties) ?? undefined,
           })
           stored += 1
         }
@@ -136,6 +137,7 @@ export const inspectAndStorePayload = (payload: unknown): number => {
       geometry: feature.geometry,
       properties: feature.properties ?? {},
       cadastralNumber: extractCadastralNumber(feature.properties) ?? undefined,
+      registryNumber: extractRegistryNumber(feature.properties) ?? undefined,
     })
     return 1
   }
@@ -147,6 +149,7 @@ export const inspectAndStorePayload = (payload: unknown): number => {
       geometry: geomCandidate,
       properties: (obj.properties ?? obj) as Record<string, unknown>,
       cadastralNumber: extractCadastralNumber(obj) ?? undefined,
+      registryNumber: extractRegistryNumber(obj) ?? undefined,
     })
     stored += 1
   }
@@ -172,7 +175,10 @@ export const initNspdNetworkInterceptor = (): (() => void) => {
     if (event.source !== window || !event.data || event.data.source !== NSPD_INTERCEPTOR_SOURCE) {
       return
     }
-    inspectAndStorePayload(event.data.data)
+    const count = inspectAndStorePayload(event.data.data)
+    if (count > 0 && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('nmap:nspd-feature-stored'))
+    }
   }
 
   window.addEventListener('message', handleMessage)
