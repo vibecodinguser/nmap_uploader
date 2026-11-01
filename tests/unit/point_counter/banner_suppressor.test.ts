@@ -26,12 +26,12 @@ describe('point_counter/banner_suppressor', () => {
       expect(styleEl?.textContent).toContain('.nk-on-map-toolbar')
       expect(styleEl?.textContent).toContain('display: none !important;')
 
-      // Убеждаемся, что глобальные селекторы notification и popup не затронуты в CSS
+      // Убеждаемся, что глобальные селекторы notification и чистый popup целиком не затронуты в CSS
       expect(styleEl?.textContent).not.toContain(
         'html[data-nmap-hide-system-banner="true"] [class*="notification"]',
       )
       expect(styleEl?.textContent).not.toContain(
-        'html[data-nmap-hide-system-banner="true"] [class*="popup"]',
+        'html[data-nmap-hide-system-banner="true"] [class*="popup"] {',
       )
       expect(styleEl?.textContent).not.toContain(
         'html[data-nmap-hide-system-banner="true"] .nk-message_theme_error',

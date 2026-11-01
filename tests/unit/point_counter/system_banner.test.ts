@@ -19,6 +19,8 @@ describe('point_counter/system_banner', () => {
 
       expect(parseSystemLimitText('Лимит - 500 вершин. Можно нарисовать ещё 2 вершины')).toBe(2)
 
+      expect(parseSystemLimitText('Лимит — 500 вершин. Можно нарисовать ещё 4 вершины')).toBe(4)
+
       expect(parseSystemLimitText('Осталось ещё 45 вершин')).toBe(45)
     })
 

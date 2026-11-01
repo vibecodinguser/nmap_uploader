@@ -75,17 +75,29 @@ export const parseSystemLimitText = (text: string | null | undefined): number | 
 }
 
 const TARGETED_BANNER_SELECTORS = [
-  '.nk-on-map-toolbar__message',
-  '.nk-toolbar__message',
-  '.nk-toolbar__message-warning',
-  '.nk-toolbar__message-alert',
-  '.nk-toolbar__message-error',
+  '[class*="toolbar__message"]',
   '[class*="on-map-toolbar"] [class*="toolbar__message"]',
   '[class*="on-map-toolbar"] [class*="message"]',
   '[class*="on-map-toolbar"] [class*="warning"]',
   '[class*="on-map-toolbar"] [class*="alert"]',
   '[class*="on-map-toolbar"] [class*="error"]',
   '[class*="on-map-toolbar"] [class*="notice"]',
+  '[class*="toolbar"] [class*="message"]',
+  '[class*="toolbar"] [class*="warning"]',
+  '[class*="toolbar"] [class*="alert"]',
+  '[class*="toolbar"] [class*="notice"]',
+  '[class*="toolbar"] [class*="hint"]',
+  '.nk-on-map-toolbar__message',
+  '.nk-toolbar__message',
+  '.nk-toolbar__message-warning',
+  '.nk-toolbar__message-alert',
+  '.nk-toolbar__message-error',
+  '[class*="message_theme_warning"]',
+  '[class*="message_theme_alert"]',
+  '[class*="popup"] [class*="message"]',
+  '[class*="popup"] [class*="content"]',
+  '[class*="popup"] [class*="warning"]',
+  '[class*="popup"] [class*="alert"]',
 ].join(', ')
 
 let lastCheckTime = 0
@@ -118,8 +130,7 @@ export const isGeometryEditorActive = (
       toolbar.style.visibility === 'hidden' ||
       toolbar.hasAttribute('hidden') ||
       toolbar.getAttribute('aria-hidden') === 'true' ||
-      toolbar.classList.contains('is-hidden') ||
-      toolbar.className.includes('hidden')
+      toolbar.classList.contains('is-hidden')
     ) {
       return false
     }

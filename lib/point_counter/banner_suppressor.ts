@@ -17,7 +17,6 @@ html[${HIDER_ATTR}="true"] .nk-on-map-toolbar__message,
 html[${HIDER_ATTR}="true"] .nk-toolbar__message,
 html[${HIDER_ATTR}="true"] .nk-toolbar__message-warning,
 html[${HIDER_ATTR}="true"] .nk-toolbar__message-alert,
-html[${HIDER_ATTR}="true"] .nk-toolbar__message-error,
 html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="toolbar__message"],
 html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="message_theme_warning"],
 html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="message_theme_alert"],
@@ -27,7 +26,13 @@ html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="message"],
 html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="warning"],
 html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="alert"],
 html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="error"],
-html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="notice"] {
+html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="notice"],
+html[${HIDER_ATTR}="true"] [class*="toolbar"] [class*="message_theme_warning"],
+html[${HIDER_ATTR}="true"] [class*="toolbar"] [class*="message_theme_alert"],
+html[${HIDER_ATTR}="true"] [class*="popup"] [class*="message_theme_warning"],
+html[${HIDER_ATTR}="true"] [class*="popup"] [class*="message_theme_alert"],
+html[${HIDER_ATTR}="true"] [class*="popup"] [class*="warning"],
+html[${HIDER_ATTR}="true"] [class*="popup"] [class*="alert"] {
   display: none !important;
 }
 `
@@ -51,7 +56,7 @@ export const getSystemBannerContainer = (el: Element): HTMLElement | null => {
   }
 
   const messageContainer = el.closest<HTMLElement>(
-    '[class*="on-map-toolbar"] [class*="toolbar__message"], [class*="on-map-toolbar"] [class*="message_theme_warning"], [class*="on-map-toolbar"] [class*="message_theme_alert"], [class*="on-map-toolbar"] [class*="message_theme_error"], [class*="on-map-toolbar"] [class*="message"], .nk-on-map-toolbar__message, .nk-toolbar__message, .nk-toolbar__message-warning, .nk-toolbar__message-alert',
+    '[class*="toolbar__message"], [class*="on-map-toolbar"] [class*="message"], [class*="message_theme_warning"], [class*="message_theme_alert"], [class*="popup"] [class*="message"], [class*="popup"] [class*="content"], .nk-on-map-toolbar__message, .nk-toolbar__message, .nk-toolbar__message-warning, .nk-toolbar__message-alert',
   )
   if (messageContainer) return messageContainer
 
@@ -59,7 +64,9 @@ export const getSystemBannerContainer = (el: Element): HTMLElement | null => {
     !el.querySelector('button, [role="button"]') &&
     !el.className.includes('on-map-toolbar') &&
     (el.className.includes('toolbar__message') ||
-      Boolean(el.closest('[class*="on-map-toolbar"], .nk-on-map-toolbar')))
+      el.className.includes('message_theme_warning') ||
+      el.className.includes('message_theme_alert') ||
+      Boolean(el.closest('[class*="on-map-toolbar"], .nk-on-map-toolbar, [class*="toolbar"]')))
   ) {
     return el as HTMLElement
   }

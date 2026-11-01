@@ -204,7 +204,7 @@ export class SvgPointCounterObserver {
     if (points > 0 && points <= MAX_OBSERVED_POINTS) {
       this.candidatePaths.set(el, points)
       this.activePath = el
-      if (!this.checkSystemBanner()) {
+      if (!this.checkSystemBanner(true)) {
         this.ui.show(normalizeActiveDrawingPoints(points))
       }
     } else if (points === 0) {
@@ -300,7 +300,7 @@ export class SvgPointCounterObserver {
       this.candidatePaths.set(el, points)
       if (points > 0) {
         this.activePath = el
-        if (!this.checkSystemBanner()) {
+        if (!this.checkSystemBanner(true)) {
           this.ui.show(normalizeActiveDrawingPoints(points))
         }
       }
@@ -318,14 +318,14 @@ export class SvgPointCounterObserver {
 
       if (points !== prevPoints || this.activePath === el) {
         this.activePath = el
-        if (!this.checkSystemBanner()) {
+        if (!this.checkSystemBanner(true)) {
           this.ui.show(normalizeActiveDrawingPoints(points))
         }
       }
     } else if (!isCandidate && points <= MAX_OBSERVED_POINTS) {
       this.candidatePaths.set(el, points)
       this.activePath = el
-      if (!this.checkSystemBanner()) {
+      if (!this.checkSystemBanner(true)) {
         this.ui.show(normalizeActiveDrawingPoints(points))
       }
     }
