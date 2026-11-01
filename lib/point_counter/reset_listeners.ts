@@ -1,6 +1,52 @@
 import { resetCanvasPointCounter } from './canvas_patch'
 import { resetSystemRemainingCache } from './system_banner'
 
+const GEOMETRY_TOOL_KEYWORDS = [
+  'скруглить',
+  'выпрямить',
+  'сгладить',
+  'упростить',
+  'разредить',
+  'round',
+  'smooth',
+  'straighten',
+] as const
+
+const SAVE_OR_COMPLETE_KEYWORDS = [
+  'сохран',
+  'отмен',
+  'готов',
+  'заверш',
+  'закрыт',
+  'save',
+  'cancel',
+  'done',
+  'finish',
+  'close',
+] as const
+
+const REDRAW_KEYWORDS = ['перерисов', 'redraw'] as const
+
+const UNDO_KEYWORDS = ['undo', 'nk-icon_id_undo', 'отменить'] as const
+
+/**
+ * Собирает всю текстовую информацию элемента (текст, title, aria-label, class) в нижнем регистре для быстрого поиска.
+ */
+const getElementSearchText = (buttonEl: HTMLElement, target: HTMLElement): string => {
+  const text = buttonEl.textContent || target.textContent || ''
+  const title = buttonEl.getAttribute('title') || target.getAttribute('title') || ''
+  const ariaLabel = buttonEl.getAttribute('aria-label') || target.getAttribute('aria-label') || ''
+  const classNames = `${buttonEl.className} ${target.className}`
+
+  return `${text} ${title} ${ariaLabel} ${classNames}`.toLowerCase()
+}
+
+/**
+ * Проверяет наличие хотя бы одного ключевого слова в строке.
+ */
+const matchesAnyKeyword = (text: string, keywords: readonly string[]): boolean =>
+  keywords.some((keyword) => text.includes(keyword))
+
 /**
  * Проверяет, является ли кнопка действием Undo (отмена последней операции на тулбаре карты).
  */
@@ -11,22 +57,8 @@ export const isUndoToolbarAction = (target: HTMLElement | null): boolean => {
   const inToolbar = Boolean(buttonEl.closest('[class*="on-map-toolbar"], .nk-on-map-toolbar'))
   if (!inToolbar) return false
 
-  const classNames = `${buttonEl.className} ${target.className}`.toLowerCase()
-  const title = (buttonEl.getAttribute('title') || target.getAttribute('title') || '').toLowerCase()
-  const ariaLabel = (
-    buttonEl.getAttribute('aria-label') ||
-    target.getAttribute('aria-label') ||
-    ''
-  ).toLowerCase()
-
-  return (
-    classNames.includes('undo') ||
-    classNames.includes('nk-icon_id_undo') ||
-    title.includes('отменить') ||
-    title.includes('undo') ||
-    ariaLabel.includes('отменить') ||
-    ariaLabel.includes('undo')
-  )
+  const searchText = getElementSearchText(buttonEl, target)
+  return matchesAnyKeyword(searchText, UNDO_KEYWORDS)
 }
 
 /**
@@ -41,78 +73,38 @@ export const isCounterResetTarget = (target: HTMLElement | null): boolean => {
     return false
   }
 
-  const text = (buttonEl.textContent || target.textContent || '').trim().toLowerCase()
-  const title = (buttonEl.getAttribute('title') || target.getAttribute('title') || '').toLowerCase()
-  const ariaLabel = (
-    buttonEl.getAttribute('aria-label') ||
-    target.getAttribute('aria-label') ||
-    ''
-  ).toLowerCase()
-  const classNames = `${buttonEl.className} ${target.className}`.toLowerCase()
+  const searchText = getElementSearchText(buttonEl, target)
 
   // Действия инструментов модификации геометрии не должны сбрасывать счетчик
-  const isGeometryToolAction =
-    text.includes('скруглить') ||
-    text.includes('выпрямить') ||
-    text.includes('сгладить') ||
-    text.includes('упростить') ||
-    text.includes('разредить') ||
-    text.includes('round') ||
-    text.includes('smooth') ||
-    text.includes('straighten') ||
-    title.includes('скруглить') ||
-    title.includes('выпрямить') ||
-    title.includes('сгладить') ||
-    title.includes('упростить') ||
-    title.includes('разредить') ||
-    title.includes('round') ||
-    title.includes('smooth') ||
-    title.includes('straighten') ||
-    ariaLabel.includes('скруглить') ||
-    ariaLabel.includes('выпрямить') ||
-    ariaLabel.includes('сгладить') ||
-    ariaLabel.includes('упростить') ||
-    ariaLabel.includes('разредить') ||
-    ariaLabel.includes('round') ||
-    ariaLabel.includes('smooth') ||
-    ariaLabel.includes('straighten') ||
-    classNames.includes('round') ||
-    classNames.includes('smooth')
-
-  if (isGeometryToolAction) {
+  if (matchesAnyKeyword(searchText, GEOMETRY_TOOL_KEYWORDS)) {
     return false
   }
 
-  const isSaveOrCompleteAction =
-    text.includes('сохранить') ||
-    text.includes('отменить') ||
-    text.includes('готово') ||
-    text.includes('завершить') ||
-    title.includes('сохранить') ||
-    title.includes('отменить') ||
-    title.includes('готово') ||
-    title.includes('завершить') ||
-    text.includes('save') ||
-    text.includes('cancel') ||
-    text.includes('done') ||
-    text.includes('finish')
+  if (matchesAnyKeyword(searchText, SAVE_OR_COMPLETE_KEYWORDS)) {
+    return true
+  }
 
-  const isRedrawAction =
-    text.includes('перерисовать') ||
-    text.includes('redraw') ||
-    title.includes('перерисовать') ||
-    title.includes('redraw') ||
-    ariaLabel.includes('перерисовать') ||
-    ariaLabel.includes('redraw') ||
-    classNames.includes('redraw') ||
-    classNames.includes('перерисов') ||
-    Boolean(
-      buttonEl.querySelector?.(
-        '[class*="redraw" i], [class*="перерисов" i], [title*="перерисов" i]',
-      ),
-    )
+  if (matchesAnyKeyword(searchText, REDRAW_KEYWORDS)) {
+    return true
+  }
 
-  return isRedrawAction || isSaveOrCompleteAction
+  const inSidebar = Boolean(buttonEl.closest('.nk-sidebar-view, .nk-sidebar, [class*="sidebar"]'))
+  if (
+    inSidebar &&
+    (searchText.includes('close') ||
+      searchText.includes('cross') ||
+      Boolean(
+        buttonEl.querySelector(
+          '[class*="close"], [class*="cross"], .nk-icon_id_close, .nk-icon_id_cross',
+        ),
+      ))
+  ) {
+    return true
+  }
+
+  return Boolean(
+    buttonEl.querySelector?.('[class*="redraw" i], [class*="перерисов" i], [title*="перерисов" i]'),
+  )
 }
 
 /**
@@ -130,7 +122,13 @@ export const attachCounterResetListeners = (onReset: () => void): (() => void) =
   }
 
   const onKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === 'Escape') {
+    if (
+      e.key === 'Enter' ||
+      e.key === 'Escape' ||
+      e.key === 'Esc' ||
+      e.code === 'Escape' ||
+      e.keyCode === 27
+    ) {
       triggerReset()
       return
     }

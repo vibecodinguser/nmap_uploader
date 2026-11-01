@@ -98,10 +98,7 @@ export class SvgPointCounterObserver {
       }
       if (!hasExternalMutations) return
 
-      if (
-        !isGeometryEditorActive() &&
-        getThrottledSystemRemainingVertices(undefined, true, false) === null
-      ) {
+      if (!isGeometryEditorActive()) {
         if (this.activePath || this.candidatePaths.size > 0 || this.hasShownSystemStatus) {
           this.resetCounter()
         }

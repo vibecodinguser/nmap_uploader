@@ -404,7 +404,7 @@ describe('point_counter svg_observer & canvas_patch', () => {
       cleanup()
     })
 
-    it('сбрасывает счетчик при нажатии на кнопку "Отменить" в боковой панели (Cancel)', () => {
+    it('сбрасывает счетчик при нажатии на кнопку "Отменить" или "Отмена" в боковой панели (Cancel)', () => {
       const onReset = vi.fn()
       const cleanup = attachCounterResetListeners(onReset)
 
@@ -413,12 +413,46 @@ describe('point_counter svg_observer & canvas_patch', () => {
 
       const cancelBtn = document.createElement('button')
       cancelBtn.className = 'nk-button'
-      cancelBtn.textContent = 'Отменить'
+      cancelBtn.textContent = 'Отмена'
       sidebar.appendChild(cancelBtn)
       document.body.appendChild(sidebar)
 
       cancelBtn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
-      expect(onReset).toHaveBeenCalled()
+      expect(onReset).toHaveBeenCalledTimes(1)
+
+      cleanup()
+    })
+
+    it('сбрасывает счетчик при клике на крестик закрытия карточки в боковой панели', () => {
+      const onReset = vi.fn()
+      const cleanup = attachCounterResetListeners(onReset)
+
+      const sidebar = document.createElement('div')
+      sidebar.className = 'nk-sidebar-view'
+
+      const closeBtn = document.createElement('button')
+      closeBtn.className = 'nk-button nk-close-button'
+      const icon = document.createElement('span')
+      icon.className = 'nk-icon nk-icon_id_close'
+      closeBtn.appendChild(icon)
+      sidebar.appendChild(closeBtn)
+      document.body.appendChild(sidebar)
+
+      icon.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+      expect(onReset).toHaveBeenCalledTimes(1)
+
+      cleanup()
+    })
+
+    it('сбрасывает счетчик по нажатию клавиши Escape / Esc', () => {
+      const onReset = vi.fn()
+      const cleanup = attachCounterResetListeners(onReset)
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+      expect(onReset).toHaveBeenCalledTimes(1)
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Esc', bubbles: true }))
+      expect(onReset).toHaveBeenCalledTimes(2)
 
       cleanup()
     })
