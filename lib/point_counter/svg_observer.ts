@@ -6,13 +6,14 @@ import {
   normalizeActiveDrawingPoints,
 } from './core'
 import type { PointCounterUi } from './dom_ui'
-import { attachCounterResetListeners } from './svg_reset_listeners'
+import { attachCounterResetListeners } from './reset_listeners'
 import {
   getThrottledSystemRemainingVertices,
   resetSystemRemainingCache,
   setSystemBannerSuppressed,
 } from './system_banner'
 
+export * from './reset_listeners'
 export * from './svg_reset_listeners'
 
 /**
