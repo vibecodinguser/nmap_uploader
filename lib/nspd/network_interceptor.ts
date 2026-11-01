@@ -1,13 +1,61 @@
 /**
  * Модуль перехвата сетевых ответов nspd.gov.ru с геоданными.
  */
-import type { Feature, FeatureCollection, Geometry } from 'geojson'
+import type { Feature, Geometry } from 'geojson'
 import { extractCadastralNumber } from '@/lib/nspd/extractor'
 import { nspdFeatureStore } from '@/lib/nspd/feature_store'
 
 export const NSPD_INTERCEPTOR_SOURCE = 'NMAP_NSPD_INTERCEPTOR'
 
-/** Код инъекции в контекст страницы nspd.gov.ru. */
+/**
+ * Устанавливает перехватчики на window.fetch и XMLHttpRequest в контексте страницы.
+ */
+export const installFetchAndXhrInterceptor = (postData: (data: unknown) => void): void => {
+  const win = globalThis as unknown as Record<string, unknown>
+  if (win.__nmapNspdInterceptorInjected) return
+  win.__nmapNspdInterceptorInjected = true
+
+  const origFetch = window.fetch
+  if (typeof origFetch === 'function') {
+    window.fetch = async function (...args: Parameters<typeof origFetch>) {
+      const res = await origFetch.apply(this, args)
+      try {
+        const clone = res.clone()
+        clone
+          .json()
+          .then((json: unknown) => {
+            if (json && typeof json === 'object') {
+              postData(json)
+            }
+          })
+          .catch(() => {})
+      } catch {}
+      return res
+    }
+  }
+
+  const origOpen = XMLHttpRequest.prototype.open
+  const origSend = XMLHttpRequest.prototype.send
+  const xhrProto = XMLHttpRequest.prototype as unknown as { open: (...args: unknown[]) => void }
+  xhrProto.open = function (...args: unknown[]) {
+    return (origOpen as (...a: unknown[]) => void).apply(this, args)
+  }
+  XMLHttpRequest.prototype.send = function (...args: Parameters<typeof origSend>) {
+    this.addEventListener('load', function () {
+      try {
+        if (this.responseText && (this.responseType === '' || this.responseType === 'text')) {
+          const json = JSON.parse(this.responseText)
+          if (json && typeof json === 'object') {
+            postData(json)
+          }
+        }
+      } catch {}
+    })
+    return origSend.apply(this, args)
+  }
+}
+
+/** Код инъекции для автономного внедрения (если требуется). */
 export const NSPD_PAGE_INTERCEPTOR_SCRIPT = `
 (function() {
   if (window.__nmapNspdInterceptorInjected) return;
@@ -15,7 +63,7 @@ export const NSPD_PAGE_INTERCEPTOR_SCRIPT = `
 
   function postData(data) {
     try {
-      window.postMessage({ source: '${NSPD_INTERCEPTOR_SOURCE}', data }, '*');
+      window.postMessage({ source: '${NSPD_INTERCEPTOR_SOURCE}', data: data }, '*');
     } catch (e) {}
   }
 
@@ -118,7 +166,7 @@ export const inspectAndStorePayload = (payload: unknown): number => {
   return stored
 }
 
-/** Внедряет скрипт перехвата в страницу и подписывается на сообщения. */
+/** Инициализирует получение перехваченных сообщений в изолированном контексте content-скрипта. */
 export const initNspdNetworkInterceptor = (): (() => void) => {
   const handleMessage = (event: MessageEvent) => {
     if (event.source !== window || !event.data || event.data.source !== NSPD_INTERCEPTOR_SOURCE) {
@@ -128,15 +176,6 @@ export const initNspdNetworkInterceptor = (): (() => void) => {
   }
 
   window.addEventListener('message', handleMessage)
-
-  try {
-    const script = document.createElement('script')
-    script.textContent = NSPD_PAGE_INTERCEPTOR_SCRIPT
-    ;(document.head || document.documentElement).appendChild(script)
-    script.remove()
-  } catch (err) {
-    console.error('[nmap_uploader] failed to inject NSPD interceptor script', err)
-  }
 
   return () => {
     window.removeEventListener('message', handleMessage)
