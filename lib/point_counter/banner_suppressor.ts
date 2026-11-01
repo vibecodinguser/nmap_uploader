@@ -1,12 +1,18 @@
 /**
  * Модуль подавления системных сообщений тулбара о лимите вершин в Народной Яндекс.Карте.
- * Реализует превентивное CSS-сокрытие без мерцания и точечное управление DOM-стилями.
+ * Реализует превентивное CSS-сокрытие без мерцания и точечное управление DOM-стилями,
+ * не затрагивая глобальные системные уведомления (права доступа, ошибки сохранения и т.д.).
  */
 
 export const HIDER_STYLE_ID = 'nmap-system-banner-hider'
 export const HIDER_ATTR = 'data-nmap-hide-system-banner'
 
 const HIDER_CSS = `
+html[${HIDER_ATTR}="true"] .nk-on-map-toolbar .nk-on-map-toolbar__message,
+html[${HIDER_ATTR}="true"] .nk-on-map-toolbar .nk-toolbar__message,
+html[${HIDER_ATTR}="true"] .nk-on-map-toolbar .nk-toolbar__message-warning,
+html[${HIDER_ATTR}="true"] .nk-on-map-toolbar .nk-toolbar__message-alert,
+html[${HIDER_ATTR}="true"] .nk-on-map-toolbar .nk-toolbar__message-error,
 html[${HIDER_ATTR}="true"] .nk-on-map-toolbar__message,
 html[${HIDER_ATTR}="true"] .nk-toolbar__message,
 html[${HIDER_ATTR}="true"] .nk-toolbar__message-warning,
@@ -21,23 +27,7 @@ html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="message"],
 html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="warning"],
 html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="alert"],
 html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="error"],
-html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="notice"],
-html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="popup"],
-html[${HIDER_ATTR}="true"] .nk-message_theme_warning,
-html[${HIDER_ATTR}="true"] .nk-message_theme_alert,
-html[${HIDER_ATTR}="true"] .nk-message_theme_error,
-html[${HIDER_ATTR}="true"] [class*="popup"] [class*="message_theme_warning"],
-html[${HIDER_ATTR}="true"] [class*="popup"] [class*="message_theme_alert"],
-html[${HIDER_ATTR}="true"] [class*="popup"] [class*="message_theme_error"],
-html[${HIDER_ATTR}="true"] [class*="popup"] [class*="warning"],
-html[${HIDER_ATTR}="true"] [class*="popup"] [class*="alert"],
-html[${HIDER_ATTR}="true"] [class*="popup"] [class*="error"],
-html[${HIDER_ATTR}="true"] [class*="notification"] [class*="message_theme_warning"],
-html[${HIDER_ATTR}="true"] [class*="notification"] [class*="message_theme_alert"],
-html[${HIDER_ATTR}="true"] [class*="notification"] [class*="message_theme_error"],
-html[${HIDER_ATTR}="true"] [class*="notification"][class*="warning"],
-html[${HIDER_ATTR}="true"] [class*="notification"][class*="alert"],
-html[${HIDER_ATTR}="true"] [class*="notification"][class*="error"] {
+html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="notice"] {
   display: none !important;
 }
 `
@@ -45,7 +35,8 @@ html[${HIDER_ATTR}="true"] [class*="notification"][class*="error"] {
 const hiddenSystemElements = new Set<HTMLElement>()
 
 /**
- * Находит безопасный контейнер сообщения (плашку), не затрагивая сам тулбар с кнопками.
+ * Находит безопасный контейнер сообщения (плашку), не затрагивая сам тулбар с кнопками
+ * и не затрагивая глобальные нотификации страницы.
  */
 export const getSystemBannerContainer = (el: Element): HTMLElement | null => {
   if (
@@ -60,11 +51,16 @@ export const getSystemBannerContainer = (el: Element): HTMLElement | null => {
   }
 
   const messageContainer = el.closest<HTMLElement>(
-    '[class*="toolbar__message"], [class*="notification"], [class*="toast"], [class*="popup"] [class*="message"], [class*="message_theme_warning"], [class*="message_theme_alert"], [class*="message_theme_error"], [class*="message"]',
+    '[class*="on-map-toolbar"] [class*="toolbar__message"], [class*="on-map-toolbar"] [class*="message_theme_warning"], [class*="on-map-toolbar"] [class*="message_theme_alert"], [class*="on-map-toolbar"] [class*="message_theme_error"], [class*="on-map-toolbar"] [class*="message"], .nk-on-map-toolbar__message, .nk-toolbar__message, .nk-toolbar__message-warning, .nk-toolbar__message-alert',
   )
   if (messageContainer) return messageContainer
 
-  if (!el.querySelector('button, [role="button"]') && !el.className.includes('on-map-toolbar')) {
+  if (
+    !el.querySelector('button, [role="button"]') &&
+    !el.className.includes('on-map-toolbar') &&
+    (el.className.includes('toolbar__message') ||
+      Boolean(el.closest('[class*="on-map-toolbar"], .nk-on-map-toolbar')))
+  ) {
     return el as HTMLElement
   }
 

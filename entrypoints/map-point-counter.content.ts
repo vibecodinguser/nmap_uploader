@@ -2,6 +2,7 @@ import { defineContentScript } from 'wxt/utils/define-content-script'
 import { createTranslator, type TranslateFn } from '@/lib/i18n'
 import {
   isCounterResetTarget,
+  isGeometryEditorActive,
   isPointCounterStateMessage,
   POINT_COUNTER_REQUEST_MSG,
   PointCounterUi,
@@ -35,6 +36,14 @@ export default defineContentScript({
       if (!target) return
 
       if (isCounterResetTarget(target)) {
+        lastMapInteractionTime = 0
+        svgObserver?.resetCounter()
+        resetCanvasPointCounter()
+        ui.hide()
+        return
+      }
+
+      if (!isGeometryEditorActive()) {
         lastMapInteractionTime = 0
         svgObserver?.resetCounter()
         resetCanvasPointCounter()

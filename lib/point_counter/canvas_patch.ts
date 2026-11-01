@@ -5,6 +5,7 @@ import {
   normalizeActiveDrawingPoints,
 } from './core'
 import type { PointCounterUi } from './dom_ui'
+import { isGeometryEditorActive } from './system_banner'
 
 export interface CanvasCounterPatchOptions {
   ui: PointCounterUi
@@ -174,6 +175,10 @@ export const patchCanvasForPointCounter = ({
 
   proto.stroke = function (this: CanvasRenderingContext2D, ...args: [path?: Path2D]) {
     if (isEnabled && !isEnabled()) {
+      return (originalStroke as (...a: unknown[]) => void).apply(this, args)
+    }
+
+    if (!isGeometryEditorActive()) {
       return (originalStroke as (...a: unknown[]) => void).apply(this, args)
     }
 

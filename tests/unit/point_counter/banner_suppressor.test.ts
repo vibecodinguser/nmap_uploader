@@ -17,13 +17,25 @@ describe('point_counter/banner_suppressor', () => {
   })
 
   describe('setSystemBannerSuppressed', () => {
-    it('устанавливает атрибут на documentElement и внедряет тег style', () => {
+    it('устанавливает атрибут на documentElement и внедряет тег style строго для тулбара карты', () => {
       setSystemBannerSuppressed(true)
       expect(document.documentElement.getAttribute(HIDER_ATTR)).toBe('true')
 
       const styleEl = document.getElementById(HIDER_STYLE_ID)
       expect(styleEl).not.toBeNull()
+      expect(styleEl?.textContent).toContain('.nk-on-map-toolbar')
       expect(styleEl?.textContent).toContain('display: none !important;')
+
+      // Убеждаемся, что глобальные селекторы notification и popup не затронуты в CSS
+      expect(styleEl?.textContent).not.toContain(
+        'html[data-nmap-hide-system-banner="true"] [class*="notification"]',
+      )
+      expect(styleEl?.textContent).not.toContain(
+        'html[data-nmap-hide-system-banner="true"] [class*="popup"]',
+      )
+      expect(styleEl?.textContent).not.toContain(
+        'html[data-nmap-hide-system-banner="true"] .nk-message_theme_error',
+      )
 
       setSystemBannerSuppressed(false)
       expect(document.documentElement.getAttribute(HIDER_ATTR)).toBeNull()
@@ -45,27 +57,48 @@ describe('point_counter/banner_suppressor', () => {
       expect(getSystemBannerContainer(toolbar)).toBe(message)
     })
 
-    it('возвращает сам элемент, если это изолированный блок сообщения', () => {
+    it('возвращает сам элемент, если это изолированный блок сообщения тулбара', () => {
+      const toolbar = document.createElement('div')
+      toolbar.className = 'nk-on-map-toolbar'
       const message = document.createElement('div')
-      message.className = 'nk-toolbar__message'
+      message.className = 'nk-on-map-toolbar__message'
+      toolbar.appendChild(message)
+      document.body.appendChild(toolbar)
+
       expect(getSystemBannerContainer(message)).toBe(message)
     })
 
-    it('находит ближайший контейнер сообщения при клике по вложенному элементу', () => {
+    it('находит ближайший контейнер сообщения тулбара при клике по вложенному элементу', () => {
+      const toolbar = document.createElement('div')
+      toolbar.className = 'nk-on-map-toolbar'
       const banner = document.createElement('div')
-      banner.className = 'nk-notification'
+      banner.className = 'nk-toolbar__message'
       const span = document.createElement('span')
       banner.appendChild(span)
+      toolbar.appendChild(banner)
+      document.body.appendChild(toolbar)
 
       expect(getSystemBannerContainer(span)).toBe(banner)
+    })
+
+    it('НЕ считает контейнером баннера глобальные системные уведомления карты (права доступа, ошибки)', () => {
+      const notif = document.createElement('div')
+      notif.className = 'nk-notification'
+      notif.textContent = 'Недостаточно прав для выполнения операции'
+      document.body.appendChild(notif)
+
+      expect(getSystemBannerContainer(notif)).toBeNull()
     })
   })
 
   describe('hideSystemBannerElement и restoreSystemBanners', () => {
-    it('скрывает контейнер сообщения и корректно восстанавливает видимость', () => {
+    it('скрывает контейнер сообщения тулбара и корректно восстанавливает видимость', () => {
+      const toolbar = document.createElement('div')
+      toolbar.className = 'nk-on-map-toolbar'
       const banner = document.createElement('div')
       banner.className = 'nk-toolbar__message'
-      document.body.appendChild(banner)
+      toolbar.appendChild(banner)
+      document.body.appendChild(toolbar)
 
       hideSystemBannerElement(banner)
       expect(banner.style.display).toBe('none')

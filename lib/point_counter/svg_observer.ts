@@ -9,6 +9,7 @@ import type { PointCounterUi } from './dom_ui'
 import { attachCounterResetListeners } from './reset_listeners'
 import {
   getThrottledSystemRemainingVertices,
+  isGeometryEditorActive,
   resetSystemRemainingCache,
   setSystemBannerSuppressed,
 } from './system_banner'
@@ -92,6 +93,13 @@ export class SvgPointCounterObserver {
       }
       if (!hasExternalMutations) return
 
+      if (!isGeometryEditorActive()) {
+        if (this.activePath || this.candidatePaths.size > 0 || this.hasShownSystemStatus) {
+          this.resetCounter()
+        }
+        return
+      }
+
       if (this.checkSystemBanner(true)) return
 
       for (const mutation of mutations) {
@@ -130,6 +138,13 @@ export class SvgPointCounterObserver {
   }
 
   public checkSystemBanner(force = false): boolean {
+    if (!isGeometryEditorActive()) {
+      if (this.hasShownSystemStatus) {
+        this.resetCounter()
+      }
+      return false
+    }
+
     const shouldHide = this.isCounterEnabled ? this.isCounterEnabled() : true
     const remaining = getThrottledSystemRemainingVertices(undefined, force, shouldHide)
     if (remaining !== null) {
@@ -171,6 +186,7 @@ export class SvgPointCounterObserver {
   }
 
   private processElementAdded(el: Element): void {
+    if (!isGeometryEditorActive()) return
     if (!isMapDrawingSvgElement(el)) return
     if (Date.now() - this.getLastMapInteractionTime() > MAP_INTERACTION_TIMEOUT_MS) return
 
@@ -259,6 +275,7 @@ export class SvgPointCounterObserver {
   }
 
   private processAttributeChange(el: Element): void {
+    if (!isGeometryEditorActive()) return
     if (!isMapDrawingSvgElement(el)) return
 
     const tag = el.tagName.toLowerCase()

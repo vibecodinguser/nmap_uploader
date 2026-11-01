@@ -452,5 +452,79 @@ describe('point_counter svg_observer & canvas_patch', () => {
 
       cleanup()
     })
+
+    it('не активирует счетчик при выборе объекта/границы поселения вне режима георедактора', async () => {
+      const showSpy = vi.spyOn(ui, 'show')
+
+      // Страница карты с контейнером карты и сайдбаром (режим просмотра)
+      const mapContainer = document.createElement('div')
+      mapContainer.className = 'nk-map'
+      document.body.appendChild(mapContainer)
+
+      const sidebar = document.createElement('div')
+      sidebar.className = 'nk-sidebar-view'
+      document.body.appendChild(sidebar)
+
+      const observer = new SvgPointCounterObserver({
+        ui,
+        getLastMapInteractionTime,
+      })
+      const cleanup = observer.start()
+
+      // Подсветка границы административного поселения на 250 вершин
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+      mapContainer.appendChild(svg)
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+      let pathData = 'M 0 0'
+      for (let i = 1; i <= 250; i++) {
+        pathData += ` L ${i} ${i % 10}`
+      }
+      path.setAttribute('d', pathData)
+      svg.appendChild(path)
+
+      await vi.waitFor(() => {
+        expect(showSpy).not.toHaveBeenCalled()
+        expect(ui.isVisible()).toBe(false)
+      })
+
+      cleanup()
+    })
+
+    it('активирует счетчик и отображает вершины, когда тулбар георедактора активен', async () => {
+      const showSpy = vi.spyOn(ui, 'show')
+
+      const mapContainer = document.createElement('div')
+      mapContainer.className = 'nk-map'
+      document.body.appendChild(mapContainer)
+
+      // Добавляем активный тулбар георедактора на карте
+      const toolbar = document.createElement('div')
+      toolbar.className = 'nk-on-map-toolbar'
+      document.body.appendChild(toolbar)
+
+      const observer = new SvgPointCounterObserver({
+        ui,
+        getLastMapInteractionTime,
+      })
+      const cleanup = observer.start()
+
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+      mapContainer.appendChild(svg)
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+      let pathData = 'M 0 0'
+      for (let i = 1; i <= 150; i++) {
+        pathData += ` L ${i} ${i % 5}`
+      }
+      path.setAttribute('d', pathData)
+      svg.appendChild(path)
+
+      await vi.waitFor(() => {
+        expect(showSpy).toHaveBeenCalledWith(150)
+      })
+
+      cleanup()
+    })
   })
 })
