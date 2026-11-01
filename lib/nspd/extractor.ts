@@ -73,8 +73,10 @@ export const extractRegistryNumber = (input: unknown): string | null => {
       return match[0].replace(/\s+/g, '')
     }
 
-    const labeledMatch = trimmed.match(/реестровый\s+номер(?:\s+границ)?\s*[:№]\s*([^\s\n\r,:№][^\n\r,]*)/i)
-    if (labeledMatch && labeledMatch[1]) {
+    const labeledMatch = trimmed.match(
+      /реестровый\s+номер(?:\s+границ)?\s*[:№]\s*([^\s\n\r,:№][^\n\r,]*)/i,
+    )
+    if (labeledMatch?.[1]) {
       const candidate = labeledMatch[1].trim()
       if (candidate.length > 0 && candidate !== ':') return candidate
     }

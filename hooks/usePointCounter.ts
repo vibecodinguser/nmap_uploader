@@ -60,4 +60,3 @@ export const usePointCounter = () => {
 
   return { isEnabled, isLoaded, setIsEnabled }
 }
-

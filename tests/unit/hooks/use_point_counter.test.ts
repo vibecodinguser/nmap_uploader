@@ -56,4 +56,3 @@ describe('usePointCounter', () => {
     expect(stored[POINT_COUNTER_ENABLED_STORAGE_KEY]).toBe(false)
   })
 })
-

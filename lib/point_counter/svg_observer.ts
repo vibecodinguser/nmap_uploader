@@ -37,12 +37,13 @@ export const isMapDrawingSvgElement = (el: Element | null): boolean => {
     Boolean(document.querySelector('ymaps, [class*="map"], .nk-map'))
 
   if (hasMapContainer) {
+    const svgEl = el as SVGElement
     return Boolean(
       el.closest('ymaps') ||
         el.closest('[class*="map"]') ||
         el.closest('.nk-map') ||
-        el.ownerSVGElement?.closest('ymaps') ||
-        el.ownerSVGElement?.closest('[class*="map"]'),
+        svgEl.ownerSVGElement?.closest('ymaps') ||
+        svgEl.ownerSVGElement?.closest('[class*="map"]'),
     )
   }
 

@@ -124,6 +124,8 @@ export type Messages = {
     strokeColorApplied: string
     strokeColorApplyError: string
     strokeColorValidation: string
+    pointCounter: string
+    pointCounterAria: string
     languageAria: string
   }
   auth: {
@@ -178,6 +180,8 @@ export type Messages = {
     pointsLeft: string
     keyPressed: string
     doubleClick: string
+    limitReached: string
+    limitExceeded: string
   }
 }
 

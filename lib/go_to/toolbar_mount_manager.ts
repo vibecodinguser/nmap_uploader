@@ -65,9 +65,11 @@ export class GoToToolbarMountManager {
   public waitForAnchorAndMount(): void {
     this.waitForAnchorCleanup?.()
     this.waitForAnchorCleanup = runWhenAnyElementExists(BUTTON_ANCHOR_SELECTORS, (anchor) => {
-      void loadGoToToolbarSettings().then(([menuEnabled, splitEnabled, notesEnabled, nspdEnabled]) => {
-        this.controller.mountToolbar(anchor, menuEnabled, splitEnabled, notesEnabled, nspdEnabled)
-      })
+      void loadGoToToolbarSettings().then(
+        ([menuEnabled, splitEnabled, notesEnabled, nspdEnabled]) => {
+          this.controller.mountToolbar(anchor, menuEnabled, splitEnabled, notesEnabled, nspdEnabled)
+        },
+      )
     })
   }
 

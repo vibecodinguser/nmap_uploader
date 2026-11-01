@@ -9,14 +9,14 @@ import {
 } from '@/lib/point_counter'
 
 type MockCanvasProto = {
-  beginPath: ReturnType<typeof vi.fn>
-  moveTo: ReturnType<typeof vi.fn>
-  lineTo: ReturnType<typeof vi.fn>
-  bezierCurveTo?: ReturnType<typeof vi.fn>
-  quadraticCurveTo?: ReturnType<typeof vi.fn>
-  arcTo?: ReturnType<typeof vi.fn>
-  arc?: ReturnType<typeof vi.fn>
-  stroke: ReturnType<typeof vi.fn>
+  beginPath: (...args: unknown[]) => unknown
+  moveTo: (...args: unknown[]) => unknown
+  lineTo: (...args: unknown[]) => unknown
+  bezierCurveTo?: (...args: unknown[]) => unknown
+  quadraticCurveTo?: (...args: unknown[]) => unknown
+  arcTo?: (...args: unknown[]) => unknown
+  arc?: (...args: unknown[]) => unknown
+  stroke: (...args: unknown[]) => unknown
   __nmapCounterPatched__?: boolean
   strokeStyle?: string
 }

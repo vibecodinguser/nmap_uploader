@@ -41,11 +41,7 @@ class NspdFeatureStore {
   public getByIdentifier(identifier: string): NspdRawObject[] {
     const clean = identifier.trim()
     const noSpaces = clean.replace(/\s+/g, '')
-    return (
-      this.objectsByIdentifier.get(clean) ??
-      this.objectsByIdentifier.get(noSpaces) ??
-      []
-    )
+    return this.objectsByIdentifier.get(clean) ?? this.objectsByIdentifier.get(noSpaces) ?? []
   }
 
   public getByCadastralNumber(cadNum: string): NspdRawObject | undefined {
@@ -79,8 +75,14 @@ class NspdFeatureStore {
       const clean = identifier.trim().replace(/\s+/g, '')
       const found = this.recentObjects.find((item) => {
         if (!item.geometry) return false
-        const cad = (item.cadastralNumber ?? extractCadastralNumber(item.properties))?.replace(/\s+/g, '')
-        const reg = (item.registryNumber ?? extractRegistryNumber(item.properties))?.replace(/\s+/g, '')
+        const cad = (item.cadastralNumber ?? extractCadastralNumber(item.properties))?.replace(
+          /\s+/g,
+          '',
+        )
+        const reg = (item.registryNumber ?? extractRegistryNumber(item.properties))?.replace(
+          /\s+/g,
+          '',
+        )
         return cad === clean || reg === clean
       })
       if (found) {

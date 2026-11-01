@@ -221,9 +221,11 @@ export class GoToToolbarLifecycleManager {
 
   private handleRuntimeMessage = (message: { action?: string }): void => {
     if (message?.action === GO_TO_REFRESH_ACTION) {
-      void loadGoToToolbarSettings().then(([menuEnabled, splitEnabled, notesEnabled, nspdEnabled]) => {
-        this.mountToolbarAtAnchor(menuEnabled, splitEnabled, notesEnabled, nspdEnabled)
-      })
+      void loadGoToToolbarSettings().then(
+        ([menuEnabled, splitEnabled, notesEnabled, nspdEnabled]) => {
+          this.mountToolbarAtAnchor(menuEnabled, splitEnabled, notesEnabled, nspdEnabled)
+        },
+      )
       this.scheduleRefresh()
     }
   }

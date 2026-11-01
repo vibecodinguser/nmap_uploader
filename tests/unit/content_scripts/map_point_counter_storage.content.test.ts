@@ -67,4 +67,3 @@ describe('map-point-counter-storage.content', () => {
     })
   })
 })
-
