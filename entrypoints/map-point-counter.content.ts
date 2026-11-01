@@ -53,6 +53,11 @@ export default defineContentScript({
 
       lastMapInteractionTime = Date.now()
       svgObserver?.checkSystemBanner(true)
+      window.setTimeout(() => {
+        if (isCounterEnabled) {
+          svgObserver?.checkSystemBanner(true)
+        }
+      }, 60)
     }
 
     document.addEventListener('pointerdown', handleUserInteraction, true)

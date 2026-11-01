@@ -5,7 +5,7 @@ import {
   normalizeActiveDrawingPoints,
 } from './core'
 import type { PointCounterUi } from './dom_ui'
-import { isGeometryEditorActive } from './system_banner'
+import { getThrottledSystemRemainingVertices, isGeometryEditorActive } from './system_banner'
 
 export interface CanvasCounterPatchOptions {
   ui: PointCounterUi
@@ -136,43 +136,6 @@ export const patchCanvasForPointCounter = ({
     }
   }
 
-  if (originalBezierCurveTo) {
-    proto.bezierCurveTo = function (
-      this: CanvasRenderingContext2D,
-      ...args: Parameters<typeof originalBezierCurveTo>
-    ) {
-      currentPoints++
-      return originalBezierCurveTo.apply(this, args)
-    }
-  }
-
-  if (originalQuadraticCurveTo) {
-    proto.quadraticCurveTo = function (
-      this: CanvasRenderingContext2D,
-      ...args: Parameters<typeof originalQuadraticCurveTo>
-    ) {
-      currentPoints++
-      return originalQuadraticCurveTo.apply(this, args)
-    }
-  }
-
-  if (originalArcTo) {
-    proto.arcTo = function (
-      this: CanvasRenderingContext2D,
-      ...args: Parameters<typeof originalArcTo>
-    ) {
-      currentPoints++
-      return originalArcTo.apply(this, args)
-    }
-  }
-
-  if (originalArc) {
-    proto.arc = function (this: CanvasRenderingContext2D, ...args: Parameters<typeof originalArc>) {
-      currentPoints++
-      return originalArc.apply(this, args)
-    }
-  }
-
   proto.stroke = function (this: CanvasRenderingContext2D, ...args: [path?: Path2D]) {
     if (isEnabled && !isEnabled()) {
       return (originalStroke as (...a: unknown[]) => void).apply(this, args)
@@ -195,7 +158,12 @@ export const patchCanvasForPointCounter = ({
 
       if (!resetTimeout && typeof window !== 'undefined') {
         resetTimeout = window.setTimeout(() => {
-          if (maxPointsForColor >= 1 && maxPointsForColor !== canvasLastShownPoints) {
+          const shouldHide = isEnabled ? isEnabled() : true
+          const systemRemaining = getThrottledSystemRemainingVertices(undefined, true, shouldHide)
+          if (systemRemaining !== null) {
+            ui.showRemaining(systemRemaining)
+            canvasLastShownPoints = maxPointsForColor
+          } else if (maxPointsForColor >= 1 && maxPointsForColor !== canvasLastShownPoints) {
             const isExceedingLimit = maxPointsForColor > MAX_OBSERVED_POINTS
 
             if (isExceedingLimit) {

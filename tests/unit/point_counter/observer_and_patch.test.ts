@@ -526,5 +526,69 @@ describe('point_counter svg_observer & canvas_patch', () => {
 
       cleanup()
     })
+
+    it('продолжает корректно считать вершины после появления системного тоста о лимите при дальнейшем рисовании', async () => {
+      const showRemainingSpy = vi.spyOn(ui, 'showRemaining')
+
+      const mapContainer = document.createElement('div')
+      mapContainer.className = 'nk-map'
+      document.body.appendChild(mapContainer)
+
+      const toolbar = document.createElement('div')
+      toolbar.className = 'nk-on-map-toolbar'
+      document.body.appendChild(toolbar)
+
+      const observer = new SvgPointCounterObserver({
+        ui,
+        getLastMapInteractionTime,
+      })
+      const cleanup = observer.start()
+
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+      mapContainer.appendChild(svg)
+
+      // Начальный контур (431 сырая точка = 430 поставленных)
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+      let pathData = 'M 0 0'
+      for (let i = 1; i <= 430; i++) {
+        pathData += ` L ${i} ${i % 5}`
+      }
+      path.setAttribute('d', pathData)
+      svg.appendChild(path)
+
+      await vi.waitFor(() => {
+        expect(ui.isVisible()).toBe(true)
+      })
+
+      // При скруглении появляется системный тост Яндекса (.nk-notification): осталось 4 вершины
+      const systemToast = document.createElement('div')
+      systemToast.className = 'nk-notification nk-notification_theme_warning'
+      systemToast.textContent = 'Лимит — 500 вершин. Можно нарисовать ещё 4 вершины'
+      document.body.appendChild(systemToast)
+
+      await vi.waitFor(() => {
+        expect(showRemainingSpy).toHaveBeenLastCalledWith(4)
+        expect(systemToast.getAttribute('data-nmap-hidden-system-banner')).toBe('true')
+      })
+
+      // Проходит 300мс, пользователь ставит еще одну точку (+1 в SVG), а системный тост всё еще в DOM со старым текстом
+      vi.advanceTimersByTime(300)
+      pathData += ' L 431 1'
+      path.setAttribute('d', pathData)
+
+      await vi.waitFor(() => {
+        expect(showRemainingSpy).toHaveBeenLastCalledWith(3)
+      })
+
+      // Пользователь ставит еще одну точку -> должно остаться 2 вершины
+      pathData += ' L 432 2'
+      path.setAttribute('d', pathData)
+
+      await vi.waitFor(() => {
+        expect(showRemainingSpy).toHaveBeenLastCalledWith(2)
+      })
+
+      cleanup()
+    })
   })
 })

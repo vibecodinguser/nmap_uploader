@@ -26,7 +26,9 @@ export {
  */
 export const parseSystemLimitText = (text: string | null | undefined): number | null => {
   if (!text) return null
-  const cleanText = text.replace(/\s+/g, ' ').trim()
+  const cleanText = text
+    .replace(/[\s\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+/g, ' ')
+    .trim()
 
   // 1. Проверка на превышение лимита (возвращает отрицательное число как индикатор превышения)
   const ruExceededMatch = cleanText.match(/лимит\s*превышен\s*(?:на)?\s*(\d+)\s*вершин/i)
@@ -56,16 +58,29 @@ export const parseSystemLimitText = (text: string | null | undefined): number | 
     return 0
   }
 
-  // 3. Русский паттерн: "Лимит — 500 вершин. Можно нарисовать ещё 11 вершин"
-  // или "Можно нарисовать ещё 1 вершину", "Осталось ещё 4 вершины"
+  // 3. Прямой шаблон из фразы лимита: "Лимит — 500 вершин. Можно нарисовать ещё 3 вершины" (или "еще 4 вершины")
+  const ruLimitPatternMatch = cleanText.match(/лимит\s*[—–:-]?\s*\d+\s*вершин.*?(\d+)\s*вершин/i)
+  if (ruLimitPatternMatch) {
+    return Number.parseInt(ruLimitPatternMatch[1], 10)
+  }
+
+  const enLimitPatternMatch = cleanText.match(
+    /limit\s*[—–:-]?\s*\d+\s*(?:vertex|vertices|vertic).*?(\d+)\s*(?:more\s*)?(?:vertex|vertices|vertic)/i,
+  )
+  if (enLimitPatternMatch) {
+    return Number.parseInt(enLimitPatternMatch[1], 10)
+  }
+
+  // 4. Русский шаблон с поддержкой "е" и "ё", а также разных предлогов:
+  // "Можно нарисовать ещё 1 вершину", "Осталось еще 4 вершины", "ещё 3 вершины"
   const ruMatch = cleanText.match(
-    /(?:можно нарисовать ещё|осталось ещё|ещё|осталось)\s*(\d+)\s*вершин/i,
+    /(?:можно\s*(?:ещ[её])?\s*нарисовать|осталось|ещ[её])\s*(?:ещ[её])?\s*(\d+)\s*вершин/i,
   )
   if (ruMatch) {
     return Number.parseInt(ruMatch[1], 10)
   }
 
-  // 4. Английский паттерн: "You can draw 11 more vertices" или "1 more vertex"
+  // 5. Английский паттерн: "You can draw 11 more vertices" или "1 more vertex"
   const enMatch = cleanText.match(/(\d+)\s*more\s*(?:vertex|vertices|vertic)/i)
   if (enMatch) {
     return Number.parseInt(enMatch[1], 10)
@@ -82,11 +97,16 @@ const TARGETED_BANNER_SELECTORS = [
   '[class*="on-map-toolbar"] [class*="alert"]',
   '[class*="on-map-toolbar"] [class*="error"]',
   '[class*="on-map-toolbar"] [class*="notice"]',
+  '[class*="toolbar"] [class*="toolbar__message"]',
   '[class*="toolbar"] [class*="message"]',
   '[class*="toolbar"] [class*="warning"]',
   '[class*="toolbar"] [class*="alert"]',
   '[class*="toolbar"] [class*="notice"]',
   '[class*="toolbar"] [class*="hint"]',
+  '[class*="toolbar-view"] [class*="message"]',
+  '[class*="toolbar-view"] [class*="warning"]',
+  '[class*="map-toolbar"] [class*="message"]',
+  '[class*="map-toolbar"] [class*="warning"]',
   '.nk-on-map-toolbar__message',
   '.nk-toolbar__message',
   '.nk-toolbar__message-warning',
@@ -94,10 +114,17 @@ const TARGETED_BANNER_SELECTORS = [
   '.nk-toolbar__message-error',
   '[class*="message_theme_warning"]',
   '[class*="message_theme_alert"]',
+  '[class*="message_theme_danger"]',
   '[class*="popup"] [class*="message"]',
   '[class*="popup"] [class*="content"]',
   '[class*="popup"] [class*="warning"]',
   '[class*="popup"] [class*="alert"]',
+  '[class*="tooltip"] [class*="message"]',
+  '[class*="tooltip"] [class*="content"]',
+  '[class*="tooltip"]',
+  '.nk-notification',
+  '[class*="notification"]',
+  '[class*="toast"]',
 ].join(', ')
 
 let lastCheckTime = 0
@@ -120,7 +147,17 @@ export const isGeometryEditorActive = (
   }
 
   const toolbar = root.querySelector(
-    '[class*="on-map-toolbar"], .nk-on-map-toolbar, [class*="geometry-editor"]',
+    [
+      '[class*="on-map-toolbar"]',
+      '.nk-on-map-toolbar',
+      '[class*="toolbar-view"]',
+      '.nk-toolbar-view',
+      '[class*="map-toolbar"]',
+      '.nk-map-toolbar',
+      '[class*="geometry-editor"]',
+      '.nk-geometry-editor',
+      '[class*="drawing-toolbar"]',
+    ].join(', '),
   )
   if (!toolbar) return false
 
@@ -145,17 +182,18 @@ export const isGeometryEditorActive = (
 export const isBannerElementActive = (el: Element): boolean => {
   if (!el?.isConnected) return false
 
-  const hiddenAncestor = el.closest(
-    '.is-hidden, [class*="_hidden"], [class*="--hidden"], [aria-hidden="true"], [hidden]',
-  )
-  if (hiddenAncestor && !hiddenAncestor.hasAttribute('data-nmap-hidden-system-banner')) {
+  const hiddenAncestor = el.closest('.is-hidden, [class*="_hidden"], [class*="--hidden"], [hidden]')
+  if (hiddenAncestor) {
     return false
   }
 
   let curr: Element | null = el
   while (curr && curr !== document.body) {
-    if (curr instanceof HTMLElement && !curr.hasAttribute('data-nmap-hidden-system-banner')) {
-      if (curr.style.display === 'none' || curr.style.visibility === 'hidden') {
+    if (curr instanceof HTMLElement) {
+      if (curr.style.visibility === 'hidden' || curr.style.opacity === '0') {
+        return false
+      }
+      if (curr.style.display === 'none' && !curr.hasAttribute('data-nmap-hidden-system-banner')) {
         return false
       }
     }
@@ -165,9 +203,19 @@ export const isBannerElementActive = (el: Element): boolean => {
   return true
 }
 
+const isTextLimitCandidate = (text: string | null | undefined): boolean => {
+  if (!text) return false
+  const lowerText = text.toLowerCase()
+  return (
+    lowerText.includes('вершин') ||
+    lowerText.includes('vertic') ||
+    lowerText.includes('лимит') ||
+    lowerText.includes('limit')
+  )
+}
+
 /**
  * Ищет в DOM системный баннер/сообщение о лимите вершин и возвращает остаток, если он найден.
- * Выполняет только узконаправленный поиск по специализированным блокам подсказок тулбара.
  * Если shouldHide = true, скрывает найденное системное сообщение.
  */
 export const findSystemRemainingVertices = (
@@ -175,7 +223,6 @@ export const findSystemRemainingVertices = (
   shouldHide = false,
 ): number | null => {
   if (!root || typeof root.querySelectorAll !== 'function') return null
-  if (!isGeometryEditorActive(root)) return null
 
   const targetedElements = root.querySelectorAll(TARGETED_BANNER_SELECTORS)
 
@@ -189,20 +236,43 @@ export const findSystemRemainingVertices = (
     }
 
     const text = el.textContent
-    const lowerText = text?.toLowerCase() || ''
-    const isLimitRelated =
-      lowerText.includes('вершин') ||
-      lowerText.includes('vertic') ||
-      lowerText.includes('лимит') ||
-      lowerText.includes('limit')
-
-    if (isLimitRelated) {
+    if (isTextLimitCandidate(text)) {
       const remaining = parseSystemLimitText(text)
       if (remaining !== null) {
         if (shouldHide) {
           hideSystemBannerElement(el)
         }
         return remaining
+      }
+    }
+  }
+
+  // Резервный поиск по текстовым узлам через TreeWalker на случай произвольных классов верстки
+  if (typeof document !== 'undefined' && typeof document.createTreeWalker === 'function') {
+    const walkRoot = root === document ? document.body || document.documentElement : (root as Node)
+    if (walkRoot && isTextLimitCandidate(walkRoot.textContent)) {
+      const walker = document.createTreeWalker(walkRoot, NodeFilter.SHOW_TEXT)
+      let textNode = walker.nextNode()
+      while (textNode) {
+        const parentEl = textNode.parentElement
+        if (
+          parentEl &&
+          parentEl.id !== 'nmap-point-counter-wrapper' &&
+          !parentEl.closest?.('#nmap-point-counter-wrapper, script, style, noscript') &&
+          isBannerElementActive(parentEl)
+        ) {
+          const candidateText = parentEl.textContent
+          if (isTextLimitCandidate(candidateText)) {
+            const remaining = parseSystemLimitText(candidateText)
+            if (remaining !== null) {
+              if (shouldHide) {
+                hideSystemBannerElement(parentEl)
+              }
+              return remaining
+            }
+          }
+        }
+        textNode = walker.nextNode()
       }
     }
   }

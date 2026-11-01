@@ -19,9 +19,20 @@ describe('point_counter/system_banner', () => {
 
       expect(parseSystemLimitText('Лимит - 500 вершин. Можно нарисовать ещё 2 вершины')).toBe(2)
 
+      expect(parseSystemLimitText('Лимит — 500 вершин. Можно нарисовать ещё 3 вершины')).toBe(3)
+      expect(parseSystemLimitText('Лимит — 500 вершин. Можно нарисовать еще 3 вершины')).toBe(3)
+
       expect(parseSystemLimitText('Лимит — 500 вершин. Можно нарисовать ещё 4 вершины')).toBe(4)
+      expect(parseSystemLimitText('Лимит — 500 вершин. Можно нарисовать еще 4 вершины')).toBe(4)
+
+      expect(
+        parseSystemLimitText(
+          'Лимит\u00a0—\u00a0500\u00a0вершин.\u00a0Можно\u00a0нарисовать\u00a0еще\u00a03\u00a0вершины',
+        ),
+      ).toBe(3)
 
       expect(parseSystemLimitText('Осталось ещё 45 вершин')).toBe(45)
+      expect(parseSystemLimitText('Осталось еще 45 вершин')).toBe(45)
     })
 
     it('парсит системный баннер на английском языке', () => {
@@ -77,6 +88,38 @@ describe('point_counter/system_banner', () => {
       document.body.appendChild(banner)
 
       expect(findSystemRemainingVertices(document)).toBe(5)
+    })
+
+    it('находит оранжевую плашку лимита после скругления контура (3 и 4 вершины)', () => {
+      const toolbar = document.createElement('div')
+      toolbar.className = 'nk-toolbar-view'
+
+      const warning = document.createElement('div')
+      warning.className = 'nk-toolbar__message-warning'
+      warning.textContent = 'Лимит — 500 вершин. Можно нарисовать ещё 3 вершины'
+      toolbar.appendChild(warning)
+      document.body.appendChild(toolbar)
+
+      expect(findSystemRemainingVertices(document)).toBe(3)
+    })
+
+    it('находит плашку лимита даже с атрибутом aria-hidden="true"', () => {
+      const banner = document.createElement('div')
+      banner.className = 'nk-toolbar__message'
+      banner.setAttribute('aria-hidden', 'true')
+      banner.textContent = 'Лимит — 500 вершин. Можно нарисовать еще 4 вершины'
+      document.body.appendChild(banner)
+
+      expect(findSystemRemainingVertices(document)).toBe(4)
+    })
+
+    it('игнорирует глобальные уведомления (например, о правах доступа)', () => {
+      const notification = document.createElement('div')
+      notification.className = 'nk-notification'
+      notification.textContent = 'Недостаточно прав для выполнения операции'
+      document.body.appendChild(notification)
+
+      expect(findSystemRemainingVertices(document)).toBeNull()
     })
 
     it('возвращает null, когда предупреждения о лимите нет', () => {

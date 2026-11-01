@@ -60,6 +60,9 @@ export class SvgPointCounterObserver {
   private activePath: Element | null = null
   private observer: MutationObserver | null = null
   private hasShownSystemStatus = false
+  private lastBannerRemaining: number | null = null
+  private lastBannerSyncTime = 0
+  private baseSvgPointsAtBanner: number | null = null
   private readonly ui: PointCounterUi
   private readonly getLastMapInteractionTime: () => number
   private readonly isCounterEnabled?: () => boolean
@@ -81,10 +84,12 @@ export class SvgPointCounterObserver {
     this.observer = new MutationObserver((mutations) => {
       let hasExternalMutations = false
       for (const mutation of mutations) {
+        const targetEl =
+          mutation.target instanceof Element ? mutation.target : mutation.target.parentElement
         if (
-          mutation.target instanceof Element &&
-          (mutation.target.id === 'nmap-point-counter-wrapper' ||
-            mutation.target.closest('#nmap-point-counter-wrapper'))
+          targetEl &&
+          (targetEl.id === 'nmap-point-counter-wrapper' ||
+            targetEl.closest('#nmap-point-counter-wrapper'))
         ) {
           continue
         }
@@ -93,20 +98,23 @@ export class SvgPointCounterObserver {
       }
       if (!hasExternalMutations) return
 
-      if (!isGeometryEditorActive()) {
+      if (
+        !isGeometryEditorActive() &&
+        getThrottledSystemRemainingVertices(undefined, true, false) === null
+      ) {
         if (this.activePath || this.candidatePaths.size > 0 || this.hasShownSystemStatus) {
           this.resetCounter()
         }
         return
       }
 
-      if (this.checkSystemBanner(true)) return
-
       for (const mutation of mutations) {
+        const targetEl =
+          mutation.target instanceof Element ? mutation.target : mutation.target.parentElement
         if (
-          mutation.target instanceof Element &&
-          (mutation.target.id === 'nmap-point-counter-wrapper' ||
-            mutation.target.closest('#nmap-point-counter-wrapper'))
+          targetEl &&
+          (targetEl.id === 'nmap-point-counter-wrapper' ||
+            targetEl.closest('#nmap-point-counter-wrapper'))
         ) {
           continue
         }
@@ -114,17 +122,23 @@ export class SvgPointCounterObserver {
         if (mutation.type === 'childList') {
           if (mutation.addedNodes.length > 0) this.processNodeList(mutation.addedNodes, true)
           if (mutation.removedNodes.length > 0) this.processNodeList(mutation.removedNodes, false)
-        } else if (mutation.type === 'attributes') {
+        } else if (
+          mutation.type === 'attributes' &&
+          (mutation.attributeName === 'd' || mutation.attributeName === 'points')
+        ) {
           this.processAttributeChange(mutation.target as Element)
         }
       }
+
+      this.checkSystemBanner(true)
     })
 
     this.observer.observe(document.documentElement, {
       childList: true,
       subtree: true,
+      characterData: true,
       attributes: true,
-      attributeFilter: ['d', 'points'],
+      attributeFilter: ['d', 'points', 'class', 'style', 'hidden'],
     })
 
     this.checkSystemBanner(true)
@@ -138,6 +152,43 @@ export class SvgPointCounterObserver {
   }
 
   public checkSystemBanner(force = false): boolean {
+    const shouldHide = this.isCounterEnabled ? this.isCounterEnabled() : true
+    const remaining = getThrottledSystemRemainingVertices(undefined, force, shouldHide)
+    if (remaining !== null) {
+      this.hasShownSystemStatus = true
+      const currentRaw = this.activePath ? (this.candidatePaths.get(this.activePath) ?? 0) : 0
+      const currentPlaced = currentRaw > 0 ? normalizeActiveDrawingPoints(currentRaw) : null
+
+      if (this.lastBannerRemaining !== remaining) {
+        this.lastBannerRemaining = remaining
+        this.lastBannerSyncTime = Date.now()
+        this.baseSvgPointsAtBanner = currentPlaced
+        this.ui.showRemaining(remaining)
+        return true
+      }
+
+      if (
+        this.baseSvgPointsAtBanner === null ||
+        (currentPlaced !== null &&
+          Math.abs(currentPlaced - this.baseSvgPointsAtBanner) > 1 &&
+          Date.now() - this.lastBannerSyncTime < 250)
+      ) {
+        this.baseSvgPointsAtBanner = currentPlaced
+      }
+
+      if (
+        currentPlaced !== null &&
+        this.baseSvgPointsAtBanner !== null &&
+        currentPlaced !== this.baseSvgPointsAtBanner
+      ) {
+        const delta = currentPlaced - this.baseSvgPointsAtBanner
+        this.ui.showRemaining(remaining - delta)
+      } else {
+        this.ui.showRemaining(remaining)
+      }
+      return true
+    }
+
     if (!isGeometryEditorActive()) {
       if (this.hasShownSystemStatus) {
         this.resetCounter()
@@ -145,16 +196,10 @@ export class SvgPointCounterObserver {
       return false
     }
 
-    const shouldHide = this.isCounterEnabled ? this.isCounterEnabled() : true
-    const remaining = getThrottledSystemRemainingVertices(undefined, force, shouldHide)
-    if (remaining !== null) {
-      this.hasShownSystemStatus = true
-      this.ui.showRemaining(remaining)
-      return true
-    }
-
     if (this.hasShownSystemStatus) {
       this.hasShownSystemStatus = false
+      this.lastBannerRemaining = null
+      this.baseSvgPointsAtBanner = null
       if (this.activePath && this.candidatePaths.has(this.activePath)) {
         const points = this.candidatePaths.get(this.activePath) || 0
         if (points > 0 && points <= MAX_OBSERVED_POINTS) {
@@ -180,6 +225,9 @@ export class SvgPointCounterObserver {
   public resetCounter = (): void => {
     resetSystemRemainingCache()
     this.hasShownSystemStatus = false
+    this.lastBannerRemaining = null
+    this.lastBannerSyncTime = 0
+    this.baseSvgPointsAtBanner = null
     this.ui.hide()
     this.candidatePaths.clear()
     this.activePath = null
@@ -230,11 +278,15 @@ export class SvgPointCounterObserver {
 
       if (bestCandidate && maxPoints > 0) {
         this.activePath = bestCandidate
-        this.ui.show(normalizeActiveDrawingPoints(maxPoints))
+        if (!this.checkSystemBanner(true)) {
+          this.ui.show(normalizeActiveDrawingPoints(maxPoints))
+        }
         return
       }
 
       this.hasShownSystemStatus = false
+      this.lastBannerRemaining = null
+      this.baseSvgPointsAtBanner = null
       resetSystemRemainingCache()
 
       if (typeof window !== 'undefined') {
@@ -252,7 +304,7 @@ export class SvgPointCounterObserver {
   private processNodeList(nodes: NodeList, isAdded: boolean): void {
     nodes.forEach((node) => {
       if (node instanceof Element) {
-        if (!isMapDrawingSvgElement(node)) return
+        if (isAdded && !isMapDrawingSvgElement(node)) return
 
         const tag = node.tagName.toLowerCase()
         if (tag === 'path' || tag === 'polyline' || tag === 'polygon') {

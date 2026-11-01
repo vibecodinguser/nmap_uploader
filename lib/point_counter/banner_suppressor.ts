@@ -27,48 +27,132 @@ html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="warning"],
 html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="alert"],
 html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="error"],
 html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="notice"],
+html[${HIDER_ATTR}="true"] [class*="toolbar"] [class*="toolbar__message"],
 html[${HIDER_ATTR}="true"] [class*="toolbar"] [class*="message_theme_warning"],
 html[${HIDER_ATTR}="true"] [class*="toolbar"] [class*="message_theme_alert"],
+html[${HIDER_ATTR}="true"] [class*="toolbar"] [class*="warning"],
+html[${HIDER_ATTR}="true"] [class*="toolbar"] [class*="alert"],
+html[${HIDER_ATTR}="true"] [class*="toolbar-view"] [class*="message_theme_warning"],
+html[${HIDER_ATTR}="true"] [class*="toolbar-view"] [class*="message_theme_alert"],
+html[${HIDER_ATTR}="true"] [class*="toolbar-view"] [class*="toolbar__message"],
+html[${HIDER_ATTR}="true"] [class*="toolbar-view"] [class*="warning"],
+html[${HIDER_ATTR}="true"] [class*="toolbar-view"] [class*="alert"],
+html[${HIDER_ATTR}="true"] [class*="map-toolbar"] [class*="message_theme_warning"],
+html[${HIDER_ATTR}="true"] [class*="map-toolbar"] [class*="message_theme_alert"],
 html[${HIDER_ATTR}="true"] [class*="popup"] [class*="message_theme_warning"],
 html[${HIDER_ATTR}="true"] [class*="popup"] [class*="message_theme_alert"],
 html[${HIDER_ATTR}="true"] [class*="popup"] [class*="warning"],
-html[${HIDER_ATTR}="true"] [class*="popup"] [class*="alert"] {
+html[${HIDER_ATTR}="true"] [class*="popup"] [class*="alert"],
+html[${HIDER_ATTR}="true"] [data-nmap-hidden-system-banner="true"] {
   display: none !important;
 }
 `
 
 const hiddenSystemElements = new Set<HTMLElement>()
 
+const isLimitRelatedBannerText = (text: string | null | undefined): boolean => {
+  if (!text) return false
+  const lower = text.toLowerCase()
+  return (
+    lower.includes('вершин') ||
+    lower.includes('vertic') ||
+    lower.includes('лимит') ||
+    lower.includes('limit')
+  )
+}
+
 /**
  * Находит безопасный контейнер сообщения (плашку), не затрагивая сам тулбар с кнопками
- * и не затрагивая глобальные нотификации страницы.
+ * и не затрагивая глобальные нотификации страницы, не относящиеся к лимиту вершин.
  */
 export const getSystemBannerContainer = (el: Element): HTMLElement | null => {
+  const notificationAncestor = el.closest<HTMLElement>(
+    '.nk-notification, [class*="notification"], [class*="toast"]',
+  )
+  if (notificationAncestor) {
+    if (
+      isLimitRelatedBannerText(notificationAncestor.textContent) &&
+      !notificationAncestor.querySelector('button, .nk-button, [role="button"]')
+    ) {
+      return notificationAncestor
+    }
+    return null
+  }
+
+  // 1. Если сам el является элементом/блоком сообщения тулбара и не содержит кнопок
+  const isMessageSelf =
+    !el.querySelector('button, .nk-button, [role="button"]') &&
+    (el.className.includes('__message') ||
+      el.className.includes('message_theme_') ||
+      el.className.includes('toolbar__message'))
+
+  if (isMessageSelf) {
+    return el as HTMLElement
+  }
+
+  // 2. Если передан контейнер тулбара (с кнопками или основной класс тулбара), ищем сообщение внутри него
   if (
     el.querySelector('button, .nk-button, [role="button"]') ||
-    el.className.includes('toolbar-view')
+    el.classList.contains('nk-on-map-toolbar') ||
+    el.classList.contains('nk-toolbar-view')
   ) {
     const innerMessage = el.querySelector<HTMLElement>(
       '[class*="toolbar__message"], [class*="message"], [class*="warning"], [class*="alert"], [class*="error"], [class*="notice"]',
     )
-    if (innerMessage) return innerMessage
+    if (innerMessage && !innerMessage.querySelector('button, [role="button"]')) {
+      return innerMessage
+    }
     return null
   }
 
+  // 3. Ищем ближайший контейнер сообщения вверх по DOM, не захватывая тулбар с кнопками
   const messageContainer = el.closest<HTMLElement>(
-    '[class*="toolbar__message"], [class*="on-map-toolbar"] [class*="message"], [class*="message_theme_warning"], [class*="message_theme_alert"], [class*="popup"] [class*="message"], [class*="popup"] [class*="content"], .nk-on-map-toolbar__message, .nk-toolbar__message, .nk-toolbar__message-warning, .nk-toolbar__message-alert',
+    [
+      '[class*="toolbar__message"]',
+      '[class*="on-map-toolbar"] [class*="message"]',
+      '[class*="message_theme_warning"]',
+      '[class*="message_theme_alert"]',
+      '[class*="popup"] [class*="message"]',
+      '[class*="popup"] [class*="content"]',
+      '[class*="tooltip"] [class*="content"]',
+      '[class*="tooltip"]',
+      '.nk-on-map-toolbar__message',
+      '.nk-toolbar__message',
+      '.nk-toolbar__message-warning',
+      '.nk-toolbar__message-alert',
+    ].join(', '),
   )
-  if (messageContainer) return messageContainer
+  if (messageContainer && !messageContainer.querySelector('button, [role="button"]')) {
+    return messageContainer
+  }
 
+  // 4. Если сам элемент не содержит кнопок и похож на плашку сообщения или содержит текст о лимите
   if (
-    !el.querySelector('button, [role="button"]') &&
-    !el.className.includes('on-map-toolbar') &&
+    !el.querySelector('button, [role="button"], canvas') &&
+    !el.classList.contains('nk-on-map-toolbar') &&
     (el.className.includes('toolbar__message') ||
-      el.className.includes('message_theme_warning') ||
-      el.className.includes('message_theme_alert') ||
+      el.className.includes('message') ||
+      el.className.includes('warning') ||
+      el.className.includes('alert') ||
+      isLimitRelatedBannerText(el.textContent) ||
       Boolean(el.closest('[class*="on-map-toolbar"], .nk-on-map-toolbar, [class*="toolbar"]')))
   ) {
-    return el as HTMLElement
+    let target = el as HTMLElement
+    const trimmedText = (el.textContent || '').trim()
+    if (trimmedText) {
+      while (
+        target.parentElement &&
+        target.parentElement !== document.body &&
+        target.parentElement !== document.documentElement &&
+        (target.parentElement.textContent || '').trim() === trimmedText &&
+        !target.parentElement.querySelector('button, [role="button"], canvas') &&
+        !target.parentElement.classList.contains('nk-on-map-toolbar') &&
+        !target.parentElement.classList.contains('nk-toolbar-view')
+      ) {
+        target = target.parentElement
+      }
+    }
+    return target
   }
 
   return null
