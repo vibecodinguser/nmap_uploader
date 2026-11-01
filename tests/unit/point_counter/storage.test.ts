@@ -51,4 +51,3 @@ describe('point_counter storage', () => {
     expect(isPointCounterRequestMessage(undefined)).toBe(false)
   })
 })
-
