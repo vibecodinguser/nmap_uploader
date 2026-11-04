@@ -1,3 +1,5 @@
+import { findEventCards } from './page_adapter'
+
 /**
  * Поиск скроллируемых контейнеров и программная прокрутка для ленты правок.
  */
@@ -88,11 +90,39 @@ export const findFeedScrollableContainer = (feedContainer: HTMLElement): HTMLEle
 }
 
 /**
+ * Ищет кнопку дозагрузки («Показать ещё» / «Загрузить ещё») в ленте.
+ */
+const findMoreButton = (feedContainer: HTMLElement): HTMLElement | null => {
+  const moreButton = feedContainer.querySelector<HTMLElement>(
+    'button.nk-button, .nk-user-feeds-view__more, [class*="more-button"], [class*="load-more"]',
+  )
+  if (!moreButton) return null
+  if (!/ещ[её]|дальше|больше|load\s*more/i.test(moreButton.textContent || '')) return null
+  return moreButton
+}
+
+/**
+ * Есть ли чем запустить дозагрузку: кнопка «Показать ещё» или переполненный скролл-контейнер.
+ *
+ * Если карточки скрыты фильтром, контейнер может перестать переполняться — тогда
+ * прокрутка ничего не даст и нужно временно раскрыть карточки.
+ */
+export const hasFeedScrollTarget = (feedContainer: HTMLElement): boolean => {
+  if (findMoreButton(feedContainer)) {
+    return true
+  }
+
+  return getAllScrollableContainers(feedContainer).some(
+    (target) => target.scrollHeight - target.clientHeight > 0,
+  )
+}
+
+/**
  * Программно триггерит дозагрузку следующей порции событий ленты через прокрутку.
  */
 export const triggerFeedScrollLoad = (feedContainer: HTMLElement): void => {
   // 1. Нативный скролл последней карточки в видимую зону
-  const cards = feedContainer.querySelectorAll<HTMLElement>('.nk-event-view, [class*="event-view"]')
+  const cards = findEventCards(feedContainer)
   if (cards.length > 0) {
     const lastCard = cards[cards.length - 1]
     try {
@@ -133,12 +163,7 @@ export const triggerFeedScrollLoad = (feedContainer: HTMLElement): void => {
   }
 
   // 3. Клик по кнопке "Показать еще" / "Загрузить еще" (если есть)
-  const moreButton = feedContainer.querySelector<HTMLElement>(
-    'button.nk-button, .nk-user-feeds-view__more, [class*="more-button"], [class*="load-more"]',
-  )
-  if (moreButton && /ещ[её]|дальше|больше|load\s*more/i.test(moreButton.textContent || '')) {
-    moreButton.click()
-  }
+  findMoreButton(feedContainer)?.click()
 
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new Event('scroll'))

@@ -103,6 +103,10 @@ export class FeedFilterLifecycleManager {
       const container = findFeedContainer()
       const { ready, targetSelect } = isFeedContainerReadyForFilter(container)
       if (!ready || !container || !targetSelect) {
+        // Пока идёт подгрузка, DOM ленты транзиентно не готов — не сносим фильтр.
+        if (this.domAdapter.isFeedLoadingNow()) {
+          return
+        }
         if (
           this.domAdapter.getActiveContainer() ||
           document.getElementById(FEEDS_FILTER_SELECT_ID)
@@ -135,6 +139,10 @@ export class FeedFilterLifecycleManager {
     const container = findFeedContainer()
     const { ready } = isFeedContainerReadyForFilter(container)
     if (!ready || !container) {
+      // Heartbeat не должен обрывать активную подгрузку из-за транзиентного состояния DOM.
+      if (this.domAdapter.isFeedLoadingNow()) {
+        return
+      }
       if (this.domAdapter.getActiveContainer() || document.getElementById(FEEDS_FILTER_SELECT_ID)) {
         this.removeFilterDropdown()
       }

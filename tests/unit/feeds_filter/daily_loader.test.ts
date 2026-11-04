@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { act } from '@testing-library/react'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createFeedDailyLoader,
   findFeedScrollableContainer,
@@ -251,6 +251,165 @@ describe('feeds_filter daily_loader and scroll_scanner', () => {
       expect(loader.isLoading()).toBe(false)
       expect(loader.getTargetDays()).toBe(7)
       loader.teardown()
+    })
+
+    describe('повторные и вытесняющие вызовы', () => {
+      const buildContainer = (): HTMLElement => {
+        const container = document.createElement('div')
+        container.className = 'nk-user-feeds-view'
+        const card = document.createElement('div')
+        card.className = 'nk-event-view'
+        card.innerHTML = '<span class="nk-date-time nk-event-view__date">1 час назад</span>'
+        container.appendChild(card)
+        document.body.appendChild(container)
+        return container
+      }
+
+      beforeEach(() => {
+        vi.useFakeTimers()
+      })
+
+      afterEach(() => {
+        vi.useRealTimers()
+      })
+
+      it('новый период вытесняет текущую загрузку, не выключая спиннер', async () => {
+        const container = buildContainer()
+        const states: boolean[] = []
+        const progressTargets: number[] = []
+
+        const loader = createFeedDailyLoader(container, {
+          maxStepsPerDay: 50,
+          stepDelayMs: 0,
+          onStateChange: (isLoading) => states.push(isLoading),
+          onProgress: (progress) => progressTargets.push(progress.targetDays),
+        })
+
+        const firstLoad = loader.loadUpToDays(1)
+        expect(loader.isLoading()).toBe(true)
+
+        // Пользователь передумал и выбрал другой период, не дожидаясь загрузки.
+        const secondLoad = loader.loadUpToDays(7)
+        expect(loader.getTargetDays()).toBe(7)
+        expect(loader.isLoading()).toBe(true)
+
+        await vi.advanceTimersByTimeAsync(12_000)
+        await Promise.all([firstLoad, secondLoad])
+
+        // Вытесненный цикл не гасит спиннер: false приходит только в самом конце.
+        expect(states).toEqual([true, true, false])
+        expect(progressTargets.at(-1)).toBe(7)
+        expect(loader.isLoading()).toBe(false)
+        loader.teardown()
+      })
+
+      it('после «Остановить» новый период запускает загрузку, а не теряется', async () => {
+        const container = buildContainer()
+        const states: boolean[] = []
+        const loader = createFeedDailyLoader(container, {
+          maxStepsPerDay: 50,
+          stepDelayMs: 0,
+          onStateChange: (isLoading) => states.push(isLoading),
+        })
+
+        const firstLoad = loader.loadUpToDays(3)
+        expect(loader.isLoading()).toBe(true)
+
+        loader.stopLoading()
+        expect(loader.isLoading()).toBe(false)
+
+        const secondLoad = loader.loadUpToDays(7)
+        expect(loader.isLoading()).toBe(true)
+        expect(loader.getTargetDays()).toBe(7)
+
+        await vi.advanceTimersByTimeAsync(12_000)
+
+        await expect(secondLoad).resolves.toBe(true)
+        await firstLoad
+
+        // Остановка выключила спиннер, новый период включил его снова.
+        expect(states).toEqual([true, false, true, false])
+        loader.teardown()
+      })
+
+      it('не блокирует следующие периоды после серии пустых шагов', async () => {
+        const container = document.createElement('div')
+        container.className = 'nk-user-feeds-view'
+        document.body.appendChild(container)
+
+        const loader = createFeedDailyLoader(container, { maxStepsPerDay: 50, stepDelayMs: 0 })
+
+        // Пустая лента: три пустых шага подряд завершают попытку.
+        const firstLoad = loader.loadUpToDays(3)
+        await vi.advanceTimersByTimeAsync(10_000)
+        await expect(firstLoad).resolves.toBe(true)
+
+        // Попытка не «залипает»: новый клик по периоду снова запускает загрузку.
+        const secondLoad = loader.loadUpToDays(7)
+        expect(loader.isLoading()).toBe(true)
+
+        await vi.advanceTimersByTimeAsync(10_000)
+        await expect(secondLoad).resolves.toBe(true)
+        loader.teardown()
+      })
+
+      it('снятый загрузчик не отчитывается о завершении', async () => {
+        const container = buildContainer()
+        const states: boolean[] = []
+        const loader = createFeedDailyLoader(container, {
+          maxStepsPerDay: 50,
+          stepDelayMs: 0,
+          onStateChange: (isLoading) => states.push(isLoading),
+        })
+
+        const load = loader.loadUpToDays(3)
+        loader.teardown()
+
+        await vi.advanceTimersByTimeAsync(12_000)
+        await expect(load).resolves.toBe(false)
+
+        expect(states).toEqual([true])
+      })
+
+      it('раскрывает скрытые карточки только когда прокручивать нечего', async () => {
+        const container = buildContainer()
+        const reveal = vi.fn(() => () => {})
+
+        const loader = createFeedDailyLoader(container, {
+          maxStepsPerDay: 2,
+          stepDelayMs: 0,
+          revealHiddenCards: reveal,
+        })
+
+        const load = loader.loadUpToDays(3)
+        await vi.advanceTimersByTimeAsync(12_000)
+        await load
+
+        expect(reveal).toHaveBeenCalled()
+        loader.teardown()
+      })
+
+      it('не раскрывает карточки, если есть кнопка «Показать ещё»', async () => {
+        const container = buildContainer()
+        const moreButton = document.createElement('button')
+        moreButton.className = 'nk-button'
+        moreButton.textContent = 'Показать ещё'
+        container.appendChild(moreButton)
+
+        const reveal = vi.fn(() => () => {})
+        const loader = createFeedDailyLoader(container, {
+          maxStepsPerDay: 2,
+          stepDelayMs: 0,
+          revealHiddenCards: reveal,
+        })
+
+        const load = loader.loadUpToDays(3)
+        await vi.advanceTimersByTimeAsync(12_000)
+        await load
+
+        expect(reveal).not.toHaveBeenCalled()
+        loader.teardown()
+      })
     })
   })
 })

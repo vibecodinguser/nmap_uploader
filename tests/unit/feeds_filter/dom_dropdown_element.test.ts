@@ -132,7 +132,9 @@ describe('feeds_filter applyFeedFilter and dom_dropdown', () => {
       // Клик по пункту меню "Опубликована" (published)
       publishedItem?.click()
       expect(selectedStatus).toBe('published')
-      expect(controller.popupElement.style.display).toBe('none')
+      // Попап остаётся открытым: в нём виден прогресс подгрузки периода и «Остановить».
+      expect(controller.popupElement.style.display).toBe('block')
+      expect(controller.element.classList.contains('nk-select_opened')).toBe(true)
       expect(buttonIcon?.style.display).toBe('inline-flex')
       expect(buttonIcon?.querySelector('svg')).toBeDefined()
       expect(buttonIcon?.className).toBe(

@@ -46,7 +46,7 @@ export const createFilterDropdownElement = (
 
   const handleSelectOption = (status: FeedStatusId): void => {
     setActiveFilter(status)
-    closePopup()
+    // Попап не закрываем: в нём виден прогресс подгрузки периода и кнопка «Остановить».
     onFilterChange(status)
   }
 

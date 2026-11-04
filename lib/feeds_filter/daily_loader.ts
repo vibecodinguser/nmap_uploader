@@ -1,7 +1,7 @@
 import { hasCardOlderThanPeriod } from './card_scanner'
 import { waitForNewCards } from './card_waiter'
 import { findEventCards as getEventCards } from './page_adapter'
-import { triggerFeedScrollLoad } from './scroll_scanner'
+import { hasFeedScrollTarget, triggerFeedScrollLoad } from './scroll_scanner'
 
 export * from './card_scanner'
 export * from './card_waiter'
@@ -20,6 +20,11 @@ export interface FeedDailyLoaderOptions {
   autoStart?: boolean
   onProgress?: (progress: FeedDailyLoaderProgress) => void
   onStateChange?: (isLoading: boolean) => void
+  /**
+   * Временно раскрывает карточки, скрытые фильтром, когда прокручивать нечего.
+   * Возвращает функцию восстановления прежнего вида ленты.
+   */
+  revealHiddenCards?: () => (() => void) | undefined
 }
 
 export interface FeedDailyLoaderController {
@@ -31,8 +36,17 @@ export interface FeedDailyLoaderController {
   teardown: () => void
 }
 
+/** Один цикл подгрузки. Идентичность цикла отделяет актуальные колбэки от устаревших. */
+type ActiveLoad = {
+  abort: AbortController
+}
+
 /**
  * Создает контроллер автоматической загрузки событий ленты за заданный период в днях.
+ *
+ * Новый вызов `loadUpToDays` вытесняет текущую загрузку: старый цикл отменяется,
+ * а его колбэки не доходят до UI. Флаг «вся история загружена» не запоминается —
+ * каждый клик по периоду делает новую попытку.
  */
 export const createFeedDailyLoader = (
   feedContainer: HTMLElement,
@@ -41,54 +55,86 @@ export const createFeedDailyLoader = (
   const openedTimestamp = Date.now()
   let loadedDaysCount = 1
   let currentTargetDays = options?.initialDays ?? 1
-  let isCurrentlyLoading = false
-  let isAllHistoryLoaded = false
   let isTeardown = false
-  let isAbortRequested = false
-  let abortController = new AbortController()
+  let activeLoad: ActiveLoad | null = null
+
+  /** Устарел ли цикл: загрузчик снят или его вытеснил более новый вызов. */
+  const isStale = (load: ActiveLoad): boolean => isTeardown || activeLoad !== load
+
+  const emitProgress = (isFinished: boolean): void => {
+    options?.onProgress?.({
+      loadedCardsCount: getEventCards(feedContainer).length,
+      targetDays: currentTargetDays,
+      isFinished,
+    })
+  }
 
   const stopLoading = (): void => {
-    isAbortRequested = true
-    abortController.abort()
-    abortController = new AbortController()
+    const load = activeLoad
+    if (!load) {
+      return
+    }
+
+    // Сбрасываем активный цикл до abort: его `finally` увидит расхождение и не тронет UI.
+    activeLoad = null
+    load.abort.abort()
+    emitProgress(true)
+    options?.onStateChange?.(false)
   }
 
   const loadUpToDays = async (targetDays: number): Promise<boolean> => {
-    if (isTeardown || isAllHistoryLoaded) {
+    if (isTeardown) {
       return false
     }
 
     currentTargetDays = targetDays
-    if (isCurrentlyLoading) {
-      return true
-    }
 
-    isCurrentlyLoading = true
-    isAbortRequested = false
-    options?.onStateChange?.(true)
+    const previousLoad = activeLoad
+    const load: ActiveLoad = { abort: new AbortController() }
+    activeLoad = load
+    previousLoad?.abort.abort()
 
+    const signal = load.abort.signal
     const maxSteps = options?.maxStepsPerDay ?? 60
     const stepDelayMs = options?.stepDelayMs ?? 200
+
+    options?.onStateChange?.(true)
+    // Сразу показываем прогресс и «Остановить», не дожидаясь первого шага прокрутки.
+    emitProgress(false)
 
     try {
       let currentStep = 0
       let consecutiveStalls = 0
       const maxStalls = 3
 
-      while (currentStep < maxSteps && !isTeardown && !isAbortRequested) {
+      /**
+       * Прокручивает ленту для дозагрузки.
+       *
+       * Если прокручивать нечего (фильтр скрыл карточки и контейнер схлопнулся),
+       * временно раскрывает их; возвращённая функция восстанавливает вид.
+       */
+      const scrollFeed = (): (() => void) | undefined => {
+        const restore = hasFeedScrollTarget(feedContainer)
+          ? undefined
+          : options?.revealHiddenCards?.()
+        triggerFeedScrollLoad(feedContainer)
+        return restore
+      }
+
+      while (currentStep < maxSteps && !isStale(load)) {
         const cards = getEventCards(feedContainer)
 
         if (cards.length === 0) {
-          triggerFeedScrollLoad(feedContainer)
-          const newCount = await waitForNewCards(feedContainer, 0, 2500, abortController.signal)
-          if (isTeardown || isAbortRequested) {
+          const restore = scrollFeed()
+          const newCount = await waitForNewCards(feedContainer, 0, 2500, signal)
+          restore?.()
+          if (isStale(load)) {
             break
           }
 
           if (newCount === 0) {
             consecutiveStalls += 1
             if (consecutiveStalls >= maxStalls) {
-              isAllHistoryLoaded = true
               break
             }
           } else {
@@ -103,35 +149,22 @@ export const createFeedDailyLoader = (
         }
 
         currentStep += 1
-        options?.onProgress?.({
-          loadedCardsCount: cards.length,
-          targetDays: currentTargetDays,
-          isFinished: false,
-        })
+        emitProgress(false)
 
         const prevCardCount = cards.length
-        triggerFeedScrollLoad(feedContainer)
+        const restore = scrollFeed()
 
-        const nextCardCount = await waitForNewCards(
-          feedContainer,
-          prevCardCount,
-          3500,
-          abortController.signal,
-        )
-        if (isTeardown || isAbortRequested) {
+        const nextCardCount = await waitForNewCards(feedContainer, prevCardCount, 3500, signal)
+        restore?.()
+        if (isStale(load)) {
           break
         }
 
         if (nextCardCount <= prevCardCount) {
           consecutiveStalls += 1
-          triggerFeedScrollLoad(feedContainer)
+          scrollFeed()?.()
 
           if (consecutiveStalls >= maxStalls) {
-            const currentCards = getEventCards(feedContainer)
-            if (hasCardOlderThanPeriod(currentCards, currentTargetDays, openedTimestamp)) {
-              break
-            }
-            isAllHistoryLoaded = true
             break
           }
         } else {
@@ -143,17 +176,19 @@ export const createFeedDailyLoader = (
         }
       }
 
-      const finalCards = getEventCards(feedContainer)
+      // Вытесненный или остановленный цикл не отчитывается о завершении за новый.
+      if (isStale(load)) {
+        return false
+      }
+
       loadedDaysCount = Math.max(loadedDaysCount, currentTargetDays)
-      options?.onProgress?.({
-        loadedCardsCount: finalCards.length,
-        targetDays: currentTargetDays,
-        isFinished: true,
-      })
+      emitProgress(true)
       return true
     } finally {
-      isCurrentlyLoading = false
-      options?.onStateChange?.(false)
+      if (activeLoad === load) {
+        activeLoad = null
+        options?.onStateChange?.(false)
+      }
     }
   }
 
@@ -164,8 +199,9 @@ export const createFeedDailyLoader = (
 
   const teardown = (): void => {
     isTeardown = true
-    isAbortRequested = true
-    abortController.abort()
+    const load = activeLoad
+    activeLoad = null
+    load?.abort.abort()
   }
 
   return {
@@ -173,7 +209,7 @@ export const createFeedDailyLoader = (
     stopLoading,
     getLoadedDaysCount: () => loadedDaysCount,
     getTargetDays: () => currentTargetDays,
-    isLoading: () => isCurrentlyLoading,
+    isLoading: () => activeLoad !== null,
     teardown,
   }
 }
