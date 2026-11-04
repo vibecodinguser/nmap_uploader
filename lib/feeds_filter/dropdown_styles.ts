@@ -12,9 +12,11 @@ export const FEED_SELECT_BUTTON_STYLES = `
       vertical-align: middle !important;
       margin-left: 8px !important;
       position: relative !important;
-      width: 200px !important;
+      /* Ширина подстраивается под ряд фильтров редактора, но не уже прежних 200px. */
+      width: auto !important;
       min-width: 200px !important;
-      max-width: 200px !important;
+      max-width: none !important;
+      flex: 1 1 auto !important;
       font-family: var(--nk-user-bar-font-family, "Yandex Sans Text", "YS Text", -apple-system, BlinkMacSystemFont, Arial, sans-serif);
       pointer-events: auto !important;
       box-sizing: border-box !important;
@@ -40,7 +42,8 @@ export const FEED_SELECT_BUTTON_STYLES = `
     }
     .nk-user-events-view__filters #nmap-uploader-feeds-action-filter-select,
     .nk-user-events-view__filters .nmap-feeds-action-select {
-      flex: 0 0 200px !important;
+      /* Занимает всё свободное место в ряду; отступы задаёт gap ряда редактора. */
+      flex: 1 1 0 !important;
       margin: 0 !important;
     }
     .nmap-action-marker {

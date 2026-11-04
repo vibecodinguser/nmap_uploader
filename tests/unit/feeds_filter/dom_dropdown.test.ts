@@ -33,6 +33,21 @@ describe('FeedsFilter DOM Dropdown (TDD slice)', () => {
     expect(document.querySelectorAll(`#${FEEDS_FILTER_STYLES_ID}`)).toHaveLength(1)
   })
 
+  it('селекты тянутся по ширине, а не зафиксированы на 200px', () => {
+    ensureFeedFilterStyles()
+    const css = document.getElementById(FEEDS_FILTER_STYLES_ID)?.textContent ?? ''
+
+    // Общее правило: ширина резиновая, минимум — прежние 200px.
+    expect(css).toContain('width: auto !important;')
+    expect(css).toContain('min-width: 200px !important;')
+    expect(css).toContain('max-width: none !important;')
+    expect(css).not.toContain('max-width: 200px !important;')
+
+    // В ряду фильтров дропдаун действий занимает свободное место.
+    expect(css).toContain('flex: 1 1 0 !important;')
+    expect(css).not.toContain('flex: 0 0 200px !important;')
+  })
+
   it('createFilterDropdownElement создает элементы селекта и попапа с начальным состоянием', () => {
     const onFilterChange = vi.fn()
     const controller = createFilterDropdownElement(onFilterChange, 'all')

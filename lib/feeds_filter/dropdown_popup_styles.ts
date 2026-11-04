@@ -7,9 +7,8 @@ export const FEED_POPUP_MENU_STYLES = `
     .nmap-feeds-action-popup {
       position: fixed !important;
       z-index: 2147483647 !important;
-      width: 200px !important;
+      /* Ширину задаёт positionPopupFixed по ширине растянутого селекта. */
       min-width: 200px !important;
-      max-width: 200px !important;
       background: #333333 !important;
       color: #bfbfbf !important;
       border-radius: 4px !important;
