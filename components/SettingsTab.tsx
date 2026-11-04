@@ -44,7 +44,7 @@ type NotesButtonSettings = Pick<
 
 type NspdButtonSettings = Pick<
   ReturnType<typeof useNspdButton>,
-  'isEnabled' | 'isLoaded' | 'setIsEnabled'
+  'isEnabled' | 'isLoaded' | 'setIsEnabled' | 'permissionDenied'
 >
 
 type FeedsFilterSettings = Pick<
@@ -107,6 +107,7 @@ export const SettingsTab = ({
     isEnabled: isNspdButtonEnabled,
     isLoaded: isNspdButtonLoaded,
     setIsEnabled: setNspdButtonEnabled,
+    permissionDenied: isNspdPermissionDenied,
   } = nspdButton
 
   const isFeedsFilterEnabled = feedsFilter?.isEnabled ?? false
@@ -207,7 +208,13 @@ export const SettingsTab = ({
         checked={isNspdButtonEnabled}
         disabled={isNspdButtonDisabled}
         onChange={setNspdButtonEnabled}
-      />
+      >
+        {isNspdPermissionDenied ? (
+          <p className="settings-field-error" role="alert">
+            {t('settings.nspdPermissionDenied')}
+          </p>
+        ) : null}
+      </SettingsToggleRow>
 
       <SettingsToggleRow
         id="settings-feeds-filter-button"

@@ -105,6 +105,8 @@ export const ruMessages = {
     notesButtonAria: 'Заметки',
     nspdButton: 'Кнопка: НСПД',
     nspdButtonAria: 'НСПД',
+    nspdPermissionDenied:
+      'Без доступа к nspd.gov.ru кнопка не работает. Разрешите доступ в запросе браузера или в настройках расширения.',
     feedsFilter: 'Фильтр истории правок',
     feedsFilterAria: 'Фильтр истории правок',
     pointCounter: 'Счётчик вершин',

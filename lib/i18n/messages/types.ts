@@ -107,6 +107,7 @@ export type Messages = {
     notesButtonAria: string
     nspdButton: string
     nspdButtonAria: string
+    nspdPermissionDenied: string
     feedsFilter: string
     feedsFilterAria: string
     goToButton: string

@@ -1,13 +1,17 @@
 import { browser } from 'wxt/browser'
 import { defineContentScript } from 'wxt/utils/define-content-script'
+import { NSPD_HOST_PATTERNS } from '@/lib/manifest/nspd_optional_hosts'
 import { startNspdDomObserver } from '@/lib/nspd/dom_injector'
 import { initNspdNetworkInterceptor } from '@/lib/nspd/network_interceptor'
 import { getStoredNspdButtonEnabled, NSPD_BUTTON_ENABLED_STORAGE_KEY } from '@/lib/nspd/nspd_button'
 
 export default defineContentScript({
-  matches: ['https://nspd.gov.ru/*', 'https://*.nspd.gov.ru/*'],
+  matches: [...NSPD_HOST_PATTERNS],
   runAt: 'document_idle',
   allFrames: true,
+  // Регистрируется в рантайме (см. lib/nspd/content_scripts.ts): доступ к nspd.gov.ru
+  // необязательный, иначе обновления расширения отключали бы его у пользователей.
+  registration: 'runtime',
 
   async main(ctx) {
     const stopInterceptor = initNspdNetworkInterceptor()

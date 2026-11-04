@@ -35,6 +35,10 @@ import {
 import { GO_TO_REFRESH_ACTION } from '@/lib/go_to_notify'
 import { syncLocaleFromStorage } from '@/lib/i18n'
 import type { RuntimeMessageSender } from '@/lib/message_auth'
+import {
+  initNspdContentScriptSync,
+  syncNspdContentScriptsFromStorage,
+} from '@/lib/nspd/content_scripts'
 import { CLOSE_PANEL_SIDEBAR_ACTION } from '@/lib/panel_sidebar_notify'
 import { CANCEL_POINT_PICKING_ACTION, START_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
 
@@ -52,6 +56,10 @@ const handleInstalled = (): void => {
 
   const configureTask = configureInstalledSidePanel()
   runBackgroundTask(configureTask, 'shouldUseNativeSidePanel')
+
+  // Браузер очищает динамические content scripts при обновлении — регистрируем заново.
+  const nspdTask = syncNspdContentScriptsFromStorage()
+  runBackgroundTask(nspdTask, 'syncNspdContentScriptsFromStorage')
 }
 
 const messageHandlers: Record<string, MessageHandler> = {
@@ -96,6 +104,8 @@ const initBackground = (): void => {
 
   const localeTask = syncLocaleFromStorage()
   runBackgroundTask(localeTask, 'syncLocaleFromStorage')
+
+  initNspdContentScriptSync()
 
   const toolbarAction = getToolbarActionApi()
   if (toolbarAction) {

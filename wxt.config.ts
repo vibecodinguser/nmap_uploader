@@ -2,6 +2,10 @@ import { resolve } from 'node:path'
 import { loadEnv } from 'vite'
 import { defineConfig } from 'wxt'
 import { FIREFOX_EXTENSION_ID } from './lib/firefox_extension_id'
+import {
+  type ManifestWithPermissions,
+  moveNspdHostPermissionsToOptional,
+} from './lib/manifest/nspd_optional_hosts'
 import { patchReactDomForAmo } from './lib/vite_patch_react_dom_amo'
 import packageJson from './package.json'
 
@@ -48,8 +52,6 @@ const baseManifest = {
     manifestHostPattern('login.yandex.ru/*'),
     manifestHostPattern('avatars.yandex.net/*'),
     manifestHostPattern('nakarte.me/*'),
-    manifestHostPattern('nspd.gov.ru/*'),
-    manifestHostPattern('*.nspd.gov.ru/*'),
   ],
   web_accessible_resources: [
     {
@@ -146,6 +148,15 @@ function configureVite({ mode }: { mode: string }) {
 export default defineConfig({
   modules: ['@wxt-dev/module-react'],
   vite: configureVite,
+  hooks: {
+    // Доступ к nspd.gov.ru объявляется необязательным: иначе каждое обновление
+    // с новым доменом отключало бы расширение у пользователей.
+    // Хук нужен после генерации content scripts, поэтому `host_permissions`
+    // вычищается здесь, а не в `manifest`.
+    'build:manifestGenerated': (_wxt, manifest) => {
+      moveNspdHostPermissionsToOptional(manifest as ManifestWithPermissions)
+    },
+  },
   webExt: {
     startUrls: [MAPS_START_URL],
     binaries: {

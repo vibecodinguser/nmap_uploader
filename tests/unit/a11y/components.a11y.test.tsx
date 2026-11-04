@@ -51,6 +51,7 @@ const settingsTabProps = {
     isEnabled: false,
     isLoaded: true,
     setIsEnabled: noop,
+    permissionDenied: false,
   },
   pointCounter: {
     isEnabled: true,
@@ -144,6 +145,17 @@ describe('a11y: PoligonTab', () => {
 describe('a11y: SettingsTab', () => {
   it('без нарушений', async () => {
     const { container } = renderA11y(<SettingsTab {...settingsTabProps} />)
+
+    await expectNoA11yViolations(container)
+  })
+
+  it('без нарушений при отказе в доступе к НСПД', async () => {
+    const { container } = renderA11y(
+      <SettingsTab
+        {...settingsTabProps}
+        nspdButton={{ ...settingsTabProps.nspdButton, permissionDenied: true }}
+      />,
+    )
 
     await expectNoA11yViolations(container)
   })

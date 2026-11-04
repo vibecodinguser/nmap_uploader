@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { browser } from 'wxt/browser'
 import { notifyMapTabsAboutGoToMenu } from '@/lib/go_to_notify'
+import { requestNspdHostAccess, syncNspdContentScripts } from '@/lib/nspd/content_scripts'
 import {
   getStoredNspdButtonEnabled,
   NSPD_BUTTON_ENABLED_STORAGE_KEY,
@@ -10,6 +11,7 @@ import {
 export function useNspdButton() {
   const [isEnabled, setIsEnabledState] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [permissionDenied, setPermissionDenied] = useState(false)
 
   useEffect(function getIsEnabledEffect() {
     const abortController = new AbortController()
@@ -48,11 +50,28 @@ export function useNspdButton() {
     }
   }, [])
 
+  /**
+   * Включает функцию только после выдачи доступа к nspd.gov.ru.
+   *
+   * Доступ необязательный, поэтому запрос делается прямо в обработчике клика:
+   * вне user gesture браузер отклоняет `permissions.request`.
+   */
   const setIsEnabled = useCallback(function setIsEnabledCallback(enabled: boolean) {
     ;(async function doAsync() {
       try {
+        setPermissionDenied(false)
+
+        if (enabled) {
+          const granted = await requestNspdHostAccess()
+          if (!granted) {
+            setPermissionDenied(true)
+            return
+          }
+        }
+
         setIsEnabledState(enabled)
         await setStoredNspdButtonEnabled(enabled)
+        await syncNspdContentScripts(enabled)
         await notifyMapTabsAboutGoToMenu()
       } catch (error: unknown) {
         console.warn('[nmap_uploader] nspd button setting save failed:', error)
@@ -60,5 +79,5 @@ export function useNspdButton() {
     })()
   }, [])
 
-  return { isEnabled, isLoaded, setIsEnabled }
+  return { isEnabled, isLoaded, setIsEnabled, permissionDenied }
 }

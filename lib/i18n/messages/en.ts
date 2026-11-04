@@ -105,6 +105,8 @@ export const enMessages = {
     notesButtonAria: 'Notes',
     nspdButton: 'Button: NSPD',
     nspdButtonAria: 'NSPD',
+    nspdPermissionDenied:
+      'The button does not work without access to nspd.gov.ru. Allow access in the browser prompt or in the extension settings.',
     feedsFilter: 'Edits history filter',
     feedsFilterAria: 'Edits history filter',
     pointCounter: 'Vertex counter',
