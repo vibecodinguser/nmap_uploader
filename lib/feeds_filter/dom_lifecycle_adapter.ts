@@ -19,6 +19,7 @@ import {
   findFeedContainer,
   findTargetSelect,
   isEditsModeSelected,
+  isElementVisible,
 } from './index'
 
 export class FeedFilterDomAdapter {
@@ -176,6 +177,15 @@ export class FeedFilterDomAdapter {
       return
     }
 
+    // Текущая лента закрылась или перерисовалась: старое состояние не пригодно.
+    if (this.activeFeedContainer && !isElementVisible(this.activeFeedContainer)) {
+      this.disconnectFeedObserver()
+      this.currentDropdownController?.teardown()
+      this.currentDropdownController = null
+      this.currentActionDropdownController?.teardown()
+      this.currentActionDropdownController = null
+    }
+
     const { ready, targetSelect } = isFeedContainerReadyForFilter(feedContainer)
     if (!ready || !targetSelect) {
       this.removeFilterDropdownUnlessLoading()
@@ -184,7 +194,7 @@ export class FeedFilterDomAdapter {
 
     if (
       this.activeFeedContainer === feedContainer &&
-      feedContainer.isConnected &&
+      isElementVisible(feedContainer) &&
       this.currentDailyLoader &&
       this.currentDropdownController?.element.isConnected &&
       targetSelect.nextElementSibling === this.currentDropdownController.element

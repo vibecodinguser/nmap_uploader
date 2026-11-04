@@ -202,6 +202,10 @@ export const createFeedDailyLoader = (
     const load = activeLoad
     activeLoad = null
     load?.abort.abort()
+    // Снятие во время подгрузки тоже завершает её для UI: иначе спиннер останется включённым.
+    if (load) {
+      options?.onStateChange?.(false)
+    }
   }
 
   return {

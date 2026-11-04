@@ -148,4 +148,45 @@ describe('FeedFilterDomAdapter', () => {
 
     adapter.removeFilterDropdown()
   })
+
+  it('переносит фильтры в новую ленту, если старая осталась скрытой после Escape', () => {
+    const adapter = new FeedFilterDomAdapter()
+
+    const oldPanel = buildFeedDom()
+    adapter.attachFilterToContainer(oldPanel, true)
+
+    // Escape закрывает панель: сайт прячет старую ленту, но не удаляет её.
+    oldPanel.style.display = 'none'
+
+    // Повторное открытие создаёт новую ленту.
+    const newPanel = buildFeedDom()
+    adapter.checkAndAttach(true)
+
+    const dropdown = document.getElementById('nmap-uploader-feeds-filter-select')
+    expect(dropdown).not.toBeNull()
+    expect(dropdown?.style.display).toBe('')
+    expect(dropdown?.closest('.nk-user-feeds-view')).toBe(newPanel)
+    expect(adapter.getActiveContainer()).toBe(newPanel)
+
+    adapter.removeFilterDropdown()
+  })
+
+  it('возвращает фильтры в ту же ленту после повторного открытия', () => {
+    const adapter = new FeedFilterDomAdapter()
+    const container = buildFeedDom()
+
+    adapter.attachFilterToContainer(container, true)
+    container.style.display = 'none'
+    adapter.checkAndAttach(true)
+
+    container.style.display = ''
+    adapter.checkAndAttach(true)
+
+    const dropdown = document.getElementById('nmap-uploader-feeds-filter-select')
+    expect(dropdown).not.toBeNull()
+    expect(dropdown?.style.display).toBe('')
+    expect(dropdown?.closest('.nk-user-feeds-view')).toBe(container)
+
+    adapter.removeFilterDropdown()
+  })
 })

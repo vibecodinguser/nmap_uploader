@@ -55,7 +55,49 @@ export const findFeedHeader = (container?: HTMLElement | null): HTMLElement | nu
 }
 
 /**
+ * Проверяет, что элемент реально виден пользователю.
+ *
+ * Лента при закрытии панели может остаться в DOM со `display: none` (или в скрытом
+ * предке). Такой контейнер нельзя считать текущим: фильтры окажутся в невидимом узле.
+ *
+ * Проверка идёт по вычисленным стилям, а не по геометрии: `offsetParent` и
+ * `getClientRects` зависят от layout, которого может не быть в тестовом окружении.
+ */
+export const isElementVisible = (element: HTMLElement | null): boolean => {
+  if (!element?.isConnected) {
+    return false
+  }
+
+  let current: HTMLElement | null = element
+  while (current && current !== document.documentElement) {
+    if (current.hidden) {
+      return false
+    }
+
+    if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
+      const style = window.getComputedStyle(current)
+      if (style.display === 'none') {
+        return false
+      }
+    }
+
+    current = current.parentElement
+  }
+
+  return true
+}
+
+/** Возвращает первый видимый кандидат, иначе — первый непустой. */
+const pickVisibleFirst = (candidates: HTMLElement[]): HTMLElement | null => {
+  const visible = candidates.find(isElementVisible)
+  return visible ?? candidates[0] ?? null
+}
+
+/**
  * Находит корневой контейнер ленты правок/событий в DOM.
+ *
+ * Скрытые контейнеры пропускаются: после закрытия панели старая лента остаётся
+ * в документе, и без проверки видимости фильтры привязывались бы к ней.
  */
 export const findFeedContainer = (root: ParentNode = document): HTMLElement | null => {
   // 1. Поиск по наличию карточек событий и их общего предка
@@ -63,7 +105,7 @@ export const findFeedContainer = (root: ParentNode = document): HTMLElement | nu
     root instanceof HTMLElement
       ? findEventCards(root)
       : Array.from(root.querySelectorAll<HTMLElement>('.nk-event-view'))
-  const eventCard = eventCards[0]
+  const eventCard = eventCards.find(isElementVisible) ?? eventCards[0]
   if (eventCard) {
     const parentContainer =
       eventCard.closest<HTMLElement>(
@@ -83,34 +125,25 @@ export const findFeedContainer = (root: ParentNode = document): HTMLElement | nu
   }
 
   // 2. Поиск по классам представления ленты пользователя
-  const knownView =
-    root.querySelector<HTMLElement>('.nk-user-feeds-view') ||
-    root.querySelector<HTMLElement>('.nk-user-feed-view') ||
-    root.querySelector<HTMLElement>('.nk-feeds-view') ||
-    root.querySelector<HTMLElement>('.nk-feed-view') ||
-    root.querySelector<HTMLElement>('.nk-events-view') ||
-    root.querySelector<HTMLElement>(
-      '[class*="user-feeds-view"]:not([class*="control-view"]):not(button)',
-    ) ||
-    root.querySelector<HTMLElement>(
-      '[class*="user-feed-view"]:not([class*="control-view"]):not(button)',
-    ) ||
-    root.querySelector<HTMLElement>(
-      '[class*="feeds-view"]:not([class*="control-view"]):not(button)',
-    )
+  const knownViews = Array.from(
+    root.querySelectorAll<HTMLElement>(
+      '.nk-user-feeds-view, .nk-user-feed-view, .nk-feeds-view, .nk-feed-view, .nk-events-view, [class*="user-feeds-view"]:not([class*="control-view"]):not(button), [class*="user-feed-view"]:not([class*="control-view"]):not(button), [class*="feeds-view"]:not([class*="control-view"]):not(button)',
+    ),
+  )
 
+  const knownView = pickVisibleFirst(knownViews)
   if (knownView) {
     return knownView
   }
 
   // 3. Поиск по открытому сайдбару с признаками ленты событий
-  const sidebar = root.querySelector<HTMLElement>('.nk-sidebar-view')
+  const sidebars = Array.from(root.querySelectorAll<HTMLElement>('.nk-sidebar-view')).filter(
+    (sidebar) =>
+      sidebar.querySelector('.nk-event-view, [class*="event-view"], [class*="feed"]') !== null,
+  )
+  const sidebar = pickVisibleFirst(sidebars)
   if (sidebar) {
-    const hasFeed =
-      sidebar.querySelector('.nk-event-view, [class*="event-view"], [class*="feed"]') !== null
-    if (hasFeed) {
-      return sidebar
-    }
+    return sidebar
   }
 
   // 4. Проверяем, не является ли сам root элементом ленты

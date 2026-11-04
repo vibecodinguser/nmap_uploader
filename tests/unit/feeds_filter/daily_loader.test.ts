@@ -368,7 +368,8 @@ describe('feeds_filter daily_loader and scroll_scanner', () => {
         await vi.advanceTimersByTimeAsync(12_000)
         await expect(load).resolves.toBe(false)
 
-        expect(states).toEqual([true])
+        // Снятие завершает подгрузку и для UI: спиннер не остаётся включённым навсегда.
+        expect(states).toEqual([true, false])
       })
 
       it('раскрывает скрытые карточки только когда прокручивать нечего', async () => {
