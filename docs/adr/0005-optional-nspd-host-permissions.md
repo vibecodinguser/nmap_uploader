@@ -1,6 +1,6 @@
 # 0005: Необязательный доступ к nspd.gov.ru и динамическая регистрация content scripts
 
-Контекст: в версии 2.2 в `host_permissions` и `content_scripts.matches` появился домен `nspd.gov.ru`. Для браузера это новые обязательные разрешения, поэтому при обновлении расширение отключалось до подтверждения пользователя ([Chrome: Updating permissions](https://developer.chrome.com/docs/extensions/develop/concepts/permission-warnings)). Проблема повторялась на каждом апдейте, пока разрешение не принято, и стала бы постоянной при добавлении новых доменов в будущем.
+Контекст: в версии 1.4.2 в `host_permissions` и `content_scripts.matches` появился домен `nspd.gov.ru`. Для браузера это новые обязательные разрешения, поэтому при обновлении расширение отключалось до подтверждения пользователя ([Chrome: Updating permissions](https://developer.chrome.com/docs/extensions/develop/concepts/permission-warnings)). Проблема повторялась на каждом апдейте, пока разрешение не принято, и стала бы постоянной при добавлении новых доменов в будущем.
 
 Решение:
 1. Объявлять доступ к НСПД необязательным: `optional_host_permissions` в MV3, `optional_permissions` в MV2 (Firefox). Перенос выполняет `moveNspdHostPermissionsToOptional` в хуке `build:manifestGenerated` — к этому моменту WXT уже добавил хосты content scripts с `registration: 'runtime'`, поэтому вычищать `host_permissions` нужно после генерации манифеста, а не в `manifest`.
