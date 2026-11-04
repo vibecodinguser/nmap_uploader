@@ -133,20 +133,6 @@ describe('NSPD content scripts', () => {
     expect(scriptingMock.registered.size).toBe(2)
   })
 
-  it('регистрирует скрипты при включении настройки и снимает при выключении', async () => {
-    permissionsMock.grant(...NSPD_HOST_PATTERNS)
-    initNspdContentScriptSync()
-    await flush()
-
-    await browser.storage.local.set({ [NSPD_BUTTON_ENABLED_STORAGE_KEY]: true })
-    await flush()
-    expect(scriptingMock.registered.size).toBe(2)
-
-    await browser.storage.local.set({ [NSPD_BUTTON_ENABLED_STORAGE_KEY]: false })
-    await flush()
-    expect(scriptingMock.registered.size).toBe(0)
-  })
-
   it('снимает скрипты и выключает настройку при отзыве доступа', async () => {
     permissionsMock.grant(...NSPD_HOST_PATTERNS)
     await setStoredNspdButtonEnabled(true)
@@ -186,20 +172,6 @@ describe('NSPD content scripts', () => {
     await browser.storage.local.set({ [NSPD_BUTTON_ENABLED_STORAGE_KEY]: false })
     await flush()
     expect(scriptingMock.registered.size).toBe(0)
-  })
-
-  it('снимает регистрацию и выключает настройку при отзыве доступа', async () => {
-    permissionsMock.grant(...NSPD_HOST_PATTERNS)
-    await setStoredNspdButtonEnabled(true)
-    initNspdContentScriptSync()
-    await flush()
-    expect(scriptingMock.registered.size).toBe(2)
-
-    permissionsMock.revoke(...NSPD_HOST_PATTERNS)
-    await flush()
-
-    expect(scriptingMock.registered.size).toBe(0)
-    await expect(getStoredNspdButtonEnabled()).resolves.toBe(false)
   })
 
   it('выключает настройку при старте, если доступа больше нет', async () => {

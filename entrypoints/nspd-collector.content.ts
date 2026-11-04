@@ -1,16 +1,16 @@
 import { browser } from 'wxt/browser'
 import { defineContentScript } from 'wxt/utils/define-content-script'
-import { NSPD_HOST_PATTERNS } from '@/lib/manifest/nspd_optional_hosts'
+import { NSPD_COLLECTOR_SCRIPT } from '@/lib/nspd/content_script_descriptors'
 import { startNspdDomObserver } from '@/lib/nspd/dom_injector'
 import { initNspdNetworkInterceptor } from '@/lib/nspd/network_interceptor'
 import { getStoredNspdButtonEnabled, NSPD_BUTTON_ENABLED_STORAGE_KEY } from '@/lib/nspd/nspd_button'
 
 export default defineContentScript({
-  matches: [...NSPD_HOST_PATTERNS],
-  runAt: 'document_idle',
-  allFrames: true,
-  // Регистрируется в рантайме (см. lib/nspd/content_scripts.ts): доступ к nspd.gov.ru
-  // необязательный, иначе обновления расширения отключали бы его у пользователей.
+  matches: [...NSPD_COLLECTOR_SCRIPT.matches],
+  runAt: NSPD_COLLECTOR_SCRIPT.runAt,
+  allFrames: NSPD_COLLECTOR_SCRIPT.allFrames,
+  world: NSPD_COLLECTOR_SCRIPT.world,
+  // Регистрируется в рантайме: доступ к nspd.gov.ru необязательный (см. ADR 0005).
   registration: 'runtime',
 
   async main(ctx) {

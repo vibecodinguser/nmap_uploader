@@ -9,13 +9,18 @@
 import { browser } from 'wxt/browser'
 import { NSPD_HOST_PATTERNS } from '@/lib/manifest/nspd_optional_hosts'
 import {
+  NSPD_COLLECTOR_SCRIPT_ID,
+  NSPD_CONTENT_SCRIPTS,
+  NSPD_INTERCEPTOR_SCRIPT_ID,
+  type NspdContentScriptDescriptor,
+} from '@/lib/nspd/content_script_descriptors'
+import {
   getStoredNspdButtonEnabled,
   NSPD_BUTTON_ENABLED_STORAGE_KEY,
   setStoredNspdButtonEnabled,
 } from '@/lib/nspd/nspd_button'
 
-export const NSPD_COLLECTOR_SCRIPT_ID = 'nmap-nspd-collector'
-export const NSPD_INTERCEPTOR_SCRIPT_ID = 'nmap-nspd-interceptor'
+export { NSPD_COLLECTOR_SCRIPT_ID, NSPD_INTERCEPTOR_SCRIPT_ID }
 
 const NSPD_ORIGINS = [...NSPD_HOST_PATTERNS]
 
@@ -23,30 +28,22 @@ type RegisteredNspdScript = {
   id: string
   js: string[]
   matches: string[]
-  runAt: 'document_start' | 'document_idle'
+  runAt: NspdContentScriptDescriptor['runAt']
   allFrames: boolean
-  world: 'ISOLATED' | 'MAIN'
+  world: NspdContentScriptDescriptor['world']
 }
 
-/** Описание скриптов повторяет прежние записи `manifest.content_scripts`. */
-export const NSPD_REGISTERED_SCRIPTS: RegisteredNspdScript[] = [
-  {
-    id: NSPD_COLLECTOR_SCRIPT_ID,
-    js: ['content-scripts/nspd-collector.js'],
-    matches: NSPD_ORIGINS,
-    runAt: 'document_idle',
-    allFrames: true,
-    world: 'ISOLATED',
-  },
-  {
-    id: NSPD_INTERCEPTOR_SCRIPT_ID,
-    js: ['content-scripts/nspd-interceptor-main.js'],
-    matches: NSPD_ORIGINS,
-    runAt: 'document_start',
-    allFrames: true,
-    world: 'MAIN',
-  },
-]
+/** Описание для `scripting.registerContentScripts`, собранное из общих дескрипторов. */
+export const NSPD_REGISTERED_SCRIPTS: RegisteredNspdScript[] = NSPD_CONTENT_SCRIPTS.map(
+  (script) => ({
+    id: script.id,
+    js: [script.js],
+    matches: [...script.matches],
+    runAt: script.runAt,
+    allFrames: script.allFrames,
+    world: script.world,
+  }),
+)
 
 const NSPD_SCRIPT_IDS = NSPD_REGISTERED_SCRIPTS.map((script) => script.id)
 

@@ -10,17 +10,19 @@
  */
 
 const URI_SCHEME = 'https'
+const NSPD_HOST = 'nspd.gov.ru'
 
-// biome-ignore lint/style/useTemplate: split '://' so analyzers do not treat '//' as a comment
-const hostPattern = (host: string): string => URI_SCHEME + '://' + host
+const hostPattern = (host: string): string => `${URI_SCHEME}://${host}`
 
 /** Паттерны, которые раньше стояли в `host_permissions` и `content_scripts.matches`. */
 export const NSPD_HOST_PATTERNS = [
-  hostPattern('nspd.gov.ru/*'),
-  hostPattern('*.nspd.gov.ru/*'),
+  hostPattern(`${NSPD_HOST}/*`),
+  hostPattern(`*.${NSPD_HOST}/*`),
 ] as const
 
-const NSPD_HOST_PATTERN_REGEX = /^https:\/\/(?:\*\.)?nspd\.gov\.ru\//
+const NSPD_HOST_PATTERN_REGEX = new RegExp(
+  `^${URI_SCHEME}://(?:\\*\\.)?${NSPD_HOST.replaceAll('.', '\\.')}/`,
+)
 
 export const isNspdHostPattern = (pattern: string): boolean => NSPD_HOST_PATTERN_REGEX.test(pattern)
 
