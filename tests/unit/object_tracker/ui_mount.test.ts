@@ -34,6 +34,10 @@ const buildSidebar = (): HTMLElement => {
   tabs.appendChild(second)
   tabsBar.appendChild(tabs)
 
+  const selection = document.createElement('div')
+  selection.className = 'nk-tabs-bar__selection nk-tabs-bar__selection_inited'
+  tabsBar.appendChild(selection)
+
   const content = document.createElement('div')
   content.className = 'nk-section nk-section_level_1'
   content.textContent = 'нативный контент'
@@ -235,5 +239,64 @@ describe('object_tracker: вкладка панели', () => {
     expect(document.getElementById(TRACKER_TAB_ID)?.classList.contains('nmap-ot-tab-unread')).toBe(
       false,
     )
+  })
+
+  describe('индикатор выбранной вкладки', () => {
+    const stubGeometry = (element: HTMLElement, left: number, width: number): void => {
+      Object.defineProperty(element, 'offsetLeft', { value: left, configurable: true })
+      Object.defineProperty(element, 'offsetWidth', { value: width, configurable: true })
+    }
+
+    const selectionTransform = (): string | undefined =>
+      document.querySelector<HTMLElement>('.nk-tabs-bar__selection')?.style.transform
+
+    it('переезжает под нашу вкладку при открытии', () => {
+      buildSidebar()
+      const sidebar = new ObjectTrackerSidebar({ onActivate: vi.fn() })
+      sidebar.mount()
+
+      const tab = document.getElementById(TRACKER_TAB_ID)
+      expect(tab).not.toBeNull()
+      if (!tab) return
+      stubGeometry(tab, 260, 96)
+
+      document
+        .getElementById(TRACKER_TAB_ID)
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+      expect(selectionTransform()).toBe('translateX(260px) scaleX(96)')
+    })
+
+    it('возвращается на прежнюю вкладку при переключении', () => {
+      buildSidebar()
+      const sidebar = new ObjectTrackerSidebar({ onActivate: vi.fn() })
+      sidebar.mount()
+
+      const nativeTab = document.querySelector<HTMLElement>('.nk-tabs-bar__tab')
+      const tab = document.getElementById(TRACKER_TAB_ID)
+      if (!nativeTab || !tab) return
+      stubGeometry(nativeTab, 8, 84)
+      stubGeometry(tab, 260, 96)
+
+      tab.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      expect(selectionTransform()).toBe('translateX(260px) scaleX(96)')
+
+      nativeTab.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      expect(selectionTransform()).toBe('translateX(8px) scaleX(84)')
+      expect(nativeTab.classList.contains('nk-tabs-bar__tab_selected')).toBe(true)
+    })
+
+    it('не двигается, если вкладка не выбрана', () => {
+      buildSidebar()
+      const sidebar = new ObjectTrackerSidebar({ onActivate: vi.fn() })
+      sidebar.mount()
+
+      const tab = document.getElementById(TRACKER_TAB_ID)
+      if (!tab) return
+      stubGeometry(tab, 260, 96)
+
+      sidebar.syncSelection()
+      expect(selectionTransform()).not.toBe('translateX(260px) scaleX(96)')
+    })
   })
 })

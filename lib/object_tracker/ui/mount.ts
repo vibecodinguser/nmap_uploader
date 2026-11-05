@@ -7,6 +7,8 @@ export const TRACKER_TAB_LABEL = 'Мои объекты'
 const TAB_CLASS = 'nk-tabs-bar__tab'
 const TAB_SELECTED_CLASS = 'nk-tabs-bar__tab_selected'
 const TABS_CONTAINER_CLASS = 'nk-tabs-bar__tabs'
+const SELECTION_CLASS = 'nk-tabs-bar__selection'
+const SELECTION_INITED_CLASS = 'nk-tabs-bar__selection_inited'
 
 export interface TrackerSidebarOptions {
   /** Вызывается при открытии нашей вкладки. */
@@ -63,6 +65,8 @@ export class ObjectTrackerSidebar {
   private nativeContent: HTMLElement | null = null
   private active = false
   private listenerAttached = false
+  /** Вкладка, которая была выбрана до нас: нужно вернуть индикатор при выходе. */
+  private previousSelectedTab: HTMLElement | null = null
 
   constructor(options: TrackerSidebarOptions) {
     this.options = options
@@ -158,6 +162,7 @@ export class ObjectTrackerSidebar {
     this.tabElement = null
     this.panelElement = null
     this.nativeContent = null
+    this.previousSelectedTab = null
     this.detachNativeTabListener()
   }
 
@@ -176,15 +181,25 @@ export class ObjectTrackerSidebar {
 
     const tabs = this.tabElement.parentElement?.querySelectorAll<HTMLElement>(`.${TAB_CLASS}`)
     tabs?.forEach((element) => {
-      element.classList.toggle(TAB_SELECTED_CLASS, element === this.tabElement)
-      element.setAttribute('aria-selected', element === this.tabElement ? 'true' : 'false')
+      if (element === this.tabElement) {
+        return
+      }
+      if (element.classList.contains(TAB_SELECTED_CLASS)) {
+        this.previousSelectedTab = element
+      }
+      element.classList.remove(TAB_SELECTED_CLASS)
+      element.setAttribute('aria-selected', 'false')
     })
+
+    this.tabElement.classList.add(TAB_SELECTED_CLASS)
+    this.tabElement.setAttribute('aria-selected', 'true')
 
     if (this.nativeContent) {
       this.nativeContent.style.display = 'none'
     }
     this.panelElement.style.display = ''
 
+    this.syncSelection()
     this.options.onActivate()
   }
 
@@ -202,6 +217,51 @@ export class ObjectTrackerSidebar {
     if (this.nativeContent) {
       this.nativeContent.style.display = ''
     }
+
+    this.restoreSelection()
+  }
+
+  /**
+   * Ставит нативный индикатор под нашу вкладку.
+   *
+   * Индикатор имеет ширину 1px, а позицию и ширину нативный код задаёт через
+   * `translateX(...) scaleX(...)`. Про добавленную вкладку он не знает, поэтому
+   * пересчитываем сами.
+   */
+  public syncSelection(): void {
+    if (!this.active || !this.tabElement) {
+      return
+    }
+    this.applySelectionTo(this.tabElement)
+  }
+
+  private applySelectionTo(tab: HTMLElement): void {
+    const tabsBar = tab.closest<HTMLElement>('.nk-tabs-bar')
+    const selection = tabsBar?.querySelector<HTMLElement>(`.${SELECTION_CLASS}`)
+    if (!tabsBar || !selection) {
+      return
+    }
+
+    const left = tab.offsetLeft
+    const width = tab.offsetWidth
+    if (width <= 0) {
+      return
+    }
+
+    selection.classList.add(SELECTION_INITED_CLASS)
+    selection.style.transform = `translateX(${left}px) scaleX(${width})`
+  }
+
+  /** Возвращает индикатор на вкладку, которая была выбрана до нас. */
+  private restoreSelection(): void {
+    const target = this.previousSelectedTab
+    if (!target?.isConnected) {
+      return
+    }
+
+    target.classList.add(TAB_SELECTED_CLASS)
+    target.setAttribute('aria-selected', 'true')
+    this.applySelectionTo(target)
   }
 
   private handleDocumentClick = (event: MouseEvent): void => {

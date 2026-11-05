@@ -369,7 +369,10 @@ export class ObjectTrackerController {
       }
       if (!this.sidebar.isMounted()) {
         this.mount()
+        return
       }
+      // Индикатор вкладки пересчитываем после перерисовок и ресайза панели.
+      this.sidebar.syncSelection()
     }, 1000)
   }
 
