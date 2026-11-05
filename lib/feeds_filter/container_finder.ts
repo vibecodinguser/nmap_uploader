@@ -1,3 +1,4 @@
+import { isElementVisible as _isElementVisible } from '@/lib/dom_visibility'
 import { findEventCards } from './page_adapter'
 
 /**
@@ -59,33 +60,8 @@ export const findFeedHeader = (container?: HTMLElement | null): HTMLElement | nu
  *
  * Лента при закрытии панели может остаться в DOM со `display: none` (или в скрытом
  * предке). Такой контейнер нельзя считать текущим: фильтры окажутся в невидимом узле.
- *
- * Проверка идёт по вычисленным стилям, а не по геометрии: `offsetParent` и
- * `getClientRects` зависят от layout, которого может не быть в тестовом окружении.
  */
-export const isElementVisible = (element: HTMLElement | null): boolean => {
-  if (!element?.isConnected) {
-    return false
-  }
-
-  let current: HTMLElement | null = element
-  while (current && current !== document.documentElement) {
-    if (current.hidden) {
-      return false
-    }
-
-    if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
-      const style = window.getComputedStyle(current)
-      if (style.display === 'none') {
-        return false
-      }
-    }
-
-    current = current.parentElement
-  }
-
-  return true
-}
+export const isElementVisible = (element: HTMLElement | null): boolean => _isElementVisible(element)
 
 /** Возвращает первый видимый кандидат, иначе — первый непустой. */
 const pickVisibleFirst = (candidates: HTMLElement[]): HTMLElement | null => {

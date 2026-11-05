@@ -1,3 +1,4 @@
+import { isElementVisible } from '@/lib/dom_visibility'
 import { TRACKER_PANEL_ID, TRACKER_TAB_ID } from './dom'
 import { ensureTrackerStyles } from './styles'
 
@@ -12,9 +13,18 @@ export interface TrackerSidebarOptions {
   onActivate: () => void
 }
 
-/** Ищет контейнер вкладок нативной панели. */
-export const findTabsContainer = (root: ParentNode = document): HTMLElement | null =>
-  root.querySelector<HTMLElement>(`.nk-tabs-bar .${TABS_CONTAINER_CLASS}`)
+/**
+ * Ищет контейнер вкладок нативной панели.
+ *
+ * Панель при закрытии прячется, но остаётся в документе, поэтому предпочитаем
+ * видимый контейнер: иначе вкладка монтируется в скрытую копию панели.
+ */
+export const findTabsContainer = (root: ParentNode = document): HTMLElement | null => {
+  const candidates = Array.from(
+    root.querySelectorAll<HTMLElement>(`.nk-tabs-bar .${TABS_CONTAINER_CLASS}`),
+  )
+  return candidates.find(isElementVisible) ?? candidates[0] ?? null
+}
 
 /** Находит контент нативной вкладки — секцию сразу после полосы вкладок. */
 export const findNativeContent = (tabsContainer: HTMLElement): HTMLElement | null => {
@@ -58,8 +68,23 @@ export class ObjectTrackerSidebar {
     this.options = options
   }
 
+  /**
+   * Вкладка смонтирована и находится в актуальной (видимой) панели.
+   *
+   * Одного `isConnected` мало: закрытая панель остаётся в документе скрытой,
+   * и вкладка в ней формально «смонтирована», но пользователь её не видит.
+   */
   public isMounted(): boolean {
-    return Boolean(this.tabElement?.isConnected && this.panelElement?.isConnected)
+    if (!this.tabElement?.isConnected || !this.panelElement?.isConnected) {
+      return false
+    }
+
+    if (!isElementVisible(this.tabElement)) {
+      return false
+    }
+
+    const container = this.tabElement.parentElement
+    return Boolean(container) && container === findTabsContainer()
   }
 
   public isActive(): boolean {
@@ -84,6 +109,11 @@ export class ObjectTrackerSidebar {
 
     if (this.isMounted()) {
       return true
+    }
+
+    // Вкладка осталась в скрытой или уже заменённой панели — переносим её.
+    if (this.tabElement || this.panelElement) {
+      this.unmount()
     }
 
     const tab = document.createElement('div')

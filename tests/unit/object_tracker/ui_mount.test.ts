@@ -173,6 +173,54 @@ describe('object_tracker: вкладка панели', () => {
     expect(sidebar.mount()).toBe(false)
   })
 
+  it('переносит вкладку в новую панель, если старая осталась скрытой после Escape', () => {
+    const oldContent = buildSidebar()
+    const sidebar = new ObjectTrackerSidebar({ onActivate: vi.fn() })
+    sidebar.mount()
+
+    // Escape: панель прячется, но остаётся в документе.
+    const oldRoot = oldContent.parentElement
+    if (oldRoot instanceof HTMLElement) oldRoot.style.display = 'none'
+
+    // Повторное открытие создаёт новую панель.
+    const newContent = buildSidebar()
+
+    expect(sidebar.mount()).toBe(true)
+
+    const tab = document.getElementById(TRACKER_TAB_ID)
+    expect(tab).not.toBeNull()
+    expect(tab?.closest('.nk-size-observer')).toBe(newContent.parentElement)
+    expect(document.querySelectorAll(`#${TRACKER_TAB_ID}`)).toHaveLength(1)
+  })
+
+  it('считает вкладку несмонтированной, если её панель скрыта', () => {
+    const content = buildSidebar()
+    const sidebar = new ObjectTrackerSidebar({ onActivate: vi.fn() })
+    sidebar.mount()
+    expect(sidebar.isMounted()).toBe(true)
+
+    const root = content.parentElement
+    if (root instanceof HTMLElement) root.style.display = 'none'
+
+    expect(sidebar.isMounted()).toBe(false)
+  })
+
+  it('возвращает вкладку в ту же панель после повторного открытия', () => {
+    const content = buildSidebar()
+    const sidebar = new ObjectTrackerSidebar({ onActivate: vi.fn() })
+    sidebar.mount()
+
+    const root = content.parentElement
+    if (root instanceof HTMLElement) root.style.display = 'none'
+    expect(sidebar.mount()).toBe(true)
+
+    if (root instanceof HTMLElement) root.style.display = ''
+
+    expect(sidebar.mount()).toBe(true)
+    expect(document.querySelectorAll(`#${TRACKER_TAB_ID}`)).toHaveLength(1)
+    expect(document.getElementById(TRACKER_TAB_ID)?.closest('.nk-size-observer')).toBe(root)
+  })
+
   it('показывает точку непрочитанного на вкладке', () => {
     buildSidebar()
     const sidebar = new ObjectTrackerSidebar({ onActivate: vi.fn() })
