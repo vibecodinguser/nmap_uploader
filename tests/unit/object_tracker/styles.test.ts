@@ -49,6 +49,12 @@ describe('object_tracker: стили панели', () => {
     expect(fieldRule).not.toContain('height')
     expect(fieldRule).not.toContain('padding')
     expect(fieldRule).not.toContain('display')
-    expect(TRACKER_STYLES).not.toContain('.nmap-ot-add__field .nk-text-input__control')
+  })
+
+  it('скругляет углы поля до 4px, как у остальных контролов редактора', () => {
+    // У theme_islands рамка в ::before без радиуса — углы остаются прямыми.
+    expect(TRACKER_STYLES).toContain('.nmap-ot-add__field.nk-text-input_theme_islands::before')
+    expect(TRACKER_STYLES).toContain('border-radius: 4px')
+    expect(TRACKER_STYLES).toContain('overflow: hidden')
   })
 })

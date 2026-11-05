@@ -102,6 +102,21 @@ export const TRACKER_STYLES = `
     .nmap-ot-add__field {
       flex: 1 1 auto;
       min-width: 0;
+      border-radius: 4px;
+      /* Обрезаем содержимое по скруглению: у control свои прямые углы. */
+      overflow: hidden;
+    }
+    /*
+     * У nk-text-input_theme_islands рамка нарисована в ::before без радиуса,
+     * поэтому углы оставались прямыми. Скругляем рамку и сам control:
+     * 4px — как у кнопок и селектов редактора.
+     */
+    .nmap-ot-add__field.nk-text-input_theme_islands::before {
+      border-radius: 4px;
+    }
+    .nmap-ot-add__field .nk-text-input__control {
+      border-radius: 4px;
+      background-color: transparent;
     }
     /* Обводка фокуса — на обёртке: у нативного control своего outline нет. */
     .nmap-ot-add__field:focus-within {
