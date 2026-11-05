@@ -34,4 +34,16 @@ describe('object_tracker: стили панели', () => {
   it('описывает точку непрочитанного на вкладке', () => {
     expect(TRACKER_STYLES).toContain('#nmap-uploader-object-tracker-tab.nmap-ot-tab-unread::after')
   })
+
+  it('рисует обводку фокуса на обёртке поля, а не на input', () => {
+    // У нативного control свой padding и размер, поэтому обводка на нём
+    // не совпадала бы с рамкой nk-text-input.
+    expect(TRACKER_STYLES).toContain('.nmap-ot-add__field:focus-within')
+    expect(TRACKER_STYLES).toContain('.nmap-ot-add__field .nk-text-input__control:focus-visible')
+    expect(TRACKER_STYLES).toContain('outline: none !important')
+  })
+
+  it('снимает нативный padding с control, иначе текст обрезается в поле 28px', () => {
+    expect(TRACKER_STYLES).toContain('padding: 0 !important')
+  })
 })
