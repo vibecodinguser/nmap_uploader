@@ -36,14 +36,19 @@ describe('object_tracker: стили панели', () => {
   })
 
   it('рисует обводку фокуса на обёртке поля, а не на input', () => {
-    // У нативного control свой padding и размер, поэтому обводка на нём
-    // не совпадала бы с рамкой nk-text-input.
+    // У нативного control своего outline нет, обводка рисуется на обёртке,
+    // чтобы совпадать с рамкой nk-text-input.
     expect(TRACKER_STYLES).toContain('.nmap-ot-add__field:focus-within')
-    expect(TRACKER_STYLES).toContain('.nmap-ot-add__field .nk-text-input__control:focus-visible')
-    expect(TRACKER_STYLES).toContain('outline: none !important')
   })
 
-  it('снимает нативный padding с control, иначе текст обрезается в поле 28px', () => {
-    expect(TRACKER_STYLES).toContain('padding: 0 !important')
+  it('не переопределяет размеры и отступы нативного поля', () => {
+    // Поле должно полностью повторять nk-text-input: свои height и padding
+    // ломали совпадение control с рамкой ::before.
+    const fieldRule = TRACKER_STYLES.match(/\.nmap-ot-add__field \{[^}]*\}/)?.[0] ?? ''
+
+    expect(fieldRule).not.toContain('height')
+    expect(fieldRule).not.toContain('padding')
+    expect(fieldRule).not.toContain('display')
+    expect(TRACKER_STYLES).not.toContain('.nmap-ot-add__field .nk-text-input__control')
   })
 })

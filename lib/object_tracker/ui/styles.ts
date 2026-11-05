@@ -94,32 +94,16 @@ export const TRACKER_STYLES = `
       align-items: center;
       gap: 8px;
     }
+    /*
+     * Поле ввода повторяет нативное nk-text-input: никаких собственных
+     * размеров и отступов, иначе control перестаёт совпадать с рамкой.
+     * Задаём только участие в раскладке.
+     */
     .nmap-ot-add__field {
       flex: 1 1 auto;
       min-width: 0;
-      display: flex;
-      align-items: center;
-      height: 28px;
-      padding: 0 10px;
     }
-    /*
-     * У нативного nk-text-input рамка нарисована в ::before на обёртке,
-     * а у control свой padding 8px. Из-за этого input больше поля и смещён
-     * внутрь: обводка на нём не совпадала бы с рамкой. Переносим обводку
-     * на обёртку и гасим её на самом control.
-     */
-    .nmap-ot-add__field .nk-text-input__control {
-      width: 100%;
-      height: 100%;
-      /* Нативное правило size_m даёт padding 8px — в поле высотой 28px он обрезает текст. */
-      padding: 0 !important;
-      color: inherit;
-      font: inherit;
-    }
-    .nmap-ot-add__field .nk-text-input__control:focus,
-    .nmap-ot-add__field .nk-text-input__control:focus-visible {
-      outline: none !important;
-    }
+    /* Обводка фокуса — на обёртке: у нативного control своего outline нет. */
     .nmap-ot-add__field:focus-within {
       outline: 2px solid #ffdb4d;
       outline-offset: 1px;
