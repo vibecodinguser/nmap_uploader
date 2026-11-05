@@ -27,7 +27,6 @@ import {
 import { MAX_TRACKED_OBJECTS, type ObjectCommit, type TrackedObject } from './types'
 import { renderPanel, type TrackerViewMode, type TrackerViewModel } from './ui/dom'
 import { ObjectTrackerSidebar } from './ui/mount'
-import { createTrackerThemeController, type TrackerThemeController } from './ui/theme'
 
 export interface TrackerControllerOptions {
   /** Транспорт подменяется в тестах. */
@@ -77,8 +76,6 @@ export class ObjectTrackerController {
   private readonly transport: BatchTransport
   private readonly getToken: () => string
   private readonly sidebar: ObjectTrackerSidebar
-  private readonly theme: TrackerThemeController
-  private disconnectTheme: (() => void) | null = null
 
   private settingsEnabled = false
   private intervalMinutes = 30
@@ -102,7 +99,6 @@ export class ObjectTrackerController {
         void this.handleTabOpened()
       },
     })
-    this.theme = createTrackerThemeController()
   }
 
   /** Запускает контроллер: читает настройки и монтирует UI, если функция включена. */
@@ -113,7 +109,6 @@ export class ObjectTrackerController {
     this.started = true
 
     this.attachStorageListener()
-    this.attachThemeListener()
     await this.reloadSettings()
 
     this.scheduleTimer()
@@ -124,7 +119,6 @@ export class ObjectTrackerController {
     this.started = false
     this.clearTimer()
     this.clearHeartbeat()
-    this.detachThemeListener()
     this.detachStorageListener()
     this.sidebar.unmount()
     void setTrackerBadge(0)
@@ -342,31 +336,7 @@ export class ObjectTrackerController {
     if (!this.sidebar.mount()) {
       return
     }
-    this.applyTheme()
     this.render()
-  }
-
-  /** Применяет текущую тему к панели. */
-  private applyTheme(): void {
-    const panel = this.sidebar.getPanel()
-    if (panel) {
-      this.theme.apply(panel)
-    }
-  }
-
-  private attachThemeListener(): void {
-    if (this.disconnectTheme) {
-      return
-    }
-    this.disconnectTheme = this.theme.observe(() => this.applyTheme())
-  }
-
-  private detachThemeListener(): void {
-    if (!this.disconnectTheme) {
-      return
-    }
-    this.disconnectTheme()
-    this.disconnectTheme = null
   }
 
   private scheduleTimer(): void {

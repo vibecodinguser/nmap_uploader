@@ -162,7 +162,9 @@ describe('object_tracker: renderPanel', () => {
     renderPanel(container, { ...baseView, objects: [] }, callbacks)
 
     const form = container.querySelector<HTMLFormElement>('.nmap-ot-add')
-    const input = container.querySelector<HTMLInputElement>('.nmap-ot-add__input')
+    const input = container.querySelector<HTMLInputElement>(
+      '.nmap-ot-add__field .nk-text-input__control',
+    )
     if (input) input.value = 'abc'
     form?.dispatchEvent(new Event('submit', { cancelable: true }))
 
@@ -175,7 +177,9 @@ describe('object_tracker: renderPanel', () => {
     renderPanel(container, { ...baseView, objects: [] }, callbacks)
 
     const form = container.querySelector<HTMLFormElement>('.nmap-ot-add')
-    const input = container.querySelector<HTMLInputElement>('.nmap-ot-add__input')
+    const input = container.querySelector<HTMLInputElement>(
+      '.nmap-ot-add__field .nk-text-input__control',
+    )
     if (input) input.value = '12345'
     form?.dispatchEvent(new Event('submit', { cancelable: true }))
 

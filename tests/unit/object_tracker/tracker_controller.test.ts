@@ -241,7 +241,7 @@ describe('object_tracker: контроллер', () => {
     controller.stop()
   })
 
-  it('красит панель текущей темой при монтировании', async () => {
+  it('использует нативные классы редактора для контролов', async () => {
     await setTrackerEnabled(true)
     await setTrackedObjects([{ id: '1', title: 'Объект', addedAt: 0 }])
 
@@ -249,8 +249,13 @@ describe('object_tracker: контроллер', () => {
     await controller.start()
 
     const panel = document.getElementById(TRACKER_PANEL_ID)
-    expect(panel?.style.getPropertyValue('--nmap-ot-bg')).toBeTruthy()
-    expect(panel?.style.getPropertyValue('color-scheme')).toMatch(/light|dark/)
+    const refresh = panel?.querySelector('.nmap-ot-refresh')
+    const submit = panel?.querySelector('.nmap-ot-add__submit')
+    const input = panel?.querySelector('.nmap-ot-add__field')
+
+    expect(refresh?.classList.contains('nk-button_theme_islands')).toBe(true)
+    expect(submit?.classList.contains('nk-button_view_action')).toBe(true)
+    expect(input?.classList.contains('nk-text-input_theme_islands')).toBe(true)
     controller.stop()
   })
 })

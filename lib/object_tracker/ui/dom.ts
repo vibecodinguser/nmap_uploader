@@ -1,6 +1,23 @@
 import { describeAction, describeApproveStatus } from '../commit_normalizer'
 import type { ObjectCommit, TrackedObject } from '../types'
 
+/**
+ * Нативная кнопка редактора.
+ *
+ * Текст обязан лежать в `.nk-button__text`: у нативной кнопки поверхность
+ * нарисована в `:before`, и без позиционированной обёртки текст уходит под неё.
+ */
+const createNativeButton = (className: string, label: string): HTMLButtonElement => {
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.className = `nk-button nk-button_theme_islands nk-button_size_m ${className}`
+  const text = document.createElement('span')
+  text.className = 'nk-button__text'
+  text.textContent = label
+  button.appendChild(text)
+  return button
+}
+
 export const TRACKER_TAB_ID = 'nmap-uploader-object-tracker-tab'
 export const TRACKER_PANEL_ID = 'nmap-uploader-object-tracker-panel'
 export const TRACKER_STYLES_ID = 'nmap-uploader-object-tracker-styles'
@@ -144,10 +161,7 @@ export const createObjectRow = (
 
   row.appendChild(info)
 
-  const remove = document.createElement('button')
-  remove.type = 'button'
-  remove.className = 'nmap-ot-object__remove'
-  remove.textContent = 'Убрать'
+  const remove = createNativeButton('nmap-ot-object__remove', 'Убрать')
   remove.setAttribute('aria-label', `Убрать ${describeObject(object)} из наблюдения`)
   remove.addEventListener('click', (event) => {
     event.preventDefault()
@@ -179,10 +193,7 @@ const createHeader = (view: TrackerViewModel, callbacks: PanelCallbacks): HTMLEl
   title.textContent = `Мои объекты (${view.objects.length})`
   titleRow.appendChild(title)
 
-  const refresh = document.createElement('button')
-  refresh.type = 'button'
-  refresh.className = 'nmap-ot-icon-button'
-  refresh.textContent = view.isLoading ? '…' : 'Обновить'
+  const refresh = createNativeButton('nmap-ot-refresh', view.isLoading ? 'Загрузка…' : 'Обновить')
   refresh.disabled = view.isLoading
   refresh.addEventListener('click', () => callbacks.onRefresh())
   titleRow.appendChild(refresh)
@@ -200,17 +211,30 @@ const createHeader = (view: TrackerViewModel, callbacks: PanelCallbacks): HTMLEl
   const form = document.createElement('form')
   form.className = 'nmap-ot-add'
 
-  const input = document.createElement('input')
-  input.type = 'text'
-  input.className = 'nmap-ot-add__input'
-  input.placeholder = 'id объекта'
-  input.setAttribute('aria-label', 'id объекта для наблюдения')
-  input.inputMode = 'numeric'
+  const label = document.createElement('label')
+  label.className = 'nmap-ot-add__label'
+  label.textContent = 'id объекта'
+  label.htmlFor = 'nmap-ot-add-input'
+  form.appendChild(label)
 
-  const submit = document.createElement('button')
+  const row = document.createElement('div')
+  row.className = 'nmap-ot-add__row'
+
+  const field = document.createElement('span')
+  field.className =
+    'nk-text-input nk-text-input_theme_islands nk-text-input_size_m nk-text-input_width_available nmap-ot-add__field'
+
+  const input = document.createElement('input')
+  input.id = 'nmap-ot-add-input'
+  input.type = 'text'
+  input.className = 'nk-text-input__control'
+  input.placeholder = 'Например, 53161481'
+  input.inputMode = 'numeric'
+  field.appendChild(input)
+
+  const submit = createNativeButton('nmap-ot-add__submit', 'Добавить')
   submit.type = 'submit'
-  submit.className = 'nmap-ot-add__submit'
-  submit.textContent = 'Добавить'
+  submit.classList.add('nk-button_view_action')
 
   const error = document.createElement('div')
   error.className = 'nmap-ot-add__error'
@@ -227,10 +251,11 @@ const createHeader = (view: TrackerViewModel, callbacks: PanelCallbacks): HTMLEl
     input.value = ''
   })
 
-  form.appendChild(input)
-  form.appendChild(submit)
+  row.appendChild(field)
+  row.appendChild(submit)
+  form.appendChild(row)
+  form.appendChild(error)
   header.appendChild(form)
-  header.appendChild(error)
 
   return header
 }
@@ -246,10 +271,8 @@ const createModeSwitch = (view: TrackerViewModel, callbacks: PanelCallbacks): HT
   ]
 
   for (const mode of modes) {
-    const button = document.createElement('button')
-    button.type = 'button'
-    button.className = 'nmap-ot-mode'
-    button.textContent = mode.label
+    const button = createNativeButton('nmap-ot-mode', mode.label)
+    button.classList.add('nk-button_view_plain')
     button.setAttribute('role', 'tab')
     const isActive = view.mode === mode.id
     button.setAttribute('aria-selected', isActive ? 'true' : 'false')
