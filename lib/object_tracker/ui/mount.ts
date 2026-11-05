@@ -227,6 +227,10 @@ export class ObjectTrackerSidebar {
    * Индикатор имеет ширину 1px, а позицию и ширину нативный код задаёт через
    * `translateX(...) scaleX(...)`. Про добавленную вкладку он не знает, поэтому
    * пересчитываем сами.
+   *
+   * Важно: `transform-origin` у индикатора по умолчанию — центр, поэтому
+   * `scaleX` растягивает полоску вокруг середины. Компенсируем половиной ширины,
+   * иначе полоска уезжает влево на `width / 2`.
    */
   public syncSelection(): void {
     if (!this.active || !this.tabElement) {
@@ -242,14 +246,16 @@ export class ObjectTrackerSidebar {
       return
     }
 
-    const left = tab.offsetLeft
     const width = tab.offsetWidth
     if (width <= 0) {
       return
     }
 
+    // Полоска шириной 1px растягивается от центра: сдвигаем на (width - 1) / 2.
+    const offset = tab.offsetLeft + (width - 1) / 2
+
     selection.classList.add(SELECTION_INITED_CLASS)
-    selection.style.transform = `translateX(${left}px) scaleX(${width})`
+    selection.style.transform = `translateX(${offset}px) scaleX(${width})`
   }
 
   /** Возвращает индикатор на вкладку, которая была выбрана до нас. */

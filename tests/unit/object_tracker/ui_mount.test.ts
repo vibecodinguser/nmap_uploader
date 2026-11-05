@@ -264,7 +264,7 @@ describe('object_tracker: вкладка панели', () => {
         .getElementById(TRACKER_TAB_ID)
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 
-      expect(selectionTransform()).toBe('translateX(260px) scaleX(96)')
+      expect(selectionTransform()).toBe('translateX(307.5px) scaleX(96)')
     })
 
     it('возвращается на прежнюю вкладку при переключении', () => {
@@ -279,10 +279,10 @@ describe('object_tracker: вкладка панели', () => {
       stubGeometry(tab, 260, 96)
 
       tab.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      expect(selectionTransform()).toBe('translateX(260px) scaleX(96)')
+      expect(selectionTransform()).toBe('translateX(307.5px) scaleX(96)')
 
       nativeTab.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      expect(selectionTransform()).toBe('translateX(8px) scaleX(84)')
+      expect(selectionTransform()).toBe('translateX(49.5px) scaleX(84)')
       expect(nativeTab.classList.contains('nk-tabs-bar__tab_selected')).toBe(true)
     })
 
