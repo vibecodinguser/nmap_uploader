@@ -10,6 +10,7 @@ import type { useGoToLinks } from '@/hooks/useGoToLinks'
 import { useLocale } from '@/hooks/useLocale'
 import type { useNotesButton } from '@/hooks/useNotesButton'
 import type { useNspdButton } from '@/hooks/useNspdButton'
+import type { useObjectTracker } from '@/hooks/useObjectTracker'
 import type { usePointCounter } from '@/hooks/usePointCounter'
 import type { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
 import type { useSplitViewButton } from '@/hooks/useSplitViewButton'
@@ -57,6 +58,11 @@ type PointCounterSettings = Pick<
   'isEnabled' | 'isLoaded' | 'setIsEnabled'
 >
 
+type ObjectTrackerSettings = Pick<
+  ReturnType<typeof useObjectTracker>,
+  'isEnabled' | 'isLoaded' | 'intervalMinutes' | 'setIsEnabled' | 'setIntervalMinutes'
+>
+
 const SETTINGS_BACK_ICON_SIZE = 18
 
 type SettingsTabProps = {
@@ -70,6 +76,7 @@ type SettingsTabProps = {
   nspdButton: NspdButtonSettings
   feedsFilter?: FeedsFilterSettings
   pointCounter?: PointCounterSettings
+  objectTracker?: ObjectTrackerSettings
   goToLinks: GoToLinksSettingsState
 }
 
@@ -84,6 +91,7 @@ export const SettingsTab = ({
   nspdButton,
   feedsFilter,
   pointCounter,
+  objectTracker,
   goToLinks,
 }: SettingsTabProps) => {
   const { locale, setLocale, t } = useLocale()
@@ -113,6 +121,20 @@ export const SettingsTab = ({
   const isFeedsFilterEnabled = feedsFilter?.isEnabled ?? false
   const isFeedsFilterLoaded = feedsFilter?.isLoaded ?? true
   const isFeedsFilterDisabled = !isFeedsFilterLoaded
+
+  const isObjectTrackerEnabled = objectTracker?.isEnabled ?? false
+  const isObjectTrackerLoaded = objectTracker?.isLoaded ?? true
+  const isObjectTrackerDisabled = !isObjectTrackerLoaded
+  const objectTrackerInterval = String(objectTracker?.intervalMinutes ?? 30)
+  const objectTrackerIntervalOptions = useMemo(
+    () => [
+      { value: '5', label: '5 мин' },
+      { value: '15', label: '15 мин' },
+      { value: '30', label: '30 мин' },
+      { value: '60', label: '60 мин' },
+    ],
+    [],
+  )
 
   const isPointCounterEnabled = pointCounter?.isEnabled ?? true
   const isPointCounterLoaded = pointCounter?.isLoaded ?? true
@@ -224,6 +246,30 @@ export const SettingsTab = ({
         disabled={isFeedsFilterDisabled}
         onChange={(checked) => feedsFilter?.setIsEnabled(checked)}
       />
+
+      <SettingsToggleRow
+        id="settings-object-tracker"
+        title={t('settings.objectTracker')}
+        ariaLabel={t('settings.objectTrackerAria')}
+        checked={isObjectTrackerEnabled}
+        disabled={isObjectTrackerDisabled}
+        onChange={(checked) => objectTracker?.setIsEnabled(checked)}
+      >
+        {isObjectTrackerEnabled ? (
+          <div className="settings-object-tracker-interval">
+            <span className="settings-object-tracker-interval-label">
+              {t('settings.objectTrackerInterval')}
+            </span>
+            <SegmentedRadioGroup
+              name="object-tracker-interval"
+              ariaLabel={t('settings.objectTrackerIntervalAria')}
+              value={objectTrackerInterval}
+              options={objectTrackerIntervalOptions}
+              onChange={(value) => objectTracker?.setIntervalMinutes(Number(value))}
+            />
+          </div>
+        ) : null}
+      </SettingsToggleRow>
 
       <SettingsToggleRow
         id="settings-point-counter"

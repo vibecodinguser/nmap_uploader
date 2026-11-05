@@ -110,6 +110,10 @@ export type Messages = {
     nspdPermissionDenied: string
     feedsFilter: string
     feedsFilterAria: string
+    objectTracker: string
+    objectTrackerAria: string
+    objectTrackerInterval: string
+    objectTrackerIntervalAria: string
     goToButton: string
     showButtonAria: string
     activeCount: string
