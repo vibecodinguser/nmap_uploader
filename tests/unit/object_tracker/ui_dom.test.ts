@@ -350,6 +350,7 @@ describe('object_tracker: иконка категории', () => {
     expect(resolveCategoryIconClass('rd_el')).toContain('nk-geoobject-icon_id_group-rd')
     expect(resolveCategoryIconClass('hydro_ln')).toContain('nk-geoobject-icon_id_group-hydro')
     expect(resolveCategoryIconClass('bld')).toContain('nk-geoobject-icon_id_group-bld')
+    expect(resolveCategoryIconClass('group')).toContain('nk-geoobject-icon_id_group-group')
   })
 
   it('предпочитает самую длинную группу', () => {

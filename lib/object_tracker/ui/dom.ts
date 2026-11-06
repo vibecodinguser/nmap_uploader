@@ -104,6 +104,7 @@ const CATEGORY_GROUPS = [
   'group-ad',
   'group-addr',
   'group-bld',
+  'group-group',
   'group-hydro',
   'group-org',
   'group-rd',

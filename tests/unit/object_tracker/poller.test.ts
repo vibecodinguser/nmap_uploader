@@ -22,8 +22,8 @@ const commit = (id: string, date: string): ObjectCommit => ({
 })
 
 const objects: TrackedObject[] = [
-  { id: '1', title: 'Объект 1', addedAt: 0 },
-  { id: '2', title: 'Объект 2', addedAt: 0 },
+  { id: '1', title: 'Объект 1', categoryId: 'ad', addedAt: 0 },
+  { id: '2', title: 'Объект 2', categoryId: 'rd', addedAt: 0 },
 ]
 
 const okResponse = (commitsByIndex: ObjectCommit[][]) =>
@@ -167,5 +167,49 @@ describe('object_tracker: mergeCachedCommits', () => {
     const merged = mergeCachedCommits({ '1': [commit('1', '2026-11-01')] }, { '2': [] })
 
     expect(Object.keys(merged).sort()).toEqual(['1', '2'])
+  })
+})
+
+describe('object_tracker: дотягивание данных объекта', () => {
+  const withoutCategory: TrackedObject[] = [{ id: '7', title: '', addedAt: 0 }]
+
+  it('запрашивает getGeoObject для объектов без категории', async () => {
+    const transport = vi.fn(async () => [
+      ...parseBatchResponse(okResponse([[]])),
+      ...parseBatchResponse(
+        JSON.stringify({
+          data: [{ data: { geoObject: { title: 'Хутор', categoryId: 'ad_jc' } } }],
+        }),
+      ),
+    ])
+
+    const result = await pollTrackedObjects({ transport, token: 't' }, withoutCategory, {})
+
+    expect(transport).toHaveBeenCalledTimes(1)
+    expect(transport.mock.calls[0]?.[0]).toHaveLength(2)
+    expect(transport.mock.calls[0]?.[0]?.[1]?.method).toBe('editor/getGeoObject')
+    expect(result.enrichedObjects['7']).toEqual({ title: 'Хутор', categoryId: 'ad_jc' })
+  })
+
+  it('не запрашивает данные, если категория уже известна', async () => {
+    const transport = vi.fn(async () => parseBatchResponse(okResponse([[]])))
+
+    await pollTrackedObjects({ transport, token: 't' }, objects, {})
+
+    expect(transport.mock.calls[0]?.[0]).toHaveLength(2)
+    expect(
+      transport.mock.calls[0]?.[0]?.every((call) => call.method === 'editor/getGeoObjectCommits'),
+    ).toBe(true)
+  })
+
+  it('не добавляет объект в enrichment, если он не найден', async () => {
+    const transport = vi.fn(async () => [
+      ...parseBatchResponse(okResponse([[]])),
+      ...parseBatchResponse(JSON.stringify({ data: [{ error: { type: 'ERR_MISSING_OBJECT' } }] })),
+    ])
+
+    const result = await pollTrackedObjects({ transport, token: 't' }, withoutCategory, {})
+
+    expect(result.enrichedObjects).toEqual({})
   })
 })

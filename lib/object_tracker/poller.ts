@@ -1,8 +1,10 @@
 import {
   type BatchTransport,
   CsrfTokenRejectedError,
+  getGeoObjectCall,
   getObjectCommitsCall,
   parseCommitsResult,
+  parseGeoObjectResult,
 } from './batch_api'
 import type { ObjectCommit, TrackedObject } from './types'
 
@@ -45,6 +47,8 @@ export interface PollResult {
   errors: Record<string, string>
   /** Токен не принят сервером: нужен новый перехват. */
   tokenRejected: boolean
+  /** Уточнённые данные объектов: название и категория для иконки. */
+  enrichedObjects: Record<string, { title: string | null; categoryId: string | null }>
 }
 
 const emptyResult = (): PollResult => ({
@@ -52,6 +56,7 @@ const emptyResult = (): PollResult => ({
   newCommits: [],
   errors: {},
   tokenRejected: false,
+  enrichedObjects: {},
 })
 
 /**
@@ -73,7 +78,18 @@ export const pollTrackedObjects = async (
     return { ...emptyResult(), errors: { '*': 'NO_TOKEN' } }
   }
 
-  const calls = objects.map((object) => getObjectCommitsCall(object.id))
+  /*
+   * Объектам без категории нужен `editor/getGeoObject`: без него в карточке
+   * остаётся серый placeholder вместо иконки. Уточняем в том же batch-запросе.
+   */
+  const needsDetails = (object: TrackedObject): boolean => !object.categoryId
+  const calls = objects.flatMap((object) => {
+    const list = [getObjectCommitsCall(object.id)]
+    if (needsDetails(object)) {
+      list.push(getGeoObjectCall(object.id))
+    }
+    return list
+  })
 
   let results: Awaited<ReturnType<BatchTransport>>
   try {
@@ -87,26 +103,40 @@ export const pollTrackedObjects = async (
 
   const commitsByObject: Record<string, ObjectCommit[]> = {}
   const errors: Record<string, string> = {}
+  const enrichedObjects: Record<string, { title: string | null; categoryId: string | null }> = {}
   const newCommits: ObjectCommit[] = []
 
-  objects.forEach((object, index) => {
-    const result = results[index]
-    if (result?.error) {
-      errors[object.id] = result.error.type
-      return
+  let cursor = 0
+  for (const object of objects) {
+    const commitsResult = results[cursor]
+    cursor += 1
+
+    const detailsResult = needsDetails(object) ? results[cursor] : undefined
+    if (needsDetails(object)) {
+      cursor += 1
+
+      const info = parseGeoObjectResult(detailsResult)
+      if (info.exists) {
+        enrichedObjects[object.id] = { title: info.title, categoryId: info.categoryId }
+      }
     }
 
-    const page = parseCommitsResult(result, object.id)
+    if (commitsResult?.error) {
+      errors[object.id] = commitsResult.error.type
+      continue
+    }
+
+    const page = parseCommitsResult(commitsResult, object.id)
     commitsByObject[object.id] = page.commits
 
     for (const commit of computeNewCommits(page.commits, readMarks[object.id])) {
       newCommits.push(commit)
     }
-  })
+  }
 
   newCommits.sort((a, b) => Date.parse(b.date) - Date.parse(a.date))
 
-  return { commitsByObject, newCommits, errors, tokenRejected: false }
+  return { commitsByObject, newCommits, errors, tokenRejected: false, enrichedObjects }
 }
 
 /** Сколько всего новых правок: основа для бейджа. */

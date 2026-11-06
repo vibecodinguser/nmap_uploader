@@ -76,6 +76,42 @@ describe('object_tracker: контроллер', () => {
   const createController = (transport: BatchTransport, token = 'token') =>
     new ObjectTrackerController({ transport, getToken: () => token })
 
+  it('дотягивает категорию объекта при опросе', async () => {
+    await setTrackerEnabled(true)
+    // Объект добавлен до появления поля categoryId: название осталось id,
+    // иконка была серым placeholder.
+    await setTrackedObjects([{ id: '1', title: '1', addedAt: 0 }])
+
+    const transport = vi.fn(async () => [
+      ...response([commit('10')]),
+      ...parseBatchResponse(
+        JSON.stringify({
+          data: [{ data: { geoObject: { title: 'хутор Захаров', categoryId: 'ad' } } }],
+        }),
+      ),
+    ])
+    const controller = createController(transport)
+    await controller.start()
+
+    const settings = await getTrackerSettings()
+    expect(settings.objects[0]?.categoryId).toBe('ad')
+    expect(settings.objects[0]?.title).toBe('хутор Захаров')
+    controller.stop()
+  })
+
+  it('не перезаписывает уже известную категорию', async () => {
+    await setTrackerEnabled(true)
+    await setTrackedObjects([{ id: '1', title: 'Объект', categoryId: 'rd', addedAt: 0 }])
+
+    const transport = vi.fn(async () => response([commit('10')]))
+    const controller = createController(transport)
+    await controller.start()
+
+    const settings = await getTrackerSettings()
+    expect(settings.objects[0]?.categoryId).toBe('rd')
+    controller.stop()
+  })
+
   it('не монтирует вкладку, пока функция выключена', async () => {
     const transport = vi.fn(async () => [])
     const controller = createController(transport)
@@ -113,6 +149,7 @@ describe('object_tracker: контроллер', () => {
     const settings = await getTrackerSettings()
     expect(settings.objects.map((object) => object.id)).toEqual(['123'])
     expect(settings.objects[0]?.title).toBe('хутор Захаров')
+    expect(settings.objects[0]?.categoryId).toBe('ad')
 
     const state = await getTrackerLocalState()
     expect(state.readMarks['123']).toBe('10')

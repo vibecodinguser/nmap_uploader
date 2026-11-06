@@ -183,6 +183,23 @@ export class ObjectTrackerController {
       this.commitsByObject = mergeCachedCommits(this.commitsByObject, result.commitsByObject)
       this.newCommitIds = new Set(result.newCommits.map((commit) => commit.id))
 
+      // Дотягиваем название и категорию: без категории в карточке серый placeholder.
+      if (Object.keys(result.enrichedObjects).length > 0) {
+        this.objects = this.objects.map((object) => {
+          const details = result.enrichedObjects[object.id]
+          if (!details) {
+            return object
+          }
+          const fallbackTitle = object.title === object.id || object.title === ''
+          return {
+            ...object,
+            title: fallbackTitle && details.title ? details.title : object.title,
+            categoryId: object.categoryId ?? details.categoryId ?? undefined,
+          }
+        })
+        await setTrackedObjects(this.objects)
+      }
+
       await setCachedCommits(this.commitsByObject)
       await setTrackerBadge(result.newCommits.length)
 
