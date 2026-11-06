@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { browser } from 'wxt/browser'
 import type { BatchTransport } from '@/lib/object_tracker/batch_api'
 import { parseBatchResponse } from '@/lib/object_tracker/batch_api'
+import { installCsrfTokenListener } from '@/lib/object_tracker/csrf_token'
 import {
   getTrackerLocalState,
   getTrackerSettings,
@@ -82,14 +83,16 @@ describe('object_tracker: контроллер', () => {
     // иконка была серым placeholder.
     await setTrackedObjects([{ id: '1', title: '1', addedAt: 0 }])
 
-    const transport = vi.fn(async () => [
-      ...response([commit('10')]),
-      ...parseBatchResponse(
-        JSON.stringify({
-          data: [{ data: { geoObject: { title: 'хутор Захаров', categoryId: 'ad' } } }],
-        }),
-      ),
-    ])
+    const transport = vi.fn(async (calls: { method: string }[]) => {
+      if (calls[0]?.method === 'editor/getGeoObject') {
+        return parseBatchResponse(
+          JSON.stringify({
+            data: [{ data: { geoObject: { title: 'хутор Захаров', categoryId: 'ad' } } }],
+          }),
+        )
+      }
+      return response([commit('10')])
+    })
     const controller = createController(transport)
     await controller.start()
 
@@ -132,7 +135,8 @@ describe('object_tracker: контроллер', () => {
     await controller.start()
 
     expect(document.getElementById(TRACKER_PANEL_ID)).not.toBeNull()
-    expect(transport).toHaveBeenCalledTimes(1)
+    // Один запрос истории + один на дотягивание категории.
+    expect(transport).toHaveBeenCalledTimes(2)
     controller.stop()
   })
 
@@ -294,5 +298,58 @@ describe('object_tracker: контроллер', () => {
     expect(submit?.classList.contains('nk-button_view_action')).toBe(true)
     expect(input?.classList.contains('nk-text-input_theme_islands')).toBe(true)
     controller.stop()
+  })
+})
+
+describe('object_tracker: появление CSRF-токена', () => {
+  beforeEach(async () => {
+    await resetBrowserMocks()
+    await browser.storage.sync.clear()
+    await browser.storage.local.clear()
+    buildSidebar()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  it('повторяет опрос, когда токен появляется после старта', async () => {
+    await setTrackerEnabled(true)
+    await setTrackedObjects([{ id: '1', title: '1', addedAt: 0 }])
+
+    let token = ''
+    const transport = vi.fn(async (calls: { method: string }[]) => {
+      if (calls[0]?.method === 'editor/getGeoObject') {
+        return parseBatchResponse(
+          JSON.stringify({ data: [{ data: { geoObject: { title: 'Хутор', categoryId: 'ad' } } }] }),
+        )
+      }
+      return response([commit('10')])
+    })
+
+    const stopListener = installCsrfTokenListener()
+    const controller = new ObjectTrackerController({ transport, getToken: () => token })
+    await controller.start()
+
+    // На старте токена нет — в сеть не идём.
+    expect(transport).not.toHaveBeenCalled()
+
+    token = 'token-1'
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data: { source: 'NMAP_CSRF_TOKEN', token: 'token-1' },
+        source: window,
+      }),
+    )
+    await vi.advanceTimersByTimeAsync(50)
+
+    expect(transport).toHaveBeenCalled()
+    const settings = await getTrackerSettings()
+    expect(settings.objects[0]?.categoryId).toBe('ad')
+
+    controller.stop()
+    stopListener()
   })
 })

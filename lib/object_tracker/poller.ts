@@ -80,20 +80,15 @@ export const pollTrackedObjects = async (
 
   /*
    * Объектам без категории нужен `editor/getGeoObject`: без него в карточке
-   * остаётся серый placeholder вместо иконки. Уточняем в том же batch-запросе.
+   * остаётся серый placeholder вместо иконки. Запрашиваем отдельным batch —
+   * смешивать с историей рискованно, а платим только пока категория неизвестна.
    */
-  const needsDetails = (object: TrackedObject): boolean => !object.categoryId
-  const calls = objects.flatMap((object) => {
-    const list = [getObjectCommitsCall(object.id)]
-    if (needsDetails(object)) {
-      list.push(getGeoObjectCall(object.id))
-    }
-    return list
-  })
+  const missingDetails = objects.filter((object) => !object.categoryId)
+  const commitsCalls = objects.map((object) => getObjectCommitsCall(object.id))
 
   let results: Awaited<ReturnType<BatchTransport>>
   try {
-    results = await deps.transport(calls, deps.token)
+    results = await deps.transport(commitsCalls, deps.token)
   } catch (error: unknown) {
     if (error instanceof CsrfTokenRejectedError) {
       return { ...emptyResult(), tokenRejected: true }
@@ -101,38 +96,48 @@ export const pollTrackedObjects = async (
     throw error
   }
 
+  const enrichedObjects: Record<string, { title: string | null; categoryId: string | null }> = {}
+
+  if (missingDetails.length > 0) {
+    try {
+      const detailsResults = await deps.transport(
+        missingDetails.map((object) => getGeoObjectCall(object.id)),
+        deps.token,
+      )
+
+      missingDetails.forEach((object, index) => {
+        const info = parseGeoObjectResult(detailsResults[index])
+        if (info.exists) {
+          enrichedObjects[object.id] = { title: info.title, categoryId: info.categoryId }
+        }
+      })
+    } catch (error: unknown) {
+      if (error instanceof CsrfTokenRejectedError) {
+        return { ...emptyResult(), tokenRejected: true }
+      }
+      // История уже получена: сбой уточнения не должен её терять.
+      console.warn('[nmap_uploader] object tracker details failed:', error)
+    }
+  }
+
   const commitsByObject: Record<string, ObjectCommit[]> = {}
   const errors: Record<string, string> = {}
-  const enrichedObjects: Record<string, { title: string | null; categoryId: string | null }> = {}
   const newCommits: ObjectCommit[] = []
 
-  let cursor = 0
-  for (const object of objects) {
-    const commitsResult = results[cursor]
-    cursor += 1
-
-    const detailsResult = needsDetails(object) ? results[cursor] : undefined
-    if (needsDetails(object)) {
-      cursor += 1
-
-      const info = parseGeoObjectResult(detailsResult)
-      if (info.exists) {
-        enrichedObjects[object.id] = { title: info.title, categoryId: info.categoryId }
-      }
+  objects.forEach((object, index) => {
+    const result = results[index]
+    if (result?.error) {
+      errors[object.id] = result.error.type
+      return
     }
 
-    if (commitsResult?.error) {
-      errors[object.id] = commitsResult.error.type
-      continue
-    }
-
-    const page = parseCommitsResult(commitsResult, object.id)
+    const page = parseCommitsResult(result, object.id)
     commitsByObject[object.id] = page.commits
 
     for (const commit of computeNewCommits(page.commits, readMarks[object.id])) {
       newCommits.push(commit)
     }
-  }
+  })
 
   newCommits.sort((a, b) => Date.parse(b.date) - Date.parse(a.date))
 

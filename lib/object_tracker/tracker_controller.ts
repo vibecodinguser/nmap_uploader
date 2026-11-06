@@ -8,7 +8,7 @@ import {
   parseCommitsResult,
   parseGeoObjectResult,
 } from './batch_api'
-import { getCsrfToken, hasCsrfToken, resetCsrfToken } from './csrf_token'
+import { getCsrfToken, hasCsrfToken, onCsrfTokenAvailable, resetCsrfToken } from './csrf_token'
 import { buildReadMarks, mergeCachedCommits, pollTrackedObjects } from './poller'
 import {
   clampIntervalMinutes,
@@ -88,6 +88,7 @@ export class ObjectTrackerController {
   private mode: TrackerViewMode = 'feed'
   private timer: ReturnType<typeof setInterval> | null = null
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null
+  private disconnectToken: (() => void) | null = null
   private started = false
   private storageListener: ((changes: Record<string, unknown>, area: string) => void) | null = null
 
@@ -109,6 +110,7 @@ export class ObjectTrackerController {
     this.started = true
 
     this.attachStorageListener()
+    this.attachTokenListener()
     await this.reloadSettings()
 
     this.scheduleTimer()
@@ -119,6 +121,7 @@ export class ObjectTrackerController {
     this.started = false
     this.clearTimer()
     this.clearHeartbeat()
+    this.detachTokenListener()
     this.detachStorageListener()
     this.sidebar.unmount()
     void setTrackerBadge(0)
@@ -347,9 +350,9 @@ export class ObjectTrackerController {
   private async handleTabOpened(): Promise<void> {
     await this.markAllRead()
 
-    if (Object.keys(this.commitsByObject).length === 0) {
-      await this.refresh()
-    }
+    // Обновляем при каждом открытии: так дотягиваются категории для иконок
+    // и сразу видны свежие правки, даже если кэш уже есть.
+    await this.refresh()
   }
 
   private mount(): void {
@@ -401,6 +404,32 @@ export class ObjectTrackerController {
       clearInterval(this.heartbeatTimer)
       this.heartbeatTimer = null
     }
+  }
+
+  /**
+   * Опрос возможен только с CSRF-токеном, а он появляется после первого
+   * запроса самого редактора. Без подписки первый опрос на старте уходил
+   * без токена, и следующий случался только через период опроса.
+   */
+  private attachTokenListener(): void {
+    if (this.disconnectToken) {
+      return
+    }
+
+    this.disconnectToken = onCsrfTokenAvailable(() => {
+      if (!this.settingsEnabled || !this.started) {
+        return
+      }
+      void this.refresh()
+    })
+  }
+
+  private detachTokenListener(): void {
+    if (!this.disconnectToken) {
+      return
+    }
+    this.disconnectToken()
+    this.disconnectToken = null
   }
 
   private attachStorageListener(): void {

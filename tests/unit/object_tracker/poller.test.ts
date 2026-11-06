@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import { CsrfTokenRejectedError, parseBatchResponse } from '@/lib/object_tracker/batch_api'
+import {
+  type BatchCall,
+  type BatchTransport,
+  CsrfTokenRejectedError,
+  parseBatchResponse,
+} from '@/lib/object_tracker/batch_api'
 import {
   buildReadMarks,
   computeNewCommits,
@@ -173,43 +178,57 @@ describe('object_tracker: mergeCachedCommits', () => {
 describe('object_tracker: дотягивание данных объекта', () => {
   const withoutCategory: TrackedObject[] = [{ id: '7', title: '', addedAt: 0 }]
 
-  it('запрашивает getGeoObject для объектов без категории', async () => {
-    const transport = vi.fn(async () => [
-      ...parseBatchResponse(okResponse([[]])),
-      ...parseBatchResponse(
-        JSON.stringify({
-          data: [{ data: { geoObject: { title: 'Хутор', categoryId: 'ad_jc' } } }],
-        }),
-      ),
-    ])
+  const routedTransport = (detailsPayload: string): BatchTransport =>
+    vi.fn(async (calls: BatchCall[]) => {
+      if (calls[0]?.method === 'editor/getGeoObject') {
+        return parseBatchResponse(detailsPayload)
+      }
+      return parseBatchResponse(okResponse([[]]))
+    }) as unknown as BatchTransport
+
+  it('запрашивает getGeoObject отдельным batch, если категория неизвестна', async () => {
+    const transport = routedTransport(
+      JSON.stringify({ data: [{ data: { geoObject: { title: 'Хутор', categoryId: 'ad_jc' } } }] }),
+    )
 
     const result = await pollTrackedObjects({ transport, token: 't' }, withoutCategory, {})
 
-    expect(transport).toHaveBeenCalledTimes(1)
-    expect(transport.mock.calls[0]?.[0]).toHaveLength(2)
-    expect(transport.mock.calls[0]?.[0]?.[1]?.method).toBe('editor/getGeoObject')
+    const calls = (transport as unknown as { mock: { calls: [BatchCall[]][] } }).mock.calls
+    expect(calls).toHaveLength(2)
+    expect(calls[0]?.[0]?.[0]?.method).toBe('editor/getGeoObjectCommits')
+    expect(calls[1]?.[0]?.[0]?.method).toBe('editor/getGeoObject')
     expect(result.enrichedObjects['7']).toEqual({ title: 'Хутор', categoryId: 'ad_jc' })
   })
 
   it('не запрашивает данные, если категория уже известна', async () => {
-    const transport = vi.fn(async () => parseBatchResponse(okResponse([[]])))
+    const transport = vi.fn(async () => parseBatchResponse(okResponse([[], []])))
 
     await pollTrackedObjects({ transport, token: 't' }, objects, {})
 
-    expect(transport.mock.calls[0]?.[0]).toHaveLength(2)
-    expect(
-      transport.mock.calls[0]?.[0]?.every((call) => call.method === 'editor/getGeoObjectCommits'),
-    ).toBe(true)
+    expect(transport).toHaveBeenCalledTimes(1)
   })
 
   it('не добавляет объект в enrichment, если он не найден', async () => {
-    const transport = vi.fn(async () => [
-      ...parseBatchResponse(okResponse([[]])),
-      ...parseBatchResponse(JSON.stringify({ data: [{ error: { type: 'ERR_MISSING_OBJECT' } }] })),
-    ])
+    const transport = routedTransport(
+      JSON.stringify({ data: [{ error: { type: 'ERR_MISSING_OBJECT' } }] }),
+    )
 
     const result = await pollTrackedObjects({ transport, token: 't' }, withoutCategory, {})
 
     expect(result.enrichedObjects).toEqual({})
+  })
+
+  it('не теряет историю, если уточнение объекта упало', async () => {
+    const transport = vi.fn(async (calls: BatchCall[]) => {
+      if (calls[0]?.method === 'editor/getGeoObject') {
+        throw new Error('boom')
+      }
+      return parseBatchResponse(okResponse([[commit('5', '2026-11-01')]]))
+    }) as unknown as BatchTransport
+
+    const result = await pollTrackedObjects({ transport, token: 't' }, withoutCategory, {})
+
+    expect(result.enrichedObjects).toEqual({})
+    expect(result.commitsByObject['7']).toHaveLength(1)
   })
 })
