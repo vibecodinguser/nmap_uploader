@@ -16,9 +16,11 @@ describe('object_tracker: стили панели', () => {
   })
 
   it('содержит переопределения для тёмной темы редактора', () => {
-    expect(TRACKER_STYLES).toContain('.nk-page_color-scheme_dark .nmap-ot-commit__object')
-    expect(TRACKER_STYLES).toContain('.nk-page_color-scheme_dark .nmap-ot-status-pending')
+    expect(TRACKER_STYLES).toContain(
+      '.nk-page_color-scheme_dark .nmap-ot-commit .nk-event-view__title a',
+    )
     expect(TRACKER_STYLES).toContain('.nk-page_color-scheme_dark .nmap-ot-warning')
+    expect(TRACKER_STYLES).toContain('.nk-page_color-scheme_dark .nmap-ot-object')
   })
 
   it('учитывает системную тёмную тему без явного класса', () => {

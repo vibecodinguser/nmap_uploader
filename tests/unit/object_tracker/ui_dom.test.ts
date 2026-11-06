@@ -10,6 +10,7 @@ import {
   flattenCommits,
   formatCommitDate,
   renderPanel,
+  resolveCategoryIconClass,
   syncModeSelection,
   type TrackerViewModel,
 } from '@/lib/object_tracker/ui/dom'
@@ -63,30 +64,87 @@ describe('object_tracker: форматирование', () => {
 })
 
 describe('object_tracker: строки', () => {
-  it('создаёт строку коммита со ссылкой и статусом', () => {
-    const row = createCommitRow(commit(), 'хутор Захаров', true)
+  const object = tracked[0]
+  if (!object) throw new Error('нет тестового объекта')
 
-    expect(row.classList.contains('nmap-ot-commit_new')).toBe(true)
-    expect(row.querySelector('.nmap-ot-status')?.textContent).toBe('На рассмотрении')
-    expect(row.querySelector<HTMLAnchorElement>('.nmap-ot-commit__object')?.href).toContain(
-      '/objects/4465652155/history/commits',
+  it('строит карточку в разметке нативной ленты', () => {
+    const row = createCommitRow(commit(), object, true, Date.parse('2026-11-05T12:00:00+03:00'))
+
+    // Нативные классы карточки события.
+    expect(row.classList.contains('nk-list-item-view')).toBe(true)
+    expect(row.querySelector('.nk-event-view')).not.toBeNull()
+    expect(row.querySelector('.nk-event-view__event.nk-grid')).not.toBeNull()
+    expect(row.querySelector('.nk-event-view__icon')).not.toBeNull()
+    expect(row.querySelector('.nk-event-view__title')).not.toBeNull()
+    expect(row.querySelector('.nk-event-view__user')).not.toBeNull()
+    expect(row.querySelector('.nk-commit-edit-notes-view__edit-note')).not.toBeNull()
+
+    expect(row.querySelector('.nk-geoobject-preview-opener-view')?.getAttribute('data-id')).toBe(
+      '4465652155',
     )
-    expect(row.textContent).toContain('Объект изменён')
-    expect(row.textContent).toContain('изменена геометрия')
   })
 
-  it('не помечает прочитанный коммит', () => {
-    const row = createCommitRow(commit(), 'Объект', false)
+  it('показывает статус иконкой, а не чипом', () => {
+    const row = createCommitRow(commit(), object, false)
 
-    expect(row.classList.contains('nmap-ot-commit_new')).toBe(false)
-    expect(row.querySelector('.nmap-ot-new-badge')).toBeNull()
+    expect(row.querySelector('.nk-event-view__commit-state')?.className).toContain(
+      'nk-icon_id_commit-pending',
+    )
+    expect(row.querySelector('.nmap-ot-status')).toBeNull()
+  })
+
+  it('показывает относительную дату и абсолютную в title', () => {
+    const row = createCommitRow(commit(), object, false, Date.parse('2026-11-05T12:00:11+03:00'))
+    const date = row.querySelector('.nk-event-view__date')
+
+    expect(date?.textContent).toBe('38 минут назад')
+    expect(date?.getAttribute('title')).toContain('05.11.2026')
+  })
+
+  it('помечает новое событие точкой', () => {
+    const fresh = createCommitRow(commit(), object, true)
+    const read = createCommitRow(commit(), object, false)
+
+    expect(fresh.querySelector('.nmap-ot-new-dot')).not.toBeNull()
+    expect(read.querySelector('.nmap-ot-new-dot')).toBeNull()
+    expect(fresh.classList.contains('nmap-ot-commit_new')).toBe(true)
+  })
+
+  it('рисует иконку категории объекта', () => {
+    const row = createCommitRow(commit(), { ...object, categoryId: 'ad_jc' }, false)
+
+    expect(row.querySelector('.nk-geoobject-icon')?.className).toContain(
+      'nk-geoobject-icon_id_group-ad',
+    )
+  })
+  it('показывает иконку модератора у автора', () => {
+    const row = createCommitRow(
+      commit({ author: { publicId: 'u', displayName: 'u', moderationStatus: 'moderator' } }),
+      object,
+      false,
+    )
+
+    expect(row.querySelector('.nk-user-name-view__name')?.textContent).toBe('u')
+    expect(row.querySelector('.nk-user-name-view__icon')).not.toBeNull()
+  })
+
+  it('ведёт на историю объекта по клику на карточку', () => {
+    const row = createCommitRow(commit(), object, false)
+    const assign = vi.fn()
+    vi.spyOn(window, 'location', 'get').mockReturnValue({
+      ...window.location,
+      assign,
+    } as unknown as Location)
+
+    row.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+    expect(assign).toHaveBeenCalledWith(buildObjectHistoryUrl('4465652155'))
+    vi.restoreAllMocks()
   })
 
   it('создаёт строку объекта с кнопкой удаления', () => {
     const onRemove = vi.fn()
-    const target = tracked[0]
-    if (!target) throw new Error('нет тестового объекта')
-    const row = createObjectRow(target, [commit()], onRemove)
+    const row = createObjectRow(object, [commit()], onRemove)
 
     expect(row.textContent).toContain('хутор Захаров')
     row.querySelector<HTMLButtonElement>('.nmap-ot-object__remove')?.click()
@@ -258,5 +316,32 @@ describe('object_tracker: renderPanel', () => {
     form?.dispatchEvent(new Event('submit', { cancelable: true }))
 
     expect(callbacks.onAddObject).toHaveBeenCalledWith('12345')
+  })
+})
+
+describe('object_tracker: иконка категории', () => {
+  it('подбирает группу по префиксу категории', () => {
+    expect(resolveCategoryIconClass('ad_jc')).toContain('nk-geoobject-icon_id_group-ad')
+    expect(resolveCategoryIconClass('ad_el')).toContain('nk-geoobject-icon_id_group-ad')
+    expect(resolveCategoryIconClass('rd_el')).toContain('nk-geoobject-icon_id_group-rd')
+    expect(resolveCategoryIconClass('hydro_ln')).toContain('nk-geoobject-icon_id_group-hydro')
+    expect(resolveCategoryIconClass('bld')).toContain('nk-geoobject-icon_id_group-bld')
+  })
+
+  it('предпочитает самую длинную группу', () => {
+    expect(resolveCategoryIconClass('urban_roadnet')).toContain(
+      'nk-geoobject-icon_id_group-urban-roadnet',
+    )
+    expect(resolveCategoryIconClass('urban_areal')).toContain('nk-geoobject-icon_id_group-urban')
+  })
+
+  it('не путает ad и addr', () => {
+    expect(resolveCategoryIconClass('addr')).toContain('nk-geoobject-icon_id_group-addr')
+  })
+
+  it('показывает placeholder без категории', () => {
+    expect(resolveCategoryIconClass(undefined)).toContain('nk-geoobject-icon_id_placeholder')
+    expect(resolveCategoryIconClass('')).toContain('nk-geoobject-icon_id_placeholder')
+    expect(resolveCategoryIconClass('неизвестная')).toContain('nk-geoobject-icon_id_placeholder')
   })
 })

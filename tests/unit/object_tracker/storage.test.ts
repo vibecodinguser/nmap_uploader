@@ -90,6 +90,13 @@ describe('object_tracker: storage', () => {
     expect(settings.objects[0]?.title).toBe('Первый')
   })
 
+  it('сохраняет категорию объекта для нативной иконки', async () => {
+    await setTrackedObjects([{ id: '1', title: 'Хутор', categoryId: 'ad_jc', addedAt: 1 }])
+
+    const settings = await getTrackerSettings()
+    expect(settings.objects[0]?.categoryId).toBe('ad_jc')
+  })
+
   it('хранит отметки и кэш отдельно от синхронизируемых настроек', async () => {
     await setReadMarks({ '1': '100' })
     await setCachedCommits({ '1': [] })

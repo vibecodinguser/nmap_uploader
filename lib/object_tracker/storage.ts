@@ -41,9 +41,12 @@ export const sanitizeTrackedObjects = (objects: readonly TrackedObject[]): Track
       continue
     }
     seen.add(id)
+    const categoryId =
+      typeof object.categoryId === 'string' && object.categoryId ? object.categoryId : undefined
     result.push({
       id,
       title: typeof object.title === 'string' ? object.title : '',
+      categoryId,
       addedAt: typeof object.addedAt === 'number' ? object.addedAt : Date.now(),
     })
     if (result.length >= MAX_TRACKED_OBJECTS) {

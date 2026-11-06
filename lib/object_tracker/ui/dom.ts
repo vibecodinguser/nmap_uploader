@@ -1,5 +1,6 @@
 import { describeAction, describeApproveStatus } from '../commit_normalizer'
 import type { ObjectCommit, TrackedObject } from '../types'
+import { formatRelativeDate } from './relative_date'
 
 /**
  * Нативная кнопка редактора.
@@ -65,70 +66,186 @@ export const flattenCommits = (commitsByObject: Record<string, ObjectCommit[]>):
     .flat()
     .sort((a, b) => Date.parse(b.date) - Date.parse(a.date))
 
-const STATUS_CLASS: Record<string, string> = {
-  published: 'nmap-ot-status-published',
-  approved: 'nmap-ot-status-approved',
-  pending: 'nmap-ot-status-pending',
-  rejected: 'nmap-ot-status-rejected',
+/**
+ * Иконка статуса коммита — та же, что в нативной ленте.
+ * В карточке она рисуется поверх иконки категории.
+ */
+const STATUS_ICON: Record<string, string> = {
+  pending: 'nk-icon_id_commit-pending',
+  published: 'nk-icon_id_commit-published',
+  approved: 'nk-icon_id_commit-approved',
+  green: 'nk-icon_id_commit-approved',
+  rejected: 'nk-icon_id_commit-rejected',
+  red: 'nk-icon_id_commit-rejected',
 }
 
-/** Создаёт строку коммита. */
+/** Групповые иконки категорий, которые есть в CSS редактора. */
+const CATEGORY_GROUPS = [
+  'group-urban-roadnet',
+  'group-urban',
+  'group-ad',
+  'group-addr',
+  'group-bld',
+  'group-hydro',
+  'group-org',
+  'group-rd',
+  'group-relief',
+  'group-service',
+  'group-transport',
+  'group-vegetation',
+] as const
+
+/**
+ * Подбирает групповую иконку по id категории.
+ *
+ * Категории вида `ad_jc`, `rd_el`, `urban_roadnet` — берём первый сегмент
+ * и ищем самую длинную подходящую группу (`urban_roadnet` важнее `urban`).
+ */
+export const resolveCategoryIconClass = (categoryId?: string): string => {
+  const normalized = (categoryId ?? '').toLowerCase().replaceAll('_', '-')
+  if (!normalized) {
+    return 'nk-geoobject-icon nk-geoobject-icon_id_placeholder'
+  }
+
+  const group = CATEGORY_GROUPS.find((candidate) => {
+    const prefix = candidate.replace(/^group-/, '')
+    return normalized === prefix || normalized.startsWith(`${prefix}-`)
+  })
+  return `nk-geoobject-icon nk-geoobject-icon_id_${group ?? 'placeholder'}`
+}
+
+/** Подпись изменения с заглавной буквы, как в нативной ленте. */
+const capitalize = (value: string): string =>
+  value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : value
+
+/** Что показать в блоке edit-notes. */
+export const describeCommitNote = (commit: ObjectCommit): string => {
+  if (commit.summary) {
+    return capitalize(commit.summary)
+  }
+  return describeAction(commit.action)
+}
+
+/** Создаёт строку коммита в разметке нативной ленты «Мои правки». */
 export const createCommitRow = (
   commit: ObjectCommit,
-  objectTitle: string,
+  object: TrackedObject,
   isNew: boolean,
+  now: number = Date.now(),
 ): HTMLElement => {
+  const objectTitle = describeObject(object)
+  const historyUrl = buildObjectHistoryUrl(commit.objectId)
+
   const row = document.createElement('div')
-  row.className = 'nmap-ot-commit'
+  row.className = 'nmap-ot-commit nk-list-item-view nk-list-item-view_interactive'
   if (isNew) {
     row.classList.add('nmap-ot-commit_new')
   }
 
-  const head = document.createElement('div')
-  head.className = 'nmap-ot-commit__head'
-
-  const date = document.createElement('span')
-  date.className = 'nmap-ot-commit__date'
-  date.textContent = formatCommitDate(commit.date)
-  head.appendChild(date)
-
-  const status = document.createElement('span')
-  status.className = `nmap-ot-status ${STATUS_CLASS[commit.approveStatus] ?? 'nmap-ot-status-other'}`
-  status.textContent = describeApproveStatus(commit.approveStatus)
-  head.appendChild(status)
-
   if (isNew) {
-    const badge = document.createElement('span')
-    badge.className = 'nmap-ot-new-badge'
-    badge.textContent = 'новое'
-    head.appendChild(badge)
+    const dot = document.createElement('span')
+    dot.className = 'nmap-ot-new-dot'
+    dot.setAttribute('title', 'Новое событие')
+    row.appendChild(dot)
   }
 
-  row.appendChild(head)
+  const eventView = document.createElement('div')
+  eventView.className = 'nk-event-view'
+  row.appendChild(eventView)
 
-  const title = document.createElement('a')
-  title.className = 'nmap-ot-commit__object'
-  title.href = buildObjectHistoryUrl(commit.objectId)
-  title.textContent = objectTitle
-  row.appendChild(title)
+  const grid = document.createElement('div')
+  grid.className = 'nk-event-view__event nk-section nk-section_level_2 nk-grid'
+  eventView.appendChild(grid)
 
-  const action = document.createElement('div')
-  action.className = 'nmap-ot-commit__action'
-  action.textContent = describeAction(commit.action)
-  row.appendChild(action)
+  const iconColumn = document.createElement('div')
+  iconColumn.className = 'nk-event-view__icon nk-grid__col nk-grid__col_span_2'
 
-  const details = [
-    commit.summary,
-    commit.author?.displayName ? `— ${commit.author.displayName}` : '',
-  ]
-    .filter(Boolean)
-    .join(' ')
-  if (details) {
-    const detail = document.createElement('div')
-    detail.className = 'nmap-ot-commit__details'
-    detail.textContent = details
-    row.appendChild(detail)
+  const categoryIcon = document.createElement('span')
+  categoryIcon.className = resolveCategoryIconClass(object.categoryId)
+  categoryIcon.setAttribute('aria-hidden', 'true')
+  iconColumn.appendChild(categoryIcon)
+
+  const statusIcon = document.createElement('span')
+  const statusIconId = STATUS_ICON[commit.approveStatus] ?? STATUS_ICON.pending
+  statusIcon.className = `nk-icon ${statusIconId} nk-icon_align_auto nk-commit-state-view nk-event-view__commit-state`
+  statusIcon.setAttribute('title', describeApproveStatus(commit.approveStatus))
+  iconColumn.appendChild(statusIcon)
+
+  grid.appendChild(iconColumn)
+
+  const content = document.createElement('div')
+  content.className = 'nk-grid__col nk-grid__col_span_10 nk-grid__col_stick'
+
+  const dateAndAction = document.createElement('div')
+  dateAndAction.className = 'nk-event-view__date-and-action'
+  const date = document.createElement('span')
+  date.className = 'nk-date-time nk-date-time_mode_relative nk-event-view__date'
+  date.textContent = formatRelativeDate(commit.date, now)
+  date.title = formatCommitDate(commit.date)
+  dateAndAction.appendChild(date)
+  content.appendChild(dateAndAction)
+
+  const titleRow = document.createElement('div')
+  titleRow.className = 'nk-event-view__title'
+  const titleLink = document.createElement('a')
+  titleLink.className = 'nk-link nk-link_theme_islands nk-link_view_text'
+  titleLink.href = historyUrl
+  const titleText = document.createElement('span')
+  titleText.className = 'nk-geoobject-preview-opener-view'
+  titleText.dataset.id = commit.objectId
+  titleText.textContent = objectTitle
+  titleLink.appendChild(titleText)
+  titleRow.appendChild(titleLink)
+  content.appendChild(titleRow)
+
+  if (commit.author) {
+    const userRow = document.createElement('div')
+    userRow.className = 'nk-event-view__user'
+
+    const userLink = document.createElement('a')
+    userLink.className = 'nk-link nk-link_theme_islands nk-user-link-view'
+
+    const userName = document.createElement('span')
+    userName.className = 'nk-user-name-view nk-user-name-view_colored'
+
+    const nameText = document.createElement('span')
+    nameText.className = 'nk-user-name-view__name'
+    nameText.textContent = commit.author.displayName
+    userName.appendChild(nameText)
+
+    const status = commit.author.moderationStatus
+    if (status && status !== 'none') {
+      const moderatorIcon = document.createElement('span')
+      moderatorIcon.className =
+        'nk-icon nk-icon_id_moderator nk-icon_align_auto nk-user-name-view__icon'
+      moderatorIcon.setAttribute('title', status)
+      userName.appendChild(moderatorIcon)
+    }
+
+    userLink.appendChild(userName)
+    userRow.appendChild(userLink)
+    content.appendChild(userRow)
   }
+
+  const noteText = describeCommitNote(commit)
+  if (noteText) {
+    const notes = document.createElement('div')
+    notes.className = 'nk-commit-edit-notes-view'
+    const note = document.createElement('div')
+    note.className = 'nk-commit-edit-notes-view__edit-note'
+    note.textContent = noteText
+    notes.appendChild(note)
+    content.appendChild(notes)
+  }
+
+  grid.appendChild(content)
+
+  // Кликабельна вся карточка: ведём на историю объекта.
+  row.addEventListener('click', (event) => {
+    event.preventDefault()
+    event.stopPropagation()
+    window.location.assign(historyUrl)
+  })
 
   return row
 }
@@ -349,6 +466,10 @@ export const renderPanel = (
 
   const body = document.createElement('div')
   body.className = 'nmap-ot-body'
+  const isFeed = view.objects.length > 0 && view.mode === 'feed'
+  if (isFeed) {
+    body.classList.add('nmap-ot-body_feed')
+  }
 
   if (view.objects.length === 0) {
     body.appendChild(createEmptyState('Добавьте id объекта, чтобы следить за его историей'))
@@ -357,15 +478,14 @@ export const renderPanel = (
     if (commits.length === 0) {
       body.appendChild(createEmptyState('Правок пока нет'))
     } else {
-      const titles = new Map(view.objects.map((object) => [object.id, describeObject(object)]))
+      const objectsById = new Map(view.objects.map((object) => [object.id, object]))
       for (const commit of commits) {
-        body.appendChild(
-          createCommitRow(
-            commit,
-            titles.get(commit.objectId) ?? `Объект ${commit.objectId}`,
-            view.newCommitIds.has(commit.id),
-          ),
-        )
+        const object = objectsById.get(commit.objectId) ?? {
+          id: commit.objectId,
+          title: '',
+          addedAt: 0,
+        }
+        body.appendChild(createCommitRow(commit, object, view.newCommitIds.has(commit.id)))
       }
     }
   } else {

@@ -6,6 +6,8 @@ export interface TrackedObject {
   id: string
   /** Название на момент добавления: для шаблонных title показываем id. */
   title: string
+  /** Категория объекта: нужна для нативной иконки в карточке события. */
+  categoryId?: string
   /** Когда объект добавлен (мс). */
   addedAt: number
 }
@@ -29,6 +31,8 @@ export interface ObjectCommit {
 export interface CommitAuthor {
   publicId: string
   displayName: string
+  /** `moderator`, `expert`, … — в нативной ленте показывается иконкой у имени. */
+  moderationStatus?: string
 }
 
 export type CommitAction =

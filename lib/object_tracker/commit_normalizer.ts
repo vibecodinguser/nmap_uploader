@@ -10,7 +10,7 @@ interface RawCommit {
   approveStatus?: unknown
   state?: unknown
   editNotes?: unknown
-  user?: { publicId?: unknown; displayName?: unknown } | null
+  user?: { publicId?: unknown; displayName?: unknown; moderationStatus?: unknown } | null
 }
 
 const KNOWN_ACTIONS: readonly CommitAction[] = [
@@ -120,7 +120,12 @@ const normalizeAuthor = (user: RawCommit['user']): CommitAuthor | null => {
   if (!publicId) {
     return null
   }
-  return { publicId, displayName }
+  const rawStatus = (user as { moderationStatus?: unknown }).moderationStatus
+  return {
+    publicId,
+    displayName,
+    moderationStatus: typeof rawStatus === 'string' ? rawStatus : undefined,
+  }
 }
 
 /** Проверяет, что значение похоже на коммит истории объекта. */

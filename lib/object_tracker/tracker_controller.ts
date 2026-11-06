@@ -231,7 +231,10 @@ export class ObjectTrackerController {
       const page = parseCommitsResult(results[1], id)
       const title = info.title ?? id
 
-      this.objects = [...this.objects, { id, title, addedAt: Date.now() }]
+      this.objects = [
+        ...this.objects,
+        { id, title, categoryId: info.categoryId ?? undefined, addedAt: Date.now() },
+      ]
       await setTrackedObjects(this.objects)
 
       // История до добавления не считается «новой».

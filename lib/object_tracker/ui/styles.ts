@@ -188,83 +188,59 @@ export const TRACKER_STYLES = `
       flex: 1 1 auto;
       min-height: 0;
     }
+    /*
+     * Лента событий как в редакторе: карточки идут от края до края панели,
+     * без зазоров и внешних отступов — их задаёт сам nk-event-view__event.
+     */
+    .nmap-ot-body_feed {
+      margin: 0 -12px;
+      gap: 0;
+    }
+    .nmap-ot-body_feed .nmap-ot-commit .nk-event-view__event {
+      padding-left: 16px;
+      padding-right: 16px;
+    }
     .nmap-ot-empty {
       padding: 8px 0 12px;
       color: #999999;
     }
 
-    .nmap-ot-commit,
-    .nmap-ot-object {
-      border: 1px solid var(--border-color, #e6e6e6);
-      border-radius: 4px;
-      padding: 8px 10px;
-      background: transparent;
+    /*
+     * Карточка события повторяет нативную ленту «Мои правки»: разметку и вид
+     * задают классы nk-list-item-view / nk-event-view, здесь только то,
+     * чего у них нет.
+     */
+    .nmap-ot-commit {
+      position: relative;
+      cursor: pointer;
     }
-    .nmap-ot-commit_new {
-      border-color: #ffdb4d;
-      background: rgba(255, 219, 77, 0.12);
-    }
-    .nmap-ot-commit__head {
+    .nmap-ot-commit .nk-event-view__event {
       display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-wrap: wrap;
-      margin-bottom: 4px;
     }
-    .nmap-ot-commit__date {
-      color: #999999;
-      font-size: 12px;
-    }
-    .nmap-ot-commit__object {
+    .nmap-ot-commit .nk-event-view__title a {
+      display: block;
       color: #0055cc;
       text-decoration: none;
-      font-weight: 500;
-      word-break: break-word;
     }
-    .nmap-ot-commit__object:hover {
+    .nmap-ot-commit .nk-event-view__title a:hover {
       text-decoration: underline;
     }
-    .nmap-ot-commit__action {
-      margin-top: 2px;
-    }
-    .nmap-ot-commit__details {
-      color: #999999;
-      font-size: 12px;
-      margin-top: 2px;
-      word-break: break-word;
+    .nmap-ot-commit .nk-geoobject-preview-opener-view {
+      cursor: pointer;
     }
 
-    .nmap-ot-status,
-    .nmap-ot-new-badge {
-      display: inline-block;
-      align-self: center;
-      max-height: 18px;
-      padding: 0 6px;
-      border-radius: 9px;
-      font-size: 11px;
-      line-height: 18px;
-      white-space: nowrap;
-    }
-    .nmap-ot-status {
-      background: rgba(0, 0, 0, 0.07);
-      color: inherit;
-    }
-    .nmap-ot-status-published,
-    .nmap-ot-status-approved {
-      background: #e5f5df;
-      color: #2c6b1c;
-    }
-    .nmap-ot-status-pending {
-      background: #fff3cd;
-      color: #7a5b00;
-    }
-    .nmap-ot-status-rejected {
-      background: #fde2e2;
-      color: #9b1c1c;
-    }
-    .nmap-ot-new-badge {
+    /* Точка «новое» слева от карточки, вместо чипа в заголовке. */
+    .nmap-ot-new-dot {
+      position: absolute;
+      left: 4px;
+      top: 18px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
       background: #ffdb4d;
-      color: #000000;
+    }
+    .nmap-ot-commit_new {
+      background: rgba(255, 219, 77, 0.1);
     }
 
     .nmap-ot-object {
@@ -272,6 +248,9 @@ export const TRACKER_STYLES = `
       align-items: flex-start;
       justify-content: space-between;
       gap: 12px;
+      border: 1px solid var(--border-color, #e6e6e6);
+      border-radius: 4px;
+      padding: 8px 10px;
     }
     .nmap-ot-object__info {
       min-width: 0;
@@ -324,22 +303,18 @@ export const TRACKER_STYLES = `
 
     /* Тёмная тема: редактор помечает её классом на .nk-page. */
     .nk-page_color-scheme_dark .nmap-ot-empty,
-    .nk-page_color-scheme_dark .nmap-ot-commit__date,
-    .nk-page_color-scheme_dark .nmap-ot-commit__details,
     .nk-page_color-scheme_dark .nmap-ot-object__meta,
     .nk-page_color-scheme_dark .nmap-ot-add__label {
       color: #999999;
     }
-    .nk-page_color-scheme_dark .nmap-ot-commit__object,
-    .nk-page_color-scheme_dark .nmap-ot-object__title {
+    .nk-page_color-scheme_dark .nmap-ot-object__title,
+    .nk-page_color-scheme_dark .nmap-ot-commit .nk-event-view__title a {
       color: #8ab4ff;
     }
-    .nk-page_color-scheme_dark .nmap-ot-commit,
     .nk-page_color-scheme_dark .nmap-ot-object {
       border-color: rgba(255, 255, 255, 0.18);
     }
     .nk-page_color-scheme_dark .nmap-ot-commit_new {
-      border-color: #ffdb4d;
       background: rgba(255, 219, 77, 0.1);
     }
     .nk-page_color-scheme_dark .nmap-ot-warning {
@@ -349,22 +324,6 @@ export const TRACKER_STYLES = `
     .nk-page_color-scheme_dark .nmap-ot-add__error,
     .nk-page_color-scheme_dark .nmap-ot-object__error {
       color: #ff8080;
-    }
-    .nk-page_color-scheme_dark .nmap-ot-status {
-      background: rgba(255, 255, 255, 0.14);
-    }
-    .nk-page_color-scheme_dark .nmap-ot-status-published,
-    .nk-page_color-scheme_dark .nmap-ot-status-approved {
-      background: rgba(143, 203, 105, 0.2);
-      color: #a8e08a;
-    }
-    .nk-page_color-scheme_dark .nmap-ot-status-pending {
-      background: rgba(252, 204, 74, 0.2);
-      color: #ffd76e;
-    }
-    .nk-page_color-scheme_dark .nmap-ot-status-rejected {
-      background: rgba(255, 100, 100, 0.2);
-      color: #ff9b9b;
     }
     .nk-page_color-scheme_dark .nmap-ot-modes {
       border-bottom-color: rgba(255, 255, 255, 0.18);
