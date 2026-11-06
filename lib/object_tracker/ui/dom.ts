@@ -260,6 +260,32 @@ const createHeader = (view: TrackerViewModel, callbacks: PanelCallbacks): HTMLEl
   return header
 }
 
+export const MODES_SELECTION_CLASS = 'nmap-ot-modes__selection'
+
+/**
+ * Ставит полосу выбранного режима под нужную вкладку.
+ *
+ * Работает по той же схеме, что нативный индикатор `.nk-tabs-bar__selection`:
+ * элемент шириной 1px сдвигается на `left + (width - 1) / 2` и растягивается
+ * через `scaleX`, потому что `transform-origin` по умолчанию — центр.
+ */
+export const syncModeSelection = (container: HTMLElement): void => {
+  const switcher = container.querySelector<HTMLElement>('.nmap-ot-modes')
+  const selection = switcher?.querySelector<HTMLElement>(`.${MODES_SELECTION_CLASS}`)
+  const active = switcher?.querySelector<HTMLElement>('.nmap-ot-mode_active')
+  if (!switcher || !selection || !active) {
+    return
+  }
+
+  const width = active.offsetWidth
+  if (width <= 0) {
+    return
+  }
+
+  const offset = active.offsetLeft + (width - 1) / 2
+  selection.style.transform = `translateX(${offset}px) scaleX(${width})`
+}
+
 const createModeSwitch = (view: TrackerViewModel, callbacks: PanelCallbacks): HTMLElement => {
   const switcher = document.createElement('div')
   switcher.className = 'nmap-ot-modes'
@@ -271,17 +297,24 @@ const createModeSwitch = (view: TrackerViewModel, callbacks: PanelCallbacks): HT
   ]
 
   for (const mode of modes) {
-    const button = createNativeButton('nmap-ot-mode', mode.label)
-    button.classList.add('nk-button_view_plain')
+    // Классы нативных вкладок: цвет, отступы и поведение берутся у редактора.
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.className = 'nk-tabs-bar__tab nmap-ot-mode'
+    button.textContent = mode.label
     button.setAttribute('role', 'tab')
     const isActive = view.mode === mode.id
     button.setAttribute('aria-selected', isActive ? 'true' : 'false')
     if (isActive) {
-      button.classList.add('nmap-ot-mode_active')
+      button.classList.add('nk-tabs-bar__tab_selected', 'nmap-ot-mode_active')
     }
     button.addEventListener('click', () => callbacks.onModeChange(mode.id))
     switcher.appendChild(button)
   }
+
+  const selection = document.createElement('div')
+  selection.className = `nk-tabs-bar__selection nk-tabs-bar__selection_inited ${MODES_SELECTION_CLASS}`
+  switcher.appendChild(selection)
 
   return switcher
 }
@@ -303,7 +336,8 @@ export const renderPanel = (
   container.replaceChildren()
 
   container.appendChild(createHeader(view, callbacks))
-  container.appendChild(createModeSwitch(view, callbacks))
+  const modeSwitch = createModeSwitch(view, callbacks)
+  container.appendChild(modeSwitch)
 
   const body = document.createElement('div')
   body.className = 'nmap-ot-body'
@@ -346,4 +380,10 @@ export const renderPanel = (
 
   container.appendChild(body)
   container.scrollTop = scrollTop
+
+  // Полосу режима считаем после вставки в DOM: до этого offsetWidth равен нулю.
+  syncModeSelection(container)
+  if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+    window.requestAnimationFrame(() => syncModeSelection(container))
+  }
 }

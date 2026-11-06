@@ -10,6 +10,7 @@ import {
   flattenCommits,
   formatCommitDate,
   renderPanel,
+  syncModeSelection,
   type TrackerViewModel,
 } from '@/lib/object_tracker/ui/dom'
 
@@ -147,6 +148,64 @@ describe('object_tracker: renderPanel', () => {
 
     expect(container.querySelectorAll('.nmap-ot-object')).toHaveLength(1)
     expect(container.textContent).toContain('Объект не найден')
+  })
+
+  it('переключатель режимов оформлен нативными классами вкладок', () => {
+    const container = document.createElement('div')
+
+    renderPanel(container, baseView, callbacks)
+
+    const switcher = container.querySelector('.nmap-ot-modes')
+    const tabs = switcher?.querySelectorAll('.nmap-ot-mode') ?? []
+    expect(switcher).not.toBeNull()
+    expect(tabs).toHaveLength(2)
+    expect(tabs[0]?.classList.contains('nk-tabs-bar__tab')).toBe(true)
+    expect(tabs[0]?.classList.contains('nk-tabs-bar__tab_selected')).toBe(true)
+    expect(tabs[1]?.classList.contains('nk-tabs-bar__tab_selected')).toBe(false)
+
+    const selection = switcher?.querySelector('.nmap-ot-modes__selection')
+    expect(selection).not.toBeNull()
+  })
+
+  it('передаёт выбранный режим в обработчик', () => {
+    const container = document.createElement('div')
+    const onModeChange = vi.fn()
+
+    renderPanel(container, baseView, { ...callbacks, onModeChange })
+    const tabs = container.querySelectorAll<HTMLElement>('.nmap-ot-mode')
+    tabs[1]?.click()
+
+    expect(onModeChange).toHaveBeenCalledWith('objects')
+  })
+
+  it('ставит полосу режима под выбранную вкладку', () => {
+    const container = document.createElement('div')
+    renderPanel(container, baseView, callbacks)
+
+    const active = container.querySelector<HTMLElement>('.nmap-ot-mode_active')
+    const selection = container.querySelector<HTMLElement>('.nmap-ot-modes__selection')
+    if (!active || !selection) throw new Error('нет элементов режимов')
+
+    Object.defineProperty(active, 'offsetLeft', { value: 12, configurable: true })
+    Object.defineProperty(active, 'offsetWidth', { value: 100, configurable: true })
+    syncModeSelection(container)
+
+    expect(selection.style.transform).toBe('translateX(61.5px) scaleX(100)')
+  })
+
+  it('не двигает полосу, если вкладка не отрисована', () => {
+    const container = document.createElement('div')
+    renderPanel(container, baseView, callbacks)
+
+    const active = container.querySelector<HTMLElement>('.nmap-ot-mode_active')
+    const selection = container.querySelector<HTMLElement>('.nmap-ot-modes__selection')
+    if (!active || !selection) throw new Error('нет элементов режимов')
+
+    Object.defineProperty(active, 'offsetLeft', { value: 0, configurable: true })
+    Object.defineProperty(active, 'offsetWidth', { value: 0, configurable: true })
+    syncModeSelection(container)
+
+    expect(selection.style.transform).toBe('')
   })
 
   it('показывает пустое состояние без объектов', () => {

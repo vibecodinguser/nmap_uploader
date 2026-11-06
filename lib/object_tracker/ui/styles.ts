@@ -133,23 +133,52 @@ export const TRACKER_STYLES = `
       line-height: 16px;
     }
 
+    /*
+     * Переключатель режимов повторяет нативные вкладки .nk-tabs-bar:
+     * тот же цвет, отступы 12px 8px и полоса-индикатор под выбранной.
+     */
     .nmap-ot-modes {
+      position: relative;
       display: flex;
-      align-items: center;
-      gap: 4px;
+      margin: 0 -12px;
+      padding: 0 12px;
       border-bottom: 1px solid var(--border-color, #e6e6e6);
-      padding-bottom: 8px;
-      margin-top: -4px;
+      white-space: nowrap;
     }
     .nmap-ot-modes .nmap-ot-mode {
-      border-radius: 4px;
-      padding: 0 10px;
-      height: 26px;
-      color: inherit;
+      display: block;
+      margin: 0;
+      padding: 12px 8px;
+      border: 0;
+      border-radius: 0;
+      background: none;
+      color: var(--tabs-bar__bar--font-color, #666666);
+      /* Нативные вкладки не задают размер шрифта — наследуют от панели. */
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: color 0.3s ease;
     }
-    .nmap-ot-modes .nmap-ot-mode_active {
-      background: rgba(0, 0, 0, 0.07);
-      font-weight: 500;
+    .nmap-ot-modes .nmap-ot-mode:hover,
+    .nmap-ot-modes .nmap-ot-mode.nk-tabs-bar__tab_selected {
+      color: var(--tabs-bar__bar_selected--font-color, #000000);
+    }
+    .nmap-ot-modes .nmap-ot-mode.nk-tabs-bar__tab_selected {
+      cursor: default;
+      font-weight: inherit;
+    }
+    .nmap-ot-modes .nmap-ot-modes__selection {
+      background: var(--tabs-bar__selection--color, #ffdb4d);
+      height: 2px;
+      left: 0;
+      margin-top: -2px;
+      position: absolute;
+      bottom: 0;
+      width: 1px;
+      display: block;
+      transition: all 0.3s ease-out;
     }
 
     .nmap-ot-body {
@@ -340,8 +369,12 @@ export const TRACKER_STYLES = `
     .nk-page_color-scheme_dark .nmap-ot-modes {
       border-bottom-color: rgba(255, 255, 255, 0.18);
     }
-    .nk-page_color-scheme_dark .nmap-ot-modes .nmap-ot-mode_active {
-      background: rgba(255, 255, 255, 0.14);
+    .nk-page_color-scheme_dark .nmap-ot-modes .nmap-ot-mode {
+      color: #999999;
+    }
+    .nk-page_color-scheme_dark .nmap-ot-modes .nmap-ot-mode:hover,
+    .nk-page_color-scheme_dark .nmap-ot-modes .nmap-ot-mode.nk-tabs-bar__tab_selected {
+      color: #ffffff;
     }
     @media (prefers-color-scheme: dark) {
       .nk-page:not(.nk-page_color-scheme_light) .nmap-ot-commit__object,
