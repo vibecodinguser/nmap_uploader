@@ -1,3 +1,9 @@
+import {
+  COMMIT_STATE_ICONS,
+  MODERATOR_ICON,
+  resolveCommitStateIcon,
+} from '@/lib/nmaps_commit_state_icons'
+import { parseStaticSvg } from '@/lib/parse_static_svg'
 import { describeAction, describeApproveStatus } from '../commit_normalizer'
 import type { ObjectCommit, TrackedObject } from '../types'
 import { formatRelativeDate } from './relative_date'
@@ -69,14 +75,26 @@ export const flattenCommits = (commitsByObject: Record<string, ObjectCommit[]>):
 /**
  * Иконка статуса коммита — та же, что в нативной ленте.
  * В карточке она рисуется поверх иконки категории.
+ *
+ * Класса `.nk-icon_id_commit-*` в CSS редактора нет: приложение вставляет
+ * инлайн-SVG внутрь span, поэтому без разметки иконка остаётся пустой.
  */
-const STATUS_ICON: Record<string, string> = {
-  pending: 'nk-icon_id_commit-pending',
-  published: 'nk-icon_id_commit-published',
-  approved: 'nk-icon_id_commit-approved',
-  green: 'nk-icon_id_commit-approved',
-  rejected: 'nk-icon_id_commit-rejected',
-  red: 'nk-icon_id_commit-rejected',
+const createCommitStateIcon = (approveStatus: string): HTMLElement => {
+  const icon = COMMIT_STATE_ICONS[resolveCommitStateIcon(approveStatus)]
+  const element = document.createElement('span')
+  element.className = icon.className
+  element.setAttribute('title', describeApproveStatus(approveStatus))
+  element.appendChild(parseStaticSvg(icon.svgMarkup))
+  return element
+}
+
+/** Иконка модератора у имени автора. */
+const createModeratorIcon = (status: string): HTMLElement => {
+  const element = document.createElement('span')
+  element.className = MODERATOR_ICON.className
+  element.setAttribute('title', status)
+  element.appendChild(parseStaticSvg(MODERATOR_ICON.svgMarkup))
+  return element
 }
 
 /** Групповые иконки категорий, которые есть в CSS редактора. */
@@ -165,10 +183,7 @@ export const createCommitRow = (
   categoryIcon.setAttribute('aria-hidden', 'true')
   iconColumn.appendChild(categoryIcon)
 
-  const statusIcon = document.createElement('span')
-  const statusIconId = STATUS_ICON[commit.approveStatus] ?? STATUS_ICON.pending
-  statusIcon.className = `nk-icon ${statusIconId} nk-icon_align_auto nk-commit-state-view nk-event-view__commit-state`
-  statusIcon.setAttribute('title', describeApproveStatus(commit.approveStatus))
+  const statusIcon = createCommitStateIcon(commit.approveStatus)
   iconColumn.appendChild(statusIcon)
 
   grid.appendChild(iconColumn)
@@ -215,11 +230,7 @@ export const createCommitRow = (
 
     const status = commit.author.moderationStatus
     if (status && status !== 'none') {
-      const moderatorIcon = document.createElement('span')
-      moderatorIcon.className =
-        'nk-icon nk-icon_id_moderator nk-icon_align_auto nk-user-name-view__icon'
-      moderatorIcon.setAttribute('title', status)
-      userName.appendChild(moderatorIcon)
+      userName.appendChild(createModeratorIcon(status))
     }
 
     userLink.appendChild(userName)

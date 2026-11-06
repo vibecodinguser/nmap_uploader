@@ -86,11 +86,35 @@ describe('object_tracker: строки', () => {
 
   it('показывает статус иконкой, а не чипом', () => {
     const row = createCommitRow(commit(), object, false)
+    const stateIcon = row.querySelector('.nk-event-view__commit-state')
 
-    expect(row.querySelector('.nk-event-view__commit-state')?.className).toContain(
-      'nk-icon_id_commit-pending',
-    )
+    expect(stateIcon?.className).toContain('nk-icon_id_commit-pending')
     expect(row.querySelector('.nmap-ot-status')).toBeNull()
+  })
+
+  it('вставляет SVG внутрь иконки статуса', () => {
+    // Класса .nk-icon_id_commit-* в CSS редактора нет: без инлайн-SVG
+    // иконка остаётся пустым квадратом.
+    const row = createCommitRow(commit(), object, false)
+
+    expect(row.querySelector('.nk-event-view__commit-state svg')).not.toBeNull()
+  })
+
+  it('подбирает SVG под каждый статус', () => {
+    const cases: Array<[string, string]> = [
+      ['pending', 'nk-icon_id_commit-pending'],
+      ['published', 'nk-icon_id_commit-published'],
+      ['approved', 'nk-icon_id_commit-approved'],
+      ['rejected', 'nk-icon_id_commit-rejected'],
+    ]
+
+    for (const [status, iconClass] of cases) {
+      const row = createCommitRow(commit({ approveStatus: status }), object, false)
+      const icon = row.querySelector('.nk-event-view__commit-state')
+
+      expect(icon?.className).toContain(iconClass)
+      expect(icon?.querySelector('svg')).not.toBeNull()
+    }
   })
 
   it('показывает относительную дату и абсолютную в title', () => {
@@ -125,7 +149,7 @@ describe('object_tracker: строки', () => {
     )
 
     expect(row.querySelector('.nk-user-name-view__name')?.textContent).toBe('u')
-    expect(row.querySelector('.nk-user-name-view__icon')).not.toBeNull()
+    expect(row.querySelector('.nk-user-name-view__icon svg')).not.toBeNull()
   })
 
   it('ведёт на историю объекта по клику на карточку', () => {
