@@ -370,3 +370,39 @@ describe('object_tracker: иконка категории', () => {
     expect(resolveCategoryIconClass('неизвестная')).toContain('nk-geoobject-icon_id_placeholder')
   })
 })
+
+describe('object_tracker: иконки конкретных категорий', () => {
+  it('берёт иконку категории, когда она есть в CSS', () => {
+    expect(resolveCategoryIconClass('poi_food')).toContain('nk-geoobject-icon_id_category-poi-food')
+    expect(resolveCategoryIconClass('poi_medicine')).toContain(
+      'nk-geoobject-icon_id_category-poi-medicine',
+    )
+    expect(resolveCategoryIconClass('aoi')).toContain('nk-geoobject-icon_id_category-aoi')
+    expect(resolveCategoryIconClass('indoor_area')).toContain(
+      'nk-geoobject-icon_id_category-indoor-area',
+    )
+    expect(resolveCategoryIconClass('hydro_ln_el')).toContain(
+      'nk-geoobject-icon_id_category-hydro-ln-el',
+    )
+    expect(resolveCategoryIconClass('zipcode')).toContain('nk-geoobject-icon_id_category-zipcode')
+  })
+
+  it('категория важнее группы', () => {
+    // hydro_ln_el есть и как категория, и как группа hydro — берём точную.
+    expect(resolveCategoryIconClass('hydro_ln_el')).not.toContain('group-hydro')
+  })
+
+  it('подписка-регион показывается иконкой региона', () => {
+    expect(resolveCategoryIconClass('feed_region')).toContain(
+      'nk-geoobject-icon_id_category-region',
+    )
+  })
+
+  it('падает на группу, если точной категории нет', () => {
+    expect(resolveCategoryIconClass('ad_jc')).toContain('nk-geoobject-icon_id_group-ad')
+    expect(resolveCategoryIconClass('rd_el')).toContain('nk-geoobject-icon_id_group-rd')
+    expect(resolveCategoryIconClass('vegetation_ln')).toContain(
+      'nk-geoobject-icon_id_group-vegetation',
+    )
+  })
+})
