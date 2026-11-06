@@ -150,7 +150,7 @@ describe('object_tracker: renderPanel', () => {
     expect(container.textContent).toContain('Объект не найден')
   })
 
-  it('переключатель режимов оформлен нативными классами вкладок', () => {
+  it('не использует классы нативных вкладок у режимов', () => {
     const container = document.createElement('div')
 
     renderPanel(container, baseView, callbacks)
@@ -159,12 +159,27 @@ describe('object_tracker: renderPanel', () => {
     const tabs = switcher?.querySelectorAll('.nmap-ot-mode') ?? []
     expect(switcher).not.toBeNull()
     expect(tabs).toHaveLength(2)
-    expect(tabs[0]?.classList.contains('nk-tabs-bar__tab')).toBe(true)
-    expect(tabs[0]?.classList.contains('nk-tabs-bar__tab_selected')).toBe(true)
-    expect(tabs[1]?.classList.contains('nk-tabs-bar__tab_selected')).toBe(false)
+    // На .nk-tabs-bar__tab висят обработчики редактора и сайдбара: клик по режиму
+    // переключал нативную панель.
+    expect(tabs[0]?.classList.contains('nk-tabs-bar__tab')).toBe(false)
+    expect(tabs[0]?.classList.contains('nmap-ot-mode_active')).toBe(true)
+    expect(tabs[1]?.classList.contains('nmap-ot-mode_active')).toBe(false)
 
-    const selection = switcher?.querySelector('.nmap-ot-modes__selection')
-    expect(selection).not.toBeNull()
+    expect(switcher?.querySelector('.nmap-ot-modes__selection')).not.toBeNull()
+  })
+
+  it('не всплывает клик по режиму наружу', () => {
+    const container = document.createElement('div')
+    const onDocumentClick = vi.fn()
+    document.addEventListener('click', onDocumentClick)
+
+    renderPanel(container, baseView, callbacks)
+    document.body.appendChild(container)
+    container.querySelectorAll<HTMLElement>('.nmap-ot-mode')[1]?.click()
+
+    document.removeEventListener('click', onDocumentClick)
+    container.remove()
+    expect(onDocumentClick).not.toHaveBeenCalled()
   })
 
   it('передаёт выбранный режим в обработчик', () => {

@@ -297,23 +297,31 @@ const createModeSwitch = (view: TrackerViewModel, callbacks: PanelCallbacks): HT
   ]
 
   for (const mode of modes) {
-    // Классы нативных вкладок: цвет, отступы и поведение берутся у редактора.
+    /*
+     * Классы нативных вкладок здесь использовать нельзя: на `.nk-tabs-bar__tab`
+     * висят обработчики редактора и нашего же сайдбара, и клик по режиму
+     * переключал нативную панель. Оформление повторяем своими классами.
+     */
     const button = document.createElement('button')
     button.type = 'button'
-    button.className = 'nk-tabs-bar__tab nmap-ot-mode'
+    button.className = 'nmap-ot-mode'
     button.textContent = mode.label
     button.setAttribute('role', 'tab')
     const isActive = view.mode === mode.id
     button.setAttribute('aria-selected', isActive ? 'true' : 'false')
     if (isActive) {
-      button.classList.add('nk-tabs-bar__tab_selected', 'nmap-ot-mode_active')
+      button.classList.add('nmap-ot-mode_active')
     }
-    button.addEventListener('click', () => callbacks.onModeChange(mode.id))
+    button.addEventListener('click', (event) => {
+      event.preventDefault()
+      event.stopPropagation()
+      callbacks.onModeChange(mode.id)
+    })
     switcher.appendChild(button)
   }
 
   const selection = document.createElement('div')
-  selection.className = `nk-tabs-bar__selection nk-tabs-bar__selection_inited ${MODES_SELECTION_CLASS}`
+  selection.className = MODES_SELECTION_CLASS
   switcher.appendChild(selection)
 
   return switcher

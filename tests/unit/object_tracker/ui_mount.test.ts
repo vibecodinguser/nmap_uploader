@@ -155,6 +155,27 @@ describe('object_tracker: вкладка панели', () => {
     expect(document.getElementById(TRACKER_PANEL_ID)?.style.display).toBe('none')
   })
 
+  it('не закрывает вкладку при клике по элементу с классом вкладки внутри панели', () => {
+    // Режимы раньше имели класс .nk-tabs-bar__tab, и клик по ним закрывал
+    // нашу вкладку. Панель не должна реагировать на такие клики изнутри.
+    const content = buildSidebar()
+    const sidebar = new ObjectTrackerSidebar({ onActivate: vi.fn() })
+    sidebar.mount()
+    document
+      .getElementById(TRACKER_TAB_ID)
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+    const panel = document.getElementById(TRACKER_PANEL_ID)
+    const inner = document.createElement('button')
+    inner.type = 'button'
+    inner.className = 'nk-tabs-bar__tab'
+    panel?.appendChild(inner)
+    inner.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+    expect(sidebar.isActive()).toBe(true)
+    expect(content.style.display).toBe('none')
+  })
+
   it('снимает вкладку и панель, возвращая нативный контент', () => {
     const content = buildSidebar()
     const sidebar = new ObjectTrackerSidebar({ onActivate: vi.fn() })

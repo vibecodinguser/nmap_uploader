@@ -280,6 +280,11 @@ export class ObjectTrackerSidebar {
       return
     }
 
+    // Клики внутри нашей панели не должны переключать вкладки.
+    if (this.panelElement?.contains(target)) {
+      return
+    }
+
     const tab = target.closest<HTMLElement>(`.${TAB_CLASS}`)
     if (!tab || tab === this.tabElement) {
       return

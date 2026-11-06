@@ -162,10 +162,10 @@ export const TRACKER_STYLES = `
       transition: color 0.3s ease;
     }
     .nmap-ot-modes .nmap-ot-mode:hover,
-    .nmap-ot-modes .nmap-ot-mode.nk-tabs-bar__tab_selected {
+    .nmap-ot-modes .nmap-ot-mode.nmap-ot-mode_active {
       color: var(--tabs-bar__bar_selected--font-color, #000000);
     }
-    .nmap-ot-modes .nmap-ot-mode.nk-tabs-bar__tab_selected {
+    .nmap-ot-modes .nmap-ot-mode.nmap-ot-mode_active {
       cursor: default;
       font-weight: inherit;
     }
@@ -373,7 +373,7 @@ export const TRACKER_STYLES = `
       color: #999999;
     }
     .nk-page_color-scheme_dark .nmap-ot-modes .nmap-ot-mode:hover,
-    .nk-page_color-scheme_dark .nmap-ot-modes .nmap-ot-mode.nk-tabs-bar__tab_selected {
+    .nk-page_color-scheme_dark .nmap-ot-modes .nmap-ot-mode.nmap-ot-mode_active {
       color: #ffffff;
     }
     @media (prefers-color-scheme: dark) {
