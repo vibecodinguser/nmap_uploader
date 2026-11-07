@@ -109,6 +109,7 @@ export const enMessages = {
       'The button does not work without access to nspd.gov.ru. Allow access in the browser prompt or in the extension settings.',
     moderation: 'Moderation',
     general: 'Appearance',
+    suggestFeature: 'Suggest a feature',
     editing: 'Editing',
     style: 'Style',
     feedsFilter: 'Edits history filter',

@@ -110,6 +110,7 @@ export type Messages = {
     nspdPermissionDenied: string
     moderation: string
     general: string
+    suggestFeature: string
     editing: string
     style: string
     feedsFilter: string

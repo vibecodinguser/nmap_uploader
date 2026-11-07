@@ -291,6 +291,22 @@ describe('SettingsTab: секция «Стиль»', () => {
   })
 })
 
+describe('SettingsTab: блок «О версии»', () => {
+  afterEach(cleanup)
+
+  it('ведёт на обсуждения по ссылке «Предложить функцию»', () => {
+    renderTab()
+
+    const link = screen.getByRole('link', { name: 'Предложить функцию' })
+
+    expect(link.getAttribute('href')).toBe(
+      'https://github.com/vibecodinguser/nmap_uploader/discussions',
+    )
+    expect(link.getAttribute('target')).toBe('_blank')
+    expect(link.getAttribute('rel')).toBe('noopener noreferrer')
+  })
+})
+
 describe('SettingsTab: порядок секций', () => {
   afterEach(cleanup)
 

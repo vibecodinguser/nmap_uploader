@@ -1,5 +1,6 @@
-import { Send } from 'lucide-react'
+import { Lightbulb } from 'lucide-react'
 import { useTranslate } from '@/hooks/useLocale'
+import { DISCUSSIONS_URL } from '@/lib/discussions_url'
 import { RELEASES_URL } from '@/lib/releases_url'
 import packageJson from '../package.json'
 
@@ -25,13 +26,13 @@ export const SettingsAboutSection = () => {
         </a>
         <div className="footer-links">
           <a
-            href="https://t.me/notebook_loader_bot"
+            href={DISCUSSIONS_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="footer-link"
           >
-            <Send size={SETTINGS_FOOTER_ICON_SIZE} aria-hidden />
-            @feedback
+            <Lightbulb size={SETTINGS_FOOTER_ICON_SIZE} aria-hidden />
+            {t('settings.suggestFeature')}
           </a>
         </div>
       </h3>
