@@ -30,6 +30,24 @@
       "semicolons": "asNeeded"
     }
   },
+  "overrides": [
+    {
+      "includes": ["**/*.css"],
+      "formatter": {
+        "enabled": false
+      }
+    },
+    {
+      "includes": ["lib/**/*.css"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noImportantStyles": "off"
+          }
+        }
+      }
+    }
+  ],
   "assist": {
     "actions": {
       "source": {

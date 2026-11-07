@@ -4,49 +4,13 @@
  * не затрагивая глобальные системные уведомления (права доступа, ошибки сохранения и т.д.).
  */
 
+import hiderCss from './banner_suppressor.css?inline'
+
 export const HIDER_STYLE_ID = 'nmap-system-banner-hider'
 export const HIDER_ATTR = 'data-nmap-hide-system-banner'
 
-const HIDER_CSS = `
-html[${HIDER_ATTR}="true"] .nk-on-map-toolbar .nk-on-map-toolbar__message,
-html[${HIDER_ATTR}="true"] .nk-on-map-toolbar .nk-toolbar__message,
-html[${HIDER_ATTR}="true"] .nk-on-map-toolbar .nk-toolbar__message-warning,
-html[${HIDER_ATTR}="true"] .nk-on-map-toolbar .nk-toolbar__message-alert,
-html[${HIDER_ATTR}="true"] .nk-on-map-toolbar .nk-toolbar__message-error,
-html[${HIDER_ATTR}="true"] .nk-on-map-toolbar__message,
-html[${HIDER_ATTR}="true"] .nk-toolbar__message,
-html[${HIDER_ATTR}="true"] .nk-toolbar__message-warning,
-html[${HIDER_ATTR}="true"] .nk-toolbar__message-alert,
-html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="toolbar__message"],
-html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="message_theme_warning"],
-html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="message_theme_alert"],
-html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="message_theme_error"],
-html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="message_theme_danger"],
-html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="message"],
-html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="warning"],
-html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="alert"],
-html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="error"],
-html[${HIDER_ATTR}="true"] [class*="on-map-toolbar"] [class*="notice"],
-html[${HIDER_ATTR}="true"] [class*="toolbar"] [class*="toolbar__message"],
-html[${HIDER_ATTR}="true"] [class*="toolbar"] [class*="message_theme_warning"],
-html[${HIDER_ATTR}="true"] [class*="toolbar"] [class*="message_theme_alert"],
-html[${HIDER_ATTR}="true"] [class*="toolbar"] [class*="warning"],
-html[${HIDER_ATTR}="true"] [class*="toolbar"] [class*="alert"],
-html[${HIDER_ATTR}="true"] [class*="toolbar-view"] [class*="message_theme_warning"],
-html[${HIDER_ATTR}="true"] [class*="toolbar-view"] [class*="message_theme_alert"],
-html[${HIDER_ATTR}="true"] [class*="toolbar-view"] [class*="toolbar__message"],
-html[${HIDER_ATTR}="true"] [class*="toolbar-view"] [class*="warning"],
-html[${HIDER_ATTR}="true"] [class*="toolbar-view"] [class*="alert"],
-html[${HIDER_ATTR}="true"] [class*="map-toolbar"] [class*="message_theme_warning"],
-html[${HIDER_ATTR}="true"] [class*="map-toolbar"] [class*="message_theme_alert"],
-html[${HIDER_ATTR}="true"] [class*="popup"] [class*="message_theme_warning"],
-html[${HIDER_ATTR}="true"] [class*="popup"] [class*="message_theme_alert"],
-html[${HIDER_ATTR}="true"] [class*="popup"] [class*="warning"],
-html[${HIDER_ATTR}="true"] [class*="popup"] [class*="alert"],
-html[${HIDER_ATTR}="true"] [data-nmap-hidden-system-banner="true"] {
-  display: none !important;
-}
-`
+/** Инжектируемый CSS: источник — `banner_suppressor.css`. */
+export const HIDER_CSS = hiderCss
 
 const hiddenSystemElements = new Set<HTMLElement>()
 

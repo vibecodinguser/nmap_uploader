@@ -8,6 +8,10 @@ export default defineConfig({
     },
   },
   test: {
+    // Инжектируемые стили импортируются как `?inline`; без обработки CSS
+    // Vitest подменяет их пустой строкой, и тесты стилей теряют смысл.
+    // Паттерн не привязан к концу id: у `?inline`-импортов есть query.
+    css: { include: [/\.css(\?|$)/] },
     environment: 'node',
     setupFiles: ['./tests/setup/vitest.setup.ts'],
     include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],

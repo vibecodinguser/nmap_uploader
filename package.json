@@ -20,8 +20,9 @@
     "test:a11y": "vitest run tests/unit/a11y",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
-    "lint:css": "stylelint \"assets/styles/**/*.css\"",
-    "lint:css:fix": "stylelint \"assets/styles/**/*.css\" --fix",
+    "lint:css": "stylelint \"assets/styles/**/*.css\" \"lib/**/*.css\"",
+    "lint:css:fix": "stylelint \"assets/styles/**/*.css\" \"lib/**/*.css\" --fix",
+    "check": "npm run lint && npm run lint:css && npm run compile && npm run test:run",
     "format": "biome format --write .",
     "postinstall": "wxt prepare"
   },
