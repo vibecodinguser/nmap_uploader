@@ -8,6 +8,7 @@ import {
   FEEDS_FILTER_SELECT_ID,
   findFeedContainer,
   getStoredFeedsFilterEnabled,
+  removeFeedFilterStyles,
 } from './index'
 import type { FeedFilterLifecycleOptions, StorageChangeEmitter } from './lifecycle_config'
 import { createRetryScheduler, type RetrySchedulerController } from './retry_scheduler'
@@ -67,6 +68,7 @@ export class FeedFilterLifecycleManager {
     }
 
     this.removeFilterDropdown()
+    removeFeedFilterStyles()
   }
 
   public setFeatureEnabled(enabled: boolean): void {

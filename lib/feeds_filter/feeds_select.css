@@ -20,7 +20,13 @@
       opacity: 1 !important;
       z-index: 10 !important;
     }
-    .nk-user-events-view__filters {
+
+    /*
+     * Ряд фильтров хоста перестраиваем только тогда, когда в нём стоит наш
+     * контрол: без :has эти правила переопределяли бы ряд на любой странице
+     * ленты, даже при выключенном фильтре.
+     */
+    .nk-user-events-view__filters:has(#nmap-uploader-feeds-action-filter-select, .nmap-feeds-action-select) {
       display: flex !important;
       flex-direction: row !important;
       align-items: center !important;
@@ -29,7 +35,7 @@
       overflow: visible !important;
       box-sizing: border-box !important;
     }
-    .nk-user-events-view__filters .nk-user-events-view__category-group-filter {
+    .nk-user-events-view__filters:has(#nmap-uploader-feeds-action-filter-select, .nmap-feeds-action-select) .nk-user-events-view__category-group-filter {
       flex: 0 0 auto !important;
       margin: 0 !important;
       width: auto !important;

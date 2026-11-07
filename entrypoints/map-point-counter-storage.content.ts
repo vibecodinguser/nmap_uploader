@@ -54,6 +54,9 @@ export default defineContentScript({
     ctx.onInvalidated(() => {
       browser.storage.onChanged.removeListener(handleStorageChange)
       window.removeEventListener('message', handleWindowMessage)
+      // Снимаем плашку-подавитель и его стиль: иначе они переживут
+      // перезагрузку расширения и останутся на странице без владельца.
+      setSystemBannerSuppressed(false)
     })
   },
 })

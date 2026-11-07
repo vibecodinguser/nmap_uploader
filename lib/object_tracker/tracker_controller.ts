@@ -27,6 +27,7 @@ import {
 import { MAX_TRACKED_OBJECTS, type ObjectCommit, type TrackedObject } from './types'
 import { renderPanel, type TrackerViewMode, type TrackerViewModel } from './ui/dom'
 import { ObjectTrackerSidebar } from './ui/mount'
+import { removeTrackerStyles } from './ui/styles'
 
 export interface TrackerControllerOptions {
   /** Транспорт подменяется в тестах. */
@@ -124,6 +125,7 @@ export class ObjectTrackerController {
     this.detachTokenListener()
     this.detachStorageListener()
     this.sidebar.unmount()
+    removeTrackerStyles()
     void setTrackerBadge(0)
   }
 

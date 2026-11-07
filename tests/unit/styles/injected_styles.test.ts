@@ -60,6 +60,83 @@ const IMPORTANT_BUDGET: Record<keyof typeof SHEETS, number> = {
 
 const countImportant = (css: string): number => css.match(/!important/g)?.length ?? 0
 
+/** Делит список селекторов по запятым верхнего уровня (не внутри `()` и `[]`). */
+const splitSelectorList = (list: string): string[] => {
+  const parts: string[] = []
+  let depth = 0
+  let current = ''
+  for (const char of list) {
+    if (char === '(' || char === '[') depth += 1
+    if (char === ')' || char === ']') depth -= 1
+    if (char === ',' && depth === 0) {
+      parts.push(current)
+      current = ''
+      continue
+    }
+    current += char
+  }
+  parts.push(current)
+  return parts.map((part) => part.trim()).filter(Boolean)
+}
+
+/** Первый compound-селектор: до пробела или комбинатора верхнего уровня. */
+const firstCompound = (selector: string): string => {
+  let depth = 0
+  let out = ''
+  for (const char of selector) {
+    if (char === '(' || char === '[') depth += 1
+    if (char === ')' || char === ']') depth -= 1
+    if (depth === 0 && /[\s>+~]/.test(char)) break
+    out += char
+  }
+  return out
+}
+
+const topLevelSelectors = (css: string): string[] => {
+  const clean = css.replace(/\/\*[\s\S]*?\*\//g, '')
+  const selectors: string[] = []
+  for (const match of clean.matchAll(/([^{}]+)\{/g)) {
+    const prelude = match[1].trim()
+    if (!prelude || prelude.startsWith('@')) continue
+    for (const selector of splitSelectorList(prelude)) {
+      if (/^(from|to|\d+%)$/.test(selector)) continue
+      selectors.push(selector)
+    }
+  }
+  return selectors
+}
+
+/**
+ * Классы хоста, которые приходится упоминать на верхнем уровне.
+ *
+ * Это не стилизация хоста «за компанию», а точки подключения: тёмная тема
+ * редактора, ряд фильтров ленты и SVG карты для перекраски контуров.
+ */
+const HOST_SELECTOR_ALLOWLIST = [
+  ':root',
+  '.nk-page',
+  '.nk-page_color-scheme_dark',
+  '.nk-user-events-view__filters',
+  'ymaps',
+  '.nk-app-view',
+  'svg',
+]
+
+const isAllowedHostSelector = (compound: string): boolean =>
+  HOST_SELECTOR_ALLOWLIST.some(
+    (allowed) =>
+      compound === allowed ||
+      compound.startsWith(`${allowed}:`) ||
+      compound.startsWith(`${allowed}[`) ||
+      compound.startsWith(`${allowed}.`),
+  )
+
+const isNamespaced = (compound: string): boolean =>
+  compound.startsWith('#nmap-') ||
+  compound.startsWith('.nmap-') ||
+  compound.startsWith('html.nmap-') ||
+  compound.startsWith('html[data-nmap-')
+
 describe('инжектируемые стили', () => {
   for (const [name, css] of Object.entries(SHEETS)) {
     it(`${name}: текст не менялся`, () => {
@@ -107,5 +184,36 @@ describe('инжектируемые стили', () => {
     )
 
     expect(unknown).toEqual([])
+  })
+
+  it('верхний уровень селекторов не выходит за префикс расширения', () => {
+    const offenders: string[] = []
+
+    for (const [name, css] of Object.entries(SHEETS)) {
+      for (const selector of topLevelSelectors(css)) {
+        const first = firstCompound(selector)
+        if (isNamespaced(first)) continue
+        if (isAllowedHostSelector(first)) continue
+        offenders.push(`${name}: ${selector}`)
+      }
+    }
+
+    expect(offenders).toEqual([])
+  })
+
+  it('правила хоста применяются только к нашим элементам', () => {
+    const offenders: string[] = []
+
+    for (const [name, css] of Object.entries(SHEETS)) {
+      for (const selector of topLevelSelectors(css)) {
+        if (!selector.startsWith('.nk-user-events-view__filters')) continue
+        // Либо ряд перестраивается только при нашем контроле (:has),
+        // либо правило целится в наш элемент внутри ряда.
+        const scoped = selector.includes(':has(') || selector.includes('nmap-')
+        if (!scoped) offenders.push(`${name}: ${selector}`)
+      }
+    }
+
+    expect(offenders).toEqual([])
   })
 })

@@ -11,7 +11,7 @@ import {
   GO_TO_SPLIT_BUTTON_ENABLED_STORAGE_KEY,
   getStoredSplitButtonEnabled,
 } from '@/lib/go_to_split_button'
-import { ensureGoToStyles } from '@/lib/go_to_styles'
+import { ensureGoToStyles, removeGoToStyles } from '@/lib/go_to_styles'
 import { observeGoToTheme } from '@/lib/go_to_theme'
 import { LOCALE_STORAGE_KEY } from '@/lib/i18n/locale'
 import { getStoredNotesButtonEnabled, NOTES_BUTTON_ENABLED_STORAGE_KEY } from '@/lib/notes_button'
@@ -89,6 +89,7 @@ export class GoToToolbarLifecycleManager {
 
     this.mountManager.cleanup()
     this.controller.removeButtonAndMenu()
+    removeGoToStyles()
   }
 
   public async refreshContentLocale(): Promise<void> {

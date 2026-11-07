@@ -31,8 +31,8 @@ exports[`инжектируемые стили > feeds-popup: текст не м
 
 exports[`инжектируемые стили > feeds-select: текст не менялся 1`] = `
 "#nmap-uploader-feeds-filter-select,#nmap-uploader-feeds-action-filter-select,.nmap-feeds-status-select,.nmap-feeds-action-select{display:inline-block !important;vertical-align:middle !important;margin-left:8px !important;position:relative !important;width:auto !important;min-width:200px !important;max-width:none !important;flex:1 1 auto !important;font-family:var(--nk-user-bar-font-family,"Yandex Sans Text","YS Text",-apple-system,BlinkMacSystemFont,Arial,sans-serif);pointer-events:auto !important;box-sizing:border-box !important;height:var(--nmap-feeds-select-height,28px) !important;visibility:visible !important;opacity:1 !important;z-index:10 !important;}
-.nk-user-events-view__filters{display:flex !important;flex-direction:row !important;align-items:center !important;justify-content:flex-start !important;gap:8px !important;overflow:visible !important;box-sizing:border-box !important;}
-.nk-user-events-view__filters .nk-user-events-view__category-group-filter{flex:0 0 auto !important;margin:0 !important;width:auto !important;box-sizing:border-box !important;}
+.nk-user-events-view__filters:has(#nmap-uploader-feeds-action-filter-select,.nmap-feeds-action-select){display:flex !important;flex-direction:row !important;align-items:center !important;justify-content:flex-start !important;gap:8px !important;overflow:visible !important;box-sizing:border-box !important;}
+.nk-user-events-view__filters:has(#nmap-uploader-feeds-action-filter-select,.nmap-feeds-action-select) .nk-user-events-view__category-group-filter{flex:0 0 auto !important;margin:0 !important;width:auto !important;box-sizing:border-box !important;}
 .nk-user-events-view__filters #nmap-uploader-feeds-action-filter-select,.nk-user-events-view__filters .nmap-feeds-action-select{flex:1 1 0 !important;margin:0 !important;}
 .nmap-action-marker{display:inline-block !important;width:8px !important;height:8px !important;min-width:8px !important;min-height:8px !important;border-radius:50% !important;margin:0 !important;flex:0 0 8px !important;flex-shrink:0 !important;vertical-align:middle !important;box-sizing:border-box !important;}
 .nmap-action-marker.nmap-hidden,.nmap-action-marker[hidden]{display:none !important;width:0 !important;height:0 !important;margin:0 !important;padding:0 !important;opacity:0 !important;visibility:hidden !important;}
@@ -159,7 +159,7 @@ exports[`инжектируемые стили > object-tracker: текст не
 .nk-page_color-scheme_dark .nmap-ot-modes{border-bottom-color:rgba(255,255,255,0.18);}
 .nk-page_color-scheme_dark .nmap-ot-modes .nmap-ot-mode{color:var(--nmap-text-muted);}
 .nk-page_color-scheme_dark .nmap-ot-modes .nmap-ot-mode:hover,.nk-page_color-scheme_dark .nmap-ot-modes .nmap-ot-mode.nmap-ot-mode_active{color:#ffffff;}
-@media (prefers-color-scheme:dark){.nk-page:not(.nk-page_color-scheme_light) .nmap-ot-commit__object,.nk-page:not(.nk-page_color-scheme_light) .nmap-ot-object__title{color:var(--nmap-link-dark);}
+@media (prefers-color-scheme:dark){.nk-page:not(.nk-page_color-scheme_light) .nmap-ot-object__title{color:var(--nmap-link-dark);}
 }"
 `;
 

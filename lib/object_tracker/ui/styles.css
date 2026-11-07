@@ -334,7 +334,6 @@
     }
 
     @media (prefers-color-scheme: dark) {
-      .nk-page:not(.nk-page_color-scheme_light) .nmap-ot-commit__object,
       .nk-page:not(.nk-page_color-scheme_light) .nmap-ot-object__title {
         color: var(--nmap-link-dark);
       }

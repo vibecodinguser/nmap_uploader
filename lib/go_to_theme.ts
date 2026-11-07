@@ -77,9 +77,8 @@ const applyThemeColors = (element: HTMLElement, colors: GoToThemeColors): void =
 }
 
 export const applyGoToTheme = (element: HTMLElement): void => {
+  // Подсказка всегда тёмная: её цвета заданы в CSS и от темы не зависят.
   if (element.classList.contains('nmap-uploader-popup--tooltip')) {
-    const isDark = resolvedExtensionTheme === 'dark'
-    element.classList.toggle('nmap-uploader-tooltip--dark', isDark)
     return
   }
   const colors = readGoToThemeColors()
