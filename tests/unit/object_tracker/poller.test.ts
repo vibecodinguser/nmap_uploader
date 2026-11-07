@@ -60,7 +60,7 @@ describe('object_tracker: computeNewCommits', () => {
 
 describe('object_tracker: pollTrackedObjects', () => {
   it('опрашивает все объекты одним batch-запросом', async () => {
-    const transport = vi.fn(async () => parseBatchResponse(okResponse([[], []])))
+    const transport = vi.fn<BatchTransport>(async () => parseBatchResponse(okResponse([[], []])))
 
     await pollTrackedObjects({ transport, token: 'token' }, objects, {})
 
