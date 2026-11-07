@@ -1,5 +1,9 @@
 # История версий
 
+> Файл не ведётся и отстаёт от релизов: последняя запись — 1.4.2.
+> Актуальная история — на странице релизов:
+> <https://github.com/vibecodinguser/nmap_uploader/releases>.
+
 Версии идут по возрастанию: последний релиз — в конце файла. Дата — дата коммита версии.
 Страница релизов на GitHub: <https://github.com/vibecodinguser/nmap_uploader/releases>.
 
