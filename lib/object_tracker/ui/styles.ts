@@ -1,3 +1,4 @@
+import { ensureInjectedStyle, removeInjectedStyle } from '@/lib/injected_styles'
 import { TRACKER_STYLES_ID } from './dom'
 import trackerCss from './styles.css?inline'
 
@@ -12,19 +13,10 @@ export const TRACKER_STYLES = trackerCss
 
 /** Добавляет стили панели на страницу один раз. */
 export const ensureTrackerStyles = (): void => {
-  if (typeof document === 'undefined') {
-    return
-  }
-  if (document.getElementById(TRACKER_STYLES_ID)) {
-    return
-  }
-  const style = document.createElement('style')
-  style.id = TRACKER_STYLES_ID
-  style.textContent = TRACKER_STYLES
-  document.head.appendChild(style)
+  ensureInjectedStyle(TRACKER_STYLES_ID, TRACKER_STYLES)
 }
 
 /** Удаляет стили панели. */
 export const removeTrackerStyles = (): void => {
-  document.getElementById(TRACKER_STYLES_ID)?.remove()
+  removeInjectedStyle(TRACKER_STYLES_ID)
 }

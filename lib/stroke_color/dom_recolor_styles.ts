@@ -1,6 +1,7 @@
 /**
  * Управление известными цветами и CSS-стилями перекраски контуров.
  */
+import { ensureInjectedStyle, removeInjectedStyle } from '@/lib/injected_styles'
 import {
   buildRecolorStyleSheet,
   colorToKey,
@@ -38,22 +39,11 @@ export const shouldRecolorValue = (value: string | null | undefined): boolean =>
 }
 
 export const injectRecolorStyles = (targetStroke: string): void => {
-  const styleContent = buildRecolorStyleSheet(targetStroke)
-  const existing = document.getElementById(RECOLOR_STYLE_ID)
-
-  if (existing) {
-    existing.textContent = styleContent
-    return
-  }
-
-  const style = document.createElement('style')
-  style.id = RECOLOR_STYLE_ID
-  style.textContent = styleContent
-  ;(document.head ?? document.documentElement).appendChild(style)
+  ensureInjectedStyle(RECOLOR_STYLE_ID, buildRecolorStyleSheet(targetStroke))
 }
 
 export const removeRecolorStyles = (): void => {
-  document.getElementById(RECOLOR_STYLE_ID)?.remove()
+  removeInjectedStyle(RECOLOR_STYLE_ID)
 }
 
 export const isExtensionShadowNode = (node: Node): boolean => {

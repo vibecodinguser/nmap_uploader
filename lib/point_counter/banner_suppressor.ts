@@ -4,6 +4,7 @@
  * не затрагивая глобальные системные уведомления (права доступа, ошибки сохранения и т.д.).
  */
 
+import { ensureInjectedStyle, removeInjectedStyle } from '@/lib/injected_styles'
 import hiderCss from './banner_suppressor.css?inline'
 
 export const HIDER_STYLE_ID = 'nmap-system-banner-hider'
@@ -168,20 +169,10 @@ export const setSystemBannerSuppressed = (suppressed: boolean): void => {
 
   if (suppressed) {
     document.documentElement.setAttribute(HIDER_ATTR, 'true')
-    const existingStyle = document.getElementById(HIDER_STYLE_ID)
-    if (!existingStyle) {
-      const style = document.createElement('style')
-      style.id = HIDER_STYLE_ID
-      style.textContent = HIDER_CSS
-      const target = document.head || document.documentElement
-      target?.appendChild(style)
-    }
+    ensureInjectedStyle(HIDER_STYLE_ID, HIDER_CSS)
   } else {
     document.documentElement.removeAttribute(HIDER_ATTR)
-    const existingStyle = document.getElementById(HIDER_STYLE_ID)
-    if (existingStyle) {
-      existingStyle.remove()
-    }
+    removeInjectedStyle(HIDER_STYLE_ID)
     restoreSystemBanners()
   }
 }
