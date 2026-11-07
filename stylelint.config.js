@@ -41,6 +41,8 @@ export default {
           'Segoe UI',
           'Roboto',
           'Inter',
+          'Arial',
+          'Helvetica',
           'sans-serif',
           'system-ui',
         ],

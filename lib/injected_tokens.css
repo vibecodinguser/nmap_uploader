@@ -1,0 +1,42 @@
+/**
+ * Токены для CSS, который content scripts вставляют в страницу Народной карты.
+ *
+ * Отдельно от `assets/styles/theme_tokens.css`: там палитра панели расширения
+ * (iframe, `:host`, свои `--background`/`--foreground`), здесь — только то, что
+ * нужно инжектируемым листам. Объединять словари нельзя: у них разные
+ * контексты и разные владельцы значений.
+ *
+ * Значения совпадают с прежними литералами один в один — это рефакторинг,
+ * а не смена палитры.
+ */
+:root {
+  /* Жёлтый Народной карты. #ffdb4d — акцент, #ffcc00 — усиленное состояние. */
+  --nmap-accent: #ffdb4d;
+  --nmap-accent-strong: #ffcc00;
+
+  /* Текст, ссылки, ошибки. */
+  --nmap-text-muted: #999999;
+  --nmap-link: #0055cc;
+  --nmap-link-dark: #8ab4ff;
+  --nmap-error: #e00000;
+  --nmap-error-dark: #ff8080;
+
+  /* Рамки. */
+  --nmap-border-subtle: #e6e6e6;
+
+  /* Геометрия. */
+  --nmap-radius-sm: 4px;
+
+  /* Типографика: тот же стек, что у нативных элементов редактора. */
+  --nmap-font-stack: "Yandex Sans Text", Arial, Helvetica, sans-serif;
+
+  /* Обводка фокуса на элементах, у которых нет собственного outline. */
+  --nmap-focus-outline: 2px solid var(--nmap-accent);
+
+  /* Тёмный попап фильтров ленты: у него своя палитра, не связанная с темой. */
+  --nmap-popup-bg: #333333;
+  --nmap-popup-text: #bfbfbf;
+  --nmap-popup-text-strong: #ffffff;
+  --nmap-popup-hover-bg: #4d4d4d;
+  --nmap-popup-checked-bg: #444444;
+}

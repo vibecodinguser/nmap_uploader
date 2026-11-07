@@ -24,7 +24,7 @@
     }
     #nmap-uploader-object-tracker-panel :focus-visible,
     .nmap-ot-panel :focus-visible {
-      outline: 2px solid #ffdb4d;
+      outline: var(--nmap-focus-outline);
       outline-offset: 1px;
     }
 
@@ -40,7 +40,7 @@
       height: 6px;
       margin-left: 6px;
       border-radius: 50%;
-      background: #ffdb4d;
+      background: var(--nmap-accent);
       vertical-align: middle;
     }
 
@@ -65,7 +65,7 @@
 
     .nmap-ot-warning {
       padding: 8px 10px;
-      border-radius: 4px;
+      border-radius: var(--nmap-radius-sm);
       background: #fff4c2;
       color: #6b4d00;
       line-height: 1.4;
@@ -77,7 +77,7 @@
       gap: 6px;
     }
     .nmap-ot-add__label {
-      color: #999999;
+      color: var(--nmap-text-muted);
       font-size: 12px;
     }
     .nmap-ot-add__row {
@@ -94,7 +94,7 @@
     .nmap-ot-add__field {
       flex: 1 1 auto;
       min-width: 0;
-      border-radius: 4px;
+      border-radius: var(--nmap-radius-sm);
 
       /* Обрезаем содержимое по скруглению: у control свои прямые углы. */
       overflow: hidden;
@@ -106,16 +106,16 @@
      * 4px — как у кнопок и селектов редактора.
      */
     .nmap-ot-add__field.nk-text-input_theme_islands::before {
-      border-radius: 4px;
+      border-radius: var(--nmap-radius-sm);
     }
     .nmap-ot-add__field .nk-text-input__control {
-      border-radius: 4px;
+      border-radius: var(--nmap-radius-sm);
       background-color: transparent;
     }
 
     /* Обводка фокуса — на обёртке: у нативного control своего outline нет. */
     .nmap-ot-add__field:focus-within {
-      outline: 2px solid #ffdb4d;
+      outline: var(--nmap-focus-outline);
       outline-offset: 1px;
     }
     .nmap-ot-add__submit {
@@ -123,7 +123,7 @@
     }
     .nmap-ot-add__error {
       min-height: 16px;
-      color: #e00000;
+      color: var(--nmap-error);
       font-size: 12px;
       line-height: 16px;
     }
@@ -137,7 +137,7 @@
       display: flex;
       margin: 0 -12px;
       padding: 0 12px;
-      border-bottom: 1px solid var(--border-color, #e6e6e6);
+      border-bottom: 1px solid var(--border-color, var(--nmap-border-subtle));
       white-space: nowrap;
     }
     .nmap-ot-modes .nmap-ot-mode {
@@ -166,7 +166,7 @@
       font-weight: inherit;
     }
     .nmap-ot-modes .nmap-ot-modes__selection {
-      background: var(--tabs-bar__selection--color, #ffdb4d);
+      background: var(--tabs-bar__selection--color, var(--nmap-accent));
       height: 2px;
       left: 0;
       margin-top: -2px;
@@ -199,7 +199,7 @@
     }
     .nmap-ot-empty {
       padding: 8px 0 12px;
-      color: #999999;
+      color: var(--nmap-text-muted);
     }
 
     /*
@@ -216,7 +216,7 @@
     }
     .nmap-ot-commit .nk-event-view__title a {
       display: block;
-      color: #0055cc;
+      color: var(--nmap-link);
       text-decoration: none;
     }
     .nmap-ot-commit .nk-event-view__title a:hover {
@@ -234,7 +234,7 @@
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: #ffdb4d;
+      background: var(--nmap-accent);
     }
     .nmap-ot-commit_new {
       background: rgba(255, 219, 77, 0.1);
@@ -245,8 +245,8 @@
       align-items: flex-start;
       justify-content: space-between;
       gap: 12px;
-      border: 1px solid var(--border-color, #e6e6e6);
-      border-radius: 4px;
+      border: 1px solid var(--border-color, var(--nmap-border-subtle));
+      border-radius: var(--nmap-radius-sm);
       padding: 8px 10px;
     }
     .nmap-ot-object__info {
@@ -254,7 +254,7 @@
       flex: 1 1 auto;
     }
     .nmap-ot-object__title {
-      color: #0055cc;
+      color: var(--nmap-link);
       text-decoration: none;
       font-weight: 500;
       display: block;
@@ -266,7 +266,7 @@
       text-decoration: underline;
     }
     .nmap-ot-object__meta {
-      color: #999999;
+      color: var(--nmap-text-muted);
       font-size: 12px;
       margin-top: 2px;
       overflow: hidden;
@@ -276,7 +276,7 @@
       flex: 0 0 auto;
     }
     .nmap-ot-object__error {
-      color: #e00000;
+      color: var(--nmap-error);
       font-size: 12px;
       margin: -4px 0 4px;
     }
@@ -292,7 +292,7 @@
       --control_theme_islands--bg-color: rgba(255, 255, 255, 0.08);
       --control_theme_islands--border-color: rgba(255, 255, 255, 0.3);
       --control_theme_islands--font-color: #ededed;
-      --input_theme_islands__placeholder--font-color: #999999;
+      --input_theme_islands__placeholder--font-color: var(--nmap-text-muted);
     }
     .nk-page_color-scheme_dark .nmap-ot-add__submit.nk-button_theme_islands.nk-button_view_action {
       --control_theme_islands--font-color: #000000;
@@ -302,11 +302,11 @@
     .nk-page_color-scheme_dark .nmap-ot-empty,
     .nk-page_color-scheme_dark .nmap-ot-object__meta,
     .nk-page_color-scheme_dark .nmap-ot-add__label {
-      color: #999999;
+      color: var(--nmap-text-muted);
     }
     .nk-page_color-scheme_dark .nmap-ot-object__title,
     .nk-page_color-scheme_dark .nmap-ot-commit .nk-event-view__title a {
-      color: #8ab4ff;
+      color: var(--nmap-link-dark);
     }
     .nk-page_color-scheme_dark .nmap-ot-object {
       border-color: rgba(255, 255, 255, 0.18);
@@ -320,13 +320,13 @@
     }
     .nk-page_color-scheme_dark .nmap-ot-add__error,
     .nk-page_color-scheme_dark .nmap-ot-object__error {
-      color: #ff8080;
+      color: var(--nmap-error-dark);
     }
     .nk-page_color-scheme_dark .nmap-ot-modes {
       border-bottom-color: rgba(255, 255, 255, 0.18);
     }
     .nk-page_color-scheme_dark .nmap-ot-modes .nmap-ot-mode {
-      color: #999999;
+      color: var(--nmap-text-muted);
     }
     .nk-page_color-scheme_dark .nmap-ot-modes .nmap-ot-mode:hover,
     .nk-page_color-scheme_dark .nmap-ot-modes .nmap-ot-mode.nmap-ot-mode_active {
@@ -336,6 +336,6 @@
     @media (prefers-color-scheme: dark) {
       .nk-page:not(.nk-page_color-scheme_light) .nmap-ot-commit__object,
       .nk-page:not(.nk-page_color-scheme_light) .nmap-ot-object__title {
-        color: #8ab4ff;
+        color: var(--nmap-link-dark);
       }
     }

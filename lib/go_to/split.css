@@ -104,7 +104,7 @@ html.nmap-uploader-split-active .ymaps-2-1-map {
   padding: 0 16px;
   background-color: rgba(0, 0, 0, 0.5);
   color: #fff;
-  font-family: "Yandex Sans Text", Arial, Helvetica, sans-serif;
+  font-family: var(--nmap-font-stack);
   font-size: 13px;
   font-weight: 400;
   border-radius: 19px;

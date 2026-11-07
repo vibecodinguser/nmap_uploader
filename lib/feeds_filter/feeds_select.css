@@ -80,7 +80,7 @@
       line-height: var(--nmap-feeds-select-height, 28px) !important;
       padding: 0 25px 0 10px !important;
       border: var(--nmap-feeds-select-border, 1px solid rgba(255, 255, 255, 0.4)) !important;
-      border-radius: var(--nmap-feeds-select-radius, 4px) !important;
+      border-radius: var(--nmap-feeds-select-radius, var(--nmap-radius-sm)) !important;
       outline: 0 !important;
       background: var(--nmap-feeds-select-bg, transparent) !important;
       background-color: var(--nmap-feeds-select-bg, transparent) !important;
@@ -266,7 +266,7 @@
       min-height: 14px !important;
       border: 2px solid rgba(255, 255, 255, 0.3) !important;
       border-radius: 50% !important;
-      border-top-color: #ffcc00 !important;
+      border-top-color: var(--nmap-accent-strong) !important;
       animation: nmap-feeds-spin 0.8s linear infinite !important;
       flex-shrink: 0 !important;
       box-sizing: border-box !important;

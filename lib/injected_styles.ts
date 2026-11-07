@@ -1,3 +1,5 @@
+import tokensCss from './injected_tokens.css?inline'
+
 /**
  * Единая точка вставки CSS в страницу Народной карты.
  *
@@ -10,9 +12,29 @@
  * Стили всегда живут в `<style id="nmap-...">` с префиксом расширения,
  * чтобы не пересекаться с элементами хоста (см. ADR 0001).
  */
+export const INJECTED_TOKENS_ID = 'nmap-injected-tokens'
+
+/** Токен-лист как есть — нужен тестам, чтобы сверять объявленные переменные. */
+export const INJECTED_TOKENS_CSS = tokensCss
+
+/**
+ * Общий слой токенов (`--nmap-*`). Инжектируется один раз на страницу и
+ * идемпотентно, поэтому листы могут ссылаться на переменные, не объявляя их
+ * у себя и не дублируя значения.
+ */
+export const ensureInjectedTokens = (): void => {
+  ensureInjectedStyle(INJECTED_TOKENS_ID, tokensCss)
+}
+
 export const ensureInjectedStyle = (id: string, css: string): void => {
   if (typeof document === 'undefined') {
     return
+  }
+
+  // Токены нужны любому листу, поэтому подключаются здесь, а не в каждом
+  // вызывающем модуле: забыть их невозможно.
+  if (id !== INJECTED_TOKENS_ID) {
+    ensureInjectedTokens()
   }
 
   const existing = document.getElementById(id)

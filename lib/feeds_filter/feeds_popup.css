@@ -7,13 +7,13 @@
 
       /* Ширину задаёт positionPopupFixed по ширине растянутого селекта. */
       min-width: 200px !important;
-      background: #333333 !important;
-      color: #bfbfbf !important;
-      border-radius: 4px !important;
+      background: var(--nmap-popup-bg) !important;
+      color: var(--nmap-popup-text) !important;
+      border-radius: var(--nmap-radius-sm) !important;
       box-shadow: rgba(0, 0, 0, 0.1) 0 0 0 1px, rgba(0, 0, 0, 0.4) 0 10px 20px -5px !important;
       border: 0 none !important;
       padding: 0 !important;
-      font-family: "Yandex Sans Text", Arial, Helvetica, sans-serif !important;
+      font-family: var(--nmap-font-stack) !important;
       font-size: 13px !important;
       line-height: 15px !important;
       box-sizing: border-box !important;
@@ -33,14 +33,14 @@
     .nmap-feeds-action-popup .nk-popup__content {
       padding: 4px 0 !important;
       background: transparent !important;
-      border-radius: 4px !important;
+      border-radius: var(--nmap-radius-sm) !important;
     }
     #nmap-uploader-feeds-filter-popup .nk-menu,
     #nmap-uploader-feeds-action-filter-popup .nk-menu,
     .nmap-feeds-status-popup .nk-menu,
     .nmap-feeds-action-popup .nk-menu {
-      background: #333333 !important;
-      color: #bfbfbf !important;
+      background: var(--nmap-popup-bg) !important;
+      color: var(--nmap-popup-text) !important;
       border: none !important;
       box-shadow: none !important;
       padding: 0 !important;
@@ -62,7 +62,7 @@
       padding: 6px 14px !important;
       cursor: pointer !important;
       user-select: none !important;
-      color: #bfbfbf !important;
+      color: var(--nmap-popup-text) !important;
       background: transparent !important;
       box-sizing: border-box !important;
       white-space: nowrap !important;
@@ -88,8 +88,8 @@
     .nmap-feeds-action-popup .nk-menu__item:hover,
     .nmap-feeds-status-popup .nk-menu-item_hovered,
     .nmap-feeds-action-popup .nk-menu-item_hovered {
-      background-color: #4d4d4d !important;
-      color: #ffffff !important;
+      background-color: var(--nmap-popup-hover-bg) !important;
+      color: var(--nmap-popup-text-strong) !important;
     }
     #nmap-uploader-feeds-filter-popup .nk-menu-item_checked,
     #nmap-uploader-feeds-action-filter-popup .nk-menu-item_checked,
@@ -99,8 +99,8 @@
     .nmap-feeds-action-popup .nk-menu-item_checked,
     .nmap-feeds-status-popup .nk-menu__item_checked,
     .nmap-feeds-action-popup .nk-menu__item_checked {
-      background-color: #444444 !important;
-      color: #ffffff !important;
+      background-color: var(--nmap-popup-checked-bg) !important;
+      color: var(--nmap-popup-text-strong) !important;
       font-weight: 500 !important;
     }
     #nmap-uploader-feeds-filter-popup .nk-menu__text,
@@ -164,8 +164,8 @@
       margin-top: 4px !important;
       padding: 8px 14px !important;
       box-sizing: border-box !important;
-      background: #333333 !important;
-      color: #bfbfbf !important;
+      background: var(--nmap-popup-bg) !important;
+      color: var(--nmap-popup-text) !important;
     }
     .nmap-feeds-period-header {
       display: flex !important;
@@ -177,7 +177,7 @@
       margin-bottom: 6px !important;
       text-transform: uppercase !important;
       letter-spacing: 0.5px !important;
-      color: #bfbfbf !important;
+      color: var(--nmap-popup-text) !important;
     }
     .nmap-feeds-period-buttons {
       display: flex !important;
@@ -187,10 +187,10 @@
     .nmap-feeds-period-btn {
       flex: 1 1 0 !important;
       padding: 4px 0 !important;
-      border-radius: 4px !important;
+      border-radius: var(--nmap-radius-sm) !important;
       border: 1px solid rgba(255, 255, 255, 0.2) !important;
       background: transparent !important;
-      color: #bfbfbf !important;
+      color: var(--nmap-popup-text) !important;
       font-size: 12px !important;
       font-family: inherit !important;
       font-weight: 500 !important;
@@ -200,14 +200,14 @@
       user-select: none !important;
     }
     .nmap-feeds-period-btn:hover {
-      background: #4d4d4d !important;
+      background: var(--nmap-popup-hover-bg) !important;
       border-color: rgba(255, 255, 255, 0.4) !important;
-      color: #ffffff !important;
+      color: var(--nmap-popup-text-strong) !important;
     }
     .nmap-feeds-period-btn.nmap-feeds-period-btn_active {
       background: rgba(255, 204, 0, 0.15) !important;
-      border-color: #ffcc00 !important;
-      color: #ffcc00 !important;
+      border-color: var(--nmap-accent-strong) !important;
+      color: var(--nmap-accent-strong) !important;
       font-weight: 600 !important;
     }
     .nmap-feeds-period-status-row {
@@ -218,7 +218,7 @@
       font-size: 11px !important;
       min-height: 22px !important;
       margin-top: 4px !important;
-      color: #999999 !important;
+      color: var(--nmap-text-muted) !important;
     }
     .nmap-feeds-period-status-text {
       flex: 1 !important;
@@ -241,7 +241,7 @@
     .nmap-feeds-period-stop-btn:hover {
       background: rgba(255, 100, 100, 0.3) !important;
       border-color: #ff6464 !important;
-      color: #ffffff !important;
+      color: var(--nmap-popup-text-strong) !important;
     }
 
 

@@ -14,6 +14,7 @@ import {
   FEED_SELECT_BUTTON_STYLES,
 } from '@/lib/feeds_filter/dropdown_styles'
 import { GO_TO_SPLIT_STYLES, GO_TO_STYLES } from '@/lib/go_to/styles_css'
+import { INJECTED_TOKENS_CSS } from '@/lib/injected_styles'
 import { TRACKER_STYLES } from '@/lib/object_tracker/ui/styles'
 import { HIDER_CSS } from '@/lib/point_counter/banner_suppressor'
 import { buildRecolorStyleSheet } from '@/lib/stroke_color/recolor_core'
@@ -28,6 +29,7 @@ const normalize = (css: string): string =>
     .trim()
 
 const SHEETS = {
+  tokens: INJECTED_TOKENS_CSS,
   'object-tracker': TRACKER_STYLES,
   'feeds-select': FEED_SELECT_BUTTON_STYLES,
   'feeds-popup': FEED_POPUP_MENU_STYLES,
@@ -45,6 +47,7 @@ const SHEETS = {
  * осознанно, вместе с этой строкой и объяснением в коммите.
  */
 const IMPORTANT_BUDGET: Record<keyof typeof SHEETS, number> = {
+  tokens: 0,
   'object-tracker': 0,
   'feeds-select': 190,
   'feeds-popup': 147,
@@ -84,5 +87,25 @@ describe('инжектируемые стили', () => {
 
   it('перекраска контура подставляет целевой цвет', () => {
     expect(buildRecolorStyleSheet('#123456')).toContain('stroke: #123456 !important')
+  })
+
+  it('каждая использованная переменная объявлена или приходит из рантайма', () => {
+    const declared = new Set(
+      (INJECTED_TOKENS_CSS.match(/--nmap-[a-z0-9-]+(?=\s*:)/g) ?? []).map((name) => name.trim()),
+    )
+    // Значения этих переменных выставляет JS по вычисленным стилям хоста.
+    const runtimePrefixes = ['--nmap-feeds-select-', '--nmap-uploader-']
+
+    const used = new Set(
+      Object.values(SHEETS).flatMap(
+        (css) => css.match(/var\((--nmap-[a-z0-9-]+)/g)?.map((m) => m.slice(4)) ?? [],
+      ),
+    )
+
+    const unknown = [...used].filter(
+      (name) => !declared.has(name) && !runtimePrefixes.some((prefix) => name.startsWith(prefix)),
+    )
+
+    expect(unknown).toEqual([])
   })
 })

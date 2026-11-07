@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 
 import { beforeEach, describe, expect, it } from 'vitest'
+import { INJECTED_TOKENS_CSS } from '@/lib/injected_styles'
 import { TRACKER_STYLES } from '@/lib/object_tracker/ui/styles'
 
 describe('object_tracker: стили панели', () => {
@@ -56,7 +57,8 @@ describe('object_tracker: стили панели', () => {
   it('скругляет углы поля до 4px, как у остальных контролов редактора', () => {
     // У theme_islands рамка в ::before без радиуса — углы остаются прямыми.
     expect(TRACKER_STYLES).toContain('.nmap-ot-add__field.nk-text-input_theme_islands::before')
-    expect(TRACKER_STYLES).toContain('border-radius: 4px')
+    expect(TRACKER_STYLES).toContain('border-radius: var(--nmap-radius-sm)')
+    expect(INJECTED_TOKENS_CSS).toContain('--nmap-radius-sm: 4px')
     expect(TRACKER_STYLES).toContain('overflow: hidden')
   })
 })
