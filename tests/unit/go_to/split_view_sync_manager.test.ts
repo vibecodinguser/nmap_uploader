@@ -1,6 +1,8 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { markNmapOwned } from '@/lib/go_to/ownership'
 import { GO_TO_SPLIT_BUTTON_ID } from '@/lib/go_to_split_button'
+import { SPLIT_BANNER_ID } from '@/lib/go_to_split_view/core'
 import { mountSplitDomElements } from '@/lib/go_to_split_view/dom'
 import {
   readNmapsLocation,
@@ -23,6 +25,7 @@ describe('go_to_split_view/sync_manager', () => {
   it('updateSplitButtonState корректно выставляет класс и атрибут aria-pressed', () => {
     const btn = document.createElement('button')
     btn.id = GO_TO_SPLIT_BUTTON_ID
+    markNmapOwned(btn)
     document.body.appendChild(btn)
 
     updateSplitButtonState(true)
@@ -86,8 +89,9 @@ describe('go_to_split_view/sync_manager', () => {
 
   it('динамически обновляет класс предупреждения на баннере при изменении зума', () => {
     const banner = document.createElement('div')
-    banner.id = 'nmapUploaderSplitBanner'
+    banner.id = SPLIT_BANNER_ID
     banner.className = 'nmap-uploader-split-banner'
+    markNmapOwned(banner)
     document.body.appendChild(banner)
 
     const dom = mountSplitDomElements('https://nakarte.me')

@@ -4,6 +4,7 @@ import {
   getNotesButton,
   getPolygonUploadButton,
   getSplitButton,
+  isAnchorCandidate,
   loadGoToToolbarSettings,
   resolveAnchor,
 } from '@/lib/go_to'
@@ -64,13 +65,23 @@ export class GoToToolbarMountManager {
 
   public waitForAnchorAndMount(): void {
     this.waitForAnchorCleanup?.()
-    this.waitForAnchorCleanup = runWhenAnyElementExists(BUTTON_ANCHOR_SELECTORS, (anchor) => {
-      void loadGoToToolbarSettings().then(
-        ([menuEnabled, splitEnabled, notesEnabled, nspdEnabled]) => {
-          this.controller.mountToolbar(anchor, menuEnabled, splitEnabled, notesEnabled, nspdEnabled)
-        },
-      )
-    })
+    this.waitForAnchorCleanup = runWhenAnyElementExists(
+      BUTTON_ANCHOR_SELECTORS,
+      (anchor) => {
+        void loadGoToToolbarSettings().then(
+          ([menuEnabled, splitEnabled, notesEnabled, nspdEnabled]) => {
+            this.controller.mountToolbar(
+              anchor,
+              menuEnabled,
+              splitEnabled,
+              notesEnabled,
+              nspdEnabled,
+            )
+          },
+        )
+      },
+      isAnchorCandidate,
+    )
   }
 
   public async applyEnabledState(

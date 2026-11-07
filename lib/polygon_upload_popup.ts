@@ -1,7 +1,7 @@
 import { GO_TO_POPUP_VISIBLE_CLASS } from '@/lib/go_to_styles'
 import { createMapIframePopup } from '@/lib/map_iframe_popup'
 
-export const POLYGON_UPLOAD_POPUP_ID = 'polygonUploadPopup'
+export const POLYGON_UPLOAD_POPUP_ID = 'nmapUploaderPolygonUploadPopup'
 export const POLYGON_UPLOAD_IFRAME_CLASS = 'nmap-uploader-polygon-popup__iframe'
 
 const popup = createMapIframePopup({

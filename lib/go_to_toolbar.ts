@@ -1,4 +1,4 @@
-import { queryAllByDomId } from '@/lib/go_to_dom'
+import { queryOwnedElementsById, removeOwnedElementsById } from '@/lib/go_to/ownership'
 import { GO_TO_SERVICE_BUTTON_ID } from '@/lib/go_to_service_button'
 import { GO_TO_SPLIT_BUTTON_ID } from '@/lib/go_to_split_button'
 import { NOTES_BUTTON_ID } from '@/lib/notes_button'
@@ -48,7 +48,10 @@ export const shouldRemountGoToToolbar = (state: GoToToolbarMountState): boolean 
   return needsRemount
 }
 
-/** Удаляет все кнопки go-to и split-view, включая дубликаты с одинаковым id. */
+/**
+ * Удаляет только наши кнопки go-to и split-view, включая дубликаты.
+ * Чужие узлы с теми же id не трогаем.
+ */
 export const removeAllGoToToolbarButtons = (): void => {
   for (const id of [
     GO_TO_SERVICE_BUTTON_ID,
@@ -57,13 +60,7 @@ export const removeAllGoToToolbarButtons = (): void => {
     NOTES_BUTTON_ID,
     NSPD_BUTTON_ID,
   ]) {
-    removeButtonsById(id)
-  }
-}
-
-const removeButtonsById = (id: string): void => {
-  for (const element of queryAllByDomId(id)) {
-    element.remove()
+    removeOwnedElementsById(id)
   }
 }
 
@@ -86,7 +83,7 @@ export const repairAllGoToToolbarIcons = (iconSvgByButtonId: Record<string, stri
   let repaired = 0
 
   for (const [buttonId, iconSvg] of Object.entries(iconSvgByButtonId)) {
-    for (const button of queryAllByDomId(buttonId)) {
+    for (const button of queryOwnedElementsById(buttonId)) {
       const iconHost = button.querySelector(GO_TO_ICON_SELECTOR)
       if (repairGoToIconHost(iconHost, iconSvg)) {
         repaired += 1

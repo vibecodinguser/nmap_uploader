@@ -2,7 +2,9 @@
  * Контроллер сборки тулбара Народной карты: кнопки Перейти, Сплит, Загрузка, Заметки.
  */
 
+import { warnIfForeignGoToExtensionDetected } from '@/lib/go_to/foreign_extension'
 import { createGoToMenuElement, MENU_ID } from '@/lib/go_to/menu_dom'
+import { getOwnedElementById } from '@/lib/go_to/ownership'
 import {
   getButtonInsertParent,
   getGoToToolbarMountState,
@@ -16,7 +18,7 @@ import {
   showGoToServiceButton,
 } from '@/lib/go_to/toolbar_mount'
 import { hideGoToTooltip, showGoToTooltip } from '@/lib/go_to_dom'
-import { createGoToServiceButton, GO_TO_SERVICE_BUTTON_ID } from '@/lib/go_to_service_button'
+import { createGoToServiceButton } from '@/lib/go_to_service_button'
 import { type GoToItem, getActiveGoToItems, getStoredGoToItems } from '@/lib/go_to_settings'
 import { teardownSplitView } from '@/lib/go_to_split_view'
 import { GO_TO_BUTTON_HOVERED_CLASS } from '@/lib/go_to_styles'
@@ -45,7 +47,7 @@ export class GoToToolbarController {
   ) {}
 
   public ensureMenu(): void {
-    if (!document.getElementById(MENU_ID)) {
+    if (!getOwnedElementById(MENU_ID)) {
       const createdMenu = createGoToMenuElement()
       document.documentElement.appendChild(createdMenu)
     }
@@ -58,7 +60,7 @@ export class GoToToolbarController {
   }
 
   public removeMenu(): void {
-    document.getElementById(MENU_ID)?.remove()
+    getOwnedElementById(MENU_ID)?.remove()
   }
 
   public removeSplitButton(): void {
@@ -98,6 +100,8 @@ export class GoToToolbarController {
     notesButtonEnabled: boolean,
     nspdButtonEnabled: boolean,
   ): void {
+    warnIfForeignGoToExtensionDetected()
+
     const parent = getButtonInsertParent(anchor)
     if (!parent) return
 
@@ -126,14 +130,14 @@ export class GoToToolbarController {
         this.onOpenMenu()
       })
       serviceButton.addEventListener('mouseover', (e) => {
-        if (isToolbarButtonHoverTarget(serviceButton, e.target, GO_TO_SERVICE_BUTTON_ID)) {
+        if (isToolbarButtonHoverTarget(serviceButton, e.target)) {
           serviceButton.classList.add(GO_TO_BUTTON_HOVERED_CLASS)
           const label = this.getTranslator()('map.externalGeoservices')
           showGoToTooltip(label, serviceButton, 'top')
         }
       })
       serviceButton.addEventListener('mouseout', (e) => {
-        if (isToolbarButtonHoverTarget(serviceButton, e.target, GO_TO_SERVICE_BUTTON_ID)) {
+        if (isToolbarButtonHoverTarget(serviceButton, e.target)) {
           serviceButton.classList.remove(GO_TO_BUTTON_HOVERED_CLASS)
           hideGoToTooltip()
         }

@@ -1,6 +1,8 @@
 /**
  * DOM-адаптер для управления версткой, iframe и маркерами курсоров в сплит-режиме Go To.
  */
+
+import { getOwnedElementById, markNmapOwned } from '@/lib/go_to/ownership'
 import {
   CURSOR_MARKER_CLASS,
   CURSOR_MARKER_REMOTE_CLASS,
@@ -262,6 +264,7 @@ export const mountSplitDomElements = (
   const root = document.createElement('div')
   root.id = SPLIT_ROOT_ID
   root.className = 'nmap-uploader-split'
+  markNmapOwned(root)
 
   const iframeWrap = document.createElement('div')
   iframeWrap.className = 'nmap-uploader-split__iframe-wrap'
@@ -311,7 +314,7 @@ export const findHeaderContainer = (): HTMLElement | null => {
 }
 
 export const updateSplitNoticeBannerZoom = (zoom: number): void => {
-  const banner = document.getElementById(SPLIT_BANNER_ID)
+  const banner = getOwnedElementById(SPLIT_BANNER_ID)
   if (!banner) return
   banner.classList.toggle(SPLIT_BANNER_WARNING_CLASS, zoom > SPLIT_MAX_RECOMMENDED_ZOOM)
 }
@@ -322,6 +325,7 @@ export const mountSplitNoticeBanner = (text: string, initialZoom?: number): HTML
   const banner = document.createElement('div')
   banner.id = SPLIT_BANNER_ID
   banner.className = 'nmap-uploader-split-banner'
+  markNmapOwned(banner)
   if (typeof initialZoom === 'number' && initialZoom > SPLIT_MAX_RECOMMENDED_ZOOM) {
     banner.classList.add(SPLIT_BANNER_WARNING_CLASS)
   }
@@ -343,5 +347,5 @@ export const mountSplitNoticeBanner = (text: string, initialZoom?: number): HTML
 }
 
 export const unmountSplitNoticeBanner = (): void => {
-  document.getElementById(SPLIT_BANNER_ID)?.remove()
+  getOwnedElementById(SPLIT_BANNER_ID)?.remove()
 }

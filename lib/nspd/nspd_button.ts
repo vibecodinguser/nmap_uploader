@@ -1,9 +1,10 @@
 import { browser } from 'wxt/browser'
+import { markNmapOwned } from '@/lib/go_to/ownership'
 import { getMapLocationFromUrl } from '@/lib/go_to_link'
 import { wgs84ToMercator } from '@/lib/nspd/coordinates'
 import { parseStaticSvg } from '@/lib/parse_static_svg'
 
-export const NSPD_BUTTON_ID = 'nspdButton'
+export const NSPD_BUTTON_ID = 'nmapUploaderNspdButton'
 export const NSPD_BUTTON_ENABLED_STORAGE_KEY = 'nspd_button_enabled'
 
 /** Иконка кадастрового участка (НСПД). */
@@ -27,7 +28,7 @@ export const createNspdButton = (ariaLabel = ''): HTMLButtonElement => {
   iconHost.className = 'nk-icon nk-icon_align_auto nmap-uploader-goto-icon'
   iconHost.appendChild(parseStaticSvg(NSPD_BUTTON_ICON_SVG))
   button.appendChild(iconHost)
-  return button
+  return markNmapOwned(button)
 }
 
 /** Формирует URL перехода на nspd.gov.ru с текущими координатами и приближением. */

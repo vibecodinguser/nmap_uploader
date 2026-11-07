@@ -2,6 +2,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { browser } from 'wxt/browser'
+import { POLYGON_UPLOAD_BUTTON_ID } from '@/lib/polygon_upload_button'
 import {
   isPolygonUploadPopupOpen,
   POLYGON_UPLOAD_POPUP_ID,
@@ -11,7 +12,7 @@ import {
 
 const mountButton = (): HTMLButtonElement => {
   const button = document.createElement('button')
-  button.id = 'polygonUploadButton'
+  button.id = POLYGON_UPLOAD_BUTTON_ID
   button.setAttribute('aria-label', 'Загрузить полигоны')
   document.body.appendChild(button)
   return button

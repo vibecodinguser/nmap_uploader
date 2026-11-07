@@ -1,8 +1,9 @@
 import { browser } from 'wxt/browser'
+import { markNmapOwned } from '@/lib/go_to/ownership'
 import { GO_TO_BUTTON_HIDDEN_CLASS } from '@/lib/go_to_styles'
 import { parseStaticSvg } from '@/lib/parse_static_svg'
 
-export const GO_TO_SPLIT_BUTTON_ID = 'goToSplitButton'
+export const GO_TO_SPLIT_BUTTON_ID = 'nmapUploaderGoToSplitButton'
 export const GO_TO_SPLIT_BUTTON_ENABLED_STORAGE_KEY = 'go_to_split_button_enabled'
 export const GO_TO_SPLIT_BUTTON_HIDDEN_CLASS = GO_TO_BUTTON_HIDDEN_CLASS
 
@@ -29,7 +30,7 @@ export const createSplitViewButton = (ariaLabel = ''): HTMLButtonElement => {
   }
   button.className = GO_TO_SPLIT_BUTTON_CLASS
   button.appendChild(createSplitIconHost())
-  return button
+  return markNmapOwned(button)
 }
 
 export const getStoredSplitButtonEnabled = async (): Promise<boolean> => {

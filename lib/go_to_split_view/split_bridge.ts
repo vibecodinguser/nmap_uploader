@@ -2,6 +2,7 @@
  * Утилиты для кнопки переключения и отправки сообщений в iframe Nakarte.
  */
 import { NAKARTE_ORIGIN } from '@/lib/extension_origins'
+import { getOwnedElementById } from '@/lib/go_to/ownership'
 import { getMapLocationFromUrl, type MapLocation } from '@/lib/go_to_link'
 import {
   NAKARTE_SYNC_MSG_SOURCE,
@@ -13,7 +14,7 @@ import { GO_TO_SPLIT_BUTTON_ID } from '@/lib/go_to_split_button'
 import { GO_TO_SPLIT_BUTTON_ACTIVE_CLASS } from '@/lib/go_to_styles'
 
 export const getSplitButton = (): HTMLButtonElement | null =>
-  document.getElementById(GO_TO_SPLIT_BUTTON_ID) as HTMLButtonElement | null
+  getOwnedElementById(GO_TO_SPLIT_BUTTON_ID) as HTMLButtonElement | null
 
 export const updateSplitButtonState = (isOpen: boolean): void => {
   const button = getSplitButton()

@@ -2,6 +2,8 @@
  * Фасад для режима разделенного экрана (Go To Split View).
  * Реализует конечный автомат состояний и детерминированную синхронизацию вьюпорта.
  */
+
+import { getOwnedElementById } from '@/lib/go_to/ownership'
 import type { MapLocation } from '@/lib/go_to_link'
 import { buildNakarteUrl } from '@/lib/go_to_map_sync'
 import {
@@ -45,9 +47,9 @@ const cleanupDomAndSync = (): void => {
 
   // Удаляем баннер и инстанс splitRoot
   unmountSplitNoticeBanner()
-  document.getElementById(SPLIT_BANNER_ID)?.remove()
+  getOwnedElementById(SPLIT_BANNER_ID)?.remove()
   domElements?.splitRoot.remove()
-  document.getElementById(SPLIT_ROOT_ID)?.remove()
+  getOwnedElementById(SPLIT_ROOT_ID)?.remove()
   document.querySelectorAll('.nmap-uploader-split').forEach((el) => {
     el.remove()
   })

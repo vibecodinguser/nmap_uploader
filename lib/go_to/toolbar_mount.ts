@@ -1,7 +1,7 @@
 /**
  * Поиск, монтирование и ремонт кнопок тулбара Народной карты.
  */
-import { isElementDescendantToOrEquals, queryAllByDomId } from '@/lib/go_to_dom'
+import { getOwnedElementById, isNmapOwned, queryOwnedElementsById } from '@/lib/go_to/ownership'
 import {
   GO_TO_BUTTON_HIDDEN_CLASS,
   GO_TO_SERVICE_BUTTON_ICON_SVG,
@@ -31,11 +31,19 @@ export const REGION_BUTTON_CLASSES = [
   'nk-map-region-view__button_id_goto',
 ] as const
 
+/**
+ * Кандидат в якорь — только нативная кнопка карты. Кнопки go-to (наши и
+ * чужие) тоже могут содержать `.nk-icon_id_ymaps`, но якорем быть не должны.
+ */
+export const isAnchorCandidate = (element: Element): boolean =>
+  !isNmapOwned(element) && element.closest('.nk-map-region-view__button_id_goto') === null
+
 export const resolveAnchor = (): Element | null => {
   for (const selector of BUTTON_ANCHOR_SELECTORS) {
-    const found = document.querySelector(selector)
-    if (found instanceof Element) {
-      return found
+    for (const found of document.querySelectorAll(selector)) {
+      if (isAnchorCandidate(found)) {
+        return found
+      }
     }
   }
   return null
@@ -47,19 +55,19 @@ export const getButtonInsertParent = (anchor: Element): HTMLElement | null => {
 }
 
 export const getServiceButton = (): HTMLElement | null =>
-  document.getElementById(GO_TO_SERVICE_BUTTON_ID)
+  getOwnedElementById(GO_TO_SERVICE_BUTTON_ID)
 
 export const getSplitButton = (): HTMLButtonElement | null =>
-  document.getElementById(GO_TO_SPLIT_BUTTON_ID) as HTMLButtonElement | null
+  getOwnedElementById(GO_TO_SPLIT_BUTTON_ID) as HTMLButtonElement | null
 
 export const getPolygonUploadButton = (): HTMLButtonElement | null =>
-  document.getElementById(POLYGON_UPLOAD_BUTTON_ID) as HTMLButtonElement | null
+  getOwnedElementById(POLYGON_UPLOAD_BUTTON_ID) as HTMLButtonElement | null
 
 export const getNotesButton = (): HTMLButtonElement | null =>
-  document.getElementById(NOTES_BUTTON_ID) as HTMLButtonElement | null
+  getOwnedElementById(NOTES_BUTTON_ID) as HTMLButtonElement | null
 
 export const getNspdButton = (): HTMLButtonElement | null =>
-  document.getElementById(NSPD_BUTTON_ID) as HTMLButtonElement | null
+  getOwnedElementById(NSPD_BUTTON_ID) as HTMLButtonElement | null
 
 export const isButtonMountedInToolbar = (button: HTMLElement, anchor: Element): boolean => {
   const goToServiceButton = getServiceButton()
@@ -119,16 +127,16 @@ export const showSplitButton = (): void => {
 export const isToolbarButtonHoverTarget = (
   button: HTMLElement | null,
   eventTarget: EventTarget | null,
-  buttonId: string,
-): button is HTMLElement => button !== null && isElementDescendantToOrEquals(eventTarget, buttonId)
+): button is HTMLElement =>
+  button !== null && eventTarget instanceof Node && button.contains(eventTarget)
 
 export const getGoToToolbarMountState = (
   anchor: Element,
 ): Parameters<typeof shouldRemountGoToToolbar>[0] => {
-  const goToServiceButtons = queryAllByDomId(GO_TO_SERVICE_BUTTON_ID)
-  const splitButtons = queryAllByDomId(GO_TO_SPLIT_BUTTON_ID)
-  const uploadButtons = queryAllByDomId(POLYGON_UPLOAD_BUTTON_ID)
-  const notesButtons = queryAllByDomId(NOTES_BUTTON_ID)
+  const goToServiceButtons = queryOwnedElementsById(GO_TO_SERVICE_BUTTON_ID)
+  const splitButtons = queryOwnedElementsById(GO_TO_SPLIT_BUTTON_ID)
+  const uploadButtons = queryOwnedElementsById(POLYGON_UPLOAD_BUTTON_ID)
+  const notesButtons = queryOwnedElementsById(NOTES_BUTTON_ID)
   const goToServiceButton = goToServiceButtons[0] ?? null
 
   const isGoToMountedCorrectly = goToServiceButton

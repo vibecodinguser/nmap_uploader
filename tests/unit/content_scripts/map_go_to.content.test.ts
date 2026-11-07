@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { browser } from 'wxt/browser'
 import mapGoToScript from '@/entrypoints/map-go-to.content'
-import { MENU_ID, MENU_ITEMS_ID } from '@/lib/go_to/menu_dom'
+import { GO_TO_MENU_ITEM_ID_PREFIX, MENU_ID, MENU_ITEMS_ID } from '@/lib/go_to/menu_dom'
 import { GO_TO_REFRESH_ACTION } from '@/lib/go_to_notify'
 import { GO_TO_SERVICE_BUTTON_ID } from '@/lib/go_to_service_button'
 import { GO_TO_ITEMS_STORAGE_KEY, GO_TO_MENU_ENABLED_STORAGE_KEY } from '@/lib/go_to_settings'
@@ -226,7 +226,7 @@ describe('map-go-to.content', () => {
 
     const linksItems = document.getElementById(MENU_ITEMS_ID)
     expect(linksItems?.children.length).toBeGreaterThan(0)
-    expect(document.getElementById('goToLinkNakarte')).not.toBeNull()
+    expect(document.getElementById(`${GO_TO_MENU_ITEM_ID_PREFIX}Nakarte`)).not.toBeNull()
 
     // Повторный клик для закрытия
     serviceBtn?.click()

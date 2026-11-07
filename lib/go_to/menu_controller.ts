@@ -9,6 +9,7 @@ import {
   MENU_ID,
   MENU_ITEMS_ID,
 } from '@/lib/go_to/menu_dom'
+import { getOwnedElementById } from '@/lib/go_to/ownership'
 import { getServiceButton } from '@/lib/go_to/toolbar_mount'
 import { hideGoToTooltip } from '@/lib/go_to_dom'
 import { buildGoToLink, getMapLocationFromUrl } from '@/lib/go_to_link'
@@ -18,8 +19,8 @@ import { GO_TO_MENU_ITEM_HOVERED_CLASS, GO_TO_POPUP_VISIBLE_CLASS } from '@/lib/
 import { refreshGoToThemeFromStorage, syncGoToTheme } from '@/lib/go_to_theme'
 import type { Locale } from '@/lib/i18n/locale.types'
 
-export const getMenu = (): HTMLElement | null => document.getElementById(MENU_ID)
-export const getMenuItems = (): HTMLElement | null => document.getElementById(MENU_ITEMS_ID)
+export const getMenu = (): HTMLElement | null => getOwnedElementById(MENU_ID)
+export const getMenuItems = (): HTMLElement | null => getOwnedElementById(MENU_ITEMS_ID)
 
 export const openGoToLink = (
   sourceName: string,

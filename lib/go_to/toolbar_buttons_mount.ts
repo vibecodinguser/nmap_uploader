@@ -12,14 +12,14 @@ import {
   showSplitButton,
 } from '@/lib/go_to/toolbar_mount'
 import { hideGoToTooltip, showGoToTooltip } from '@/lib/go_to_dom'
-import { createSplitViewButton, GO_TO_SPLIT_BUTTON_ID } from '@/lib/go_to_split_button'
+import { createSplitViewButton } from '@/lib/go_to_split_button'
 import { toggleSplitView } from '@/lib/go_to_split_view'
 import { GO_TO_BUTTON_HOVERED_CLASS } from '@/lib/go_to_styles'
 import type { TranslateFn } from '@/lib/i18n'
-import { createNotesButton, NOTES_BUTTON_ID } from '@/lib/notes_button'
+import { createNotesButton } from '@/lib/notes_button'
 import { closeNotesPopup, toggleNotesPopup } from '@/lib/notes_popup'
-import { buildNspdMapUrl, createNspdButton, NSPD_BUTTON_ID } from '@/lib/nspd/nspd_button'
-import { createPolygonUploadButton, POLYGON_UPLOAD_BUTTON_ID } from '@/lib/polygon_upload_button'
+import { buildNspdMapUrl, createNspdButton } from '@/lib/nspd/nspd_button'
+import { createPolygonUploadButton } from '@/lib/polygon_upload_button'
 import { closePolygonUploadPopup, togglePolygonUploadPopup } from '@/lib/polygon_upload_popup'
 
 export interface ToolbarActionContext {
@@ -52,13 +52,13 @@ export const mountSplitButtonView = ({ getTranslator, onHideMenu }: ToolbarActio
         toggleSplitView()
       })
       created.addEventListener('mouseover', (e) => {
-        if (isToolbarButtonHoverTarget(created, e.target, GO_TO_SPLIT_BUTTON_ID)) {
+        if (isToolbarButtonHoverTarget(created, e.target)) {
           created.classList.add(GO_TO_BUTTON_HOVERED_CLASS)
           showGoToTooltip(getTranslator()('map.splitView'), created, 'top')
         }
       })
       created.addEventListener('mouseout', (e) => {
-        if (isToolbarButtonHoverTarget(created, e.target, GO_TO_SPLIT_BUTTON_ID)) {
+        if (isToolbarButtonHoverTarget(created, e.target)) {
           created.classList.remove(GO_TO_BUTTON_HOVERED_CLASS)
           hideGoToTooltip()
         }
@@ -110,13 +110,13 @@ export const mountPolygonUploadButtonView = ({
       togglePolygonUploadPopup(button)
     })
     button.addEventListener('mouseover', (e) => {
-      if (isToolbarButtonHoverTarget(button, e.target, POLYGON_UPLOAD_BUTTON_ID)) {
+      if (isToolbarButtonHoverTarget(button, e.target)) {
         button.classList.add(GO_TO_BUTTON_HOVERED_CLASS)
         showGoToTooltip(getTranslator()('map.uploadPolygons'), button, 'top')
       }
     })
     button.addEventListener('mouseout', (e) => {
-      if (isToolbarButtonHoverTarget(button, e.target, POLYGON_UPLOAD_BUTTON_ID)) {
+      if (isToolbarButtonHoverTarget(button, e.target)) {
         button.classList.remove(GO_TO_BUTTON_HOVERED_CLASS)
         hideGoToTooltip()
       }
@@ -147,13 +147,13 @@ export const mountNotesButtonView = ({ getTranslator, onHideMenu }: ToolbarActio
       toggleNotesPopup(button)
     })
     button.addEventListener('mouseover', (e) => {
-      if (isToolbarButtonHoverTarget(button, e.target, NOTES_BUTTON_ID)) {
+      if (isToolbarButtonHoverTarget(button, e.target)) {
         button.classList.add(GO_TO_BUTTON_HOVERED_CLASS)
         showGoToTooltip(getTranslator()('map.notes'), button, 'top')
       }
     })
     button.addEventListener('mouseout', (e) => {
-      if (isToolbarButtonHoverTarget(button, e.target, NOTES_BUTTON_ID)) {
+      if (isToolbarButtonHoverTarget(button, e.target)) {
         button.classList.remove(GO_TO_BUTTON_HOVERED_CLASS)
         hideGoToTooltip()
       }
@@ -191,14 +191,14 @@ export const mountNspdButtonView = ({ getTranslator, onHideMenu }: ToolbarAction
     })
 
     button.addEventListener('mouseover', (e) => {
-      if (isToolbarButtonHoverTarget(button, e.target, NSPD_BUTTON_ID)) {
+      if (isToolbarButtonHoverTarget(button, e.target)) {
         button.classList.add(GO_TO_BUTTON_HOVERED_CLASS)
         showGoToTooltip(getTranslator()('map.openNspd'), button, 'top')
       }
     })
 
     button.addEventListener('mouseout', (e) => {
-      if (isToolbarButtonHoverTarget(button, e.target, NSPD_BUTTON_ID)) {
+      if (isToolbarButtonHoverTarget(button, e.target)) {
         button.classList.remove(GO_TO_BUTTON_HOVERED_CLASS)
         hideGoToTooltip()
       }

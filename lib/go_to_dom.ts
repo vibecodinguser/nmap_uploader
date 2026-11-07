@@ -1,3 +1,4 @@
+import { getOwnedElementById, markNmapOwned } from '@/lib/go_to/ownership'
 import { GO_TO_POPUP_VISIBLE_CLASS } from '@/lib/go_to_styles'
 import { applyGoToTheme } from '@/lib/go_to_theme'
 
@@ -9,25 +10,26 @@ export const queryAllByDomId = (id: string): HTMLElement[] => {
 const onElementExists = (
   selectors: readonly string[],
   callback: (element: Element) => void,
-  observer: MutationObserver,
-) => {
-  let found = false
+  observer: MutationObserver | undefined,
+  accept?: (element: Element) => boolean,
+): boolean => {
   for (const selector of selectors) {
-    const element = document.querySelector(selector)
-    if (element) {
-      if (observer) {
-        observer.disconnect()
+    for (const element of document.querySelectorAll(selector)) {
+      if (accept && !accept(element)) {
+        continue
       }
+      observer?.disconnect()
       callback(element)
-      found = true
+      return true
     }
   }
-  return found
+  return false
 }
 
 export const runWhenAnyElementExists = (
   selectors: readonly string[],
   callback: (element: Element) => void,
+  accept?: (element: Element) => boolean,
 ): (() => void) => {
   let observer: MutationObserver | undefined
 
@@ -38,7 +40,7 @@ export const runWhenAnyElementExists = (
     }
   }
 
-  const run = () => onElementExists(selectors, callback, observer!)
+  const run = () => onElementExists(selectors, callback, observer, accept)
 
   if (!run()) {
     observer = new MutationObserver(run)
@@ -74,10 +76,10 @@ export const isElementDescendantToOrEquals = (
 
 const TOOLTIP_ID = 'nmapUploaderGoToTooltip'
 
-const getTooltipElement = (): HTMLElement | null => document.getElementById(TOOLTIP_ID)
+const getTooltipElement = (): HTMLElement | null => getOwnedElementById(TOOLTIP_ID)
 
 const getTooltipContentElement = (): HTMLElement | null =>
-  document.querySelector(`#${TOOLTIP_ID} > .nmap-uploader-popup__content`)
+  getTooltipElement()?.querySelector<HTMLElement>('.nmap-uploader-popup__content') ?? null
 
 const createTooltipElement = (): HTMLElement => {
   const tooltip = document.createElement('div')
@@ -85,6 +87,7 @@ const createTooltipElement = (): HTMLElement => {
   tooltip.className =
     'nk-popup nk-popup_theme_islands nk-popup_view_tooltip nmap-uploader-popup nmap-uploader-popup--tooltip'
   tooltip.setAttribute('role', 'tooltip')
+  markNmapOwned(tooltip)
 
   const content = document.createElement('div')
   content.className = 'nk-popup__content nmap-uploader-popup__content'

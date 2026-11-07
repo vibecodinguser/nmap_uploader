@@ -2,13 +2,15 @@
  * DOM-компоненты выпадающего меню сервисов "Перейти на...".
  */
 
+import { markNmapOwned } from '@/lib/go_to/ownership'
 import type { GoToItem } from '@/lib/go_to_settings'
 import { getGoToSourceDisplayName } from '@/lib/go_to_sources'
 import { applyGoToTheme } from '@/lib/go_to_theme'
 import type { Locale } from '@/lib/i18n/locale.types'
 
-export const MENU_ID = 'goToLinksMenu'
-export const MENU_ITEMS_ID = 'linksItems'
+export const MENU_ID = 'nmapUploaderGoToLinksMenu'
+export const MENU_ITEMS_ID = 'nmapUploaderGoToLinksItems'
+export const GO_TO_MENU_ITEM_ID_PREFIX = 'nmapUploaderGoToLink'
 
 export const createGoToMenuElement = (): HTMLElement => {
   const menu = document.createElement('div')
@@ -27,7 +29,8 @@ export const createGoToMenuElement = (): HTMLElement => {
   content.appendChild(menuItems)
   menu.appendChild(content)
   applyGoToTheme(menu)
-  return menu
+  markNmapOwned(menuItems)
+  return markNmapOwned(menu)
 }
 
 export const createMenuItemElement = (
@@ -36,17 +39,17 @@ export const createMenuItemElement = (
   locale: Locale,
 ): HTMLDivElement => {
   const menuItem = document.createElement('div')
-  menuItem.id = `goToLink${item.name}`
+  menuItem.id = `${GO_TO_MENU_ITEM_ID_PREFIX}${item.name}`
   menuItem.className = 'nmap-uploader-menu__item'
   menuItem.setAttribute('role', 'menuitem')
   menuItem.style.backgroundImage = `url("${iconUrl}")`
   menuItem.textContent = getGoToSourceDisplayName(item.name, locale)
-  return menuItem
+  return markNmapOwned(menuItem)
 }
 
 export const getGoToSourceNameFromMenuItemId = (menuItemId: string): string => {
-  return menuItemId.replace('goToLink', '')
+  return menuItemId.replace(GO_TO_MENU_ITEM_ID_PREFIX, '')
 }
 
 export const isGoToMenuItemTarget = (target: EventTarget | null): target is HTMLElement =>
-  target instanceof HTMLElement && target.id.startsWith('goToLink')
+  target instanceof HTMLElement && target.id.startsWith(GO_TO_MENU_ITEM_ID_PREFIX)

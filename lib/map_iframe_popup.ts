@@ -1,4 +1,5 @@
 import { browser } from 'wxt/browser'
+import { markNmapOwned } from '@/lib/go_to/ownership'
 import { applyGoToTheme } from '@/lib/go_to_theme'
 
 const VIEWPORT_MARGIN = 12
@@ -101,6 +102,7 @@ export const createMapIframePopup = (options: MapIframePopupOptions): MapIframeP
     const element = document.createElement('div')
     element.id = options.popupId
     element.className = options.popupClassName
+    markNmapOwned(element)
 
     const content = document.createElement('div')
     content.className = options.contentClassName
