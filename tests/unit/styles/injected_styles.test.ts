@@ -168,14 +168,16 @@ describe('инжектируемые стили', () => {
 
   it('каждая использованная переменная объявлена или приходит из рантайма', () => {
     const declared = new Set(
-      (INJECTED_TOKENS_CSS.match(/--nmap-[a-z0-9-]+(?=\s*:)/g) ?? []).map((name) => name.trim()),
+      (INJECTED_TOKENS_CSS.match(/--nmap-[a-z0-9-]+(?=\s*:)/g) ?? []).map((name: string) =>
+        name.trim(),
+      ),
     )
     // Значения этих переменных выставляет JS по вычисленным стилям хоста.
     const runtimePrefixes = ['--nmap-feeds-select-', '--nmap-uploader-']
 
     const used = new Set(
       Object.values(SHEETS).flatMap(
-        (css) => css.match(/var\((--nmap-[a-z0-9-]+)/g)?.map((m) => m.slice(4)) ?? [],
+        (css) => css.match(/var\((--nmap-[a-z0-9-]+)/g)?.map((m: string) => m.slice(4)) ?? [],
       ),
     )
 

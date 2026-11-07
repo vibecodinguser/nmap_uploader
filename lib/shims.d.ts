@@ -53,6 +53,11 @@ declare module '*.svg' {
   export default src
 }
 
+declare module '*.css?inline' {
+  const content: string
+  export default content
+}
+
 declare module 'topojson-client' {
   import type { Feature, FeatureCollection } from 'geojson'
   import type { Topology } from 'topojson-specification'
