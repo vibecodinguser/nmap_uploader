@@ -94,7 +94,7 @@ export const enMessages = {
   },
   settings: {
     title: 'Settings',
-    appearance: 'Appearance',
+    appearance: 'Theme',
     themeAria: 'Theme',
     themeDark: 'Dark theme',
     themeLight: 'Light theme',
@@ -107,6 +107,10 @@ export const enMessages = {
     nspdButtonAria: 'NSPD',
     nspdPermissionDenied:
       'The button does not work without access to nspd.gov.ru. Allow access in the browser prompt or in the extension settings.',
+    moderation: 'Moderation',
+    general: 'Appearance',
+    editing: 'Editing',
+    style: 'Style',
     feedsFilter: 'Edits history filter',
     feedsFilterAria: 'Edits history filter',
     objectTracker: 'Object monitoring',
@@ -115,7 +119,7 @@ export const enMessages = {
     objectTrackerIntervalAria: 'Object history polling period',
     pointCounter: 'Vertex counter',
     pointCounterAria: 'Vertex counter',
-    goToButton: 'External geoservices',
+    goToButton: 'Button: External geoservices',
     showButtonAria: 'Show button',
     activeCount: '{active} of {total} active',
     goToHint: 'List order matches the order in the menu.',

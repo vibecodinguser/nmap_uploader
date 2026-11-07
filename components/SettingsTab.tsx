@@ -3,6 +3,8 @@ import { useMemo } from 'react'
 import { GoToLinksSettings } from '@/components/GoToLinksSettings'
 import { SegmentedRadioGroup } from '@/components/SegmentedRadioGroup'
 import { SettingsAboutSection } from '@/components/SettingsAboutSection'
+import { SettingsFieldRow } from '@/components/SettingsFieldRow'
+import { SettingsGroupSection } from '@/components/SettingsGroupSection'
 import { SettingsToggleRow } from '@/components/SettingsToggleRow'
 import { StrokeColorSection, type StrokeColorSettingsProps } from '@/components/StrokeColorSection'
 import type { useFeedsFilter } from '@/hooks/useFeedsFilter'
@@ -179,119 +181,128 @@ export const SettingsTab = ({
 
       <h2 className="settings-title">{t('settings.title')}</h2>
 
-      <section className="settings-section" aria-labelledby="settings-language-heading">
-        <h3 id="settings-language-heading" className="settings-section-title">
-          {t('locale.label')}
-        </h3>
-        <SegmentedRadioGroup
-          name="locale"
-          ariaLabel={t('settings.languageAria')}
-          value={locale}
-          options={localeOptions}
-          onChange={setLocale}
+      <SettingsGroupSection id="settings-general" title={t('settings.general')} defaultExpanded>
+        <SettingsFieldRow id="settings-language" title={t('locale.label')}>
+          <SegmentedRadioGroup
+            name="locale"
+            ariaLabel={t('settings.languageAria')}
+            value={locale}
+            options={localeOptions}
+            onChange={setLocale}
+          />
+        </SettingsFieldRow>
+
+        <SettingsFieldRow id="settings-appearance" title={t('settings.appearance')}>
+          <SegmentedRadioGroup
+            name="theme-mode"
+            ariaLabel={t('settings.themeAria')}
+            value={themeMode}
+            options={themeModeOptions}
+            onChange={onThemeModeChange}
+          />
+        </SettingsFieldRow>
+      </SettingsGroupSection>
+
+      <SettingsGroupSection id="settings-editing" title={t('settings.editing')}>
+        <SettingsToggleRow
+          id="settings-split-view-button"
+          variant="plain"
+          title={t('settings.splitViewButton')}
+          ariaLabel={t('settings.splitViewAria')}
+          checked={isSplitViewButtonEnabled}
+          disabled={isSplitViewButtonDisabled}
+          onChange={setSplitViewButtonEnabled}
         />
-      </section>
 
-      <section className="settings-section" aria-labelledby="settings-appearance-heading">
-        <h3 id="settings-appearance-heading" className="settings-section-title">
-          {t('settings.appearance')}
-        </h3>
-        <SegmentedRadioGroup
-          name="theme-mode"
-          ariaLabel={t('settings.themeAria')}
-          value={themeMode}
-          options={themeModeOptions}
-          onChange={onThemeModeChange}
+        <SettingsToggleRow
+          id="settings-notes-button"
+          variant="plain"
+          title={t('settings.notesButton')}
+          ariaLabel={t('settings.notesButtonAria')}
+          checked={isNotesButtonEnabled}
+          disabled={isNotesButtonDisabled}
+          onChange={setNotesButtonEnabled}
         />
-      </section>
 
-      <SettingsToggleRow
-        id="settings-split-view-button"
-        title={t('settings.splitViewButton')}
-        ariaLabel={t('settings.splitViewAria')}
-        checked={isSplitViewButtonEnabled}
-        disabled={isSplitViewButtonDisabled}
-        onChange={setSplitViewButtonEnabled}
-      />
+        <SettingsToggleRow
+          id="settings-nspd-button"
+          variant="plain"
+          title={t('settings.nspdButton')}
+          ariaLabel={t('settings.nspdButtonAria')}
+          checked={isNspdButtonEnabled}
+          disabled={isNspdButtonDisabled}
+          onChange={setNspdButtonEnabled}
+        >
+          {isNspdPermissionDenied ? (
+            <p className="settings-field-error" role="alert">
+              {t('settings.nspdPermissionDenied')}
+            </p>
+          ) : null}
+        </SettingsToggleRow>
 
-      <SettingsToggleRow
-        id="settings-notes-button"
-        title={t('settings.notesButton')}
-        ariaLabel={t('settings.notesButtonAria')}
-        checked={isNotesButtonEnabled}
-        disabled={isNotesButtonDisabled}
-        onChange={setNotesButtonEnabled}
-      />
+        <GoToLinksSettings {...goToLinks} variant="plain" />
 
-      <SettingsToggleRow
-        id="settings-nspd-button"
-        title={t('settings.nspdButton')}
-        ariaLabel={t('settings.nspdButtonAria')}
-        checked={isNspdButtonEnabled}
-        disabled={isNspdButtonDisabled}
-        onChange={setNspdButtonEnabled}
-      >
-        {isNspdPermissionDenied ? (
-          <p className="settings-field-error" role="alert">
-            {t('settings.nspdPermissionDenied')}
-          </p>
-        ) : null}
-      </SettingsToggleRow>
+        <SettingsToggleRow
+          id="settings-point-counter"
+          variant="plain"
+          title={t('settings.pointCounter')}
+          ariaLabel={t('settings.pointCounterAria')}
+          checked={isPointCounterEnabled}
+          disabled={isPointCounterDisabled}
+          onChange={(checked) => pointCounter?.setIsEnabled(checked)}
+        />
 
-      <SettingsToggleRow
-        id="settings-feeds-filter-button"
-        title={t('settings.feedsFilter')}
-        ariaLabel={t('settings.feedsFilterAria')}
-        checked={isFeedsFilterEnabled}
-        disabled={isFeedsFilterDisabled}
-        onChange={(checked) => feedsFilter?.setIsEnabled(checked)}
-      />
+        <SettingsToggleRow
+          id="settings-reload-after-upload"
+          variant="plain"
+          title={t('settings.reloadAfterUpload')}
+          ariaLabel={t('settings.reloadAfterUploadAria')}
+          checked={isReloadAfterUploadEnabled}
+          disabled={isReloadAfterUploadDisabled}
+          onChange={setReloadAfterUploadEnabled}
+        />
+      </SettingsGroupSection>
 
-      <SettingsToggleRow
-        id="settings-object-tracker"
-        title={t('settings.objectTracker')}
-        ariaLabel={t('settings.objectTrackerAria')}
-        checked={isObjectTrackerEnabled}
-        disabled={isObjectTrackerDisabled}
-        onChange={(checked) => objectTracker?.setIsEnabled(checked)}
-      >
-        {isObjectTrackerEnabled ? (
-          <div className="settings-object-tracker-interval">
-            <span className="settings-object-tracker-interval-label">
-              {t('settings.objectTrackerInterval')}
-            </span>
-            <SegmentedRadioGroup
-              name="object-tracker-interval"
-              ariaLabel={t('settings.objectTrackerIntervalAria')}
-              value={objectTrackerInterval}
-              options={objectTrackerIntervalOptions}
-              onChange={(value) => objectTracker?.setIntervalMinutes(Number(value))}
-            />
-          </div>
-        ) : null}
-      </SettingsToggleRow>
+      <SettingsGroupSection id="settings-moderation" title={t('settings.moderation')}>
+        <SettingsToggleRow
+          id="settings-feeds-filter-button"
+          variant="plain"
+          title={t('settings.feedsFilter')}
+          ariaLabel={t('settings.feedsFilterAria')}
+          checked={isFeedsFilterEnabled}
+          disabled={isFeedsFilterDisabled}
+          onChange={(checked) => feedsFilter?.setIsEnabled(checked)}
+        />
 
-      <SettingsToggleRow
-        id="settings-point-counter"
-        title={t('settings.pointCounter')}
-        ariaLabel={t('settings.pointCounterAria')}
-        checked={isPointCounterEnabled}
-        disabled={isPointCounterDisabled}
-        onChange={(checked) => pointCounter?.setIsEnabled(checked)}
-      />
+        <SettingsToggleRow
+          id="settings-object-tracker"
+          variant="plain"
+          title={t('settings.objectTracker')}
+          ariaLabel={t('settings.objectTrackerAria')}
+          checked={isObjectTrackerEnabled}
+          disabled={isObjectTrackerDisabled}
+          onChange={(checked) => objectTracker?.setIsEnabled(checked)}
+        >
+          {isObjectTrackerEnabled ? (
+            <div className="settings-object-tracker-interval">
+              <span className="settings-object-tracker-interval-label">
+                {t('settings.objectTrackerInterval')}
+              </span>
+              <SegmentedRadioGroup
+                name="object-tracker-interval"
+                ariaLabel={t('settings.objectTrackerIntervalAria')}
+                value={objectTrackerInterval}
+                options={objectTrackerIntervalOptions}
+                onChange={(value) => objectTracker?.setIntervalMinutes(Number(value))}
+              />
+            </div>
+          ) : null}
+        </SettingsToggleRow>
+      </SettingsGroupSection>
 
-      <GoToLinksSettings {...goToLinks} />
-
-      <SettingsToggleRow
-        id="settings-reload-after-upload"
-        title={t('settings.reloadAfterUpload')}
-        ariaLabel={t('settings.reloadAfterUploadAria')}
-        checked={isReloadAfterUploadEnabled}
-        disabled={isReloadAfterUploadDisabled}
-        onChange={setReloadAfterUploadEnabled}
-      />
-
-      <StrokeColorSection {...strokeColor} />
+      <SettingsGroupSection id="settings-style" title={t('settings.style')}>
+        <StrokeColorSection {...strokeColor} variant="plain" />
+      </SettingsGroupSection>
 
       <SettingsAboutSection />
     </div>

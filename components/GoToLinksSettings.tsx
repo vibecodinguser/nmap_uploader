@@ -33,7 +33,10 @@ type GoToLinksSettingsProps = Pick<
   | 'setItemActive'
   | 'moveItemUp'
   | 'moveItemDown'
->
+> & {
+  /** `card` — самостоятельная карточка настроек, `plain` — строка внутри общей секции. */
+  variant?: 'card' | 'plain'
+}
 
 type GoToLinksListRenderContext = {
   totalItems: number
@@ -99,6 +102,7 @@ export const GoToLinksSettings = ({
   setItemActive,
   moveItemUp,
   moveItemDown,
+  variant = 'card',
 }: GoToLinksSettingsProps) => {
   const t = useTranslate()
   const [isListExpanded, setIsListExpanded] = useState(false)
@@ -119,6 +123,7 @@ export const GoToLinksSettings = ({
   return (
     <SettingsToggleRow
       id="settings-go-to-menu-enabled"
+      variant={variant}
       title={t('settings.goToButton')}
       ariaLabel={t('settings.showButtonAria')}
       checked={isMenuEnabled}

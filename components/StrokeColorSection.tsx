@@ -14,7 +14,10 @@ export type StrokeColorSettingsProps = Pick<
   | 'canApply'
   | 'handleInputChange'
   | 'handleApply'
->
+> & {
+  /** `card` — самостоятельная карточка настроек, `plain` — строка внутри общей секции. */
+  variant?: 'card' | 'plain'
+}
 
 export const StrokeColorSection = memo(
   ({
@@ -27,6 +30,7 @@ export const StrokeColorSection = memo(
     canApply,
     handleInputChange,
     handleApply,
+    variant = 'card',
   }: StrokeColorSettingsProps) => {
     const t = useTranslate()
 
@@ -65,11 +69,13 @@ export const StrokeColorSection = memo(
       }
     }
 
-    return (
-      <section className="settings-section" aria-labelledby="settings-path-heading">
-        <h3 id="settings-path-heading" className="settings-section-title">
+    const HeadingTag = variant === 'card' ? 'h3' : 'h4'
+
+    const content = (
+      <>
+        <HeadingTag id="settings-path-heading" className="settings-section-title">
           {t('settings.strokeColor')}
-        </h3>
+        </HeadingTag>
         <div className="settings-field">
           <div className="settings-color-field">
             <input
@@ -124,6 +130,16 @@ export const StrokeColorSection = memo(
             </p>
           )}
         </div>
+      </>
+    )
+
+    if (variant === 'plain') {
+      return <div className="settings-toggle-item">{content}</div>
+    }
+
+    return (
+      <section className="settings-section" aria-labelledby="settings-path-heading">
+        {content}
       </section>
     )
   },

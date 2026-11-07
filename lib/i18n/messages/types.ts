@@ -108,6 +108,10 @@ export type Messages = {
     nspdButton: string
     nspdButtonAria: string
     nspdPermissionDenied: string
+    moderation: string
+    general: string
+    editing: string
+    style: string
     feedsFilter: string
     feedsFilterAria: string
     objectTracker: string

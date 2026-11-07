@@ -8,6 +8,8 @@ type SettingsToggleRowProps = Readonly<{
   disabled: boolean
   onChange: (checked: boolean) => void
   children?: ReactNode
+  /** `card` — самостоятельная карточка настроек, `plain` — строка внутри общей секции. */
+  variant?: 'card' | 'plain'
 }>
 
 export const SettingsToggleRow = ({
@@ -18,13 +20,17 @@ export const SettingsToggleRow = ({
   disabled,
   onChange,
   children,
+  variant = 'card',
 }: SettingsToggleRowProps) => {
-  return (
-    <section className="settings-section" aria-labelledby={`${id}-heading`}>
+  const headingId = `${id}-heading`
+  const HeadingTag = variant === 'card' ? 'h3' : 'h4'
+
+  const content = (
+    <>
       <div className="settings-toggle-row">
-        <h3 id={`${id}-heading`} className="settings-section-title">
+        <HeadingTag id={headingId} className="settings-section-title">
           {title}
-        </h3>
+        </HeadingTag>
         <label className="settings-toggle" htmlFor={id}>
           <input
             id={id}
@@ -43,6 +49,16 @@ export const SettingsToggleRow = ({
         </label>
       </div>
       {children}
+    </>
+  )
+
+  if (variant === 'plain') {
+    return <div className="settings-toggle-item">{content}</div>
+  }
+
+  return (
+    <section className="settings-section" aria-labelledby={headingId}>
+      {content}
     </section>
   )
 }

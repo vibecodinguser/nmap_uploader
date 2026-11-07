@@ -94,7 +94,7 @@ export const ruMessages = {
   },
   settings: {
     title: 'Настройки',
-    appearance: 'Оформление',
+    appearance: 'Тема',
     themeAria: 'Тема оформления',
     themeDark: 'Тёмная тема',
     themeLight: 'Светлая тема',
@@ -107,6 +107,10 @@ export const ruMessages = {
     nspdButtonAria: 'НСПД',
     nspdPermissionDenied:
       'Без доступа к nspd.gov.ru кнопка не работает. Разрешите доступ в запросе браузера или в настройках расширения.',
+    moderation: 'Модерация',
+    general: 'Оформление',
+    editing: 'Редактирование',
+    style: 'Стиль',
     feedsFilter: 'Фильтр истории правок',
     feedsFilterAria: 'Фильтр истории правок',
     objectTracker: 'Наблюдение за объектами',
@@ -115,7 +119,7 @@ export const ruMessages = {
     objectTrackerIntervalAria: 'Период опроса истории объектов',
     pointCounter: 'Счётчик вершин',
     pointCounterAria: 'Счётчик вершин',
-    goToButton: 'Внешние геосервисы',
+    goToButton: 'Кнопка: Внешние геосервисы',
     showButtonAria: 'Отображать кнопку',
     activeCount: '{active} из {total} активны',
     goToHint: 'Порядок пунктов в списке соответствует их расположению в меню.',

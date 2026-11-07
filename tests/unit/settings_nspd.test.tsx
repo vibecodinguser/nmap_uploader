@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { SettingsTab } from '@/components/SettingsTab'
 import { LocaleProvider } from '@/hooks/useLocale'
@@ -37,8 +37,16 @@ const buildProps = (permissionDenied: boolean) => ({
   },
 })
 
-const renderTab = (permissionDenied: boolean) =>
-  render(<SettingsTab {...buildProps(permissionDenied)} />, { wrapper: LocaleProvider })
+const renderTab = (permissionDenied: boolean) => {
+  const result = render(<SettingsTab {...buildProps(permissionDenied)} />, {
+    wrapper: LocaleProvider,
+  })
+
+  const section = screen.getByRole('region', { name: 'Редактирование' })
+  fireEvent.click(within(section).getByRole('button', { name: 'Редактирование' }))
+
+  return result
+}
 
 describe('SettingsTab: доступ к НСПД', () => {
   afterEach(cleanup)
@@ -61,6 +69,8 @@ describe('SettingsTab: доступ к НСПД', () => {
     props.nspdButton.setIsEnabled = setIsEnabled
 
     render(<SettingsTab {...props} />, { wrapper: LocaleProvider })
+    const section = screen.getByRole('region', { name: 'Редактирование' })
+    fireEvent.click(within(section).getByRole('button', { name: 'Редактирование' }))
     screen.getByRole('switch', { name: 'НСПД' }).click()
 
     expect(setIsEnabled).toHaveBeenCalledWith(true)
