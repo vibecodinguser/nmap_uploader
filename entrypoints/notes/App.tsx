@@ -12,19 +12,22 @@ export const NotesPopupApp = () => {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.parent && window.parent !== window) {
+      // `Window` в lib.dom не содержит console: он объявлен на globalThis.
+      // Родитель — обычное окно, поэтому console у него есть в рантайме.
+      const parentConsole = (window.parent as unknown as { console: Console }).console
       try {
         const origLog = console.log
         console.log = (...args: unknown[]) => {
           origLog(...args)
           try {
-            window.parent.console.log(...args)
+            parentConsole.log(...args)
           } catch {}
         }
         const origError = console.error
         console.error = (...args: unknown[]) => {
           origError(...args)
           try {
-            window.parent.console.error(...args)
+            parentConsole.error(...args)
           } catch {}
         }
       } catch {}
