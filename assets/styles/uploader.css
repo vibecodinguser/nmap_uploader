@@ -25,8 +25,12 @@
 
   /* Ховер строки заметки — как у нативного элемента списка редактора. */
   --notes-item-hover-bg: #f2f2f2;
-  --notes-icon-color: #1a73e8;
-  --notes-icon-hover-color: #0b57d0;
+
+  /* Кнопки-иконки заметки — палитра нативных `nk-icon`. */
+  --notes-icon-color: #666;
+  --notes-icon-colored: #6c7ac1;
+  --notes-icon-hover-color: #333;
+  --notes-icon-disabled: #bfbfbf;
 }
 
 :root.browser-firefox:not(.dark) {
@@ -49,8 +53,10 @@
 
   /* Значения совпадают с нативными токенами редактора в тёмной теме. */
   --notes-item-hover-bg: #4d4d4d;
-  --notes-icon-color: #4d9bff;
-  --notes-icon-hover-color: #8ab4ff;
+  --notes-icon-color: #bfbfbf;
+  --notes-icon-colored: #4da6ff;
+  --notes-icon-hover-color: #e6e6e6;
+  --notes-icon-disabled: #666;
 }
 
 *,
@@ -708,6 +714,18 @@ body {
   background-color: var(--notes-item-hover-bg);
 }
 
+/*
+ * Скрытый объект остаётся в списке, но приглушён — так видно, что заметка
+ * есть, а на карте её нет. Повторное нажатие на глаз возвращает объект.
+ */
+.notes-list-item--hidden {
+  opacity: 0.55;
+}
+
+.notes-list-item--hidden:hover {
+  opacity: 0.75;
+}
+
 .notes-list-item-edit-form {
   display: flex;
   flex-direction: column;
@@ -742,33 +760,59 @@ body {
 
 .notes-list-item-actions-wrapper {
   display: flex;
-  gap: 2px;
+  gap: 6px;
   flex-shrink: 0;
   align-self: flex-start;
   margin-left: auto;
 }
 
-.notes-list-action-btn {
-  background: none;
-  border: none;
-  padding: 4px;
-  cursor: pointer;
-  color: var(--notes-icon-color, #1a73e8);
-  display: flex;
+/*
+ * Кнопки-иконки строки заметки.
+ *
+ * Разметка повторяет нативные `nk-icon` / `nk-icon_colored` /
+ * `nk-icon_interactive`, но попап — отдельный iframe без стилей редактора,
+ * поэтому геометрию и палитру задаём здесь: 22×22, без отступов, SVG
+ * по размеру бокса.
+ */
+.notes-list-action-btn.nk-icon {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: calc(var(--radius) - 2px);
-  transition:
-    color var(--transition-ui),
-    background-color var(--transition-ui);
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--notes-icon-color);
+  fill: currentcolor;
+  cursor: pointer;
 }
 
-.notes-list-action-btn:hover:not(:disabled) {
+/* stylelint-disable-next-line selector-class-pattern -- модификаторы нативных nk-icon */
+.notes-list-action-btn.nk-icon_colored {
+  color: var(--notes-icon-colored);
+}
+
+.notes-list-action-btn.nk-icon > svg {
+  display: block;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  pointer-events: none;
+}
+
+/* stylelint-disable-next-line selector-class-pattern -- модификаторы нативных nk-icon */
+.notes-list-action-btn.nk-icon_interactive:hover {
   color: var(--notes-icon-hover-color);
 }
 
+/* stylelint-disable-next-line selector-class-pattern -- модификаторы нативных nk-icon */
+.notes-list-action-btn.nk-icon_disabled,
 .notes-list-action-btn:disabled {
-  opacity: 0.5;
+  color: var(--notes-icon-disabled);
+  cursor: default;
   pointer-events: none;
 }
 

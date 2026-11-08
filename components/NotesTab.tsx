@@ -27,6 +27,8 @@ export const NotesTab = () => {
     isDeletingId,
     expandedNoteIds,
     toggleExpand,
+    hiddenNoteIds,
+    toggleNoteVisibility,
     handleSaveEdit,
     handleDeleteNote,
   } = useNotesManagement()
@@ -62,12 +64,14 @@ export const NotesTab = () => {
                   key={expandId || idx}
                   p={p}
                   isExpanded={isExpanded}
+                  isHidden={Boolean(expandId && hiddenNoteIds.has(expandId))}
                   editingPointId={editingPointId}
                   editingName={editingName}
                   editingDesc={editingDesc}
                   isSavingEdit={isSavingEdit}
                   isDeletingId={isDeletingId}
                   toggleExpand={toggleExpand}
+                  onToggleVisibility={toggleNoteVisibility}
                   setEditingPointId={setEditingPointId}
                   setEditingName={setEditingName}
                   setEditingDesc={setEditingDesc}

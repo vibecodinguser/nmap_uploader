@@ -13,6 +13,10 @@ vi.mock('wxt/browser', () => ({
         get: vi.fn(() => Promise.resolve({})),
         set: vi.fn(() => Promise.resolve()),
       },
+      onChanged: {
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+      },
     },
     runtime: {
       sendMessage: vi.fn(() => Promise.resolve()),

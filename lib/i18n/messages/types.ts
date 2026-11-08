@@ -170,6 +170,8 @@ export type Messages = {
     save: string
     cancel: string
     showOnMap: string
+    hideObject: string
+    showObject: string
     more: string
     edit: string
     delete: string

@@ -13,6 +13,7 @@ import {
 } from '@/lib/message_auth'
 import { type DrawMapObjectsDetail, loadDrawMapObjectsForDate } from '@/lib/nmaps_draw_objects'
 import { extractTrackerDate, NOTES_SELECTED_DATE_STORAGE_KEY } from '@/lib/notes'
+import { readHiddenNoteIds } from '@/lib/notes/visibility'
 import { downloadIndexJson, getStoredAuth } from '@/lib/yandex/client'
 
 let lastDrawMapObjects: DrawMapObjectsDetail | null = null
@@ -72,10 +73,12 @@ export const handleDrawMapObjects: MessageHandler = (message, sender, sendRespon
       action: 'DRAW_MAP_OBJECTS',
       points: message.points,
       snapTargets: Array.isArray(message.snapTargets) ? message.snapTargets : [],
+      hiddenIds: Array.isArray(message.hiddenIds) ? message.hiddenIds : [],
     }
     lastDrawMapObjects = {
       points: Array.isArray(relayMessage.points) ? relayMessage.points : [],
       snapTargets: relayMessage.snapTargets,
+      hiddenIds: relayMessage.hiddenIds,
     }
     const relayTask = processRelayToMapTabs(sender, relayMessage, sendResponse, 'DRAW_MAP_OBJECTS')
     runBackgroundTask(relayTask, 'DRAW_MAP_OBJECTS')
@@ -101,15 +104,16 @@ export const handleGetDrawMapObjects: MessageHandler = (_message, sender, sendRe
           const selectedDate = stored[NOTES_SELECTED_DATE_STORAGE_KEY]
 
           if (typeof selectedDate === 'string' && auth?.token) {
-            lastDrawMapObjects = await loadDrawMapObjectsForDate({
+            const detail = await loadDrawMapObjectsForDate({
               selectedDate,
               token: auth.token,
               downloadIndex: downloadIndexJson,
             })
+            lastDrawMapObjects = { ...detail, hiddenIds: await readHiddenNoteIds() }
           }
         }
       } finally {
-        sendResponse(lastDrawMapObjects ?? { points: [], snapTargets: [] })
+        sendResponse(lastDrawMapObjects ?? { points: [], snapTargets: [], hiddenIds: [] })
       }
     }
     runBackgroundTask(loadDrawMapObjects(), 'GET_DRAW_MAP_OBJECTS')
@@ -135,12 +139,14 @@ export const handleTrackerDateChanged: MessageHandler = (message, sender) => {
       token: auth.token,
       downloadIndex: downloadIndexJson,
     })
-    lastDrawMapObjects = detail
+    const hiddenIds = await readHiddenNoteIds()
+    lastDrawMapObjects = { ...detail, hiddenIds }
     await processRelayToMapTabs(
       sender,
       {
         action: 'DRAW_MAP_OBJECTS',
         ...detail,
+        hiddenIds,
       },
       () => {},
       'TRACKER_DATE_CHANGED',

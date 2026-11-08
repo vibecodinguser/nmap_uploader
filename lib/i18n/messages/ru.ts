@@ -169,6 +169,8 @@ export const ruMessages = {
     save: 'Сохранить',
     cancel: 'Отмена',
     showOnMap: 'Показать на карте',
+    hideObject: 'Скрыть объект',
+    showObject: 'Показать объект',
     more: 'Ещё',
     edit: 'Редактировать',
     delete: 'Удалить',

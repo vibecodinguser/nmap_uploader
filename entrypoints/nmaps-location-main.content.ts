@@ -1,5 +1,6 @@
 import { defineContentScript } from 'wxt/utils/define-content-script'
 import {
+  applyNoteVisibility,
   centerMapOnLocation,
   findActiveMap,
   hookYmapsModuleMap,
@@ -196,6 +197,12 @@ export default defineContentScript({
 
       tracingAdapter.setTargets(detail.snapTargets)
       drawer.drawObjects(detail, getActiveMap)
+
+      // Нативный слой рисует сохранённые заметки сам: прячем их точечно.
+      // Перерисовка слоя может случиться позже, поэтому повторяем дважды.
+      applyNoteVisibility(detail, getActiveMap)
+      setTimeout(() => applyNoteVisibility(detail, getActiveMap), 300)
+      setTimeout(() => applyNoteVisibility(detail, getActiveMap), 1200)
     }
 
     document.addEventListener('nmaps:drawObjects', (event: Event) => {

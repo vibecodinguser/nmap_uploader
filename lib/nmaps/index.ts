@@ -1,4 +1,5 @@
 export * from './map_discovery'
+export * from './note_visibility'
 export * from './object_drawer'
 export * from './point_picker'
 export * from './projection'

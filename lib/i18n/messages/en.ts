@@ -169,6 +169,8 @@ export const enMessages = {
     save: 'Save',
     cancel: 'Cancel',
     showOnMap: 'Show on map',
+    hideObject: 'Hide object',
+    showObject: 'Show object',
     more: 'More',
     edit: 'Edit',
     delete: 'Delete',

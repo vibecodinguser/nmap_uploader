@@ -13,6 +13,7 @@ import type { RuntimeMessageSender } from '@/lib/message_auth'
 import { isTrustedNmapsContentSender, logRejectedMessage } from '@/lib/message_auth'
 import { loadDrawMapObjectsForDate } from '@/lib/nmaps_draw_objects'
 import { formatNoteTime } from '@/lib/notes'
+import { readHiddenNoteIds } from '@/lib/notes/visibility'
 import {
   isSidebarNotePayload,
   NOTES_SIDEBAR_UPLOAD_ACTION,
@@ -76,10 +77,11 @@ const uploadSidebarNote = async (
       token: auth.token,
       downloadIndex: downloadIndexJson,
     })
-    setLastDrawMapObjects(detail)
+    const hiddenIds = await readHiddenNoteIds()
+    setLastDrawMapObjects({ ...detail, hiddenIds })
     await processRelayToMapTabs(
       sender,
-      { action: 'DRAW_MAP_OBJECTS', ...detail },
+      { action: 'DRAW_MAP_OBJECTS', ...detail, hiddenIds },
       () => {},
       NOTES_SIDEBAR_UPLOAD_ACTION,
     )

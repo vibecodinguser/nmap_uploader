@@ -15,7 +15,8 @@ export class NmapsObjectDrawer {
     const map = activeMapGetter()
     if (!map) return
 
-    const unsavedPoints = points.filter((p) => !p.id)
+    const hidden = new Set(detail.hiddenIds ?? [])
+    const unsavedPoints = points.filter((p) => !p.id && !(p.localId && hidden.has(p.localId)))
     if (unsavedPoints.length === 0) {
       this.clear()
       return

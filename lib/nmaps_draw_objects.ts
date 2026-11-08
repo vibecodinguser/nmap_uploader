@@ -17,6 +17,8 @@ export type MapObjectLike = {
 export type DrawMapObjectsDetail = {
   points: MapObjectLike[]
   snapTargets: PolygonSnapTarget[]
+  /** id заметок, объекты которых нужно скрыть на карте. */
+  hiddenIds?: string[]
 }
 
 const isCoordinate = (value: unknown): value is [number, number] =>
@@ -70,7 +72,9 @@ export const createPolygonSnapTargets = (points: MapObjectLike[]): PolygonSnapTa
 export const createDrawMapObjectsDetail = (
   points: MapObjectLike[],
   snapTargets: PolygonSnapTarget[],
-): DrawMapObjectsDetail => ({ points, snapTargets })
+  hiddenIds: string[] = [],
+): DrawMapObjectsDetail =>
+  hiddenIds.length > 0 ? { points, snapTargets, hiddenIds } : { points, snapTargets }
 
 export const createDrawMapObjectsFromNmapIndex = (
   index: NmapIndex,
@@ -161,5 +165,8 @@ export const parseDrawMapObjectsDetail = (raw: unknown): DrawMapObjectsDetail | 
   return {
     points: record.points as MapObjectLike[],
     snapTargets,
+    ...(Array.isArray(record.hiddenIds) && record.hiddenIds.length > 0
+      ? { hiddenIds: record.hiddenIds.filter((id): id is string => typeof id === 'string') }
+      : {}),
   }
 }

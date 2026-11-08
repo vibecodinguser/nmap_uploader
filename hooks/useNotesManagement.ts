@@ -7,6 +7,12 @@ import {
   createPolygonSnapTargets,
 } from '@/lib/nmaps_draw_objects'
 import { extractTrackerDate, NOTES_SELECTED_DATE_STORAGE_KEY, type NotePoint } from '@/lib/notes'
+import {
+  HIDDEN_NOTE_IDS_STORAGE_KEY,
+  readHiddenNoteIds,
+  toggleHiddenNoteId,
+  writeHiddenNoteIds,
+} from '@/lib/notes/visibility'
 import { downloadIndexJson, getStoredAuth, uploadIndexJson } from '@/lib/yandex/client'
 
 /**
@@ -26,6 +32,41 @@ export const useNotesManagement = () => {
   const [isSavingEdit, setIsSavingEdit] = useState(false)
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null)
   const [expandedNoteIds, setExpandedNoteIds] = useState<Set<string>>(new Set())
+  const [hiddenNoteIds, setHiddenNoteIds] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    let isMounted = true
+    readHiddenNoteIds()
+      .then((ids) => {
+        if (isMounted) setHiddenNoteIds(new Set(ids))
+      })
+      .catch(() => {})
+
+    const handleStorageChange = (
+      changes: Record<string, { newValue?: unknown }>,
+      area: string,
+    ): void => {
+      if (area !== 'local') return
+      const next = changes[HIDDEN_NOTE_IDS_STORAGE_KEY]?.newValue
+      if (Array.isArray(next)) {
+        setHiddenNoteIds(new Set(next.filter((id): id is string => typeof id === 'string')))
+      }
+    }
+
+    browser.storage.onChanged.addListener(handleStorageChange)
+    return () => {
+      isMounted = false
+      browser.storage.onChanged.removeListener(handleStorageChange)
+    }
+  }, [])
+
+  const toggleNoteVisibility = (id: string): void => {
+    setHiddenNoteIds((prev) => {
+      const next = toggleHiddenNoteId([...prev], id)
+      writeHiddenNoteIds(next).catch(() => {})
+      return new Set(next)
+    })
+  }
 
   const toggleExpand = (id?: string) => {
     if (!id) return
@@ -155,7 +196,9 @@ export const useNotesManagement = () => {
   useEffect(() => {
     if (!isInitialized) return
     const pts = points.filter((p) => p.date === selectedDate)
-    const detail = createDrawMapObjectsDetail(pts, createPolygonSnapTargets(pts))
+    const detail = createDrawMapObjectsDetail(pts, createPolygonSnapTargets(pts), [
+      ...hiddenNoteIds,
+    ])
     const detailString = JSON.stringify(detail)
 
     if (lastDispatchedRef.current === detailString) return
@@ -172,7 +215,7 @@ export const useNotesManagement = () => {
     )
 
     browser.runtime.sendMessage({ action: 'DRAW_MAP_OBJECTS', ...detail }).catch(() => {})
-  }, [points, selectedDate, isInitialized])
+  }, [points, selectedDate, isInitialized, hiddenNoteIds])
 
   // Действия пользователя
   const handleSaveEdit = async (id: string) => {
@@ -252,6 +295,8 @@ export const useNotesManagement = () => {
     isDeletingId,
     expandedNoteIds,
     toggleExpand,
+    hiddenNoteIds,
+    toggleNoteVisibility,
     handleSaveEdit,
     handleDeleteNote,
   }
