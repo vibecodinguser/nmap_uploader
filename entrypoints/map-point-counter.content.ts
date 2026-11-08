@@ -4,6 +4,7 @@ import {
   isCounterResetTarget,
   isGeometryEditorActive,
   isPointCounterStateMessage,
+  MultipartEditorCounter,
   POINT_COUNTER_REQUEST_MSG,
   PointCounterUi,
   patchCanvasForPointCounter,
@@ -28,6 +29,7 @@ export default defineContentScript({
     let lastMapInteractionTime = 0
     let isCounterEnabled = true
     let svgObserver: SvgPointCounterObserver | null = null
+    let multipartCounter: MultipartEditorCounter | null = null
 
     const handleUserInteraction = (e: Event) => {
       if (!isCounterEnabled) return
@@ -39,6 +41,7 @@ export default defineContentScript({
         lastMapInteractionTime = 0
         svgObserver?.resetCounter()
         resetCanvasPointCounter()
+        multipartCounter?.reset()
         ui.hide()
         return
       }
@@ -47,6 +50,7 @@ export default defineContentScript({
         lastMapInteractionTime = 0
         svgObserver?.resetCounter()
         resetCanvasPointCounter()
+        multipartCounter?.reset()
         ui.hide()
         return
       }
@@ -75,10 +79,17 @@ export default defineContentScript({
     })
     svgObserver.start()
 
+    multipartCounter = new MultipartEditorCounter({
+      ui,
+      isEnabled: getIsCounterEnabled,
+    })
+    multipartCounter.start()
+
     window.addEventListener('message', (event) => {
       if (event.data?.action === 'RESET_POINT_COUNTER') {
         svgObserver?.resetCounter()
         resetCanvasPointCounter()
+        multipartCounter?.reset()
         lastMapInteractionTime = 0
         return
       }
@@ -88,6 +99,7 @@ export default defineContentScript({
         if (isCounterEnabled === nextEnabled) return
 
         isCounterEnabled = nextEnabled
+        multipartCounter?.refresh()
         if (!isCounterEnabled) {
           svgObserver?.stop()
           resetCanvasPointCounter()

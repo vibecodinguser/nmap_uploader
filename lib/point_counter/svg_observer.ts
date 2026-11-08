@@ -5,6 +5,7 @@ import {
   MAX_OBSERVED_POINTS,
   normalizeActiveDrawingPoints,
 } from './core'
+import { isExternalCounterDisabled } from './counter_source'
 import type { PointCounterUi } from './dom_ui'
 import { attachCounterResetListeners } from './reset_listeners'
 import {
@@ -150,6 +151,8 @@ export class SvgPointCounterObserver {
   }
 
   public checkSystemBanner(force = false): boolean {
+    if (isExternalCounterDisabled()) return true
+
     const shouldHide = this.isCounterEnabled ? this.isCounterEnabled() : true
     const remaining = getThrottledSystemRemainingVertices(undefined, force, shouldHide)
     if (remaining !== null) {
@@ -232,6 +235,7 @@ export class SvgPointCounterObserver {
   }
 
   private processElementAdded(el: Element): void {
+    if (isExternalCounterDisabled()) return
     if (!isGeometryEditorActive()) return
     if (!isMapDrawingSvgElement(el)) return
     if (Date.now() - this.getLastMapInteractionTime() > MAP_INTERACTION_TIMEOUT_MS) return
@@ -259,6 +263,8 @@ export class SvgPointCounterObserver {
   }
 
   private processElementRemoved(el: Element): void {
+    if (isExternalCounterDisabled()) return
+
     if (this.candidatePaths.has(el)) {
       this.candidatePaths.delete(el)
     }
@@ -325,6 +331,7 @@ export class SvgPointCounterObserver {
   }
 
   private processAttributeChange(el: Element): void {
+    if (isExternalCounterDisabled()) return
     if (!isGeometryEditorActive()) return
     if (!isMapDrawingSvgElement(el)) return
 

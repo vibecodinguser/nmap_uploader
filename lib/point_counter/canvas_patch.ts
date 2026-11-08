@@ -4,6 +4,7 @@ import {
   MAX_OBSERVED_POINTS,
   normalizeActiveDrawingPoints,
 } from './core'
+import { isExternalCounterDisabled } from './counter_source'
 import type { PointCounterUi } from './dom_ui'
 import { getThrottledSystemRemainingVertices, isGeometryEditorActive } from './system_banner'
 
@@ -141,6 +142,10 @@ export const patchCanvasForPointCounter = ({
       return (originalStroke as (...a: unknown[]) => void).apply(this, args)
     }
 
+    if (isExternalCounterDisabled()) {
+      return (originalStroke as (...a: unknown[]) => void).apply(this, args)
+    }
+
     if (!isGeometryEditorActive()) {
       return (originalStroke as (...a: unknown[]) => void).apply(this, args)
     }
@@ -158,27 +163,33 @@ export const patchCanvasForPointCounter = ({
 
       if (!resetTimeout && typeof window !== 'undefined') {
         resetTimeout = window.setTimeout(() => {
+          const strokePoints = maxPointsForColor
+          maxPointsForColor = 0
+          resetTimeout = null
+
+          // Пока счётчик ведёт модель редактора или он скрыт по решению модели,
+          // отложенный показ от текущего штриха не должен перетирать состояние.
+          if (isExternalCounterDisabled()) return
+
           const shouldHide = isEnabled ? isEnabled() : true
           const systemRemaining = getThrottledSystemRemainingVertices(undefined, true, shouldHide)
           if (systemRemaining !== null) {
             ui.showRemaining(systemRemaining)
-            canvasLastShownPoints = maxPointsForColor
-          } else if (maxPointsForColor >= 1 && maxPointsForColor !== canvasLastShownPoints) {
-            const isExceedingLimit = maxPointsForColor > MAX_OBSERVED_POINTS
+            canvasLastShownPoints = strokePoints
+          } else if (strokePoints >= 1 && strokePoints !== canvasLastShownPoints) {
+            const isExceedingLimit = strokePoints > MAX_OBSERVED_POINTS
 
             if (isExceedingLimit) {
               ui.hide()
               canvasLastShownPoints = 0
-            } else if (maxPointsForColor <= 2 && canvasLastShownPoints > 2) {
+            } else if (strokePoints <= 2 && canvasLastShownPoints > 2) {
               // Игнорируем скачок вниз до 1-2 точек (отрисовка вспомогательных отрезков/ручек)
             } else {
-              const placedPoints = normalizeActiveDrawingPoints(maxPointsForColor)
+              const placedPoints = normalizeActiveDrawingPoints(strokePoints)
               ui.show(placedPoints)
-              canvasLastShownPoints = maxPointsForColor
+              canvasLastShownPoints = strokePoints
             }
           }
-          maxPointsForColor = 0
-          resetTimeout = null
         }, 50)
       }
     }

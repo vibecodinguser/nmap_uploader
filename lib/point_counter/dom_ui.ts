@@ -8,6 +8,7 @@ import {
   getCounterStatus,
   getCounterThemeStyle,
 } from '@/lib/point_counter/core'
+import { isCounterSuppressed } from '@/lib/point_counter/counter_source'
 
 export const UI_WRAPPER_ID = 'nmap-point-counter-wrapper'
 
@@ -58,6 +59,8 @@ export class PointCounterUi {
   }
 
   public show(count: number): void {
+    if (isCounterSuppressed()) return
+
     this.ensureCreated()
     if (!this.counterWrapper || !this.counterText) return
 
@@ -71,6 +74,8 @@ export class PointCounterUi {
   }
 
   public showRemaining(remaining: number): void {
+    if (isCounterSuppressed()) return
+
     this.ensureCreated()
     if (!this.counterWrapper || !this.counterText) return
 
