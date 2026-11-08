@@ -181,14 +181,7 @@ describe('a11y: UploadStatusMessage', () => {
 
 describe('a11y: NotesTab', () => {
   it('без нарушений в дефолтном состоянии', async () => {
-    const { container } = renderA11y(
-      <NotesTab
-        isUploading={false}
-        isLoggedIn={false}
-        onRequireAuth={noop}
-        onManualUpload={noop}
-      />,
-    )
+    const { container } = renderA11y(<NotesTab />)
 
     await expectNoA11yViolations(container)
   })

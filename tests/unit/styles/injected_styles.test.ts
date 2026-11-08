@@ -15,6 +15,7 @@ import {
 } from '@/lib/feeds_filter/dropdown_styles'
 import { GO_TO_SPLIT_STYLES, GO_TO_STYLES } from '@/lib/go_to/styles_css'
 import { INJECTED_TOKENS_CSS } from '@/lib/injected_styles'
+import { NOTES_SIDEBAR_STYLES } from '@/lib/notes_sidebar/styles'
 import { TRACKER_STYLES } from '@/lib/object_tracker/ui/styles'
 import { HIDER_CSS } from '@/lib/point_counter/banner_suppressor'
 import { buildRecolorStyleSheet } from '@/lib/stroke_color/recolor_core'
@@ -36,6 +37,7 @@ const SHEETS = {
   'feeds-card-hidden': FEED_CARD_HIDDEN_STYLES,
   'go-to': GO_TO_STYLES,
   'go-to-split': GO_TO_SPLIT_STYLES,
+  'notes-sidebar': NOTES_SIDEBAR_STYLES,
   'banner-suppressor': HIDER_CSS,
   'stroke-recolor': buildRecolorStyleSheet('#00ff00'),
 } as const
@@ -54,6 +56,7 @@ const IMPORTANT_BUDGET: Record<keyof typeof SHEETS, number> = {
   'feeds-card-hidden': 1,
   'go-to': 15,
   'go-to-split': 6,
+  'notes-sidebar': 0,
   'banner-suppressor': 1,
   'stroke-recolor': 1,
 }

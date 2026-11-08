@@ -12,7 +12,7 @@ import {
   logRejectedMessage,
 } from '@/lib/message_auth'
 import { type DrawMapObjectsDetail, loadDrawMapObjectsForDate } from '@/lib/nmaps_draw_objects'
-import { extractTrackerDate } from '@/lib/notes/date_utils'
+import { extractTrackerDate, NOTES_SELECTED_DATE_STORAGE_KEY } from '@/lib/notes'
 import { downloadIndexJson, getStoredAuth } from '@/lib/yandex/client'
 
 let lastDrawMapObjects: DrawMapObjectsDetail | null = null
@@ -94,10 +94,11 @@ export const handleGetDrawMapObjects: MessageHandler = (_message, sender, sendRe
           !lastDrawMapObjects ||
           (lastDrawMapObjects.points.length === 0 && lastDrawMapObjects.snapTargets.length === 0)
         ) {
-          const [{ notes_selected_date: selectedDate }, auth] = await Promise.all([
-            browser.storage.local.get('notes_selected_date'),
+          const [stored, auth] = await Promise.all([
+            browser.storage.local.get(NOTES_SELECTED_DATE_STORAGE_KEY),
             getStoredAuth(),
           ])
+          const selectedDate = stored[NOTES_SELECTED_DATE_STORAGE_KEY]
 
           if (typeof selectedDate === 'string' && auth?.token) {
             lastDrawMapObjects = await loadDrawMapObjectsForDate({
@@ -125,7 +126,7 @@ export const handleTrackerDateChanged: MessageHandler = (message, sender) => {
   if (!date) return false
 
   const task = async () => {
-    await browser.storage.local.set({ notes_selected_date: date })
+    await browser.storage.local.set({ [NOTES_SELECTED_DATE_STORAGE_KEY]: date })
     const auth = await getStoredAuth()
     if (!auth?.token) return
 

@@ -56,6 +56,8 @@ export default defineContentScript({
     })
 
     let ui: SidebarUi | undefined
+    /** Кто запустил выбор координат: попап или блок создания в сайдбаре. */
+    let activePickSource: string | undefined
 
     const ensureUi = (): SidebarUi => {
       ui ??= createSidebarIframeUi(() => browser.runtime.getURL(PANEL_PAGE))
@@ -130,10 +132,12 @@ export default defineContentScript({
           break
         case START_POINT_PICKING_ACTION: {
           const geomType = typeof message.geomType === 'string' ? message.geomType : 'Point'
+          activePickSource = typeof message.source === 'string' ? message.source : undefined
           notifyStartPickPoint(geomType)
           break
         }
         case CANCEL_POINT_PICKING_ACTION:
+          activePickSource = undefined
           notifyCancelPickPoint()
           break
         case 'centerMap':
@@ -151,11 +155,14 @@ export default defineContentScript({
     const handlePointPicked = (event: Event): void => {
       const parsed = parsePointPickedEvent(event)
       if (parsed) {
+        const source = activePickSource
+        activePickSource = undefined
         browser.runtime
           .sendMessage({
             action: POINT_PICKED_ACTION,
             coords: parsed.coords,
             geomType: parsed.geomType,
+            source,
           })
           .catch((error: unknown) => {
             console.error('[nmap_uploader] pointPicked send failed:', error)

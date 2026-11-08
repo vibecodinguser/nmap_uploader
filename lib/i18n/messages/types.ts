@@ -170,6 +170,7 @@ export type Messages = {
     save: string
     cancel: string
     showOnMap: string
+    more: string
     edit: string
     delete: string
     deleteConfirm: string
@@ -183,6 +184,8 @@ export type Messages = {
     coordsLabel: string
     figureOfPoints: string
     noteDescPlaceholder: string
+    dateRequired: string
+    saved: string
     noteExtendedDescPlaceholder: string
   }
   mapPointCounter: {

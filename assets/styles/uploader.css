@@ -22,6 +22,11 @@
   --elevation-tab-active-dark: 0 1px 3px rgba(0, 0, 0, 0.45);
   --elevation-segment-checked: 0 1px 2px rgba(0, 0, 0, 0.08);
   --elevation-segment-checked-dark: 0 1px 2px rgba(0, 0, 0, 0.25);
+
+  /* Ховер строки заметки — как у нативного элемента списка редактора. */
+  --notes-item-hover-bg: #f2f2f2;
+  --notes-icon-color: #1a73e8;
+  --notes-icon-hover-color: #0b57d0;
 }
 
 :root.browser-firefox:not(.dark) {
@@ -41,6 +46,11 @@
   --surface-hover-border: #6d6d6d;
   --success: #6abf69;
   --error: #e57373;
+
+  /* Значения совпадают с нативными токенами редактора в тёмной теме. */
+  --notes-item-hover-bg: #4d4d4d;
+  --notes-icon-color: #4d9bff;
+  --notes-icon-hover-color: #8ab4ff;
 }
 
 *,
@@ -684,6 +694,18 @@ body {
   border-right: none;
   border-radius: 0;
   box-sizing: border-box;
+  transition: background-color var(--transition-ui);
+}
+
+/*
+ * Ховер строки заметки.
+ *
+ * Повторяет нативный `.nk-list-item-view_interactive:hover` из редактора:
+ * подсвечивается вся строка целиком, поэтому иконки действий получают ховер
+ * наравне с заголовком.
+ */
+.notes-list-item:hover {
+  background-color: var(--notes-item-hover-bg);
 }
 
 .notes-list-item-edit-form {
@@ -731,10 +753,18 @@ body {
   border: none;
   padding: 4px;
   cursor: pointer;
-  color: var(--nmap-accent, #1a73e8);
+  color: var(--notes-icon-color, #1a73e8);
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: calc(var(--radius) - 2px);
+  transition:
+    color var(--transition-ui),
+    background-color var(--transition-ui);
+}
+
+.notes-list-action-btn:hover:not(:disabled) {
+  color: var(--notes-icon-hover-color);
 }
 
 .notes-list-action-btn:disabled {
@@ -742,45 +772,31 @@ body {
   pointer-events: none;
 }
 
-.notes-geom-type-container {
-  margin-bottom: 16px;
+.notes-tooltip-anchor {
+  position: relative;
+  display: inline-flex;
 }
 
-.notes-geom-type-label {
-  display: block;
-  font-size: 12px;
-  color: var(--nmap-text-secondary);
-  margin-bottom: 4px;
+.notes-tooltip {
+  position: fixed;
+  z-index: 1000;
+  max-width: min(240px, calc(100vw - 16px));
+  padding: 6px 10px;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #000000;
+  font-family: "Yandex Sans Text", "YS Text", Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.3;
+  white-space: normal;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
 }
 
-.notes-geom-type-select {
-  width: 100%;
-  height: 40px;
-  padding: 0 1rem;
-  font-size: var(--text-sm);
-  color: var(--foreground);
-  border: 1px solid var(--input);
-  background-color: transparent;
-  border-radius: var(--radius);
-  font-family: var(--font-family), sans-serif;
-  transition:
-    box-shadow var(--transition-ui),
-    border-color var(--transition-ui);
-  outline: none;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 1rem center;
-  background-size: 16px;
-}
-
-.dark .notes-geom-type-select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-}
-
-.notes-geom-type-select:focus {
-  border-color: var(--ring);
-  box-shadow: var(--input-focus-shadow);
+.dark .notes-tooltip {
+  background-color: #32333d;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 .notes-loading {
@@ -798,36 +814,6 @@ body {
   list-style-type: none;
   padding: 0;
   margin: 0;
-}
-
-.notes-manual-upload {
-  margin-top: 16px;
-  padding: 16px;
-  background-color: var(--muted);
-  border-radius: var(--radius);
-}
-
-.notes-manual-upload-info {
-  font-size: 12px;
-  color: var(--muted-foreground);
-  margin-bottom: 8px;
-}
-
-.notes-manual-upload-input {
-  margin-bottom: 12px;
-}
-
-.notes-manual-upload-textarea {
-  resize: vertical;
-}
-
-.notes-manual-upload-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.notes-manual-upload-actions > button {
-  flex: 1;
 }
 
 .points-section {

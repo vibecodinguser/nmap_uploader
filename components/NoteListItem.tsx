@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { browser } from 'wxt/browser'
+import { AnchoredTooltip } from '@/components/AnchoredTooltip'
 import { useLocale } from '@/hooks/useLocale'
 import { calculateBoundingBox, type NotePoint } from '@/lib/notes'
 
@@ -24,8 +25,6 @@ export type NoteListItemProps = {
   editingName: string
   editingDesc: string
   isSavingEdit: boolean
-  isUploading: boolean
-  isPicking: boolean
   isDeletingId: string | null
   toggleExpand: (id?: string) => void
   setEditingPointId: (id: string | null) => void
@@ -144,8 +143,6 @@ export const NoteItemContent = ({
 
 export const NoteItemActions = ({
   p,
-  isUploading,
-  isPicking,
   isDeletingId,
   setEditingPointId,
   setEditingName,
@@ -154,8 +151,6 @@ export const NoteItemActions = ({
 }: Pick<
   NoteListItemProps,
   | 'p'
-  | 'isUploading'
-  | 'isPicking'
   | 'isDeletingId'
   | 'setEditingPointId'
   | 'setEditingName'
@@ -176,29 +171,28 @@ export const NoteItemActions = ({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [menuOpen])
 
+  const handleShowOnMap = (): void => {
+    const bbox = calculateBoundingBox(p.geomCoords)
+    browser.runtime
+      .sendMessage({
+        action: 'centerMap',
+        latitude: p.latitude,
+        longitude: p.longitude,
+        bbox,
+        zoom: 18,
+      })
+      .catch(console.error)
+  }
+
   return (
     <div className="notes-list-item-actions-wrapper">
-      <button
-        type="button"
-        data-tooltip={t('notes.showOnMap')}
-        onClick={() => {
-          if (isUploading || isPicking) return
-          const bbox = calculateBoundingBox(p.geomCoords)
-          browser.runtime
-            .sendMessage({
-              action: 'centerMap',
-              latitude: p.latitude,
-              longitude: p.longitude,
-              bbox,
-              zoom: 18,
-            })
-            .catch(console.error)
-        }}
-        disabled={isUploading || isPicking}
-        className="notes-list-action-btn yandex-tooltip-wrapper"
+      <AnchoredTooltip
+        label={t('notes.showOnMap')}
+        className="notes-list-action-btn"
+        onClick={handleShowOnMap}
       >
         <LocateFixed size={ICON_SIZE} />
-      </button>
+      </AnchoredTooltip>
 
       <div ref={menuRef} style={{ position: 'relative', display: 'flex' }}>
         <button
@@ -207,8 +201,8 @@ export const NoteItemActions = ({
             e.stopPropagation()
             setMenuOpen(!menuOpen)
           }}
-          disabled={isUploading || isPicking}
           className="notes-list-action-btn"
+          aria-label={t('notes.more')}
         >
           <MoreVertical size={ICON_SIZE} />
         </button>
@@ -219,12 +213,12 @@ export const NoteItemActions = ({
               onClick={(e) => {
                 e.stopPropagation()
                 setMenuOpen(false)
-                if (isUploading || isPicking || p.id === undefined) return
+                if (p.id === undefined) return
                 setEditingPointId(p.id)
                 setEditingName(p.name)
                 setEditingDesc(p.noteDesc || '')
               }}
-              disabled={isUploading || isPicking || p.id === undefined}
+              disabled={p.id === undefined}
               className="notes-list-item-menu-btn"
             >
               <Pencil size={ICON_SIZE_SMALL} />
@@ -235,10 +229,10 @@ export const NoteItemActions = ({
               onClick={(e) => {
                 e.stopPropagation()
                 setMenuOpen(false)
-                if (isUploading || isPicking || p.id === undefined) return
+                if (p.id === undefined) return
                 handleDeleteNote(p.id)
               }}
-              disabled={isUploading || isPicking || p.id === undefined || isDeletingId === p.id}
+              disabled={p.id === undefined || isDeletingId === p.id}
               className="notes-list-item-menu-btn notes-list-item-menu-btn--danger"
             >
               {isDeletingId === p.id ? (
@@ -258,8 +252,6 @@ export const NoteItemActions = ({
 export const NoteListItemView = ({
   p,
   isExpanded,
-  isUploading,
-  isPicking,
   isDeletingId,
   toggleExpand,
   setEditingPointId,
@@ -270,8 +262,6 @@ export const NoteListItemView = ({
   NoteListItemProps,
   | 'p'
   | 'isExpanded'
-  | 'isUploading'
-  | 'isPicking'
   | 'isDeletingId'
   | 'toggleExpand'
   | 'setEditingPointId'
@@ -284,8 +274,6 @@ export const NoteListItemView = ({
       <NoteItemContent p={p} isExpanded={isExpanded} toggleExpand={toggleExpand} />
       <NoteItemActions
         p={p}
-        isUploading={isUploading}
-        isPicking={isPicking}
         isDeletingId={isDeletingId}
         setEditingPointId={setEditingPointId}
         setEditingName={setEditingName}

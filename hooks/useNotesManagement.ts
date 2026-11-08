@@ -1,37 +1,25 @@
 import { useEffect, useRef, useState } from 'react'
 import { browser } from 'wxt/browser'
-import type { ManualPointInput } from '@/hooks/usePointUpload'
 import { displayToIso } from '@/lib/date_format'
 import {
   createDrawMapObjectsDetail,
   createDrawMapObjectsFromNmapIndex,
   createPolygonSnapTargets,
 } from '@/lib/nmaps_draw_objects'
-import { extractTrackerDate, type GeomType, type NotePoint } from '@/lib/notes'
-import { POINT_PICKED_ACTION, START_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
-import { requireAuthBeforeAction } from '@/lib/require_auth'
+import { extractTrackerDate, NOTES_SELECTED_DATE_STORAGE_KEY, type NotePoint } from '@/lib/notes'
 import { downloadIndexJson, getStoredAuth, uploadIndexJson } from '@/lib/yandex/client'
 
-export type UseNotesManagementProps = {
-  isLoggedIn: boolean
-  onRequireAuth: () => void
-  onManualUpload: (input: ManualPointInput) => void
-}
-
-export const useNotesManagement = ({
-  isLoggedIn,
-  onRequireAuth,
-  onManualUpload,
-}: UseNotesManagementProps) => {
+/**
+ * Управление заметками выбранной даты: загрузка списка, редактирование, удаление.
+ *
+ * Создание заметок живёт в сайдбаре (`lib/notes_sidebar`): попап отвечает
+ * только за управление уже сохранёнными заметками.
+ */
+export const useNotesManagement = () => {
   const [selectedDate, setSelectedDate] = useState('')
   const [points, setPoints] = useState<NotePoint[]>([])
   const [isInitialized, setIsInitialized] = useState(false)
   const [isLoadingNotes, setIsLoadingNotes] = useState(false)
-  const [isPicking, setIsPicking] = useState(false)
-  const [pendingCoords, setPendingCoords] = useState<{ lat: number; lon: number }[] | null>(null)
-  const [pendingName, setPendingName] = useState('')
-  const [pendingDesc, setPendingDesc] = useState('')
-  const [geomType, setGeomType] = useState<GeomType | null>(null)
   const [editingPointId, setEditingPointId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
   const [editingDesc, setEditingDesc] = useState('')
@@ -57,9 +45,10 @@ export const useNotesManagement = ({
         let initialDate = extractTrackerDate(response?.date)
 
         if (!initialDate) {
-          const res = await browser.storage.local.get(['notes_selected_date'])
-          if (typeof res.notes_selected_date === 'string') {
-            initialDate = res.notes_selected_date
+          const res = await browser.storage.local.get([NOTES_SELECTED_DATE_STORAGE_KEY])
+          const storedDate = res[NOTES_SELECTED_DATE_STORAGE_KEY]
+          if (typeof storedDate === 'string') {
+            initialDate = storedDate
           }
         }
 
@@ -79,7 +68,7 @@ export const useNotesManagement = ({
   // 2. Сохранение даты в storage
   useEffect(() => {
     if (!isInitialized) return
-    browser.storage.local.set({ notes_selected_date: selectedDate }).catch(() => {})
+    browser.storage.local.set({ [NOTES_SELECTED_DATE_STORAGE_KEY]: selectedDate }).catch(() => {})
   }, [selectedDate, isInitialized])
 
   // 3. Загрузка точек выбранной даты
@@ -133,14 +122,7 @@ export const useNotesManagement = ({
   useEffect(() => {
     const handleRuntimeMessage = (message: unknown) => {
       const msg = message as Record<string, unknown> | null | undefined
-      if (msg?.action === POINT_PICKED_ACTION) {
-        setIsPicking(false)
-        if (Array.isArray(msg.coords)) {
-          const coordsArr = (msg.coords as number[][]).map((c) => ({ lat: c[0], lon: c[1] }))
-          setPendingCoords(coordsArr)
-          setPendingName('')
-        }
-      } else if (msg?.action === 'TRACKER_DATE_CHANGED' && msg.date) {
+      if (msg?.action === 'TRACKER_DATE_CHANGED' && msg.date) {
         const nextDate = extractTrackerDate(msg.date)
         if (nextDate) {
           setSelectedDate(nextDate)
@@ -193,62 +175,6 @@ export const useNotesManagement = ({
   }, [points, selectedDate, isInitialized])
 
   // Действия пользователя
-  const handleStartPicking = (type: GeomType) => {
-    if (!requireAuthBeforeAction({ isLoggedIn, onRequireAuth })) return
-    setGeomType(type)
-    setIsPicking(true)
-    browser.runtime
-      .sendMessage({ action: START_POINT_PICKING_ACTION, geomType: type })
-      .catch(() => {
-        setIsPicking(false)
-      })
-  }
-
-  const handleSaveNote = () => {
-    if (pendingCoords && pendingCoords.length > 0 && pendingName.trim() && geomType) {
-      const name = pendingName.trim()
-      const firstCoord = pendingCoords[0]
-      const now = new Date()
-      const noteTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
-      const desc = pendingDesc.trim()
-      const formattedCoords = pendingCoords.map((c) => [c.lon, c.lat])
-
-      setPoints((prev) => [
-        ...prev,
-        {
-          localId: `temp_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
-          name,
-          latitude: firstCoord.lat,
-          longitude: firstCoord.lon,
-          date: selectedDate,
-          noteTime,
-          noteDesc: desc,
-          geomType,
-          geomCoords: formattedCoords as [number, number][],
-        },
-      ])
-
-      onManualUpload({
-        description: name,
-        coords: formattedCoords,
-        geomType,
-        date: selectedDate,
-        note_time: noteTime,
-        note_desc: desc,
-      })
-
-      setPendingCoords(null)
-      setPendingName('')
-      setPendingDesc('')
-    }
-  }
-
-  const handleCancelNote = () => {
-    setPendingCoords(null)
-    setPendingName('')
-    setPendingDesc('')
-  }
-
   const handleSaveEdit = async (id: string) => {
     const newName = editingName.trim()
     if (!newName) return
@@ -316,13 +242,6 @@ export const useNotesManagement = ({
     currentPoints,
     isInitialized,
     isLoadingNotes,
-    isPicking,
-    geomType,
-    pendingCoords,
-    pendingName,
-    setPendingName,
-    pendingDesc,
-    setPendingDesc,
     editingPointId,
     setEditingPointId,
     editingName,
@@ -333,9 +252,6 @@ export const useNotesManagement = ({
     isDeletingId,
     expandedNoteIds,
     toggleExpand,
-    handleStartPicking,
-    handleSaveNote,
-    handleCancelNote,
     handleSaveEdit,
     handleDeleteNote,
   }

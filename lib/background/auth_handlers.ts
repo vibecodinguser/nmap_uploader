@@ -3,7 +3,11 @@
  */
 import type { MessageHandler } from '@/lib/background/message_router'
 import { runBackgroundTask } from '@/lib/background/tasks'
-import { isTrustedPanelSender, logRejectedMessage } from '@/lib/message_auth'
+import {
+  isTrustedNmapsContentSender,
+  isTrustedPanelSender,
+  logRejectedMessage,
+} from '@/lib/message_auth'
 import {
   handleYandexAuthMessage,
   processGetAuth,
@@ -66,7 +70,7 @@ export const handleLogout: MessageHandler = (_message, sender, sendResponse) => 
 }
 
 export const handleListOccupiedDates: MessageHandler = (_message, sender, sendResponse) => {
-  if (isTrustedPanelSender(sender)) {
+  if (isTrustedPanelSender(sender) || isTrustedNmapsContentSender(sender)) {
     const listDatesTask = processListOccupiedDates(sendResponse)
     runBackgroundTask(listDatesTask, 'listOccupiedDates')
   } else {

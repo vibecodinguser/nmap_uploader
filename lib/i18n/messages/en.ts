@@ -169,6 +169,7 @@ export const enMessages = {
     save: 'Save',
     cancel: 'Cancel',
     showOnMap: 'Show on map',
+    more: 'More',
     edit: 'Edit',
     delete: 'Delete',
     deleteConfirm: 'Are you sure you want to delete this note?',
@@ -182,6 +183,8 @@ export const enMessages = {
     coordsLabel: 'Coordinates: {lat}, {lon}',
     figureOfPoints: 'Figure of {count} points',
     noteDescPlaceholder: 'Note description',
+    dateRequired: 'Select a date in the notebook',
+    saved: 'Note saved',
     noteExtendedDescPlaceholder: 'Extended note description (optional)',
   },
   mapPointCounter: {

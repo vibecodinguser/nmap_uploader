@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { browser } from 'wxt/browser'
 import { NotesTab } from '@/components/NotesTab'
@@ -46,12 +46,7 @@ const renderNotesTab = () =>
   render(
     <LocaleProvider>
       <OccupiedDatesProvider isLoggedIn={true}>
-        <NotesTab
-          isUploading={false}
-          isLoggedIn={true}
-          onRequireAuth={() => {}}
-          onManualUpload={() => {}}
-        />
+        <NotesTab />
       </OccupiedDatesProvider>
     </LocaleProvider>,
   )
@@ -68,108 +63,30 @@ describe('NotesTab', () => {
     cleanup()
   })
 
-  it('рендрит кнопки выбора типа фигуры и отправляет сообщение при клике', async () => {
-    // Подменим storage так, чтобы selectedDate было валидным
+  it('не рендерит кнопки создания: они вынесены в сайдбар', async () => {
     ;(browser.storage.local.get as any).mockResolvedValue({
       notes_selected_date: '01-01-2025',
     })
 
-    render(
-      <LocaleProvider>
-        <OccupiedDatesProvider isLoggedIn={true}>
-          <NotesTab
-            isUploading={false}
-            isLoggedIn={true}
-            onRequireAuth={() => {}}
-            onManualUpload={() => {}}
-          />
-        </OccupiedDatesProvider>
-      </LocaleProvider>,
+    renderNotesTab()
+
+    await screen.findByDisplayValue('01-01-2025')
+    expect(screen.queryByText('Точка')).toBeNull()
+    expect(screen.queryByText('Линия')).toBeNull()
+    expect(screen.queryByText('Полигон')).toBeNull()
+    expect(browser.runtime.sendMessage).not.toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'startPointPicking' }),
     )
-
-    // Кнопки типов геометрии
-    const pointBtn = await screen.findByText('Точка')
-    expect(pointBtn).toBeDefined()
-    expect(screen.getByText('Линия')).toBeDefined()
-    expect(screen.getByText('Полигон')).toBeDefined()
-
-    // Клик по кнопке "Точка"
-    fireEvent.click(pointBtn)
-
-    // Должно отправиться сообщение о начале выбора точки на карте
-    expect(browser.runtime.sendMessage).toHaveBeenCalledWith({
-      action: 'startPointPicking',
-      geomType: 'Point',
-    })
-  })
-
-  it('показывает форму сохранения после выбора координат на карте', async () => {
-    // Подменим storage так, чтобы selectedDate было валидным
-    ;(browser.storage.local.get as any).mockResolvedValue({
-      notes_selected_date: '01-01-2025',
-    })
-
-    let runtimeMessageListener: any = null
-    ;(browser.runtime.onMessage.addListener as any).mockImplementation((listener: any) => {
-      runtimeMessageListener = listener
-    })
-
-    render(
-      <LocaleProvider>
-        <OccupiedDatesProvider isLoggedIn={true}>
-          <NotesTab
-            isUploading={false}
-            isLoggedIn={true}
-            onRequireAuth={() => {}}
-            onManualUpload={() => {}}
-          />
-        </OccupiedDatesProvider>
-      </LocaleProvider>,
-    )
-
-    // Ждем загрузки стейта из storage
-    await screen.findByText('Точка')
-
-    // Эмулируем получение координат от content скрипта
-    expect(runtimeMessageListener).not.toBeNull()
-    if (runtimeMessageListener) {
-      act(() => {
-        runtimeMessageListener({
-          action: 'pointPicked',
-          coords: [[37.6173, 55.7558]],
-        })
-      })
-    }
-
-    // Форма сохранения должна появиться
-    const saveBtn = (await screen.findByText('Сохранить')) as HTMLButtonElement
-    expect(saveBtn).toBeDefined()
-    // Кнопка сохранения заблокирована, пока не введено название
-    expect(saveBtn.disabled).toBe(true)
   })
 
   it('корректно подтягивает дату из слоя трекеров', async () => {
-    // Подменим sendMessage, чтобы он вернул дату в формате Яндекса
     ;(browser.runtime.sendMessage as any).mockResolvedValue({ date: 'дата 17.06.2026 г.' })
-    // Storage вернет другую дату, чтобы убедиться, что приоритет у трекера
     ;(browser.storage.local.get as any).mockResolvedValue({
       notes_selected_date: '01-01-2025',
     })
 
-    render(
-      <LocaleProvider>
-        <OccupiedDatesProvider isLoggedIn={true}>
-          <NotesTab
-            isUploading={false}
-            isLoggedIn={true}
-            onRequireAuth={() => {}}
-            onManualUpload={() => {}}
-          />
-        </OccupiedDatesProvider>
-      </LocaleProvider>,
-    )
+    renderNotesTab()
 
-    // В дата-пикере должно быть 17-06-2026
     const dateInput = await screen.findByDisplayValue('17-06-2026')
     expect(dateInput).toBeDefined()
   })

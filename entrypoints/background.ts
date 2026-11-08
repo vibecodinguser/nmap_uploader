@@ -25,6 +25,7 @@ import {
   handleStartPointPicking,
   handleTrackerDateChanged,
   handleUpload,
+  handleUploadNoteFromSidebar,
   handleUploadNspdGeoJson,
   type MessageHandler,
   openPanel,
@@ -35,6 +36,7 @@ import {
 import { GO_TO_REFRESH_ACTION } from '@/lib/go_to_notify'
 import { syncLocaleFromStorage } from '@/lib/i18n'
 import type { RuntimeMessageSender } from '@/lib/message_auth'
+import { NOTES_SIDEBAR_UPLOAD_ACTION } from '@/lib/notes_sidebar/upload_action'
 import {
   initNspdContentScriptSync,
   syncNspdContentScriptsFromStorage,
@@ -69,6 +71,7 @@ const messageHandlers: Record<string, MessageHandler> = {
   logout: handleLogout,
   listOccupiedDates: handleListOccupiedDates,
   uploadProcessedFiles: handleUpload,
+  [NOTES_SIDEBAR_UPLOAD_ACTION]: handleUploadNoteFromSidebar,
   reloadEditorPage: handleReloadEditor,
   [GO_TO_REFRESH_ACTION]: handleGoToRefresh,
   [CLOSE_PANEL_SIDEBAR_ACTION]: handleClosePanel,

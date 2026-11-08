@@ -41,14 +41,7 @@ describe('useNotesManagement', () => {
   it('инициализирует выбранную дату из трекера или локального хранилища', async () => {
     ;(browser.runtime.sendMessage as any).mockResolvedValue({ date: 'дата 15.08.2025 г.' })
 
-    const onManualUpload = vi.fn()
-    const { result } = renderHook(() =>
-      useNotesManagement({
-        isLoggedIn: true,
-        onRequireAuth: vi.fn(),
-        onManualUpload,
-      }),
-    )
+    const { result } = renderHook(() => useNotesManagement())
 
     await waitFor(() => {
       expect(result.current.isInitialized).toBe(true)
@@ -58,13 +51,7 @@ describe('useNotesManagement', () => {
   })
 
   it('позволяет вручную изменить дату', async () => {
-    const { result } = renderHook(() =>
-      useNotesManagement({
-        isLoggedIn: true,
-        onRequireAuth: vi.fn(),
-        onManualUpload: vi.fn(),
-      }),
-    )
+    const { result } = renderHook(() => useNotesManagement())
 
     await waitFor(() => {
       expect(result.current.isInitialized).toBe(true)
@@ -90,13 +77,7 @@ describe('useNotesManagement', () => {
       paths: {},
     })
 
-    const { result } = renderHook(() =>
-      useNotesManagement({
-        isLoggedIn: true,
-        onRequireAuth: vi.fn(),
-        onManualUpload: vi.fn(),
-      }),
-    )
+    const { result } = renderHook(() => useNotesManagement())
 
     await waitFor(() => {
       expect(result.current.points.length).toBe(1)

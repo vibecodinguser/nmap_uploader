@@ -169,6 +169,7 @@ export const ruMessages = {
     save: 'Сохранить',
     cancel: 'Отмена',
     showOnMap: 'Показать на карте',
+    more: 'Ещё',
     edit: 'Редактировать',
     delete: 'Удалить',
     deleteConfirm: 'Вы уверены, что хотите удалить эту заметку?',
@@ -182,6 +183,8 @@ export const ruMessages = {
     coordsLabel: 'Координаты: {lat}, {lon}',
     figureOfPoints: 'Фигура из {count} точек',
     noteDescPlaceholder: 'Описание заметки',
+    dateRequired: 'Выберите дату в блокноте',
+    saved: 'Заметка сохранена',
     noteExtendedDescPlaceholder: 'Расширенное описание заметки (необязательно)',
   },
   mapPointCounter: {

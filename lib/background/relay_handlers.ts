@@ -49,7 +49,8 @@ export const handleClosePanel: MessageHandler = (_message, sender, sendResponse)
 export const handleStartPointPicking: MessageHandler = (message, sender, sendResponse) => {
   if (isTrustedNmapsOrPanelSender(sender)) {
     const geomType = typeof message.geomType === 'string' ? message.geomType : 'Point'
-    const relayMessage = { action: START_POINT_PICKING_ACTION, geomType }
+    const source = typeof message.source === 'string' ? message.source : undefined
+    const relayMessage = { action: START_POINT_PICKING_ACTION, geomType, source }
     const relayTask = processRelayToMapTabs(sender, relayMessage, sendResponse, 'startPointPicking')
     runBackgroundTask(relayTask, START_POINT_PICKING_ACTION)
   } else {
@@ -59,9 +60,10 @@ export const handleStartPointPicking: MessageHandler = (message, sender, sendRes
   return true
 }
 
-export const handleCancelPointPicking: MessageHandler = (_message, sender, sendResponse) => {
+export const handleCancelPointPicking: MessageHandler = (message, sender, sendResponse) => {
   if (isTrustedNmapsOrPanelSender(sender)) {
-    const relayMessage = { action: CANCEL_POINT_PICKING_ACTION }
+    const source = typeof message.source === 'string' ? message.source : undefined
+    const relayMessage = { action: CANCEL_POINT_PICKING_ACTION, source }
     const relayTask = processRelayToMapTabs(
       sender,
       relayMessage,

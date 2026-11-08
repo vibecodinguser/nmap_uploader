@@ -47,6 +47,15 @@ export const isTrustedPanelSender = (sender: RuntimeMessageSender): boolean =>
 export const isTrustedNmapsOrPanelSender = (sender: RuntimeMessageSender): boolean =>
   isExtensionSender(sender) && (isPanelSender(sender) || isNmapsContentSender(sender))
 
+/**
+ * Отправитель — content script на странице редактора Народной карты.
+ *
+ * Нужен для действий, которые инициируются прямо на карте (создание заметки
+ * в сайдбаре), а не из страниц расширения.
+ */
+export const isTrustedNmapsContentSender = (sender: RuntimeMessageSender): boolean =>
+  isExtensionSender(sender) && isNmapsContentSender(sender)
+
 export const isTrustedNspdSender = (sender: RuntimeMessageSender): boolean =>
   isExtensionSender(sender) && isNspdContentSender(sender)
 
