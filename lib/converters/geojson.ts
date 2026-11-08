@@ -1,5 +1,5 @@
 import type { Feature, FeatureCollection, Geometry } from 'geojson'
-import { extractFeatureName } from '@/lib/geo_converters'
+import { extractFeatureName } from '@/lib/geo_converters/feature_names'
 import { addFeatureToOutput, extractPaths } from '@/lib/geometry'
 import type { ProcessResult } from '@/lib/nmap_index'
 import { createNmapOutputTemplate } from '@/lib/nmap_index'

@@ -2,11 +2,8 @@
  * Сервис обработки загрузки файлов в фоновом режиме.
  */
 import { getErrorMessage } from '@/lib/errors'
-import {
-  type ProcessedFileInput,
-  type UploadResult,
-  uploadProcessedFilesToYandexDisk,
-} from '@/lib/upload_service'
+import type { ProcessedFileInput, UploadResult } from '@/lib/upload/types'
+import { uploadProcessedFilesToYandexDisk } from '@/lib/upload/yandex_upload'
 import { getBackgroundTranslator } from './background_auth_service'
 
 export const getUploadMessagePayload = (

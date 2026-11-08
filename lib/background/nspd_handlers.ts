@@ -9,7 +9,7 @@ import { runBackgroundTask } from '@/lib/background/tasks'
 import { processGeoJsonData } from '@/lib/converters/geojson'
 import { isTrustedNspdSender, isTrustedPanelSender, logRejectedMessage } from '@/lib/message_auth'
 import { resolveReloadAfterUploadPreference } from '@/lib/reload_after_upload'
-import { uploadProcessedFilesToYandexDisk } from '@/lib/upload_service'
+import { uploadProcessedFilesToYandexDisk } from '@/lib/upload/yandex_upload'
 import { getStoredAuth } from '@/lib/yandex/client'
 
 export const UPLOAD_NSPD_GEOJSON_ACTION = 'UPLOAD_NSPD_GEOJSON'
