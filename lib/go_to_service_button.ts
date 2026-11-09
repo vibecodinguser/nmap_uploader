@@ -17,8 +17,11 @@ const createGoToIconHost = (): HTMLSpanElement => {
 }
 
 /** Создаёт кнопку перехода к внешним геосервисам без insertAdjacentHTML. */
-export const createGoToServiceButton = (): HTMLAnchorElement => {
-  const button = document.createElement('a')
+export const createGoToServiceButton = (): HTMLButtonElement => {
+  // Именно `<button>`, как у соседних кнопок тулбара: у нативных стилей
+  // редактора оформление `<a>` отличается, и кнопка выбивается фоном.
+  const button = document.createElement('button')
+  button.type = 'button'
   button.id = GO_TO_SERVICE_BUTTON_ID
   button.setAttribute('aria-disabled', 'false')
   button.setAttribute('aria-haspopup', 'menu')
