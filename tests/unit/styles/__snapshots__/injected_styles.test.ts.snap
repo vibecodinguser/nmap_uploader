@@ -161,7 +161,7 @@ exports[`инжектируемые стили > notes-sidebar: текст не 
 `;
 
 exports[`инжектируемые стили > object-tracker: текст не менялся 1`] = `
-"#nmap-uploader-object-tracker-panel,.nmap-ot-panel{display:flex;flex-direction:column;gap:12px;padding:12px;font-family:var(--nk-user-bar-font-family,"Yandex Sans Text","YS Text",-apple-system,BlinkMacSystemFont,Arial,sans-serif);font-size:13px;line-height:1.35;color:inherit;background:transparent;box-sizing:border-box;width:100%;min-height:0;flex:1 1 auto;overflow:auto;overscroll-behavior:contain;}
+"#nmap-uploader-object-tracker-panel,.nmap-ot-panel{display:flex;flex-direction:column;gap:12px;padding:12px;font-family:var(--nk-user-bar-font-family,"Yandex Sans Text","YS Text",-apple-system,BlinkMacSystemFont,Arial,sans-serif);font-size:13px;line-height:1.35;color:inherit;text-align:left;background:transparent;box-sizing:border-box;width:100%;min-height:0;flex:1 1 auto;overflow:auto;overscroll-behavior:contain;}
 #nmap-uploader-object-tracker-panel *,.nmap-ot-panel *{box-sizing:border-box;}
 #nmap-uploader-object-tracker-panel:focus-visible,.nmap-ot-panel:focus-visible{outline:var(--nmap-focus-outline);outline-offset:1px;}
 #nmap-uploader-object-tracker-tab{cursor:pointer;user-select:none;white-space:nowrap;}
@@ -187,7 +187,8 @@ exports[`инжектируемые стили > object-tracker: текст не
 .nmap-ot-body{display:flex;flex-direction:column;gap:8px;flex:1 1 auto;min-height:0;}
 .nmap-ot-body_feed{margin:0 -12px;gap:0;}
 .nmap-ot-body_feed .nmap-ot-commit .nk-event-view__event{padding-left:16px;padding-right:16px;}
-.nmap-ot-empty{padding:8px 0 12px;color:var(--nmap-text-muted);}
+.nmap-ot-empty{padding:8px 0 12px;color:var(--nmap-text-muted);text-align:left;}
+.nmap-ot-body_feed .nmap-ot-empty{padding-left:16px;padding-right:16px;}
 .nmap-ot-commit{position:relative;cursor:pointer;}
 .nmap-ot-commit .nk-event-view__event{display:flex;}
 .nmap-ot-commit .nk-event-view__title a{display:block;color:var(--nmap-link);text-decoration:none;}

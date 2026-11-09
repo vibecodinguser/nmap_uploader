@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
-  clampIntervalMinutes,
   forgetObjectLocalState,
   getTrackerLocalState,
   getTrackerSettings,
@@ -11,9 +10,8 @@ import {
   setReadMarks,
   setTrackedObjects,
   setTrackerEnabled,
-  setTrackerInterval,
 } from '@/lib/object_tracker/storage'
-import { DEFAULT_INTERVAL_MINUTES, MAX_TRACKED_OBJECTS } from '@/lib/object_tracker/types'
+import { MAX_TRACKED_OBJECTS } from '@/lib/object_tracker/types'
 import { resetBrowserMocks } from '../../setup/browser_mock'
 
 describe('object_tracker: валидация', () => {
@@ -26,13 +24,6 @@ describe('object_tracker: валидация', () => {
 
   it('нормализует пробелы по краям', () => {
     expect(normalizeObjectId('  123  ')).toBe('123')
-  })
-
-  it('ограничивает период опроса', () => {
-    expect(clampIntervalMinutes(1)).toBe(5)
-    expect(clampIntervalMinutes(10_000)).toBe(240)
-    expect(clampIntervalMinutes(Number.NaN)).toBe(DEFAULT_INTERVAL_MINUTES)
-    expect(clampIntervalMinutes(30)).toBe(30)
   })
 
   it('убирает дубли, мусор и превышение лимита', () => {
@@ -59,11 +50,10 @@ describe('object_tracker: storage', () => {
     await resetBrowserMocks()
   })
 
-  it('по умолчанию выключен и опрашивает раз в 30 минут', async () => {
+  it('по умолчанию выключен и без объектов', async () => {
     const settings = await getTrackerSettings()
 
     expect(settings.enabled).toBe(false)
-    expect(settings.intervalMinutes).toBe(DEFAULT_INTERVAL_MINUTES)
     expect(settings.objects).toEqual([])
   })
 
@@ -71,12 +61,6 @@ describe('object_tracker: storage', () => {
     await setTrackerEnabled(true)
 
     await expect(getTrackerSettings()).resolves.toMatchObject({ enabled: true })
-  })
-
-  it('сохраняет и читает интервал с ограничением', async () => {
-    await setTrackerInterval(1)
-
-    await expect(getTrackerSettings()).resolves.toMatchObject({ intervalMinutes: 5 })
   })
 
   it('сохраняет список объектов без дублей', async () => {

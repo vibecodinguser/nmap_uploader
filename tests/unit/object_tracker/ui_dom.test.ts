@@ -185,7 +185,6 @@ describe('object_tracker: renderPanel', () => {
     errors: {},
     isLoading: false,
     hasToken: true,
-    intervalMinutes: 30,
   }
 
   const callbacks = {
@@ -206,7 +205,7 @@ describe('object_tracker: renderPanel', () => {
 
     renderPanel(container, baseView, callbacks)
 
-    expect(container.textContent).toContain('Мои объекты (1)')
+    expect(container.textContent).toContain('Отслеживаемые объекты (1)')
     expect(container.textContent).toContain('Лента событий')
     expect(container.querySelectorAll('.nmap-ot-commit')).toHaveLength(1)
   })
@@ -310,7 +309,7 @@ describe('object_tracker: renderPanel', () => {
 
     renderPanel(container, { ...baseView, objects: [], commitsByObject: {} }, callbacks)
 
-    expect(container.textContent).toContain('Добавьте id объекта')
+    expect(container.textContent).toContain('Добавьте объекты для отслеживания')
   })
 
   it('валидирует id в форме добавления', () => {
@@ -340,6 +339,24 @@ describe('object_tracker: renderPanel', () => {
     form?.dispatchEvent(new Event('submit', { cancelable: true }))
 
     expect(callbacks.onAddObject).toHaveBeenCalledWith('12345')
+  })
+
+  it('просит менеджеры паролей не запоминать id объекта', () => {
+    const container = document.createElement('div')
+    renderPanel(container, { ...baseView, objects: [] }, callbacks)
+
+    const form = container.querySelector<HTMLFormElement>('.nmap-ot-add')
+    const input = container.querySelector<HTMLInputElement>(
+      '.nmap-ot-add__field .nk-text-input__control',
+    )
+
+    expect(form?.getAttribute('autocomplete')).toBe('off')
+    expect(input?.getAttribute('autocomplete')).toBe('off')
+    expect(input?.getAttribute('data-form-type')).toBe('other')
+    expect(input?.getAttribute('data-1p-ignore')).not.toBeNull()
+    expect(input?.getAttribute('data-lpignore')).toBe('true')
+    expect(input?.getAttribute('data-bwignore')).not.toBeNull()
+    expect(input?.getAttribute('data-protonpass-ignore')).toBe('true')
   })
 })
 

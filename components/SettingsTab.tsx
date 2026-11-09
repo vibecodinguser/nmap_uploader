@@ -62,7 +62,7 @@ type PointCounterSettings = Pick<
 
 type ObjectTrackerSettings = Pick<
   ReturnType<typeof useObjectTracker>,
-  'isEnabled' | 'isLoaded' | 'intervalMinutes' | 'setIsEnabled' | 'setIntervalMinutes'
+  'isEnabled' | 'isLoaded' | 'setIsEnabled'
 >
 
 const SETTINGS_BACK_ICON_SIZE = 18
@@ -127,16 +127,6 @@ export const SettingsTab = ({
   const isObjectTrackerEnabled = objectTracker?.isEnabled ?? false
   const isObjectTrackerLoaded = objectTracker?.isLoaded ?? true
   const isObjectTrackerDisabled = !isObjectTrackerLoaded
-  const objectTrackerInterval = String(objectTracker?.intervalMinutes ?? 30)
-  const objectTrackerIntervalOptions = useMemo(
-    () => [
-      { value: '5', label: '5 мин' },
-      { value: '15', label: '15 мин' },
-      { value: '30', label: '30 мин' },
-      { value: '60', label: '60 мин' },
-    ],
-    [],
-  )
 
   const isPointCounterEnabled = pointCounter?.isEnabled ?? true
   const isPointCounterLoaded = pointCounter?.isLoaded ?? true
@@ -282,22 +272,7 @@ export const SettingsTab = ({
           checked={isObjectTrackerEnabled}
           disabled={isObjectTrackerDisabled}
           onChange={(checked) => objectTracker?.setIsEnabled(checked)}
-        >
-          {isObjectTrackerEnabled ? (
-            <div className="settings-object-tracker-interval">
-              <span className="settings-object-tracker-interval-label">
-                {t('settings.objectTrackerInterval')}
-              </span>
-              <SegmentedRadioGroup
-                name="object-tracker-interval"
-                ariaLabel={t('settings.objectTrackerIntervalAria')}
-                value={objectTrackerInterval}
-                options={objectTrackerIntervalOptions}
-                onChange={(value) => objectTracker?.setIntervalMinutes(Number(value))}
-              />
-            </div>
-          ) : null}
-        </SettingsToggleRow>
+        />
       </SettingsGroupSection>
 
       <SettingsGroupSection id="settings-style" title={t('settings.style')}>

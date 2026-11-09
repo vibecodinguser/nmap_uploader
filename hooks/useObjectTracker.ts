@@ -3,16 +3,13 @@ import { browser } from 'wxt/browser'
 import {
   getTrackerSettings,
   setTrackerEnabled,
-  setTrackerInterval,
   TRACKER_ENABLED_KEY,
-  TRACKER_INTERVAL_KEY,
 } from '@/lib/object_tracker/storage'
-import { DEFAULT_INTERVAL_MINUTES, type TrackerSettings } from '@/lib/object_tracker/types'
+import type { TrackerSettings } from '@/lib/object_tracker/types'
 
-/** Тумблер и период опроса «Наблюдение за объектами». */
+/** Тумблер «Наблюдение за объектами». */
 export const useObjectTracker = () => {
   const [isEnabled, setIsEnabledState] = useState(false)
-  const [intervalMinutes, setIntervalMinutesState] = useState(DEFAULT_INTERVAL_MINUTES)
   const [isLoaded, setIsLoaded] = useState(false)
 
   useEffect(function loadStateEffect() {
@@ -24,7 +21,6 @@ export const useObjectTracker = () => {
         const settings: TrackerSettings = await getTrackerSettings()
         if (!abortController.signal.aborted) {
           setIsEnabledState(settings.enabled)
-          setIntervalMinutesState(settings.intervalMinutes)
           setIsLoaded(true)
         }
       } catch (error: unknown) {
@@ -50,12 +46,6 @@ export const useObjectTracker = () => {
           setIsEnabledState(nextValue)
         }
       }
-      if (TRACKER_INTERVAL_KEY in changes) {
-        const nextValue = changes[TRACKER_INTERVAL_KEY]?.newValue
-        if (typeof nextValue === 'number') {
-          setIntervalMinutesState(nextValue)
-        }
-      }
     }
 
     browser.storage.onChanged.addListener(handleStorageChange)
@@ -75,16 +65,5 @@ export const useObjectTracker = () => {
     })()
   }, [])
 
-  const setIntervalMinutes = useCallback(function setIntervalMinutesCallback(minutes: number) {
-    ;(async function save() {
-      try {
-        setIntervalMinutesState(minutes)
-        await setTrackerInterval(minutes)
-      } catch (error: unknown) {
-        console.warn('[nmap_uploader] save object tracker interval failed:', error)
-      }
-    })()
-  }, [])
-
-  return { isEnabled, isLoaded, intervalMinutes, setIsEnabled, setIntervalMinutes }
+  return { isEnabled, isLoaded, setIsEnabled }
 }

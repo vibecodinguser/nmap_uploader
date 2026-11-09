@@ -1,9 +1,6 @@
 import { browser } from 'wxt/browser'
 import {
-  DEFAULT_INTERVAL_MINUTES,
-  MAX_INTERVAL_MINUTES,
   MAX_TRACKED_OBJECTS,
-  MIN_INTERVAL_MINUTES,
   type ObjectCommit,
   type TrackedObject,
   type TrackerLocalState,
@@ -11,7 +8,6 @@ import {
 } from './types'
 
 export const TRACKER_ENABLED_KEY = 'object_tracker_enabled'
-export const TRACKER_INTERVAL_KEY = 'object_tracker_interval_minutes'
 export const TRACKER_OBJECTS_KEY = 'object_tracker_objects'
 export const TRACKER_READ_MARKS_KEY = 'object_tracker_read_marks'
 export const TRACKER_CACHED_COMMITS_KEY = 'object_tracker_cached_commits'
@@ -21,14 +17,6 @@ export const isValidObjectId = (value: string): boolean => /^\d{1,20}$/.test(val
 
 /** Приводит id к каноническому виду: без пробелов и ведущих нулей не трогаем. */
 export const normalizeObjectId = (value: string): string => value.trim()
-
-/** Ограничивает период опроса разумными рамками. */
-export const clampIntervalMinutes = (value: number): number => {
-  if (!Number.isFinite(value)) {
-    return DEFAULT_INTERVAL_MINUTES
-  }
-  return Math.min(MAX_INTERVAL_MINUTES, Math.max(MIN_INTERVAL_MINUTES, Math.round(value)))
-}
 
 /** Убирает дубли и превышение лимита, сохраняя порядок добавления. */
 export const sanitizeTrackedObjects = (objects: readonly TrackedObject[]): TrackedObject[] => {
@@ -71,29 +59,16 @@ const parseObjects = (value: unknown): TrackedObject[] => {
 
 /** Читает синхронизируемые настройки наблюдения. */
 export const getTrackerSettings = async (): Promise<TrackerSettings> => {
-  const stored = await browser.storage.sync.get([
-    TRACKER_ENABLED_KEY,
-    TRACKER_INTERVAL_KEY,
-    TRACKER_OBJECTS_KEY,
-  ])
-
-  const rawInterval = stored[TRACKER_INTERVAL_KEY]
-  const interval =
-    typeof rawInterval === 'number' ? clampIntervalMinutes(rawInterval) : DEFAULT_INTERVAL_MINUTES
+  const stored = await browser.storage.sync.get([TRACKER_ENABLED_KEY, TRACKER_OBJECTS_KEY])
 
   return {
     enabled: readBoolean(stored[TRACKER_ENABLED_KEY], false),
-    intervalMinutes: interval,
     objects: parseObjects(stored[TRACKER_OBJECTS_KEY]),
   }
 }
 
 export const setTrackerEnabled = async (enabled: boolean): Promise<void> => {
   await browser.storage.sync.set({ [TRACKER_ENABLED_KEY]: enabled })
-}
-
-export const setTrackerInterval = async (minutes: number): Promise<void> => {
-  await browser.storage.sync.set({ [TRACKER_INTERVAL_KEY]: clampIntervalMinutes(minutes) })
 }
 
 export const setTrackedObjects = async (objects: readonly TrackedObject[]): Promise<void> => {

@@ -11,7 +11,6 @@ import {
 import { getCsrfToken, hasCsrfToken, onCsrfTokenAvailable, resetCsrfToken } from './csrf_token'
 import { buildReadMarks, mergeCachedCommits, pollTrackedObjects } from './poller'
 import {
-  clampIntervalMinutes,
   forgetObjectLocalState,
   getTrackerLocalState,
   getTrackerSettings,
@@ -21,10 +20,14 @@ import {
   setReadMarks,
   setTrackedObjects,
   TRACKER_ENABLED_KEY,
-  TRACKER_INTERVAL_KEY,
   TRACKER_OBJECTS_KEY,
 } from './storage'
-import { MAX_TRACKED_OBJECTS, type ObjectCommit, type TrackedObject } from './types'
+import {
+  MAX_TRACKED_OBJECTS,
+  type ObjectCommit,
+  POLL_INTERVAL_MINUTES,
+  type TrackedObject,
+} from './types'
 import { renderPanel, type TrackerViewMode, type TrackerViewModel } from './ui/dom'
 import { ObjectTrackerSidebar } from './ui/mount'
 import { removeTrackerStyles } from './ui/styles'
@@ -79,7 +82,6 @@ export class ObjectTrackerController {
   private readonly sidebar: ObjectTrackerSidebar
 
   private settingsEnabled = false
-  private intervalMinutes = 30
   private objects: TrackedObject[] = []
   private commitsByObject: Record<string, ObjectCommit[]> = {}
   private readMarks: Record<string, string> = {}
@@ -135,7 +137,6 @@ export class ObjectTrackerController {
     const wasEnabled = this.settingsEnabled
 
     this.settingsEnabled = settings.enabled
-    this.intervalMinutes = clampIntervalMinutes(settings.intervalMinutes)
     this.objects = settings.objects
 
     const local = await getTrackerLocalState()
@@ -307,7 +308,6 @@ export class ObjectTrackerController {
       errors: this.errors,
       isLoading: this.isRefreshing,
       hasToken: this.getToken().length > 0,
-      intervalMinutes: this.intervalMinutes,
     }
   }
 
@@ -371,7 +371,7 @@ export class ObjectTrackerController {
       return
     }
 
-    const intervalMs = Math.max(1, this.intervalMinutes) * 60 * 1000
+    const intervalMs = POLL_INTERVAL_MINUTES * 60 * 1000
     this.timer = setInterval(() => {
       void this.refresh()
     }, intervalMs)
@@ -440,10 +440,7 @@ export class ObjectTrackerController {
     }
 
     const listener = (changes: Record<string, unknown>, area: string): void => {
-      const relevant =
-        TRACKER_ENABLED_KEY in changes ||
-        TRACKER_INTERVAL_KEY in changes ||
-        TRACKER_OBJECTS_KEY in changes
+      const relevant = TRACKER_ENABLED_KEY in changes || TRACKER_OBJECTS_KEY in changes
       if (!relevant) {
         return
       }

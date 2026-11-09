@@ -22,7 +22,7 @@ const createHeader = (view: TrackerViewModel, callbacks: PanelCallbacks): HTMLEl
 
   const title = document.createElement('span')
   title.className = 'nmap-ot-title'
-  title.textContent = `Мои объекты (${view.objects.length})`
+  title.textContent = `Отслеживаемые объекты (${view.objects.length})`
   titleRow.appendChild(title)
 
   const refresh = createNativeButton('nmap-ot-refresh', view.isLoading ? 'Загрузка…' : 'Обновить')
@@ -42,6 +42,7 @@ const createHeader = (view: TrackerViewModel, callbacks: PanelCallbacks): HTMLEl
 
   const form = document.createElement('form')
   form.className = 'nmap-ot-add'
+  form.autocomplete = 'off'
 
   const label = document.createElement('label')
   label.className = 'nmap-ot-add__label'
@@ -60,8 +61,23 @@ const createHeader = (view: TrackerViewModel, callbacks: PanelCallbacks): HTMLEl
   input.id = 'nmap-ot-add-input'
   input.type = 'text'
   input.className = 'nk-text-input__control'
-  input.placeholder = 'Например, 53161481'
+  input.placeholder = 'id объекта, например 53161481'
   input.inputMode = 'numeric'
+  /*
+   * Поле выглядит для менеджеров паролей как поле для секрета: они предлагают
+   * сохранить введённый id. `autocomplete` и `data-form-type` понимают браузеры
+   * и Dashlane, остальные атрибуты — конкретные расширения (1Password,
+   * LastPass, Bitwarden, Proton Pass). Вместе это гасит автозаполнение.
+   */
+  input.autocomplete = 'off'
+  input.spellcheck = false
+  input.autocapitalize = 'off'
+  input.setAttribute('autocorrect', 'off')
+  input.dataset.formType = 'other'
+  input.dataset['1pIgnore'] = 'true'
+  input.dataset.lpignore = 'true'
+  input.dataset.bwignore = 'true'
+  input.dataset.protonpassIgnore = 'true'
   field.appendChild(input)
 
   const submit = createNativeButton('nmap-ot-add__submit', 'Добавить')
@@ -75,7 +91,7 @@ const createHeader = (view: TrackerViewModel, callbacks: PanelCallbacks): HTMLEl
     event.preventDefault()
     const value = input.value.trim()
     if (!/^\d{1,20}$/.test(value)) {
-      error.textContent = 'id объекта должен состоять из цифр'
+      error.textContent = 'Идентификатор объекта должен состоять из цифр'
       return
     }
     error.textContent = ''
@@ -185,7 +201,7 @@ export const renderPanel = (
   }
 
   if (view.objects.length === 0) {
-    body.appendChild(createEmptyState('Добавьте id объекта, чтобы следить за его историей'))
+    body.appendChild(createEmptyState('Добавьте объекты для отслеживания'))
   } else if (view.mode === 'feed') {
     const commits = flattenCommits(view.commitsByObject)
     if (commits.length === 0) {

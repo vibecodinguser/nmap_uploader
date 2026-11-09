@@ -29,9 +29,7 @@ const buildProps = () => ({
   objectTracker: {
     isEnabled: true,
     isLoaded: true,
-    intervalMinutes: 30,
     setIsEnabled: noop,
-    setIntervalMinutes: noop,
   },
   pointCounter: { isEnabled: true, isLoaded: true, setIsEnabled: noop },
   goToLinks: {
@@ -251,16 +249,15 @@ describe('SettingsTab: секция «Модерация»', () => {
     expect(within(section).getByRole('switch', { name: 'Наблюдение за объектами' })).toBeTruthy()
   })
 
-  it('оставляет период опроса внутри наблюдения за объектами', () => {
+  it('не показывает период опроса: он фиксированный', () => {
     renderTab()
 
     const section = expandSection('Модерация')
-    const intervalGroup = within(section).getByRole('radiogroup', {
-      name: 'Период опроса истории объектов',
-    })
 
-    expect(within(section).getByText('Период опроса')).toBeTruthy()
-    expect(within(intervalGroup).getAllByRole('radio')).toHaveLength(4)
+    expect(within(section).queryByText('Период опроса')).toBeNull()
+    expect(
+      within(section).queryByRole('radiogroup', { name: 'Период опроса истории объектов' }),
+    ).toBeNull()
   })
 
   it('передаёт клик по тумблеру фильтра в обработчик настройки', () => {

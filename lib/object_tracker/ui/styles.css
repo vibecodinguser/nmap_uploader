@@ -9,6 +9,10 @@
       line-height: 1.35;
       color: inherit;
 
+      /* Выравнивание фиксируем: панель вставляется в чужую разметку и иначе
+         наследует `text-align` хоста (например, right). */
+      text-align: left;
+
       /* Фон не задаём: панель наследует поверхность острова редактора. */
       background: transparent;
       box-sizing: border-box;
@@ -197,9 +201,20 @@
       padding-left: 16px;
       padding-right: 16px;
     }
+
+    /*
+     * Пустое состояние в ленте живёт внутри сдвинутого на -12px тела, поэтому
+     * боковые отступы задаём такие же, как у карточки: иначе текст прилипает
+     * к краю панели.
+     */
     .nmap-ot-empty {
       padding: 8px 0 12px;
       color: var(--nmap-text-muted);
+      text-align: left;
+    }
+    .nmap-ot-body_feed .nmap-ot-empty {
+      padding-left: 16px;
+      padding-right: 16px;
     }
 
     /*

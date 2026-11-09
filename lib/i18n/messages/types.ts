@@ -117,8 +117,6 @@ export type Messages = {
     feedsFilterAria: string
     objectTracker: string
     objectTrackerAria: string
-    objectTrackerInterval: string
-    objectTrackerIntervalAria: string
     goToButton: string
     showButtonAria: string
     activeCount: string

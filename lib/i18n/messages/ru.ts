@@ -116,8 +116,6 @@ export const ruMessages = {
     feedsFilterAria: 'Фильтр истории правок',
     objectTracker: 'Наблюдение за объектами',
     objectTrackerAria: 'Наблюдение за объектами',
-    objectTrackerInterval: 'Период опроса',
-    objectTrackerIntervalAria: 'Период опроса истории объектов',
     pointCounter: 'Счётчик вершин',
     pointCounterAria: 'Счётчик вершин',
     goToButton: 'Кнопка: Внешние геосервисы',

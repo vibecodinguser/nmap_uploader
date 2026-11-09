@@ -54,8 +54,6 @@ export interface ObjectHistoryPage {
 /** Настройки, которые переезжают между устройствами. */
 export interface TrackerSettings {
   enabled: boolean
-  /** Период опроса в минутах. */
-  intervalMinutes: number
   objects: TrackedObject[]
 }
 
@@ -67,7 +65,6 @@ export interface TrackerLocalState {
   cachedCommits: Record<string, ObjectCommit[]>
 }
 
-export const DEFAULT_INTERVAL_MINUTES = 30
-export const MIN_INTERVAL_MINUTES = 5
-export const MAX_INTERVAL_MINUTES = 240
+/** Период фонового опроса истории: 3 часа. */
+export const POLL_INTERVAL_MINUTES = 180
 export const MAX_TRACKED_OBJECTS = 30

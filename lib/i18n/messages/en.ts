@@ -116,8 +116,6 @@ export const enMessages = {
     feedsFilterAria: 'Edits history filter',
     objectTracker: 'Object monitoring',
     objectTrackerAria: 'Object monitoring',
-    objectTrackerInterval: 'Polling period',
-    objectTrackerIntervalAria: 'Object history polling period',
     pointCounter: 'Vertex counter',
     pointCounterAria: 'Vertex counter',
     goToButton: 'Button: External geoservices',

@@ -21,7 +21,6 @@ export interface TrackerViewModel {
   errors: Record<string, string>
   isLoading: boolean
   hasToken: boolean
-  intervalMinutes: number
 }
 
 export interface PanelCallbacks {
