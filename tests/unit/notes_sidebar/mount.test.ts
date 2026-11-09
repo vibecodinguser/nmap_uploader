@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { act } from 'react'
+import { act } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { browser } from 'wxt/browser'
 import { NotesCreateSidebar } from '@/lib/notes_sidebar'
@@ -122,8 +122,10 @@ beforeEach(() => {
   })
 })
 
-afterEach(() => {
-  sidebar?.stop()
+afterEach(async () => {
+  await act(async () => {
+    sidebar?.stop()
+  })
   sidebar = null
   vi.useRealTimers()
   document.body.replaceChildren()
