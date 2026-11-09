@@ -132,14 +132,12 @@ const parsePickedCoords = (message: Record<string, unknown>): PickedCoords | nul
     return null
   }
 
-  const coords = (message.coords as unknown[])
+  return (message.coords as unknown[])
     .filter(
       (point): point is [number, number] =>
         Array.isArray(point) && typeof point[0] === 'number' && typeof point[1] === 'number',
     )
     .map((point) => ({ lat: point[0], lon: point[1] }))
-
-  return coords.length > 0 ? coords : null
 }
 
 const resolveUploadError = (
@@ -201,10 +199,15 @@ export const NotesCreatePanel = () => {
       const coords = parsePickedCoords(message as Record<string, unknown>)
       if (!coords) return
       setIsPicking(false)
+      setStatus(null)
+      // Пустой набор — рисование прервали клавишей или двойным кликом.
+      if (coords.length === 0) {
+        setPickedCoords(null)
+        return
+      }
       setPickedCoords(coords)
       setName('')
       setDesc('')
-      setStatus(null)
     }
 
     browser.runtime.onMessage.addListener(handleRuntimeMessage)
@@ -245,6 +248,13 @@ export const NotesCreatePanel = () => {
       .catch(() => {
         setIsPicking(false)
       })
+  }
+
+  const handleCancelPicking = (): void => {
+    setIsPicking(false)
+    setPickedCoords(null)
+    setStatus(null)
+    cancelPicking()
   }
 
   const handleCancelForm = (): void => {
@@ -326,7 +336,14 @@ export const NotesCreatePanel = () => {
 
       {!selectedDate && <p className="nmap-notes-create__hint">{t('notes.dateRequired')}</p>}
 
-      {isPicking && <p className="nmap-notes-create__hint">{t('notes.drawOnMap')}</p>}
+      {isPicking && (
+        <div className="nmap-notes-create__picking">
+          <p className="nmap-notes-create__hint">{t('notes.drawOnMap')}</p>
+          <button type="button" className="nmap-notes-create__link" onClick={handleCancelPicking}>
+            {t('notes.cancel')}
+          </button>
+        </div>
+      )}
 
       {pickedCoords && !isPicking && (
         <div className="nmap-notes-create__form">

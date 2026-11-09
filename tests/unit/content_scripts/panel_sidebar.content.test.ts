@@ -3,7 +3,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { browser } from 'wxt/browser'
 import panelSidebarScript from '@/entrypoints/panel-sidebar.content'
+import { NMAPS_POINT_PICKED_EVENT } from '@/lib/nmaps_pick_point_notify'
+import { NOTES_PICK_SOURCE } from '@/lib/notes_sidebar/core'
 import { CLOSE_PANEL_SIDEBAR_ACTION, PANEL_SIDEBAR_WRAPPER_ID } from '@/lib/panel_sidebar_notify'
+import { POINT_PICKED_ACTION, START_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
 import { getURL } from '@/tests/setup/browser_mock'
 import { createContentScriptContext } from '@/tests/setup/content_script_context'
 
@@ -107,6 +110,54 @@ describe('panel-sidebar.content', () => {
           ],
         },
       ],
+    })
+  })
+
+  it('возвращает выбранные координаты в background вместе с меткой источника', () => {
+    vi.spyOn(browser.runtime, 'sendMessage').mockResolvedValue(undefined as never)
+    panelSidebarScript.main?.(ctx)
+
+    messageListener?.({
+      action: START_POINT_PICKING_ACTION,
+      geomType: 'Point',
+      source: NOTES_PICK_SOURCE,
+    } as never)
+
+    document.dispatchEvent(
+      new CustomEvent(NMAPS_POINT_PICKED_EVENT, {
+        detail: { coords: [[55.7, 37.6]], geomType: 'Point' },
+      }),
+    )
+
+    expect(browser.runtime.sendMessage).toHaveBeenCalledWith({
+      action: POINT_PICKED_ACTION,
+      coords: [[55.7, 37.6]],
+      geomType: 'Point',
+      source: NOTES_PICK_SOURCE,
+    })
+  })
+
+  it('сообщает о прерванном рисовании пустым набором координат', () => {
+    vi.spyOn(browser.runtime, 'sendMessage').mockResolvedValue(undefined as never)
+    panelSidebarScript.main?.(ctx)
+
+    messageListener?.({
+      action: START_POINT_PICKING_ACTION,
+      geomType: 'LineString',
+      source: NOTES_PICK_SOURCE,
+    } as never)
+
+    document.dispatchEvent(
+      new CustomEvent(NMAPS_POINT_PICKED_EVENT, {
+        detail: { coords: [], geomType: 'LineString' },
+      }),
+    )
+
+    expect(browser.runtime.sendMessage).toHaveBeenCalledWith({
+      action: POINT_PICKED_ACTION,
+      coords: [],
+      geomType: 'LineString',
+      source: NOTES_PICK_SOURCE,
     })
   })
 })

@@ -103,16 +103,16 @@ export class PointPickerOverlay {
   }
 
   private finish(): void {
-    if (this.accumulatedCoords.length > 0) {
-      if (this.geomType === 'Polygon' && this.accumulatedCoords.length > 2) {
-        const first = this.accumulatedCoords[0]
-        const last = this.accumulatedCoords.at(-1)!
-        if (first[0] !== last[0] || first[1] !== last[1]) {
-          this.accumulatedCoords.push([...first])
-        }
+    if (this.geomType === 'Polygon' && this.accumulatedCoords.length > 2) {
+      const first = this.accumulatedCoords[0]
+      const last = this.accumulatedCoords.at(-1)!
+      if (first[0] !== last[0] || first[1] !== last[1]) {
+        this.accumulatedCoords.push([...first])
       }
-      notifyPointPicked(this.accumulatedCoords, this.geomType)
     }
+    // Пустой набор значит «рисование прервано»: панель должна выйти из режима
+    // выбора, иначе её кнопки остаются заблокированными.
+    notifyPointPicked(this.accumulatedCoords, this.geomType)
     this.cleanup()
   }
 

@@ -122,6 +122,44 @@ describe('NotesCreatePanel', () => {
     expect(screen.queryByPlaceholderText('Название')).toBeNull()
   })
 
+  it('возвращает кнопки, если рисование прервано без координат', async () => {
+    renderPanel()
+    const pointButton = await screen.findByText('Точка')
+    await waitFor(() => expect((pointButton as HTMLButtonElement).disabled).toBe(false))
+    fireEvent.click(pointButton)
+
+    expect(await screen.findByText('Нарисуйте на карте...')).toBeDefined()
+
+    act(() => {
+      getRuntimeListener()({
+        action: 'pointPicked',
+        coords: [],
+        geomType: 'Point',
+        source: NOTES_PICK_SOURCE,
+      })
+    })
+
+    await waitFor(() => expect((pointButton as HTMLButtonElement).disabled).toBe(false))
+    expect(screen.queryByText('Нарисуйте на карте...')).toBeNull()
+    expect(screen.queryByPlaceholderText('Название')).toBeNull()
+  })
+
+  it('отменяет рисование кнопкой «Отмена»', async () => {
+    renderPanel()
+    const pointButton = await screen.findByText('Точка')
+    await waitFor(() => expect((pointButton as HTMLButtonElement).disabled).toBe(false))
+    fireEvent.click(pointButton)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Отмена' }))
+
+    expect(browser.runtime.sendMessage).toHaveBeenCalledWith({
+      action: 'cancelPointPicking',
+      source: NOTES_PICK_SOURCE,
+    })
+    await waitFor(() => expect((pointButton as HTMLButtonElement).disabled).toBe(false))
+    expect(screen.queryByText('Нарисуйте на карте...')).toBeNull()
+  })
+
   it('показывает форму после рисования и сохраняет заметку', async () => {
     renderPanel()
     const pointButton = await screen.findByText('Точка')

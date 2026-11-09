@@ -20,6 +20,7 @@ import {
   handleListOccupiedDates,
   handleLogin,
   handleLogout,
+  handlePointPicked,
   handleReloadEditor,
   handleSetTrackerDate,
   handleStartPointPicking,
@@ -42,7 +43,11 @@ import {
   syncNspdContentScriptsFromStorage,
 } from '@/lib/nspd/content_scripts'
 import { CLOSE_PANEL_SIDEBAR_ACTION } from '@/lib/panel_sidebar_notify'
-import { CANCEL_POINT_PICKING_ACTION, START_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
+import {
+  CANCEL_POINT_PICKING_ACTION,
+  POINT_PICKED_ACTION,
+  START_POINT_PICKING_ACTION,
+} from '@/lib/pick_point_action'
 
 const handleToolbarClick = (tab: Browser.tabs.Tab): void => {
   const panelTask = openPanel(tab)
@@ -77,6 +82,7 @@ const messageHandlers: Record<string, MessageHandler> = {
   [CLOSE_PANEL_SIDEBAR_ACTION]: handleClosePanel,
   [START_POINT_PICKING_ACTION]: handleStartPointPicking,
   [CANCEL_POINT_PICKING_ACTION]: handleCancelPointPicking,
+  [POINT_PICKED_ACTION]: handlePointPicked,
   applyStrokeColor: handleApplyStrokeColor,
   centerMap: handleCenterMap,
   getTrackerDate: handleGetTrackerDate,

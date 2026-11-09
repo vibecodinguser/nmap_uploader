@@ -39,9 +39,5 @@ export const parsePointPickedEvent = (
       Array.isArray(c) && typeof c[0] === 'number' && typeof c[1] === 'number',
   )
 
-  if (validCoords.length === 0) {
-    return null
-  }
-
   return { coords: validCoords, geomType }
 }

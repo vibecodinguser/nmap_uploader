@@ -6,7 +6,11 @@ import { runBackgroundTask } from '@/lib/background/tasks'
 import { GO_TO_REFRESH_ACTION } from '@/lib/go_to_notify'
 import { isTrustedNmapsOrPanelSender, logRejectedMessage } from '@/lib/message_auth'
 import { CLOSE_PANEL_SIDEBAR_ACTION } from '@/lib/panel_sidebar_notify'
-import { CANCEL_POINT_PICKING_ACTION, START_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
+import {
+  CANCEL_POINT_PICKING_ACTION,
+  POINT_PICKED_ACTION,
+  START_POINT_PICKING_ACTION,
+} from '@/lib/pick_point_action'
 import { processRelayToMapTabs, processReloadEditor } from './relay_sender'
 
 export * from './relay_sender'
@@ -73,6 +77,28 @@ export const handleCancelPointPicking: MessageHandler = (message, sender, sendRe
     runBackgroundTask(relayTask, CANCEL_POINT_PICKING_ACTION)
   } else {
     logRejectedMessage(CANCEL_POINT_PICKING_ACTION, sender)
+    sendResponse({ ok: false })
+  }
+  return true
+}
+
+/**
+ * Возвращает нарисованные координаты в content script вкладки.
+ *
+ * `pointPicked` рождается на карте, а форму сохранения рисует сайдбар —
+ * тоже content script. `runtime.sendMessage` до content scripts не доходит,
+ * поэтому сообщение проходит через background и уходит через `tabs.sendMessage`.
+ */
+export const handlePointPicked: MessageHandler = (message, sender, sendResponse) => {
+  if (isTrustedNmapsOrPanelSender(sender)) {
+    const coords = Array.isArray(message.coords) ? message.coords : []
+    const geomType = typeof message.geomType === 'string' ? message.geomType : 'Point'
+    const source = typeof message.source === 'string' ? message.source : undefined
+    const relayMessage = { action: POINT_PICKED_ACTION, coords, geomType, source }
+    const relayTask = processRelayToMapTabs(sender, relayMessage, sendResponse, 'pointPicked')
+    runBackgroundTask(relayTask, POINT_PICKED_ACTION)
+  } else {
+    logRejectedMessage(POINT_PICKED_ACTION, sender)
     sendResponse({ ok: false })
   }
   return true

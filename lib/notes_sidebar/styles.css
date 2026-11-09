@@ -333,6 +333,35 @@
   font-size: 12px;
 }
 
+/* Подсказка «нарисуйте на карте» и выход из режима рисования. */
+.nmap-notes-create__picking {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.nmap-notes-create__picking .nmap-notes-create__hint {
+  margin: 0;
+}
+
+.nmap-notes-create__link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  color: var(--nmap-accent);
+  text-decoration: underline;
+  cursor: pointer;
+  outline: 0;
+}
+
+.nmap-notes-create__link:focus-visible {
+  outline: var(--nmap-focus-outline);
+  outline-offset: 2px;
+}
+
 .nmap-notes-create__form {
   display: flex;
   flex-direction: column;

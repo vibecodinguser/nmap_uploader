@@ -145,6 +145,10 @@ exports[`инжектируемые стили > notes-sidebar: текст не 
 .nmap-notes-create__type_active{border-color:var(--nmap-accent);background:color-mix(in srgb,var(--nmap-accent) 18%,transparent);}
 .nmap-notes-create__type:disabled{opacity:0.5;cursor:default;}
 .nmap-notes-create__hint{color:var(--nmap-text-muted);font-size:12px;}
+.nmap-notes-create__picking{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.nmap-notes-create__picking .nmap-notes-create__hint{margin:0;}
+.nmap-notes-create__link{padding:0;border:0;background:none;font:inherit;font-size:12px;color:var(--nmap-accent);text-decoration:underline;cursor:pointer;outline:0;}
+.nmap-notes-create__link:focus-visible{outline:var(--nmap-focus-outline);outline-offset:2px;}
 .nmap-notes-create__form{display:flex;flex-direction:column;gap:8px;}
 .nmap-notes-create__field{width:100%;padding:6px 8px;border:1px solid color-mix(in srgb,currentcolor 25%,transparent);border-radius:var(--nmap-radius-sm);background:none;font:inherit;color:inherit;}
 .nmap-notes-create__field::placeholder{color:var(--nmap-text-muted);}
