@@ -162,31 +162,45 @@ export type Messages = {
     openPanelFailed: string
     tabNotFound: string
   }
-  notes: {
+  notesPanel: {
+    title: string
+    editButton: string
+    create: string
+    searchPlaceholder: string
+    loading: string
+    authRequired: string
+    loadError: string
+    empty: string
+    emptySearch: string
+    kindPoint: string
+    kindLine: string
+    kindPolygon: string
+    kindSquare: string
+    kindCircle: string
+    drawHint: string
     namePlaceholder: string
-    descPlaceholder: string
-    save: string
-    cancel: string
-    showOnMap: string
-    hideObject: string
-    showObject: string
-    more: string
-    edit: string
+    descriptionPlaceholder: string
+    date: string
+    dateInvalid: string
+    color: string
+    opacity: string
+    strokeWidth: string
+    showLabel: string
+    visible: string
+    hidden: string
     delete: string
     deleteConfirm: string
-    typePoint: string
-    typeLine: string
-    typePolygon: string
-    selectTypeTooltip: string
-    drawOnMap: string
-    addNote: string
-    loadingNotes: string
-    coordsLabel: string
-    figureOfPoints: string
-    noteDescPlaceholder: string
-    dateRequired: string
+    undoDelete: string
+    undo: string
+    back: string
+    locate: string
     saved: string
-    noteExtendedDescPlaceholder: string
+    saveError: string
+    expand: string
+    collapse: string
+    close: string
+    properties: string
+    createFailed: string
   }
   mapPointCounter: {
     points: string

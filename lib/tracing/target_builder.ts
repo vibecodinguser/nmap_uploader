@@ -1,4 +1,3 @@
-import type { PolygonSnapTarget } from '@/lib/nmaps_draw_objects'
 import { findTargetSnap } from './geometry'
 import type {
   Capability,
@@ -7,6 +6,7 @@ import type {
   GeometryFactoryConstructor,
   NativeCandidate,
   NativeTracingMap,
+  PolygonSnapTarget,
   TracingTarget,
 } from './types'
 

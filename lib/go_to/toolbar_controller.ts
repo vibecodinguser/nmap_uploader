@@ -25,7 +25,6 @@ import { GO_TO_BUTTON_HOVERED_CLASS } from '@/lib/go_to_styles'
 import { removeAllGoToToolbarButtons, shouldRemountGoToToolbar } from '@/lib/go_to_toolbar'
 import type { TranslateFn } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n/locale.types'
-import { closeNotesPopup, teardownNotesPopup } from '@/lib/notes_popup'
 import { closePolygonUploadPopup, teardownPolygonUploadPopup } from '@/lib/polygon_upload_popup'
 import {
   mountNotesButtonView,
@@ -69,8 +68,6 @@ export class GoToToolbarController {
   }
 
   public removeNotesButton(): void {
-    closeNotesPopup()
-    teardownNotesPopup()
     getNotesButton()?.remove()
   }
 
@@ -83,7 +80,6 @@ export class GoToToolbarController {
     this.removeMenu()
     teardownSplitView()
     teardownPolygonUploadPopup()
-    teardownNotesPopup()
     removeAllGoToToolbarButtons()
   }
 
@@ -108,7 +104,6 @@ export class GoToToolbarController {
     const toolbarMountState = getGoToToolbarMountState(anchor)
     if (shouldRemountGoToToolbar(toolbarMountState)) {
       closePolygonUploadPopup()
-      closeNotesPopup()
       removeAllGoToToolbarButtons()
     }
 
@@ -126,7 +121,6 @@ export class GoToToolbarController {
         e.stopPropagation()
         e.stopImmediatePropagation()
         closePolygonUploadPopup()
-        closeNotesPopup()
         this.onOpenMenu()
       })
       serviceButton.addEventListener('mouseover', (e) => {

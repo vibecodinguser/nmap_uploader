@@ -12,7 +12,7 @@ import { EXTENSION_ID, getURL } from '@/tests/setup/browser_mock'
 
 const panelUrl = getURL('/panel.html')
 const polygonUploadUrl = getURL('/polygon-upload.html')
-const notesUrl = getURL('/notes.html')
+const notesUrl = getURL('/notes-panel.html')
 
 const buildSender = ({
   id = EXTENSION_ID,

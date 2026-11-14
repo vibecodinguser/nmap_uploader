@@ -1,4 +1,3 @@
-import type { PolygonSnapTarget } from '@/lib/nmaps_draw_objects'
 import { observeWebpackModules } from '@/lib/nmaps_webpack_module_observer'
 import {
   getExportValues,
@@ -21,6 +20,7 @@ import type {
   HotspotMethod,
   NativeTracingAdapter,
   NativeTracingAdapterOptions,
+  PolygonSnapTarget,
   TracingTarget,
 } from './types'
 

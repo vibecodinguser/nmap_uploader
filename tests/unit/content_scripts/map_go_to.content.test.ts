@@ -13,7 +13,7 @@ import {
 } from '@/lib/go_to_split_button'
 import { GO_TO_POPUP_VISIBLE_CLASS } from '@/lib/go_to_styles'
 import { NOTES_BUTTON_ENABLED_STORAGE_KEY, NOTES_BUTTON_ID } from '@/lib/notes_button'
-import { NOTES_POPUP_ID } from '@/lib/notes_popup'
+import { NMAPS_TOGGLE_NOTES_PANEL_EVENT } from '@/lib/notes_panel/events'
 import { NSPD_BUTTON_ENABLED_STORAGE_KEY, NSPD_BUTTON_ID } from '@/lib/nspd/nspd_button'
 import { POLYGON_UPLOAD_BUTTON_ID } from '@/lib/polygon_upload_button'
 import { POLYGON_UPLOAD_POPUP_ID } from '@/lib/polygon_upload_popup'
@@ -143,7 +143,7 @@ describe('map-go-to.content', () => {
     expect(openSpy).toHaveBeenCalled()
   })
 
-  it('открывает заметки справа от загрузки и закрывает попап загрузки', async () => {
+  it('ставит кнопку заметок справа от загрузки и сигналит панели о переключении', async () => {
     await browser.storage.local.set({
       [NOTES_BUTTON_ENABLED_STORAGE_KEY]: true,
     })
@@ -156,12 +156,16 @@ describe('map-go-to.content', () => {
     document.getElementById(POLYGON_UPLOAD_BUTTON_ID)?.click()
     expect(document.getElementById(POLYGON_UPLOAD_POPUP_ID)).not.toBeNull()
 
-    document.getElementById(NOTES_BUTTON_ID)?.click()
-    expect(document.getElementById(POLYGON_UPLOAD_POPUP_ID)).toBeNull()
-    expect(document.getElementById(NOTES_POPUP_ID)).not.toBeNull()
+    const toggleListener = vi.fn()
+    document.addEventListener(NMAPS_TOGGLE_NOTES_PANEL_EVENT, toggleListener)
 
     document.getElementById(NOTES_BUTTON_ID)?.click()
-    expect(document.getElementById(NOTES_POPUP_ID)).toBeNull()
+    expect(document.getElementById(POLYGON_UPLOAD_POPUP_ID)).toBeNull()
+    expect(toggleListener).toHaveBeenCalledTimes(1)
+
+    document.getElementById(NOTES_BUTTON_ID)?.click()
+    expect(toggleListener).toHaveBeenCalledTimes(2)
+    document.removeEventListener(NMAPS_TOGGLE_NOTES_PANEL_EVENT, toggleListener)
   })
 
   it('открывает и закрывает popup кнопкой загрузки', async () => {

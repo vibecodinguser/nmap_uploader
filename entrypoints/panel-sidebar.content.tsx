@@ -111,17 +111,6 @@ export default defineContentScript({
       }
     }
 
-    const dispatchDrawMapObjects = (message: RuntimeMessage): void => {
-      document.dispatchEvent(
-        new CustomEvent('nmaps:drawObjects', {
-          detail: JSON.stringify({
-            points: message.points,
-            snapTargets: message.snapTargets ?? [],
-          }),
-        }),
-      )
-    }
-
     const handleRuntimeMessage = (message: RuntimeMessage): void => {
       switch (message?.action) {
         case CLOSE_PANEL_SIDEBAR_ACTION:
@@ -142,9 +131,6 @@ export default defineContentScript({
           break
         case 'centerMap':
           handleCenterMap(message)
-          break
-        case 'DRAW_MAP_OBJECTS':
-          dispatchDrawMapObjects(message)
           break
         case 'SET_TRACKER_DATE':
           handleSetTrackerDate(message)
@@ -201,15 +187,6 @@ export default defineContentScript({
 
     document.addEventListener(NMAPS_POINT_PICKED_EVENT, handlePointPicked)
     browser.runtime.onMessage.addListener(handleRuntimeMessage)
-
-    browser.runtime
-      .sendMessage({ action: 'GET_DRAW_MAP_OBJECTS' })
-      .then((message) => {
-        if (message && Array.isArray(message.points)) {
-          dispatchDrawMapObjects(message)
-        }
-      })
-      .catch(() => {})
 
     ctx.onInvalidated(() => {
       clearInterval(trackerInterval)
