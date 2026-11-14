@@ -7,7 +7,7 @@ import {
   NOTE_STROKE_WIDTH_MAX,
   NOTE_STROKE_WIDTH_MIN,
 } from '@/lib/notes/palette'
-import type { Note } from '@/lib/notes/types'
+import { isFilledKind, type Note } from '@/lib/notes/types'
 import { ColorPicker } from './ColorPicker'
 
 const kindKey = (kind: Note['kind']) => `notesPanel.kind${kind}` as const
@@ -106,7 +106,17 @@ export const NoteProperties = ({
       <ColorPicker
         value={note.style.color}
         label={t('notesPanel.color')}
-        onChange={(color) => onPatch({ style: { ...note.style, color } })}
+        onChange={(color) =>
+          onPatch({
+            style: {
+              ...note.style,
+              color,
+              // У площадных объектов цвет задаёт и обводку, и заливку:
+              // отдельное управление заливкой появится вместе со штриховкой.
+              fillColor: isFilledKind(note.kind) ? color : note.style.fillColor,
+            },
+          })
+        }
       />
 
       <label className="notes-panel__field notes-panel__field--inline">
