@@ -170,10 +170,9 @@ export default defineContentScript({
           onDateChange: (newDate) => {
             try {
               if (!browser.runtime?.id) return
+              // Дату трекера получает только панель расширения: заметки от неё
+              // больше не зависят и живут по собственной дате объекта.
               sendTrackerDateToIframe(newDate, new URL(browser.runtime.getURL('/')).origin)
-              browser.runtime
-                .sendMessage({ action: 'TRACKER_DATE_CHANGED', date: newDate })
-                .catch(() => {})
             } catch {}
           },
         })
