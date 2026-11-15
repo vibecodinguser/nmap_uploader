@@ -58,11 +58,9 @@ const normalizeHatch = (value: unknown): NoteHatch | null => {
   if (typeof pattern !== 'string' || !(HATCH_PATTERNS as readonly string[]).includes(pattern)) {
     return null
   }
-  return {
-    pattern: pattern as HatchPattern,
-    color: isSupportedColor(value.color) ? value.color : '#3d3d3d',
-    width: (value.width === 1 || value.width === 3 ? value.width : 2) as 1 | 2 | 3,
-  }
+  // Цвет и толщина раньше хранились в заметке; в старых записях они есть,
+  // но больше не используются — узор рисуется цветом объекта.
+  return { pattern: pattern as HatchPattern }
 }
 
 const normalizeStyle = (value: unknown, fallbackKind: Note['kind']): NoteStyle => {

@@ -191,13 +191,10 @@ export type Messages = {
     opacity: string
     strokeWidth: string
     fill: string
-    fillColor: string
     fillNone: string
     hatch: string
     hatchNone: string
     hatchPattern: string
-    hatchColor: string
-    hatchWidth: string
     hatchDiagonal: string
     hatchBackDiagonal: string
     hatchGrid: string

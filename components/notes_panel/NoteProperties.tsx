@@ -49,10 +49,9 @@ export const NoteProperties = ({
 
   const dateValid = isValidDisplayDate(date)
 
-  // Итоговые цвета: свои, из группы или из палитры.
+  // Итоговый цвет: свой, из группы или из палитры. Им же рисуются заливка и
+  // штриховка — отдельных цветов у них нет.
   const resolved = resolveNoteStyle(note)
-  /** Заливка ещё не переопределена и должна следовать за цветом объекта. */
-  const fillFollowsColor = note.style.fillColor !== null && note.style.fillColor === resolved.color
 
   const commitDate = (): void => {
     setDateTouched(true)
@@ -121,9 +120,9 @@ export const NoteProperties = ({
             style: {
               ...note.style,
               color,
-              // Заливка следует за цветом объекта, пока её не задали отдельно:
-              // иначе новый зелёный полигон оставался бы с синей заливкой.
-              fillColor: fillFollowsColor ? color : note.style.fillColor,
+              // Заливка и штриховка рисуются цветом объекта, поэтому он же
+              // запоминается в fillColor — по нему видно, включена ли заливка.
+              fillColor: note.style.fillColor === null ? null : color,
             },
           })
         }
@@ -134,7 +133,7 @@ export const NoteProperties = ({
           <label className="notes-panel__field notes-panel__field--checkbox">
             <input
               type="checkbox"
-              checked={note.style.fillColor !== null}
+              checked={resolved.hasFill}
               onChange={(event) =>
                 onPatch({
                   style: {
@@ -147,14 +146,6 @@ export const NoteProperties = ({
             <span>{t('notesPanel.fill')}</span>
           </label>
 
-          {note.style.fillColor !== null && (
-            <ColorPicker
-              value={note.style.fillColor}
-              label={t('notesPanel.fillColor')}
-              onChange={(fillColor) => onPatch({ style: { ...note.style, fillColor } })}
-            />
-          )}
-
           <label className="notes-panel__field notes-panel__field--checkbox">
             <input
               type="checkbox"
@@ -163,9 +154,7 @@ export const NoteProperties = ({
                 onPatch({
                   style: {
                     ...note.style,
-                    hatch: event.target.checked
-                      ? { ...DEFAULT_HATCH, color: resolved.color }
-                      : null,
+                    hatch: event.target.checked ? { ...DEFAULT_HATCH } : null,
                   },
                 })
               }

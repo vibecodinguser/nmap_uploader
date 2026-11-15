@@ -19,11 +19,14 @@ export type NoteGeometry =
 
 export type HatchPattern = 'diagonal' | 'backDiagonal' | 'grid' | 'dots' | 'horizontal'
 
+/**
+ * Штриховка площадной фигуры.
+ *
+ * Цвет и толщина линий не настраиваются: узор рисуется цветом самого объекта,
+ * иначе он спорит с обводкой и заливкой.
+ */
 export type NoteHatch = {
   pattern: HatchPattern
-  color: string
-  /** Толщина линий узора в пикселях. */
-  width: 1 | 2 | 3
 }
 
 export type NoteStyle = {

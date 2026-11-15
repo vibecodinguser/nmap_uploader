@@ -3,8 +3,9 @@
 /**
  * Управление заливкой и штриховкой в свойствах заметки.
  *
- * Показываться они должны только у площадных видов: у линии и точки заливки
- * нет, и лишние контролы там только путают.
+ * Показываются они только у площадных видов: у линии и точки заливки нет, и
+ * лишние контролы там только путают. Цвет заливки и штриховки не настраивается
+ * отдельно — обе рисуются цветом объекта.
  */
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -58,7 +59,7 @@ describe('заливка', () => {
     expect(screen.getByRole('checkbox', { name: 'Заливка' })).toBeTruthy()
   })
 
-  it('выключается и включается', () => {
+  it('выключается и включается цветом объекта', () => {
     const filled = note({ style: { ...createDefaultStyle('Polygon'), fillColor: null } })
     const onPatch = renderProps(filled)
 
@@ -69,20 +70,13 @@ describe('заливка', () => {
     })
   })
 
-  it('цвет заливки выбирается отдельно от цвета объекта', () => {
-    const styled = note({
-      style: { ...createDefaultStyle('Polygon'), color: '#1a8cff', fillColor: '#5aa845' },
-    })
-    const onPatch = renderProps(styled)
+  it('отдельного цвета заливки в интерфейсе нет', () => {
+    renderProps(note())
 
-    fireEvent.click(screen.getAllByLabelText('#e96b7c').at(-1) as HTMLElement)
-
-    expect(onPatch).toHaveBeenCalledWith({
-      style: expect.objectContaining({ color: '#1a8cff', fillColor: '#e96b7c' }),
-    })
+    expect(screen.queryByText('Цвет заливки')).toBeNull()
   })
 
-  it('цвет объекта тянет заливку за собой, пока её не переопределили', () => {
+  it('цвет объекта тянет заливку за собой', () => {
     const linked = note({
       style: { ...createDefaultStyle('Polygon'), color: '#1a8cff', fillColor: '#1a8cff' },
     })
@@ -95,16 +89,16 @@ describe('заливка', () => {
     })
   })
 
-  it('переопределённая заливка не следует за цветом объекта', () => {
-    const overridden = note({
-      style: { ...createDefaultStyle('Polygon'), color: '#1a8cff', fillColor: '#c44fa0' },
+  it('выключенная заливка не включается от смены цвета', () => {
+    const noFill = note({
+      style: { ...createDefaultStyle('Polygon'), color: '#1a8cff', fillColor: null },
     })
-    const onPatch = renderProps(overridden)
+    const onPatch = renderProps(noFill)
 
     fireEvent.click(screen.getAllByLabelText('#5aa845')[0])
 
     expect(onPatch).toHaveBeenCalledWith({
-      style: expect.objectContaining({ color: '#5aa845', fillColor: '#c44fa0' }),
+      style: expect.objectContaining({ color: '#5aa845', fillColor: null }),
     })
   })
 
@@ -117,26 +111,19 @@ describe('заливка', () => {
 })
 
 describe('штриховка', () => {
-  it('по умолчанию выключена, при включении получает узор и цвет', () => {
+  it('по умолчанию выключена, при включении получает узор', () => {
     const onPatch = renderProps(note({ style: createDefaultStyle('Polygon') }))
 
     fireEvent.click(screen.getByRole('checkbox', { name: 'Штриховка' }))
 
     expect(onPatch).toHaveBeenCalledWith({
-      style: expect.objectContaining({
-        hatch: expect.objectContaining({ pattern: 'diagonal', width: 2 }),
-      }),
+      style: expect.objectContaining({ hatch: { pattern: 'diagonal' } }),
     })
   })
 
   it('показывает все пять узоров', () => {
     renderProps(
-      note({
-        style: {
-          ...createDefaultStyle('Polygon'),
-          hatch: { pattern: 'diagonal', color: '#1f1f1f', width: 2 },
-        },
-      }),
+      note({ style: { ...createDefaultStyle('Polygon'), hatch: { pattern: 'diagonal' } } }),
     )
 
     for (const name of ['Диагональ', 'Обратная диагональ', 'Сетка', 'Точки', 'Горизонталь']) {
@@ -144,76 +131,32 @@ describe('штриховка', () => {
     }
   })
 
+  it('не показывает ни цвета штриховки, ни толщины линий', () => {
+    renderProps(
+      note({ style: { ...createDefaultStyle('Polygon'), hatch: { pattern: 'diagonal' } } }),
+    )
+
+    expect(screen.queryByText('Цвет штриховки')).toBeNull()
+    expect(screen.queryByText('Толщина линий')).toBeNull()
+    // Ползунков ровно два: прозрачность и толщина границы.
+    expect(screen.getAllByRole('slider')).toHaveLength(2)
+  })
+
   it('переключает узор', () => {
     const onPatch = renderProps(
-      note({
-        style: {
-          ...createDefaultStyle('Polygon'),
-          hatch: { pattern: 'diagonal', color: '#1f1f1f', width: 2 },
-        },
-      }),
+      note({ style: { ...createDefaultStyle('Polygon'), hatch: { pattern: 'diagonal' } } }),
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'Сетка' }))
 
     expect(onPatch).toHaveBeenCalledWith({
-      style: expect.objectContaining({
-        hatch: expect.objectContaining({ pattern: 'grid' }),
-      }),
-    })
-  })
-
-  it('меняет цвет штриховки', () => {
-    const onPatch = renderProps(
-      note({
-        style: {
-          ...createDefaultStyle('Polygon'),
-          hatch: { pattern: 'grid', color: '#1f1f1f', width: 2 },
-        },
-      }),
-    )
-
-    fireEvent.click(screen.getAllByLabelText('#c44fa0').at(-1) as HTMLElement)
-
-    expect(onPatch).toHaveBeenCalledWith({
-      style: expect.objectContaining({
-        hatch: expect.objectContaining({ color: '#c44fa0' }),
-      }),
-    })
-  })
-
-  it('меняет толщину линий', () => {
-    const onPatch = renderProps(
-      note({
-        style: {
-          ...createDefaultStyle('Polygon'),
-          hatch: { pattern: 'grid', color: '#1f1f1f', width: 1 },
-        },
-      }),
-    )
-
-    // Толщина линий штриховки — единственный ползунок с шагом 1..3.
-    const sliders = screen.getAllByRole('slider') as HTMLInputElement[]
-    const hatchWidth = sliders.find(
-      (slider) => slider.min === '1' && slider.max === '3',
-    ) as HTMLInputElement
-    fireEvent.input(hatchWidth, { target: { value: '3' } })
-
-    expect(onPatch).toHaveBeenCalledWith({
-      style: expect.objectContaining({
-        hatch: expect.objectContaining({ width: 3 }),
-      }),
+      style: expect.objectContaining({ hatch: { pattern: 'grid' } }),
     })
   })
 
   it('выключается обратно', () => {
     const onPatch = renderProps(
-      note({
-        style: {
-          ...createDefaultStyle('Polygon'),
-          hatch: { pattern: 'grid', color: '#1f1f1f', width: 2 },
-        },
-      }),
+      note({ style: { ...createDefaultStyle('Polygon'), hatch: { pattern: 'grid' } } }),
     )
 
     fireEvent.click(screen.getByRole('checkbox', { name: 'Штриховка' }))
@@ -224,32 +167,21 @@ describe('штриховка', () => {
   })
 })
 
-describe('HatchPreview', () => {
-  it('рисует разные узоры по-разному', () => {
-    const { container: diagonal } = render(<HatchPreview pattern="diagonal" color="#000000" />)
-    const { container: dots } = render(<HatchPreview pattern="dots" color="#000000" />)
-
-    expect(diagonal.innerHTML).not.toBe(dots.innerHTML)
-    cleanup()
-  })
-})
-
 describe('заливка по умолчанию', () => {
-  it('новый полигон уже с заливкой цвета объекта', () => {
+  it('новый полигон уже с заливкой', () => {
     renderProps(note())
 
     const fillCheckbox = screen.getByRole('checkbox', { name: 'Заливка' }) as HTMLInputElement
     expect(fillCheckbox.checked).toBe(true)
   })
+})
 
-  it('у нового полигона заливка следует за цветом объекта', () => {
-    // Цвет объекта не задан: он берётся из палитры, и заливка совпадает с ним.
-    const onPatch = renderProps(note({ style: createDefaultStyle('Polygon') }))
+describe('HatchPreview', () => {
+  it('рисует разные узоры по-разному', () => {
+    const { container: diagonal } = render(<HatchPreview pattern="diagonal" />)
+    const { container: dots } = render(<HatchPreview pattern="dots" />)
 
-    fireEvent.click(screen.getAllByLabelText('#5aa845')[0])
-
-    expect(onPatch).toHaveBeenCalledWith({
-      style: expect.objectContaining({ color: '#5aa845', fillColor: '#5aa845' }),
-    })
+    expect(diagonal.innerHTML).not.toBe(dots.innerHTML)
+    cleanup()
   })
 })

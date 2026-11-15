@@ -10,21 +10,34 @@ export const createDefaultStyle = (kind: NoteKind): NoteStyle => ({
   strokeWidth: 3,
 })
 
-export type ResolvedNoteStyle = NoteStyle & { color: string }
+export type ResolvedNoteStyle = NoteStyle & {
+  color: string
+  /** Заливка включена; её цвет всегда совпадает с цветом объекта. */
+  hasFill: boolean
+}
 
 /**
  * Итоговый цвет заметки: свой → цвет группы → палитра.
  *
  * Цвет группы — значение по умолчанию, а не жёсткая привязка: заметка внутри
  * группы может быть перекрашена отдельно.
+ *
+ * Заливка отдельного цвета не имеет: `fillColor` — это признак «заливка
+ * включена», а не самостоятельный цвет.
  */
 export const resolveNoteStyle = (
   note: Pick<Note, 'style'>,
   group?: Pick<NoteGroup, 'color'> | null,
-): ResolvedNoteStyle => ({
-  ...note.style,
-  color: note.style.color ?? group?.color ?? DEFAULT_NOTE_COLOR,
-})
+): ResolvedNoteStyle => {
+  const color = note.style.color ?? group?.color ?? DEFAULT_NOTE_COLOR
+
+  return {
+    ...note.style,
+    color,
+    hasFill: note.style.fillColor !== null,
+    fillColor: note.style.fillColor === null ? null : color,
+  }
+}
 
 const HEX_PATTERN = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i
 

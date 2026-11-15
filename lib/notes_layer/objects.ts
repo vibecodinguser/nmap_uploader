@@ -11,6 +11,7 @@ import {
   geometryCoordinates,
   squareFromCorners,
 } from '@/lib/notes/geometry'
+import { HATCH_LINE_WIDTH } from '@/lib/notes/palette'
 import { type ResolvedNoteStyle, resolveNoteStyle, withOpacity } from '@/lib/notes/style_resolution'
 import type { LonLat, Note, NoteGeometry, NoteGroup } from '@/lib/notes/types'
 
@@ -79,8 +80,10 @@ export const buildPointIconHref = (style: ResolvedNoteStyle): string => {
  */
 export const buildHatchImageHref = (style: ResolvedNoteStyle): string | undefined => {
   if (!style.hatch) return undefined
-  const { pattern, width } = style.hatch
-  const color = withOpacity(style.hatch.color, style.opacity)
+  // Узор рисуется цветом объекта: отдельный цвет штриховки спорил бы с обводкой.
+  const { pattern } = style.hatch
+  const width = HATCH_LINE_WIDTH
+  const color = withOpacity(style.color, style.opacity)
   const size = 8
   const lines: string[] = []
 

@@ -51,13 +51,14 @@ describe('buildHatchImageHref', () => {
     )
   })
 
-  it('рисует svg-паттерн в цвете штриховки', () => {
+  it('рисует svg-паттерн цветом объекта', () => {
     const href = buildHatchImageHref(
       resolveNoteStyle({
         style: {
           ...createDefaultStyle('Polygon'),
+          color: NOTE_PALETTE[0],
           opacity: 1,
-          hatch: { pattern: 'diagonal', color: NOTE_PALETTE[0], width: 2 },
+          hatch: { pattern: 'diagonal' },
         },
       }),
     )
@@ -71,7 +72,7 @@ describe('buildHatchImageHref', () => {
       style: {
         ...createDefaultStyle('Polygon'),
         opacity: 0.5,
-        hatch: { pattern: 'grid', color: NOTE_PALETTE[0], width: 2 },
+        hatch: { pattern: 'grid' },
       },
     })
 
@@ -85,7 +86,7 @@ describe('buildHatchImageHref', () => {
         resolveNoteStyle({
           style: {
             ...createDefaultStyle('Polygon'),
-            hatch: { pattern, color: '#000000', width: 2 },
+            hatch: { pattern },
           },
         }),
       ),
@@ -106,7 +107,7 @@ describe('buildFillColor', () => {
     const style = resolveNoteStyle({
       style: polygonNote({
         fillColor: null,
-        hatch: { pattern: 'dots', color: '#000000', width: 1 },
+        hatch: { pattern: 'dots' },
       }).style,
     })
 
@@ -125,8 +126,9 @@ describe('buildFillColor', () => {
 describe('renderNote: полигон', () => {
   it('заливка и штриховка попадают в опции карты', () => {
     const polygon = renderPolygon({
+      color: '#5aa845',
       fillColor: '#5aa845',
-      hatch: { pattern: 'grid', color: '#1f1f1f', width: 2 },
+      hatch: { pattern: 'grid' },
     })
 
     expect(polygon.options.fill).toBe(true)
@@ -135,15 +137,21 @@ describe('renderNote: полигон', () => {
     expect(polygon.options.fillMethod).toBe('tile')
   })
 
+  it('заливка берёт цвет объекта, даже если в данных осталcя старый цвет', () => {
+    const polygon = renderPolygon({ color: '#c44fa0', fillColor: '#1a8cff' })
+
+    expect(polygon.options.fillColor).toContain('rgba(196, 79, 160')
+  })
+
   it('без штриховки паттерн не ставится', () => {
-    const polygon = renderPolygon({ fillColor: '#5aa845', hatch: null })
+    const polygon = renderPolygon({ fillColor: '#5aa845' })
 
     expect(polygon.options.fillImageHref).toBeUndefined()
     expect(polygon.options.fillMethod).toBeUndefined()
   })
 
   it('без заливки полигон остаётся только с обводкой', () => {
-    const polygon = renderPolygon({ fillColor: null, hatch: null })
+    const polygon = renderPolygon({ fillColor: null })
 
     expect(polygon.options.fillColor).toBe('rgba(0, 0, 0, 0)')
   })
@@ -151,13 +159,7 @@ describe('renderNote: полигон', () => {
   it('квадрат и круг получают те же заливку и штриховку', () => {
     for (const kind of ['Square', 'Circle'] as const) {
       const [polygon] = renderNote({
-        note: polygonNote(
-          {
-            fillColor: '#c44fa0',
-            hatch: { pattern: 'diagonal', color: '#1f1f1f', width: 3 },
-          },
-          kind,
-        ),
+        note: polygonNote({ fillColor: '#c44fa0', hatch: { pattern: 'diagonal' } }, kind),
         geometry:
           kind === 'Square'
             ? {
@@ -179,13 +181,7 @@ describe('renderNote: полигон', () => {
 
   it('у линии штриховки нет', () => {
     const [line] = renderNote({
-      note: polygonNote(
-        {
-          fillColor: '#5aa845',
-          hatch: { pattern: 'grid', color: '#1f1f1f', width: 2 },
-        },
-        'Line',
-      ),
+      note: polygonNote({ fillColor: '#5aa845', hatch: { pattern: 'grid' } }, 'Line'),
       geometry: {
         kind: 'Line',
         coords: [

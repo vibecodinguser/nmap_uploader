@@ -27,9 +27,10 @@ export const HATCH_PATTERNS = ['diagonal', 'backDiagonal', 'grid', 'dots', 'hori
 
 export const DEFAULT_HATCH = {
   pattern: 'diagonal',
-  color: '#3d3d3d',
-  width: 2,
 } as const
+
+/** Толщина линий узора: одна и та же у всех, чтобы штриховка не «жирнела». */
+export const HATCH_LINE_WIDTH = 2
 
 export const NOTE_TEXT_COLOR = '#1f1f1f'
 

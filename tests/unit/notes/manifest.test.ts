@@ -56,6 +56,22 @@ describe('parseManifest', () => {
     expect(note?.style.strokeWidth).toBe(8)
   })
 
+  it('принимает старую штриховку без цвета и толщины', () => {
+    // В записях до упрощения у узора были color и width: они больше не нужны.
+    const note = normalizeNote({
+      ...baseNote({ kind: 'Polygon' }),
+      style: {
+        color: null,
+        fillColor: '#ffffff',
+        hatch: { pattern: 'grid', color: '#000000', width: 2 },
+        opacity: 1,
+        strokeWidth: 3,
+      },
+    })
+
+    expect(note?.style.hatch).toEqual({ pattern: 'grid' })
+  })
+
   it('убирает штриховку у линий и точек', () => {
     const note = normalizeNote(
       baseNote({
@@ -63,7 +79,7 @@ describe('parseManifest', () => {
         style: {
           color: null,
           fillColor: '#ffffff',
-          hatch: { pattern: 'grid', color: '#000000', width: 2 },
+          hatch: { pattern: 'grid' },
           opacity: 1,
           strokeWidth: 3,
         },

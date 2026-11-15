@@ -133,7 +133,7 @@ describe('renderNote', () => {
     const style = resolveNoteStyle({
       style: {
         ...createDefaultStyle('Polygon'),
-        hatch: { pattern: 'diagonal', color: '#000000', width: 2 },
+        hatch: { pattern: 'diagonal' },
       },
     })
 

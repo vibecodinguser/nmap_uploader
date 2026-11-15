@@ -395,11 +395,6 @@ body {
   box-shadow: 0 0 0 2px #ffffff inset;
 }
 
-.notes-panel__color--small {
-  width: 18px;
-  height: 18px;
-}
-
 .notes-panel__color--custom {
   position: relative;
   background: conic-gradient(#ff8c42, #ffdb4d, #5aa845, #1a8cff, #8a5cd6, #ff8c42);
@@ -512,10 +507,4 @@ body {
   display: block;
   border: 1px solid var(--border, #e6e6e6);
   border-radius: 4px;
-}
-
-.notes-panel__hatch-color {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
 }
