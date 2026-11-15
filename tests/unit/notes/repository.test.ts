@@ -286,3 +286,101 @@ describe('сериализация записей', () => {
     expect(manifest.notes.map((item) => item.id).sort()).toEqual(['a', 'b'])
   })
 })
+
+describe('удаление: скорость', () => {
+  it('читает манифест и шард параллельно, если передана дата заметки', async () => {
+    const remote = createMemoryRemote()
+    const notePorts = ports(remote)
+    await saveNote({
+      ports: notePorts,
+      note: note(),
+      geometry: { kind: 'Point', coords: [37, 55] },
+    })
+
+    const order: string[] = []
+    const originalReadManifest = remote.readManifest
+    const originalReadShard = remote.readShard
+
+    remote.readManifest = async () => {
+      order.push('manifest:start')
+      await new Promise((resolve) => setTimeout(resolve, 15))
+      const value = await originalReadManifest()
+      order.push('manifest:end')
+      return value
+    }
+    remote.readShard = async (shardId) => {
+      order.push('shard:start')
+      await new Promise((resolve) => setTimeout(resolve, 15))
+      const value = await originalReadShard(shardId)
+      order.push('shard:end')
+      return value
+    }
+
+    await deleteNote({ ports: notePorts, noteId: 'note-1', date: '14-11-2026' })
+
+    // Оба чтения стартуют до завершения любого из них.
+    expect(order.slice(0, 2).sort()).toEqual(['manifest:start', 'shard:start'])
+  })
+
+  it('пишет манифест и шард параллельно', async () => {
+    const remote = createMemoryRemote()
+    const notePorts = ports(remote)
+    await saveNote({
+      ports: notePorts,
+      note: note(),
+      geometry: { kind: 'Point', coords: [37, 55] },
+    })
+
+    const order: string[] = []
+    const originalWriteManifest = remote.writeManifest
+    const originalWriteShard = remote.writeShard
+
+    remote.writeManifest = async (manifest) => {
+      order.push('manifest:start')
+      await new Promise((resolve) => setTimeout(resolve, 15))
+      await originalWriteManifest(manifest)
+      order.push('manifest:end')
+    }
+    remote.writeShard = async (shardId, shard) => {
+      order.push('shard:start')
+      await new Promise((resolve) => setTimeout(resolve, 15))
+      await originalWriteShard(shardId, shard)
+      order.push('shard:end')
+    }
+
+    await deleteNote({ ports: notePorts, noteId: 'note-1', date: '14-11-2026' })
+
+    expect(order.slice(0, 2).sort()).toEqual(['manifest:start', 'shard:start'])
+  })
+
+  it('без даты всё равно корректно находит шард по манифесту', async () => {
+    const remote = createMemoryRemote()
+    const notePorts = ports(remote)
+    await saveNote({
+      ports: notePorts,
+      note: note(),
+      geometry: { kind: 'Point', coords: [37, 55] },
+    })
+
+    const result = await deleteNote({ ports: notePorts, noteId: 'note-1' })
+
+    expect(result.manifest.notes).toHaveLength(0)
+    const shard = remote.files.get('shard:2026-11') as GeometryShard
+    expect(shard.notes['note-1']).toBeUndefined()
+  })
+
+  it('удаляет геометрию из шарда, даже если дата в подсказке чужая', async () => {
+    const remote = createMemoryRemote()
+    const notePorts = ports(remote)
+    await saveNote({
+      ports: notePorts,
+      note: note(),
+      geometry: { kind: 'Point', coords: [37, 55] },
+    })
+
+    await deleteNote({ ports: notePorts, noteId: 'note-1', date: '01-01-2020' })
+
+    const shard = remote.files.get('shard:2026-11') as GeometryShard
+    expect(shard.notes['note-1']).toBeUndefined()
+  })
+})

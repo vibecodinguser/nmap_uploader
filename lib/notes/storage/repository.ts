@@ -150,30 +150,47 @@ const saveNoteNow = async ({
 const deleteNoteNow = async ({
   ports,
   noteId,
+  date,
 }: {
   ports: NotesPorts
   noteId: string
+  /** Дата заметки из панели: позволяет читать шард, не дожидаясь манифеста. */
+  date?: string
 }): Promise<NotesMutationResult> => {
-  const remoteManifest = (await ports.remote.readManifest()) ?? createEmptyManifest()
+  const hintedShardId = date ? shardIdForDate(date) : null
+
+  // Манифест и шард читаются параллельно: панель знает дату заметки, поэтому
+  // искать шард по манифесту не нужно. Это экономит два round-trip.
+  const [remoteManifest, prefetchedShard] = await Promise.all([
+    ports.remote.readManifest().then((value) => value ?? createEmptyManifest()),
+    hintedShardId ? ports.remote.readShard(hintedShardId).catch(() => null) : Promise.resolve(null),
+  ])
+
   const target = remoteManifest.notes.find((note) => note.id === noteId)
   if (!target) {
     return { manifest: remoteManifest, shards: {} }
   }
 
-  const manifest = await writeManifest(ports, {
-    ...remoteManifest,
-    notes: remoteManifest.notes.filter((note) => note.id !== noteId),
-  })
-
-  const shards: Record<string, GeometryShard> = {}
   const shardId = shardIdForDate(target.date)
-  if (shardId) {
-    const shard = removeShardGeometry(await readShard(ports, shardId), noteId)
-    await writeShard(ports, shardId, shard)
-    shards[shardId] = shard
-  }
+  const baseShard =
+    shardId && shardId === hintedShardId && prefetchedShard
+      ? prefetchedShard
+      : shardId
+        ? await readShard(ports, shardId)
+        : null
 
-  return { manifest, shards }
+  const shard = shardId && baseShard ? removeShardGeometry(baseShard, noteId) : null
+
+  // Запись манифеста и шарда независима: два файла можно отправить разом.
+  const [manifest] = await Promise.all([
+    writeManifest(ports, {
+      ...remoteManifest,
+      notes: remoteManifest.notes.filter((note) => note.id !== noteId),
+    }),
+    shardId && shard ? writeShard(ports, shardId, shard) : Promise.resolve(),
+  ])
+
+  return { manifest, shards: shardId && shard ? { [shardId]: shard } : {} }
 }
 
 const saveGroupNow = async ({

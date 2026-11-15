@@ -98,7 +98,16 @@ export const useNotesPanel = () => {
     ) => {
       saveChain.current = saveChain.current
         .then(() => browser.runtime.sendMessage(message))
-        .then((response: unknown) => handlers.onSuccess(response as MutationResponse))
+        .then((response: unknown) => {
+          const parsed = response as MutationResponse | undefined
+          // `ok: false` — это тоже неудача: background вернул её вместо
+          // исключения, и вызывающий код должен откатить своё состояние.
+          if (parsed?.ok === false) {
+            handlers.onError()
+            return
+          }
+          handlers.onSuccess(parsed as MutationResponse)
+        })
         .catch(() => handlers.onError())
     },
     [],
@@ -379,21 +388,60 @@ export const useNotesPanel = () => {
         pendingNote.current = null
       }
 
+      // Оптимистичное удаление: строка исчезает сразу, не дожидаясь Диска.
+      // Если запись не пройдёт, заметка вернётся на место с сообщением об ошибке.
+      setSnapshot((previous) =>
+        previous
+          ? {
+              ...previous,
+              manifest: {
+                ...previous.manifest,
+                notes: previous.manifest.notes.filter((item) => item.id !== noteId),
+              },
+            }
+          : previous,
+      )
+      setSelectedId(null)
+      setMode('list')
+      setUndo({ note, geometry })
+      window.setTimeout(() => setUndo(null), UNDO_TIMEOUT_MS)
+
       enqueueSaveMessage(
-        { action: NOTES_DELETE_NOTE_ACTION, noteId },
+        { action: NOTES_DELETE_NOTE_ACTION, noteId, date: note.date },
         {
           onSuccess: (response) => {
-            applyMutation(response)
-            setUndo({ note, geometry })
-            setSelectedId(null)
-            setMode('list')
-            window.setTimeout(() => setUndo(null), UNDO_TIMEOUT_MS)
+            // Манифест с Диска — источник истины; локальная копия уже без заметки.
+            if (response.manifest) {
+              setSnapshot((previous) =>
+                previous
+                  ? {
+                      ...previous,
+                      manifest: response.manifest as NotesManifest,
+                      shards: { ...previous.shards, ...(response.shards ?? {}) },
+                    }
+                  : previous,
+              )
+            }
           },
-          onError: () => setError(t('notesPanel.saveError')),
+          onError: () => {
+            setSnapshot((previous) =>
+              previous
+                ? {
+                    ...previous,
+                    manifest: {
+                      ...previous.manifest,
+                      notes: [...previous.manifest.notes, note],
+                    },
+                  }
+                : previous,
+            )
+            setUndo(null)
+            setError(t('notesPanel.saveError'))
+          },
         },
       )
     },
-    [applyMutation, enqueueSaveMessage, geometries, snapshot?.manifest.notes, t],
+    [enqueueSaveMessage, geometries, snapshot?.manifest.notes, t],
   )
 
   const undoRemove = useCallback(() => {

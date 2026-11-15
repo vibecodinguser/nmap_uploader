@@ -54,6 +54,8 @@ export type NotesMutationResponse = {
 export type NotesDeleteNoteRequest = {
   action: typeof NOTES_DELETE_NOTE_ACTION
   noteId: string
+  /** Дата заметки: по ней сразу известен шард геометрии. */
+  date?: string
 }
 
 export type NotesSaveGroupRequest = {

@@ -184,12 +184,15 @@ const mutationHandler = ({
         const result = await run(ports, message)
         const snapshot = mergeMutation(result)
         lastSnapshot = snapshot
-        await broadcastSnapshot(snapshot)
+
+        // Ответ уходит сразу: рассылка снимка панели и вкладкам карты не
+        // должна задерживать интерфейс.
         sendResponse({
           ok: true,
           manifest: result.manifest,
           shards: result.shards,
         })
+        await broadcastSnapshot(snapshot)
       } catch (error: unknown) {
         sendResponse({ ok: false, error: getErrorMessage(error, 'STORAGE_ERROR') })
       }
@@ -215,7 +218,8 @@ export const handleNotesDeleteNote = mutationHandler({
   action: NOTES_DELETE_NOTE_ACTION,
   run: async (ports, message) => {
     if (typeof message.noteId !== 'string') throw new Error('INVALID_PAYLOAD')
-    return deleteNote({ ports, noteId: message.noteId })
+    const date = typeof message.date === 'string' ? message.date : undefined
+    return deleteNote({ ports, noteId: message.noteId, date })
   },
 })
 
