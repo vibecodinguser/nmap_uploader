@@ -81,7 +81,7 @@ body {
 }
 
 .notes-panel__button:hover {
-  background: rgb(0 0 0 / 4%);
+  background: color-mix(in srgb, var(--foreground, #1f1f1f) 6%, transparent);
 }
 
 .notes-panel__button:focus-visible {
@@ -114,7 +114,7 @@ body {
 }
 
 .notes-panel__icon-button:hover {
-  background: rgb(0 0 0 / 4%);
+  background: color-mix(in srgb, var(--foreground, #1f1f1f) 6%, transparent);
 }
 
 .notes-panel__shape-picker {
@@ -157,7 +157,7 @@ body {
 }
 
 .notes-panel__shape-item:hover {
-  background: rgb(0 0 0 / 5%);
+  background: color-mix(in srgb, var(--foreground, #1f1f1f) 7%, transparent);
 }
 
 .notes-panel__body {
@@ -208,11 +208,11 @@ body {
 }
 
 .notes-panel__row:hover {
-  background: rgb(0 0 0 / 4%);
+  background: color-mix(in srgb, var(--foreground, #1f1f1f) 6%, transparent);
 }
 
 .notes-panel__row[data-selected='true'] {
-  background: rgb(255 219 77 / 28%);
+  background: color-mix(in srgb, #ffdb4d 30%, transparent);
 }
 
 .notes-panel__row-main {
@@ -280,7 +280,7 @@ body {
 }
 
 .notes-panel__row-action:hover {
-  background: rgb(0 0 0 / 6%);
+  background: color-mix(in srgb, var(--foreground, #1f1f1f) 8%, transparent);
 }
 
 .notes-panel__row-action:focus-visible {
@@ -391,8 +391,8 @@ body {
 }
 
 .notes-panel__color[data-active='true'] {
-  border-color: #1f1f1f;
-  box-shadow: 0 0 0 2px #ffffff inset;
+  border-color: var(--foreground, #1f1f1f);
+  box-shadow: 0 0 0 2px var(--background, #ffffff) inset;
 }
 
 .notes-panel__color--custom {
@@ -495,7 +495,7 @@ body {
 }
 
 .notes-panel__hatch-pattern[data-active='true'] {
-  border-color: #1f1f1f;
+  border-color: var(--foreground, #1f1f1f);
 }
 
 .notes-panel__hatch-pattern:focus-visible {
