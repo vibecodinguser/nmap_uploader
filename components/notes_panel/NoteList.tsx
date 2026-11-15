@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocale } from '@/hooks/useLocale'
 import type { Note } from '@/lib/notes/types'
+import { NOTES_PANEL_BUTTON_IDS, rowButtonId } from './ids'
 import { NoteKindIcon } from './NoteKindIcon'
 import { DeleteIcon, LocateIcon, VisibilityIcon } from './RowIcons'
 
@@ -16,13 +17,13 @@ const DEFAULT_VIEWPORT = 420
  * проверки в инспекторе и для автотестов.
  */
 export const noteRowIds = (noteId: string) => ({
-  row: `nmap-notes-row-${noteId}`,
-  main: `nmap-notes-row-${noteId}-main`,
+  row: `nmapUploaderNotesRow-${noteId}`,
+  main: `nmapUploaderNotesRow-${noteId}-main`,
   // Действия названы по смыслу, а не по виду иконки: «спрятать/показать» —
   // одно действие, поэтому `visible`, а не `hide`.
-  visibility: `notes-panel_btn_visible_${noteId}`,
-  locate: `notes-panel_btn_find_${noteId}`,
-  delete: `notes-panel_btn_delete_${noteId}`,
+  visibility: rowButtonId(NOTES_PANEL_BUTTON_IDS.visible, noteId),
+  locate: rowButtonId(NOTES_PANEL_BUTTON_IDS.find, noteId),
+  delete: rowButtonId(NOTES_PANEL_BUTTON_IDS.delete, noteId),
 })
 
 /**

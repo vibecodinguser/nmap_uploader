@@ -3,9 +3,10 @@
 /**
  * id кнопок панели: по ним к кнопкам обращаются извне.
  *
- * В панели свойств id стабильные (`notes_panel_btn_*`). В строке списка таких
- * кнопок столько же, сколько заметок, а id обязан быть уникальным — там
- * добавляется идентификатор заметки, а сам id есть в атрибуте `data-note-id`.
+ * Стиль повторяет остальные id расширения (`nmapUploaderNotesButton`):
+ * camelCase с префиксом `nmapUploader`. В свойствах кнопка одна, в строке
+ * списка кнопок столько же, сколько заметок, поэтому к id добавляется
+ * идентификатор заметки, а сам он есть в атрибуте `data-note-id`.
  */
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -53,9 +54,9 @@ describe('id кнопок в свойствах заметки', () => {
       />,
     )
 
-    expect(document.getElementById('notes_panel_btn_visible')).not.toBeNull()
-    expect(document.getElementById('notes_panel_btn_find')).not.toBeNull()
-    expect(document.getElementById('notes_panel_btn_delete')).not.toBeNull()
+    expect(document.getElementById('nmapUploaderNotesPanelBtnVisible')).not.toBeNull()
+    expect(document.getElementById('nmapUploaderNotesPanelBtnFind')).not.toBeNull()
+    expect(document.getElementById('nmapUploaderNotesPanelBtnDelete')).not.toBeNull()
   })
 
   it('id ведут на нужные действия', () => {
@@ -76,9 +77,9 @@ describe('id кнопок в свойствах заметки', () => {
       />,
     )
 
-    document.getElementById('notes_panel_btn_find')?.click()
-    document.getElementById('notes_panel_btn_visible')?.click()
-    document.getElementById('notes_panel_btn_delete')?.click()
+    document.getElementById('nmapUploaderNotesPanelBtnFind')?.click()
+    document.getElementById('nmapUploaderNotesPanelBtnVisible')?.click()
+    document.getElementById('nmapUploaderNotesPanelBtnDelete')?.click()
 
     expect(onLocate).toHaveBeenCalledOnce()
     expect(onToggleHidden).toHaveBeenCalledOnce()
@@ -99,7 +100,7 @@ describe('id кнопок в свойствах заметки', () => {
       />,
     )
 
-    expect(document.getElementById('notes_panel_btn_visible')?.textContent).toBe(
+    expect(document.getElementById('nmapUploaderNotesPanelBtnVisible')?.textContent).toBe(
       'Показать на карте',
     )
   })

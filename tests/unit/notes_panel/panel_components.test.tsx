@@ -343,9 +343,9 @@ describe('NoteList: идентификаторы строки', () => {
   it('действия строки названы по смыслу, а не по виду иконки', () => {
     const ids = noteRowIds('note-1')
 
-    expect(ids.visibility).toBe('notes-panel_btn_visible_note-1')
-    expect(ids.locate).toBe('notes-panel_btn_find_note-1')
-    expect(ids.delete).toBe('notes-panel_btn_delete_note-1')
+    expect(ids.visibility).toBe('nmapUploaderNotesPanelBtnVisible-note-1')
+    expect(ids.locate).toBe('nmapUploaderNotesPanelBtnFind-note-1')
+    expect(ids.delete).toBe('nmapUploaderNotesPanelBtnDelete-note-1')
   })
 
   it('кнопки действий помечены data-action для поиска без разбора id', () => {

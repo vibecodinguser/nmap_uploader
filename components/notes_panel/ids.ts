@@ -1,19 +1,26 @@
 /**
- * id кнопок панели свойств.
+ * id элементов панели заметок.
  *
- * В свойствах каждая кнопка в единственном экземпляре, поэтому id стабильные и
- * без суффиксов.
- *
- * В строке списка кнопок столько же, сколько заметок, а id в документе обязан
- * быть уникальным: там действует схема `noteRowIds` из `NoteList.tsx` —
- * `notes-panel_btn_visible_<id заметки>` и т. д. Плюс `data-action` у кнопки и
- * `data-note-id` / `data-note-kind` у самой строки.
+ * Стиль повторяет id остальных элементов расширения на странице карты
+ * (`nmapUploaderNotesButton`, `nmapUploaderPolygonUploadButton`): camelCase с
+ * префиксом `nmapUploader`. Так к любому нашему элементу обращаются одинаково —
+ * и в патче страницы, и в консоли, и в автотестах.
  */
 export const NOTES_PANEL_BUTTON_IDS = {
   /** Показать или скрыть объект на карте. */
-  visible: 'notes_panel_btn_visible',
+  visible: 'nmapUploaderNotesPanelBtnVisible',
   /** Найти объект на карте. */
-  find: 'notes_panel_btn_find',
+  find: 'nmapUploaderNotesPanelBtnFind',
   /** Удалить заметку. */
-  delete: 'notes_panel_btn_delete',
+  delete: 'nmapUploaderNotesPanelBtnDelete',
 } as const
+
+/**
+ * id кнопки в строке списка.
+ *
+ * В свойствах каждая кнопка одна, а в списке их столько же, сколько заметок,
+ * поэтому к базовому id добавляется идентификатор заметки — иначе id в
+ * документе перестали бы быть уникальными и `getElementById` возвращал бы
+ * первую строку вместо нужной.
+ */
+export const rowButtonId = (base: string, noteId: string): string => `${base}-${noteId}`
