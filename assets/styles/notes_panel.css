@@ -196,15 +196,36 @@ body {
   position: relative;
 }
 
-.notes-panel__row {
+/*
+ * Обёртка строки задаёт место в виртуализированном списке: у заголовка группы
+ * и у заметки разная высота, поэтому смещение считает раскладка, а не CSS.
+ */
+.notes-panel__list-row {
   position: absolute;
   right: 0;
   left: 0;
+}
+
+.notes-panel__row {
   display: flex;
+  height: 100%;
   align-items: center;
   gap: 4px;
   padding-right: 8px;
   box-sizing: border-box;
+}
+
+/* Заметку тащат в группу: подсвечиваем её как приподнятую. */
+.notes-panel__row[draggable='true'] {
+  cursor: grab;
+}
+
+.notes-panel__row[draggable='true']:active {
+  cursor: grabbing;
+}
+
+.notes-panel__row[data-dragging='true'] {
+  opacity: 0.5;
 }
 
 .notes-panel__row:hover {
@@ -518,4 +539,152 @@ body {
 .notes-panel__hatch-preview {
   display: block;
   border-radius: 4px;
+}
+
+/* Группы в списке заметок. */
+.notes-panel__group {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px 0 4px;
+  border-top: 1px solid var(--border, #e6e6e6);
+  background: color-mix(in srgb, var(--foreground, #1f1f1f) 4%, transparent);
+  box-sizing: border-box;
+}
+
+.notes-panel__group-toggle {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.notes-panel__group-toggle:focus-visible {
+  outline: 2px solid #ffdb4d;
+  outline-offset: -2px;
+}
+
+.notes-panel__group-chevron {
+  flex: 0 0 auto;
+  color: var(--muted-foreground, #6b6b6b);
+  transition: transform 0.15s ease;
+}
+
+.notes-panel__group-chevron[data-collapsed='true'] {
+  transform: rotate(-90deg);
+}
+
+.notes-panel__group-dot {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.notes-panel__group-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notes-panel__group-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 2px 6px;
+  border: 1px solid #ffdb4d;
+  border-radius: 4px;
+  background: var(--background, #ffffff);
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+}
+
+.notes-panel__group-count {
+  flex: 0 0 auto;
+  color: var(--muted-foreground, #6b6b6b);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.notes-panel__group-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 2px;
+}
+
+.notes-panel__group-color {
+  position: relative;
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border, #e6e6e6);
+  border-radius: 50%;
+  background: conic-gradient(#ff8c42, #ffdb4d, #5aa845, #1a8cff, #8a5cd6, #ff8c42);
+  cursor: pointer;
+}
+
+.notes-panel__group-color input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Заголовок группы принимает перетаскиваемую заметку. */
+.notes-panel__group[data-drop-hover='true'] {
+  outline: 2px dashed #ffdb4d;
+  outline-offset: -2px;
+}
+
+/* Диалог подтверждения. */
+.notes-panel__dialog-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 35%);
+}
+
+.notes-panel__dialog {
+  width: min(420px, calc(100% - 32px));
+  padding: 16px 18px;
+  border-radius: 10px;
+  background: var(--background, #ffffff);
+  color: var(--foreground, #1f1f1f);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 28%);
+}
+
+.notes-panel__dialog-title {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.notes-panel__dialog-text {
+  margin: 0 0 14px;
+  color: var(--muted-foreground, #6b6b6b);
+  font-size: 12px;
+}
+
+.notes-panel__dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
 }

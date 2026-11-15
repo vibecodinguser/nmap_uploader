@@ -13,6 +13,18 @@ export const NOTES_PANEL_BUTTON_IDS = {
   find: 'nmapUploaderNotesPanelBtnFind',
   /** Удалить заметку. */
   delete: 'nmapUploaderNotesPanelBtnDelete',
+  /** Создать группу. */
+  createGroup: 'nmapUploaderNotesPanelBtnCreateGroup',
+  /** Свернуть или раскрыть группу. */
+  groupToggle: 'nmapUploaderNotesPanelBtnGroupToggle',
+  /** Переименовать группу. */
+  groupRename: 'nmapUploaderNotesPanelBtnGroupRename',
+  /** Удалить группу. */
+  groupDelete: 'nmapUploaderNotesPanelBtnGroupDelete',
+  /** Цвет группы. */
+  groupColor: 'nmapUploaderNotesPanelBtnGroupColor',
+  /** Выбор группы в свойствах заметки. */
+  noteGroup: 'nmapUploaderNotesPanelSelectGroup',
 } as const
 
 /**

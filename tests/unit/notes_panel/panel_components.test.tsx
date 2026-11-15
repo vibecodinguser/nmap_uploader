@@ -1,13 +1,15 @@
 // @vitest-environment happy-dom
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import type { ComponentProps } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { NoteList, noteRowIds } from '@/components/notes_panel/NoteList'
+import { NoteList as NoteListBase, noteRowIds } from '@/components/notes_panel/NoteList'
 import { NoteProperties } from '@/components/notes_panel/NoteProperties'
 import { ShapePicker } from '@/components/notes_panel/ShapePicker'
 import { LocaleProvider } from '@/hooks/useLocale'
 import { createDefaultStyle } from '@/lib/notes/style_resolution'
 import type { Note } from '@/lib/notes/types'
+import { listProps, type NoteListProps } from './list_props'
 
 const note = (overrides: Partial<Note> = {}): Note => ({
   id: 'note-1',
@@ -30,6 +32,14 @@ afterEach(() => {
   cleanup()
 })
 
+/**
+ * Обёртка со значениями группировки по умолчанию.
+ *
+ * Почти все проверки списка — про строку заметки и её действия; группы нужны
+ * только в отдельных тестах, и там они передаются явно.
+ */
+const NoteList = (props: Partial<NoteListProps>) => <NoteListBase {...listProps(props)} />
+
 describe('NoteProperties', () => {
   it('передаёт правку названия наверх', () => {
     const onPatch = vi.fn()
@@ -43,6 +53,8 @@ describe('NoteProperties', () => {
         onBack={vi.fn()}
         onLocate={vi.fn()}
         onToggleHidden={vi.fn()}
+        groups={[]}
+        onMoveToGroup={() => {}}
       />,
     )
 
@@ -63,6 +75,8 @@ describe('NoteProperties', () => {
         onBack={vi.fn()}
         onLocate={vi.fn()}
         onToggleHidden={vi.fn()}
+        groups={[]}
+        onMoveToGroup={() => {}}
       />,
     )
 
@@ -86,6 +100,8 @@ describe('NoteProperties', () => {
         onBack={vi.fn()}
         onLocate={vi.fn()}
         onToggleHidden={vi.fn()}
+        groups={[]}
+        onMoveToGroup={() => {}}
       />,
     )
 
@@ -108,6 +124,8 @@ describe('NoteProperties', () => {
         onBack={vi.fn()}
         onLocate={vi.fn()}
         onToggleHidden={vi.fn()}
+        groups={[]}
+        onMoveToGroup={() => {}}
       />,
     )
 
@@ -128,6 +146,8 @@ describe('NoteProperties', () => {
         onBack={vi.fn()}
         onLocate={vi.fn()}
         onToggleHidden={vi.fn()}
+        groups={[]}
+        onMoveToGroup={() => {}}
       />,
     )
 

@@ -42,6 +42,8 @@ const renderProps = (target: Note, onPatch = vi.fn()) => {
         onBack={vi.fn()}
         onLocate={vi.fn()}
         onToggleHidden={vi.fn()}
+        groups={[]}
+        onMoveToGroup={() => {}}
       />
     </LocaleProvider>,
   )

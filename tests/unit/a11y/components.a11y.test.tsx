@@ -1,8 +1,9 @@
 // @vitest-environment happy-dom
 
+import type { ComponentProps } from 'react'
 import { afterEach, describe, it, vi } from 'vitest'
 import { Header } from '@/components/Header'
-import { NoteList } from '@/components/notes_panel/NoteList'
+import { NoteList as NoteListBase } from '@/components/notes_panel/NoteList'
 import { NoteProperties } from '@/components/notes_panel/NoteProperties'
 import { PoligonTab } from '@/components/PoligonTab'
 import { SettingsTab } from '@/components/SettingsTab'
@@ -10,6 +11,7 @@ import { TabBar } from '@/components/TabBar'
 import { UploadStatusMessage } from '@/components/UploadStatusMessage'
 import type { Note } from '@/lib/notes/types'
 import { cleanupA11y, expectNoA11yViolations, renderA11y } from '@/tests/setup/a11y'
+import { listProps, type NoteListProps } from '@/tests/unit/notes_panel/list_props'
 
 const noop = () => {}
 
@@ -73,6 +75,14 @@ const settingsTabProps = {
     moveItemDown: noop,
   },
 }
+
+/**
+ * Обёртка со значениями группировки по умолчанию.
+ *
+ * Почти все проверки списка — про строку заметки и её действия; группы нужны
+ * только в отдельных тестах, и там они передаются явно.
+ */
+const NoteList = (props: Partial<NoteListProps>) => <NoteListBase {...listProps(props)} />
 
 describe('a11y: TabBar', () => {
   it('без нарушений доступности', async () => {
@@ -225,6 +235,8 @@ describe('a11y: свойства заметки', () => {
         onBack={noop}
         onLocate={noop}
         onToggleHidden={noop}
+        groups={[]}
+        onMoveToGroup={() => {}}
       />,
     )
 

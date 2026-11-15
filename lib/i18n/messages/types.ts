@@ -217,6 +217,19 @@ export type Messages = {
     close: string
     properties: string
     createFailed: string
+    ungrouped: string
+    createGroup: string
+    newGroupName: string
+    expandGroup: string
+    collapseGroup: string
+    renameGroup: string
+    deleteGroup: string
+    deleteGroupConfirm: string
+    deleteGroupKeepNotes: string
+    deleteGroupCascade: string
+    group: string
+    groupColor: string
+    groupHint: string
   }
   mapPointCounter: {
     points: string

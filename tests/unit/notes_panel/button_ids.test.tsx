@@ -9,12 +9,14 @@
  * идентификатор заметки, а сам он есть в атрибуте `data-note-id`.
  */
 import { cleanup, render, screen } from '@testing-library/react'
+import type { ComponentProps } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { NoteList, noteRowIds } from '@/components/notes_panel/NoteList'
+import { NoteList as NoteListBase, noteRowIds } from '@/components/notes_panel/NoteList'
 import { NoteProperties } from '@/components/notes_panel/NoteProperties'
 import { LocaleProvider } from '@/hooks/useLocale'
 import { createDefaultStyle } from '@/lib/notes/style_resolution'
 import type { Note } from '@/lib/notes/types'
+import { listProps, type NoteListProps } from './list_props'
 
 const note = (overrides: Partial<Note> = {}): Note => ({
   id: 'note-1',
@@ -39,6 +41,14 @@ afterEach(() => {
   cleanup()
 })
 
+/**
+ * Обёртка со значениями группировки по умолчанию.
+ *
+ * Почти все проверки списка — про строку заметки и её действия; группы нужны
+ * только в отдельных тестах, и там они передаются явно.
+ */
+const NoteList = (props: Partial<NoteListProps>) => <NoteListBase {...listProps(props)} />
+
 describe('id кнопок в свойствах заметки', () => {
   it('использует стабильные id', () => {
     wrap(
@@ -51,6 +61,8 @@ describe('id кнопок в свойствах заметки', () => {
         onBack={noop}
         onLocate={noop}
         onToggleHidden={noop}
+        groups={[]}
+        onMoveToGroup={() => {}}
       />,
     )
 
@@ -74,6 +86,8 @@ describe('id кнопок в свойствах заметки', () => {
         onBack={noop}
         onLocate={onLocate}
         onToggleHidden={onToggleHidden}
+        groups={[]}
+        onMoveToGroup={() => {}}
       />,
     )
 
@@ -97,6 +111,8 @@ describe('id кнопок в свойствах заметки', () => {
         onBack={noop}
         onLocate={noop}
         onToggleHidden={noop}
+        groups={[]}
+        onMoveToGroup={() => {}}
       />,
     )
 

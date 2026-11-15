@@ -1,5 +1,6 @@
 export * from './autonames'
 export * from './geometry'
+export * from './grouping'
 export * from './manifest'
 export * from './palette'
 export * from './shards'

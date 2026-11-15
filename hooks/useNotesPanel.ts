@@ -10,22 +10,27 @@ import {
   squareCornersFromDrag,
   zoomForBounds,
 } from '@/lib/notes/geometry'
+import { collapseKey } from '@/lib/notes/grouping'
 import { mergeManifests, type NotesManifest } from '@/lib/notes/manifest'
 import {
   type DrawableNoteKind,
   isDrawableNoteKind,
+  NOTES_DELETE_GROUP_ACTION,
   NOTES_DELETE_NOTE_ACTION,
   NOTES_DRAW_FINISHED_ACTION,
   NOTES_HIDDEN_CHANGED_ACTION,
   NOTES_LOAD_ACTION,
+  NOTES_MOVE_NOTE_ACTION,
+  NOTES_SAVE_GROUP_ACTION,
   NOTES_SAVE_NOTE_ACTION,
   NOTES_SELECT_ACTION,
   NOTES_SNAPSHOT_ACTION,
   NOTES_START_DRAW_ACTION,
 } from '@/lib/notes/messages'
+import { NOTE_PALETTE } from '@/lib/notes/palette'
 import { type GeometryShard, shardIdForDate } from '@/lib/notes/shards'
 import { createDefaultStyle } from '@/lib/notes/style_resolution'
-import type { Note, NoteGeometry, NoteKind } from '@/lib/notes/types'
+import type { Note, NoteGeometry, NoteGroup, NoteKind } from '@/lib/notes/types'
 import { NOTES_PANEL_PREVIEW_MESSAGE, NOTES_PANEL_SHOW_NOTE_MESSAGE } from '@/lib/notes_panel/host'
 import { CANCEL_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
 import { STORAGE_TOKEN_KEY, STORAGE_USER_KEY } from '@/lib/yandex/constants'
@@ -673,6 +678,186 @@ export const useNotesPanel = () => {
     [notes, selectedId],
   )
 
+  const [collapsedGroupIds, setCollapsedGroupIds] = useState<string[]>([])
+
+  const toggleGroupCollapsed = useCallback((groupId: string | null) => {
+    const key = collapseKey(groupId)
+    setCollapsedGroupIds((previous) =>
+      previous.includes(key) ? previous.filter((item) => item !== key) : [...previous, key],
+    )
+  }, [])
+
+  /** Сохранить группу: создание и переименование — один и тот же запрос. */
+  const saveGroup = useCallback(
+    (group: NoteGroup) => {
+      if (snapshot) {
+        const groups = snapshot.manifest.groups.some((item) => item.id === group.id)
+          ? snapshot.manifest.groups.map((item) => (item.id === group.id ? group : item))
+          : [...snapshot.manifest.groups, group]
+        const optimistic: SnapshotState = {
+          ...snapshot,
+          manifest: { ...snapshot.manifest, groups },
+        }
+        setSnapshot(optimistic)
+      }
+
+      enqueueSaveMessage(
+        { action: NOTES_SAVE_GROUP_ACTION, group },
+        {
+          onSuccess: (response) => {
+            if (response.manifest) {
+              setSnapshot((previous) =>
+                previous
+                  ? {
+                      ...previous,
+                      manifest: response.manifest as NotesManifest,
+                      shards: { ...previous.shards, ...(response.shards ?? {}) },
+                    }
+                  : previous,
+              )
+            }
+          },
+          onError: () => {
+            // Группу не сохранили — возвращаем список групп с Диска.
+            setError(t('notesPanel.saveError'))
+            loadNotes({ silent: true })
+          },
+        },
+      )
+    },
+    [enqueueSaveMessage, loadNotes, snapshot, t],
+  )
+
+  const createGroup = useCallback(
+    (name: string): NoteGroup => {
+      const timestamp = new Date().toISOString()
+      const order = (snapshot?.manifest.groups ?? []).reduce(
+        (max, group) => Math.max(max, group.order),
+        -1,
+      )
+      const group: NoteGroup = {
+        id: crypto.randomUUID(),
+        name: name.trim(),
+        color: NOTE_PALETTE[(snapshot?.manifest.groups.length ?? 0) % NOTE_PALETTE.length],
+        order: order + 1,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      }
+      saveGroup(group)
+      return group
+    },
+    [saveGroup, snapshot?.manifest.groups],
+  )
+
+  const renameGroup = useCallback(
+    (groupId: string, name: string) => {
+      const group = (snapshot?.manifest.groups ?? []).find((item) => item.id === groupId)
+      if (!group) return
+      saveGroup({ ...group, name: name.trim(), updatedAt: new Date().toISOString() })
+    },
+    [saveGroup, snapshot?.manifest.groups],
+  )
+
+  const recolorGroup = useCallback(
+    (groupId: string, color: string) => {
+      const group = (snapshot?.manifest.groups ?? []).find((item) => item.id === groupId)
+      if (!group) return
+      saveGroup({ ...group, color, updatedAt: new Date().toISOString() })
+    },
+    [saveGroup, snapshot?.manifest.groups],
+  )
+
+  /**
+   * Удалить группу.
+   *
+   * `keepNotes` распускает её: заметки остаются на карте и уходят в корень.
+   * `cascade` удаляет и заметки — это выбор пользователя в диалоге.
+   */
+  const removeGroup = useCallback(
+    (groupId: string, mode: 'keepNotes' | 'cascade') => {
+      if (snapshot) {
+        const optimistic: SnapshotState = {
+          ...snapshot,
+          manifest: {
+            ...snapshot.manifest,
+            groups: snapshot.manifest.groups.filter((group) => group.id !== groupId),
+            notes:
+              mode === 'cascade'
+                ? snapshot.manifest.notes.filter((note) => note.groupId !== groupId)
+                : snapshot.manifest.notes.map((note) =>
+                    note.groupId === groupId ? { ...note, groupId: null } : note,
+                  ),
+          },
+        }
+        setSnapshot(optimistic)
+        postPreview(optimistic)
+      }
+
+      enqueueSaveMessage(
+        { action: NOTES_DELETE_GROUP_ACTION, groupId, mode },
+        {
+          onSuccess: (response) => {
+            if (response.manifest) {
+              setSnapshot((previous) =>
+                previous
+                  ? {
+                      ...previous,
+                      manifest: response.manifest as NotesManifest,
+                      shards: { ...previous.shards, ...(response.shards ?? {}) },
+                    }
+                  : previous,
+              )
+            }
+          },
+          onError: () => {
+            setError(t('notesPanel.saveError'))
+            loadNotes({ silent: true })
+          },
+        },
+      )
+    },
+    [enqueueSaveMessage, loadNotes, postPreview, snapshot, t],
+  )
+
+  /** Перенести заметку в группу или в корень. */
+  const moveNoteToGroup = useCallback(
+    (noteId: string, groupId: string | null) => {
+      const note = (snapshot?.manifest.notes ?? []).find((item) => item.id === noteId)
+      if (!note) return
+
+      if (snapshot) {
+        const optimistic: SnapshotState = {
+          ...snapshot,
+          manifest: {
+            ...snapshot.manifest,
+            notes: snapshot.manifest.notes.map((item) =>
+              item.id === noteId ? { ...item, groupId, updatedAt: new Date().toISOString() } : item,
+            ),
+          },
+        }
+        setSnapshot(optimistic)
+      }
+
+      enqueueSaveMessage(
+        { action: NOTES_MOVE_NOTE_ACTION, noteId, groupId },
+        {
+          onSuccess: (response) => {
+            if (response.manifest) {
+              setSnapshot((previous) =>
+                previous ? { ...previous, manifest: response.manifest as NotesManifest } : previous,
+              )
+            }
+          },
+          onError: () => {
+            setError(t('notesPanel.saveError'))
+            loadNotes({ silent: true })
+          },
+        },
+      )
+    },
+    [enqueueSaveMessage, loadNotes, snapshot, t],
+  )
+
   return {
     t,
     status,
@@ -685,6 +870,13 @@ export const useNotesPanel = () => {
     setQuery,
     notes: filteredNotes,
     groups,
+    collapsedGroupIds,
+    toggleGroupCollapsed,
+    createGroup,
+    renameGroup,
+    recolorGroup,
+    removeGroup,
+    moveNoteToGroup,
     hiddenIds: snapshot?.hiddenIds ?? [],
     selectedNote,
     selectedId,

@@ -9,7 +9,7 @@ import {
   NOTE_STROKE_WIDTH_MIN,
 } from '@/lib/notes/palette'
 import { resolveNoteStyle } from '@/lib/notes/style_resolution'
-import { isFilledKind, type Note } from '@/lib/notes/types'
+import { isFilledKind, type Note, type NoteGroup } from '@/lib/notes/types'
 import { ColorPicker } from './ColorPicker'
 import { HatchPicker } from './HatchPicker'
 import { NOTES_PANEL_BUTTON_IDS } from './ids'
@@ -26,6 +26,8 @@ export const NoteProperties = ({
   onBack,
   onLocate,
   onToggleHidden,
+  groups,
+  onMoveToGroup,
 }: {
   note: Note
   /** Автоимя «дд.мм.гггг + вид»: подставляется, если название стёрли. */
@@ -36,6 +38,9 @@ export const NoteProperties = ({
   onBack: () => void
   onLocate: () => void
   onToggleHidden: () => void
+  /** Группы для выбора принадлежности: клавиатурная замена перетаскиванию. */
+  groups: readonly NoteGroup[]
+  onMoveToGroup: (groupId: string | null) => void
 }) => {
   const { t } = useLocale()
   const [date, setDate] = useState(note.date)
@@ -109,6 +114,25 @@ export const NoteProperties = ({
         <span className="notes-panel__hint notes-panel__hint--error">
           {t('notesPanel.dateInvalid')}
         </span>
+      )}
+
+      {groups.length > 0 && (
+        <label className="notes-panel__field notes-panel__field--inline">
+          <span className="notes-panel__field-label">{t('notesPanel.group')}</span>
+          <select
+            id={NOTES_PANEL_BUTTON_IDS.noteGroup}
+            className="notes-panel__input"
+            value={note.groupId ?? ''}
+            onChange={(event) => onMoveToGroup(event.target.value || null)}
+          >
+            <option value="">{t('notesPanel.ungrouped')}</option>
+            {groups.map((group) => (
+              <option key={group.id} value={group.id}>
+                {group.name}
+              </option>
+            ))}
+          </select>
+        </label>
       )}
 
       <ColorPicker

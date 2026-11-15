@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { DeleteGroupDialog } from '@/components/notes_panel/DeleteGroupDialog'
+import { NOTES_PANEL_BUTTON_IDS } from '@/components/notes_panel/ids'
 import { NoteList } from '@/components/notes_panel/NoteList'
 import { NoteProperties } from '@/components/notes_panel/NoteProperties'
 import { ShapePicker } from '@/components/notes_panel/ShapePicker'
@@ -32,6 +34,7 @@ export const NotesPanelApp = () => {
   const panel = useNotesPanel()
   const [layout, setLayout] = useState<'compact' | 'full'>('compact')
   const [shapeOpen, setShapeOpen] = useState(false)
+  const [groupToDelete, setGroupToDelete] = useState<string | null>(null)
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -71,6 +74,18 @@ export const NotesPanelApp = () => {
         )}
 
         <div className="notes-panel__head-actions">
+          {panel.mode === 'list' && (
+            <button
+              type="button"
+              id={NOTES_PANEL_BUTTON_IDS.createGroup}
+              className="notes-panel__button"
+              title={t('notesPanel.createGroup')}
+              onClick={() => panel.createGroup(t('notesPanel.newGroupName'))}
+            >
+              + {t('notesPanel.createGroup')}
+            </button>
+          )}
+
           <div className="notes-panel__create">
             <button
               type="button"
@@ -174,6 +189,10 @@ export const NotesPanelApp = () => {
             onBack={() => panel.selectNote(null)}
             onLocate={() => panel.locateNote(panel.selectedNote?.id ?? '')}
             onToggleHidden={() => panel.toggleHidden(panel.selectedNote?.id ?? '')}
+            groups={panel.groups}
+            onMoveToGroup={(groupId) =>
+              panel.moveNoteToGroup(panel.selectedNote?.id ?? '', groupId)
+            }
           />
         )}
 
@@ -186,15 +205,34 @@ export const NotesPanelApp = () => {
           ) : (
             <NoteList
               notes={panel.notes}
+              groups={panel.groups}
+              collapsedGroupIds={panel.collapsedGroupIds}
               hiddenIds={panel.hiddenIds}
               selectedId={panel.selectedId}
               onSelect={panel.selectNote}
               onToggleHidden={panel.toggleHidden}
               onLocate={panel.locateNote}
               onDelete={panel.removeNote}
+              onToggleGroup={panel.toggleGroupCollapsed}
+              onRenameGroup={panel.renameGroup}
+              onRecolorGroup={panel.recolorGroup}
+              onRemoveGroup={(groupId) => setGroupToDelete(groupId)}
+              onMoveNote={panel.moveNoteToGroup}
             />
           ))}
       </div>
+
+      {groupToDelete && (
+        <DeleteGroupDialog
+          groupName={panel.groups.find((group) => group.id === groupToDelete)?.name ?? ''}
+          notesCount={panel.notes.filter((note) => note.groupId === groupToDelete).length}
+          onCancel={() => setGroupToDelete(null)}
+          onConfirm={(mode) => {
+            panel.removeGroup(groupToDelete, mode)
+            setGroupToDelete(null)
+          }}
+        />
+      )}
 
       {panel.undo && (
         <div className="notes-panel__toast" role="status">
