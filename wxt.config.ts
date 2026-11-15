@@ -1,12 +1,13 @@
 import { resolve } from 'node:path'
 import { loadEnv } from 'vite'
-import { defineConfig } from 'wxt'
+import { defineConfig, type Logger } from 'wxt'
 import { FIREFOX_EXTENSION_ID } from './lib/firefox_extension_id'
 import {
   type ManifestWithPermissions,
   moveNspdHostPermissionsToOptional,
 } from './lib/manifest/nspd_optional_hosts'
 import { patchReactDomForAmo } from './lib/vite_patch_react_dom_amo'
+import { shouldSilenceWxtLog } from './lib/wxt_log_filter'
 import packageJson from './package.json'
 
 const extensionIcons = {
@@ -25,6 +26,27 @@ const CHROME_PERMISSIONS = [
   'tabs',
 ] as const
 const FIREFOX_PERMISSIONS = ['storage', 'scripting', 'activeTab', 'identity', 'tabs'] as const
+
+/**
+ * Логгер WXT с фильтром dev-шума.
+ *
+ * WXT печатает строку на каждый content script при каждой пересборке, а для
+ * рантайм-скриптов НСПД ещё и «not registered yet». Это не ошибки, но в
+ * консоли они выглядят как проблемы. Остальные сообщения проходят как есть.
+ */
+const wxtLogger: Logger = {
+  level: 3,
+  debug: () => {},
+  log: (...args: unknown[]) => {
+    if (shouldSilenceWxtLog(args)) return
+    console.log(...args)
+  },
+  info: (...args: unknown[]) => console.info(...args),
+  warn: (...args: unknown[]) => console.warn(...args),
+  error: (...args: unknown[]) => console.error(...args),
+  fatal: (...args: unknown[]) => console.error(...args),
+  success: (...args: unknown[]) => console.log(...args),
+}
 
 const URI_SCHEME = 'https'
 
@@ -157,6 +179,7 @@ function configureVite({ mode }: { mode: string }) {
 // noinspection JSUnusedGlobalSymbols
 export default defineConfig({
   modules: ['@wxt-dev/module-react'],
+  logger: wxtLogger,
   vite: configureVite,
   hooks: {
     // Доступ к nspd.gov.ru объявляется необязательным: иначе каждое обновление

@@ -5,7 +5,6 @@ import {
   DEFAULT_HATCH,
   NOTE_OPACITY_MAX,
   NOTE_OPACITY_MIN,
-  NOTE_PALETTE,
   NOTE_STROKE_WIDTH_MAX,
   NOTE_STROKE_WIDTH_MIN,
 } from '@/lib/notes/palette'
