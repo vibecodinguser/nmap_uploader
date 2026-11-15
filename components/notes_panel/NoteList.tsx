@@ -9,6 +9,21 @@ const OVERSCAN = 6
 const DEFAULT_VIEWPORT = 420
 
 /**
+ * Идентификаторы строки и её кнопок.
+ *
+ * У виртуализированного списка нельзя опереться на порядок узлов, а классы
+ * повторяются у всех строк — идентификаторы дают устойчивую цель для ручной
+ * проверки в инспекторе и для автотестов.
+ */
+export const noteRowIds = (noteId: string) => ({
+  row: `nmap-notes-row-${noteId}`,
+  main: `nmap-notes-row-${noteId}-main`,
+  visibility: `nmap-notes-row-${noteId}-visibility`,
+  locate: `nmap-notes-row-${noteId}-locate`,
+  delete: `nmap-notes-row-${noteId}-delete`,
+})
+
+/**
  * Список заметок.
  *
  * Строки виртуализированы: в блокноте тысячи объектов, и рендерить их все
@@ -69,16 +84,21 @@ export const NoteList = ({
       <div className="notes-panel__list-inner" style={{ height: notes.length * ROW_HEIGHT }}>
         {visible.map((note, index) => {
           const isHidden = hidden.has(note.id)
+          const ids = noteRowIds(note.id)
           return (
             <div
               key={note.id}
+              id={ids.row}
               className="notes-panel__row"
+              data-note-id={note.id}
+              data-note-kind={note.kind}
               data-selected={note.id === selectedId}
               data-hidden={isHidden}
               style={{ top: (start + index) * ROW_HEIGHT, height: ROW_HEIGHT }}
             >
               <button
                 type="button"
+                id={ids.main}
                 className="notes-panel__row-main"
                 onClick={() => onSelect(note.id)}
               >
@@ -93,6 +113,7 @@ export const NoteList = ({
 
               <button
                 type="button"
+                id={ids.visibility}
                 className="notes-panel__row-action"
                 title={isHidden ? t('notesPanel.visible') : t('notesPanel.hidden')}
                 aria-label={isHidden ? t('notesPanel.visible') : t('notesPanel.hidden')}
@@ -104,6 +125,7 @@ export const NoteList = ({
 
               <button
                 type="button"
+                id={ids.locate}
                 className="notes-panel__row-action"
                 title={t('notesPanel.locate')}
                 aria-label={t('notesPanel.locate')}
@@ -114,6 +136,7 @@ export const NoteList = ({
 
               <button
                 type="button"
+                id={ids.delete}
                 className="notes-panel__row-action notes-panel__row-action--danger"
                 title={t('notesPanel.delete')}
                 aria-label={t('notesPanel.delete')}

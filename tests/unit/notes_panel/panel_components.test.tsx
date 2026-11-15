@@ -2,7 +2,7 @@
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { NoteList } from '@/components/notes_panel/NoteList'
+import { NoteList, noteRowIds } from '@/components/notes_panel/NoteList'
 import { NoteProperties } from '@/components/notes_panel/NoteProperties'
 import { LocaleProvider } from '@/hooks/useLocale'
 import { createDefaultStyle } from '@/lib/notes/style_resolution'
@@ -280,5 +280,63 @@ describe('NoteList', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Найти на карте' }))
 
     expect(onLocate).toHaveBeenCalledWith('note-1')
+  })
+})
+
+describe('NoteList: идентификаторы строки', () => {
+  it('строка и её кнопки имеют предсказуемые id', () => {
+    const { container } = wrap(
+      <NoteList
+        notes={[note()]}
+        hiddenIds={[]}
+        selectedId={null}
+        onSelect={vi.fn()}
+        onToggleHidden={vi.fn()}
+        onLocate={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    )
+
+    const ids = noteRowIds('note-1')
+    expect(container.querySelector(`#${ids.row}`)).not.toBeNull()
+    expect(container.querySelector(`#${ids.main}`)).not.toBeNull()
+    expect(container.querySelector(`#${ids.visibility}`)).not.toBeNull()
+    expect(container.querySelector(`#${ids.locate}`)).not.toBeNull()
+    expect(container.querySelector(`#${ids.delete}`)).not.toBeNull()
+  })
+
+  it('строка несёт id заметки и её вид', () => {
+    const { container } = wrap(
+      <NoteList
+        notes={[note()]}
+        hiddenIds={[]}
+        selectedId={null}
+        onSelect={vi.fn()}
+        onToggleHidden={vi.fn()}
+        onLocate={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    )
+
+    const row = container.querySelector('.notes-panel__row')
+    expect(row?.getAttribute('data-note-id')).toBe('note-1')
+    expect(row?.getAttribute('data-note-kind')).toBe('Point')
+  })
+
+  it('id не повторяются у разных заметок', () => {
+    const { container } = wrap(
+      <NoteList
+        notes={[note(), note({ id: 'note-2', name: 'Вторая' })]}
+        hiddenIds={[]}
+        selectedId={null}
+        onSelect={vi.fn()}
+        onToggleHidden={vi.fn()}
+        onLocate={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    )
+
+    const ids = [...container.querySelectorAll('[id]')].map((node) => node.id)
+    expect(new Set(ids).size).toBe(ids.length)
   })
 })
