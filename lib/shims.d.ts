@@ -68,6 +68,8 @@ declare module 'topojson-client' {
 }
 
 interface ImportMetaEnv {
+  /** Команда WXT: `serve` в dev-режиме, `build` в релизной сборке. */
+  readonly COMMAND?: 'build' | 'serve'
   readonly BROWSER?: 'chrome' | 'firefox' | 'safari' | 'edge'
   readonly YANDEX_CLIENT_ID?: string
   readonly YANDEX_REDIRECT_URI?: string

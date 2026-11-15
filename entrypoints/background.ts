@@ -66,6 +66,7 @@ import {
   POINT_PICKED_ACTION,
   START_POINT_PICKING_ACTION,
 } from '@/lib/pick_point_action'
+import { installWxtDevLogFilter } from '@/lib/wxt_dev_log_filter'
 
 const handleToolbarClick = (tab: Browser.tabs.Tab): void => {
   const panelTask = openPanel(tab)
@@ -152,6 +153,11 @@ const initBackground = (): void => {
 }
 
 // noinspection JSUnusedGlobalSymbols
+// На уровне модуля, а не внутри `main`: этот файл импортируется виртуальной
+// точкой входа WXT раньше, чем она поднимет websocket dev-сервера. Иначе первое
+// же сообщение о пересборке успело бы напечатать служебные строки.
+installWxtDevLogFilter()
+
 export default defineBackground({
   main() {
     initBackground()
