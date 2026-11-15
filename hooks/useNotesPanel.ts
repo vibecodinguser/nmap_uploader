@@ -572,6 +572,12 @@ export const useNotesPanel = () => {
     browser.runtime.sendMessage({ action: NOTES_SELECT_ACTION, noteId }).catch(() => {})
   }, [])
 
+  /**
+   * Показать заметку на карте.
+   *
+   * Это навигация, а не редактирование: карта центрируется на объекте, но
+   * выбранная заметка не меняется и свойства не открываются.
+   */
   const locateNote = useCallback(
     (noteId: string) => {
       const geometry = geometryOf(noteId)
@@ -588,7 +594,6 @@ export const useNotesPanel = () => {
           zoom: bounds ? Math.max(zoomForBounds(bounds), 15) : 17,
         })
         .catch(() => {})
-      browser.runtime.sendMessage({ action: NOTES_SELECT_ACTION, noteId }).catch(() => {})
     },
     [geometryOf],
   )
