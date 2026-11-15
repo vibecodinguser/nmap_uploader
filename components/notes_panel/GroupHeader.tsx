@@ -142,7 +142,11 @@ export const GroupHeader = ({
       }}
       onDragLeave={() => setIsDropHover(false)}
       onDrop={(event) => {
+        // Бросок обрабатывается здесь и только здесь: без stopPropagation он
+        // всплывает до контейнера списка, а тот переносит заметку в корень —
+        // объект «исчезал» из группы сразу после переноса.
         event.preventDefault()
+        event.stopPropagation()
         setIsDropHover(false)
         onDropNote?.(groupId)
       }}

@@ -76,8 +76,17 @@ const NoteRowView = ({
       draggable
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      onDragOver={(event) => event.preventDefault()}
-      onDrop={onDrop}
+      onDragOver={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+      }}
+      onDrop={(event) => {
+        // Та же причина, что и у заголовка группы: бросок на строку не должен
+        // доходить до контейнера, который переносит в корень.
+        event.preventDefault()
+        event.stopPropagation()
+        onDrop(event)
+      }}
     >
       <button type="button" id={ids.main} className="notes-panel__row-main" onClick={onSelect}>
         <span className="notes-panel__row-icon" aria-hidden="true">

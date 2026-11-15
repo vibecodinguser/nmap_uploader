@@ -406,3 +406,80 @@ describe('хук: видимость группы', () => {
     cleanup()
   })
 })
+
+describe('всплытие события drop', () => {
+  it('бросок на заголовок группы не переносит заметку ещё и в корень', () => {
+    const onMoveNote = vi.fn()
+    render(
+      <LocaleProvider>
+        <NoteList
+          {...listProps({
+            notes: [sampleNote({ id: 'a' })],
+            groups: [sampleGroup()],
+            onMoveNote,
+          })}
+        />
+      </LocaleProvider>,
+    )
+
+    const row = document.getElementById('nmapUploaderNotesRow-a') as HTMLElement
+    const header = document.getElementById('nmapUploaderNotesGroup-group-1') as HTMLElement
+
+    fireEvent.dragStart(row)
+    fireEvent.drop(header)
+
+    // Ровно один перенос — в группу. Второй вызов (в корень) означал бы, что
+    // событие всплыло до контейнера списка.
+    expect(onMoveNote).toHaveBeenCalledTimes(1)
+    expect(onMoveNote).toHaveBeenCalledWith('a', 'group-1')
+    cleanup()
+  })
+
+  it('бросок на строку заметки не уводит её в корень', () => {
+    const onMoveNote = vi.fn()
+    render(
+      <LocaleProvider>
+        <NoteList
+          {...listProps({
+            notes: [sampleNote({ id: 'a', groupId: 'group-1' }), sampleNote({ id: 'b' })],
+            groups: [sampleGroup()],
+            onMoveNote,
+          })}
+        />
+      </LocaleProvider>,
+    )
+
+    const rowA = document.getElementById('nmapUploaderNotesRow-a') as HTMLElement
+    const rowB = document.getElementById('nmapUploaderNotesRow-b') as HTMLElement
+
+    fireEvent.dragStart(rowA)
+    fireEvent.drop(rowB)
+
+    expect(onMoveNote).toHaveBeenCalledTimes(1)
+    cleanup()
+  })
+
+  it('бросок мимо строк переносит заметку в корень', () => {
+    const onMoveNote = vi.fn()
+    render(
+      <LocaleProvider>
+        <NoteList
+          {...listProps({
+            notes: [sampleNote({ id: 'a', groupId: 'group-1' })],
+            groups: [sampleGroup()],
+            onMoveNote,
+          })}
+        />
+      </LocaleProvider>,
+    )
+
+    const row = document.getElementById('nmapUploaderNotesRow-a') as HTMLElement
+    const list = document.querySelector('.notes-panel__list') as HTMLElement
+
+    fireEvent.dragStart(row)
+    fireEvent.drop(list)
+
+    expect(onMoveNote).toHaveBeenCalledWith('a', null)
+    cleanup()
+  })
+})
