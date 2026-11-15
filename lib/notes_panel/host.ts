@@ -65,6 +65,10 @@ export const createNotesPanelHost = ({
   let layout: NotesPanelLayout = 'compact'
   let compactHeight = Math.round(window.innerHeight * DEFAULT_RATIO)
   let dragging = false
+  /** Геометрия на момент начала протяжки: высота считается от неё, а не от курсора. */
+  let dragStartY = 0
+  let dragStartHeight = 0
+  let dragPointerId: number | null = null
 
   const postState = (): void => {
     const target = frame?.contentWindow
@@ -92,28 +96,70 @@ export const createNotesPanelHost = ({
     browser.storage.local.set({ [NOTES_PANEL_HEIGHT_STORAGE_KEY]: compactHeight }).catch(() => {})
   }
 
-  const handlePointerMove = (event: PointerEvent): void => {
-    if (!dragging) return
-    event.preventDefault()
-    compactHeight = clampHeight(window.innerHeight - event.clientY)
-    applyHeight()
-  }
-
-  const handlePointerUp = (): void => {
+  const endDrag = (): void => {
     if (!dragging) return
     dragging = false
+
+    if (dragPointerId !== null && container) {
+      const handle = container.querySelector<HTMLElement>(`#${NOTES_PANEL_HANDLE_ID}`)
+      try {
+        if (handle?.hasPointerCapture(dragPointerId)) {
+          handle.releasePointerCapture(dragPointerId)
+        }
+      } catch {
+        // Захват мог быть снят браузером сам — это не ошибка.
+      }
+    }
+    dragPointerId = null
+
+    if (container) delete container.dataset.dragging
     layout = 'compact'
     applyHeight()
     postState()
     saveHeight()
   }
 
+  const handlePointerMove = (event: PointerEvent): void => {
+    if (!dragging) return
+    event.preventDefault()
+
+    // Высота считается от стартовой, а не от абсолютной позиции курсора:
+    // иначе при старте из полноэкранного режима панель «прыгает».
+    const next = dragStartHeight + (dragStartY - event.clientY)
+    compactHeight = clampHeight(next)
+    applyHeight()
+  }
+
+  const handlePointerUp = (): void => {
+    endDrag()
+  }
+
   const handleHandlePointerDown = (event: PointerEvent): void => {
     event.preventDefault()
+
+    // При `layout === 'full'` высота берётся из реального положения панели,
+    // иначе протяжка начиналась бы не от того места, где видна кромка.
+    // Нулевая высота значит, что панель ещё не отрисована: берём расчётную.
+    const rect = container?.getBoundingClientRect()
+    const visibleHeight = rect && rect.height > 0 ? rect.height : compactHeight
+    dragStartY = event.clientY
+    dragStartHeight = layout === 'full' ? window.innerHeight : visibleHeight
+    dragPointerId = event.pointerId
     dragging = true
+
+    // Захват указателя обязателен: если тянуть вниз, курсор уходит на iframe,
+    // а это отдельный документ — без захвата события до хоста не доходят и
+    // панель «не тянется».
+    const handle = event.currentTarget as HTMLElement | null
+    try {
+      handle?.setPointerCapture(event.pointerId)
+    } catch {
+      // Браузер может отказать (например, для синтетического события).
+    }
+
+    if (container) container.dataset.dragging = 'true'
     if (layout === 'full') {
       layout = 'compact'
-      applyHeight()
       postState()
     }
   }
@@ -155,6 +201,7 @@ export const createNotesPanelHost = ({
 
     window.addEventListener('pointermove', handlePointerMove)
     window.addEventListener('pointerup', handlePointerUp)
+    window.addEventListener('pointercancel', handlePointerUp)
     window.addEventListener('message', handleWindowMessage)
   }
 
@@ -176,6 +223,7 @@ export const createNotesPanelHost = ({
   const destroy = (): void => {
     window.removeEventListener('pointermove', handlePointerMove)
     window.removeEventListener('pointerup', handlePointerUp)
+    window.removeEventListener('pointercancel', handlePointerUp)
     window.removeEventListener('message', handleWindowMessage)
     container?.remove()
     container = null

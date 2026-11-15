@@ -59,6 +59,14 @@
   cursor: default;
 }
 
+/*
+ * Пока тянем, iframe не должен перехватывать указатель: он отдельный документ,
+ * и события протяжки до хоста не доходят, если курсор уходит на панель.
+ */
+#nmap-notes-panel[data-dragging='true'] #nmap-notes-panel-frame {
+  pointer-events: none;
+}
+
 /* Кнопка «Редактировать» живёт в разметке только при выбранной заметке. */
 .nmap-notes-edit-button {
   display: inline-flex;
