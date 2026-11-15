@@ -59,15 +59,7 @@
   cursor: default;
 }
 
-/* Кнопка «Редактировать» в нижних контролах карты. */
-#nmap-notes-edit-button-wrapper {
-  display: none;
-}
-
-#nmap-notes-edit-button-wrapper[data-visible='true'] {
-  display: block;
-}
-
+/* Кнопка «Редактировать» живёт в разметке только при выбранной заметке. */
 .nmap-notes-edit-button {
   display: inline-flex;
   align-items: center;

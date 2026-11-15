@@ -90,9 +90,12 @@ export const ensureNotesEditButton = ({
   return wrapper
 }
 
-export const setNotesEditButtonVisible = (visible: boolean): void => {
-  const wrapper = document.getElementById(NOTES_EDIT_BUTTON_WRAPPER_ID)
-  if (!wrapper) return
-  wrapper.dataset.visible = visible ? 'true' : 'false'
-  wrapper.setAttribute('aria-hidden', visible ? 'false' : 'true')
+/**
+ * Убирает кнопку из нижних контролов.
+ *
+ * Прятать через `display: none` недостаточно: пустой блок остаётся в разметке
+ * карты и виден как артефакт после закрытия панели или снятия выбора.
+ */
+export const removeNotesEditButton = (): void => {
+  document.getElementById(NOTES_EDIT_BUTTON_WRAPPER_ID)?.remove()
 }

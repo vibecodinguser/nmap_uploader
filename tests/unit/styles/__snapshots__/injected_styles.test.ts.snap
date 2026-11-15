@@ -114,8 +114,6 @@ exports[`инжектируемые стили > notes-panel: текст не м
 #nmap-notes-panel-handle:hover::after,#nmap-notes-panel-handle:focus-visible::after{opacity:0.8;}
 #nmap-notes-panel-frame{flex:1 1 auto;width:100%;min-height:0;border:0;background:var(--nmap-surface,#ffffff);}
 #nmap-notes-panel[data-layout='full'] #nmap-notes-panel-handle{cursor:default;}
-#nmap-notes-edit-button-wrapper{display:none;}
-#nmap-notes-edit-button-wrapper[data-visible='true']{display:block;}
 .nmap-notes-edit-button{display:inline-flex;align-items:center;gap:6px;}
 .nmap-notes-edit-button__icon{display:inline-flex;width:16px;height:16px;}
 .nmap-notes-edit-button__icon svg{width:16px;height:16px;}"

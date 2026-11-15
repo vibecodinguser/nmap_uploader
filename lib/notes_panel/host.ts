@@ -50,7 +50,14 @@ export const removeNotesPanelStyles = (): void => {
   removeInjectedStyle(NOTES_PANEL_STYLES_ID)
 }
 
-export const createNotesPanelHost = (): NotesPanelHost => {
+export type NotesPanelHostOptions = {
+  /** Панель открылась или закрылась: хост сообщает, чтобы убрать «Редактировать». */
+  onVisibilityChange?: (open: boolean) => void
+}
+
+export const createNotesPanelHost = ({
+  onVisibilityChange,
+}: NotesPanelHostOptions = {}): NotesPanelHost => {
   let container: HTMLDivElement | null = null
   let frame: HTMLIFrameElement | null = null
   let layout: NotesPanelLayout = 'compact'
@@ -155,11 +162,13 @@ export const createNotesPanelHost = (): NotesPanelHost => {
     applyHeight()
     container.dataset.open = 'true'
     postState()
+    onVisibilityChange?.(true)
   }
 
   const close = (): void => {
-    if (!container) return
+    if (container?.dataset.open !== 'true') return
     container.dataset.open = 'false'
+    onVisibilityChange?.(false)
   }
 
   const destroy = (): void => {

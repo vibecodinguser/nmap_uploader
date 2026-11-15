@@ -29,7 +29,7 @@ import {
 import {
   ensureNotesEditButton,
   NOTES_EDIT_BUTTON_WRAPPER_ID,
-  setNotesEditButtonVisible,
+  removeNotesEditButton,
 } from '@/lib/notes_panel/edit_button'
 import { NMAPS_TOGGLE_NOTES_PANEL_EVENT } from '@/lib/notes_panel/events'
 import { createNotesPanelHost, ensureNotesPanelStyles } from '@/lib/notes_panel/host'
@@ -61,7 +61,6 @@ export default defineContentScript({
 
   main(ctx) {
     ensureNotesPanelStyles()
-    const host = createNotesPanelHost()
 
     let selectedNoteId: string | null = null
     let drawingKind: DrawableKind | null = null
@@ -78,22 +77,42 @@ export default defineContentScript({
       renderSnapshot({ ...snapshot, hiddenIds })
     }
 
+    /**
+     * Кнопка «Редактировать» есть в разметке только при выбранной заметке.
+     *
+     * Раньше она лишь пряталась через `display: none`: пустой блок оставался
+     * в нижних контролах карты и после закрытия панели выглядел артефактом.
+     */
     const syncEditButton = (): void => {
-      if (selectedNoteId) {
-        ensureNotesEditButton({
-          label: editLabel,
-          onClick: () => {
-            if (selectedNoteId) host.showNote(selectedNoteId)
-          },
-        })
+      if (!selectedNoteId) {
+        removeNotesEditButton()
+        return
       }
-      setNotesEditButtonVisible(Boolean(selectedNoteId))
+
+      ensureNotesEditButton({
+        label: editLabel,
+        onClick: () => {
+          if (selectedNoteId) host.showNote(selectedNoteId)
+        },
+      })
     }
 
     const setSelected = (noteId: string | null): void => {
       selectedNoteId = noteId
       syncEditButton()
     }
+
+    const host = createNotesPanelHost({
+      onVisibilityChange: (open) => {
+        if (open) {
+          syncEditButton()
+          return
+        }
+        // Панель закрыли — выбор и кнопка «Редактировать» больше не нужны.
+        setSelected(null)
+        dispatchToPage(NMAPS_SELECT_NOTE_EVENT, { noteId: null })
+      },
+    })
 
     const refreshLabel = async (): Promise<void> => {
       const locale = await getStoredLocale()
@@ -210,11 +229,11 @@ export default defineContentScript({
       .catch(() => {})
 
     const buttonSyncTimer = window.setInterval(() => {
-      if (!selectedNoteId) return
-      if (document.getElementById(NOTES_EDIT_BUTTON_WRAPPER_ID)) {
-        setNotesEditButtonVisible(true)
+      if (!selectedNoteId) {
+        removeNotesEditButton()
         return
       }
+      if (document.getElementById(NOTES_EDIT_BUTTON_WRAPPER_ID)) return
       syncEditButton()
     }, BUTTON_SYNC_INTERVAL_MS)
 
@@ -226,7 +245,7 @@ export default defineContentScript({
       document.removeEventListener(NMAPS_TOGGLE_NOTES_PANEL_EVENT, handleTogglePanel)
       document.removeEventListener(NMAPS_POINT_PICKED_EVENT, handlePointPicked)
       document.removeEventListener(NMAPS_CANCEL_PICK_POINT_EVENT, handleCancelPick)
-      document.getElementById(NOTES_EDIT_BUTTON_WRAPPER_ID)?.remove()
+      removeNotesEditButton()
       host.destroy()
     })
   },
