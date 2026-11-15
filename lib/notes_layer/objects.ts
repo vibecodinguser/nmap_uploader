@@ -70,10 +70,17 @@ export const buildPointIconHref = (style: ResolvedNoteStyle): string => {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
 }
 
-/** SVG-паттерн штриховки для `fillImageHref`. */
+/**
+ * SVG-паттерн штриховки для `fillImageHref`.
+ *
+ * Прозрачность объекта учитывается в самом узоре: картинка-паттерн не
+ * наследует `opacity` полигона, поэтому без этого штриховка оставалась бы
+ * непрозрачной при любом значении ползунка.
+ */
 export const buildHatchImageHref = (style: ResolvedNoteStyle): string | undefined => {
   if (!style.hatch) return undefined
-  const { pattern, color, width } = style.hatch
+  const { pattern, width } = style.hatch
+  const color = withOpacity(style.hatch.color, style.opacity)
   const size = 8
   const lines: string[] = []
 
@@ -143,6 +150,18 @@ export const polygonRing = (geometry: NoteGeometry): LonLat[] | null => {
 }
 
 /**
+ * Цвет заливки.
+ *
+ * Прозрачность заливки — половина прозрачности объекта: под полигоном должна
+ * читаться карта. Если заливки нет, но есть штриховка, основа всё равно нужна
+ * полупрозрачная, иначе Яндекс закрасит полигон сплошным цветом по умолчанию.
+ */
+export const buildFillColor = (style: ResolvedNoteStyle): string => {
+  if (style.fillColor) return withOpacity(style.fillColor, style.opacity * 0.5)
+  return style.hatch ? 'rgba(255, 255, 255, 0.001)' : 'rgba(0, 0, 0, 0)'
+}
+
+/**
  * Собирает объекты для карты.
  *
  * Подпись — отдельный объект: у линий и полигонов нет своего текста, а у
@@ -193,6 +212,8 @@ export const renderNote = ({
     const ring = polygonRing(geometry) ?? []
     if (ring.length === 0) return rendered
 
+    const hatchHref = buildHatchImageHref(style)
+
     rendered.push({
       id: note.id,
       kind: 'polygon',
@@ -203,8 +224,9 @@ export const renderNote = ({
         strokeColor,
         strokeWidth,
         fill: true,
-        fillColor: withOpacity(style.fillColor ?? '#ffffff', style.opacity * 0.45),
-        fillImageHref: buildHatchImageHref(style),
+        fillColor: buildFillColor(style),
+        // Паттерн должен повторяться, а не растягиваться на весь полигон.
+        ...(hatchHref ? { fillImageHref: hatchHref, fillMethod: 'tile' } : {}),
       },
       properties: { noteId: note.id, hintContent },
     })

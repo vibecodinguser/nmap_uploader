@@ -190,6 +190,19 @@ export type Messages = {
     color: string
     opacity: string
     strokeWidth: string
+    fill: string
+    fillColor: string
+    fillNone: string
+    hatch: string
+    hatchNone: string
+    hatchPattern: string
+    hatchColor: string
+    hatchWidth: string
+    hatchDiagonal: string
+    hatchBackDiagonal: string
+    hatchGrid: string
+    hatchDots: string
+    hatchHorizontal: string
     showLabel: string
     visible: string
     hidden: string

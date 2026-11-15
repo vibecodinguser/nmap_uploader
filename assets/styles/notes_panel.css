@@ -395,6 +395,11 @@ body {
   box-shadow: 0 0 0 2px #ffffff inset;
 }
 
+.notes-panel__color--small {
+  width: 18px;
+  height: 18px;
+}
+
 .notes-panel__color--custom {
   position: relative;
   background: conic-gradient(#ff8c42, #ffdb4d, #5aa845, #1a8cff, #8a5cd6, #ff8c42);
@@ -466,4 +471,51 @@ body {
 
 .notes-panel__toast--error {
   background: #e00000;
+}
+
+/* Штриховка: узор, цвет и толщина линий. */
+.notes-panel__hatch {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--border, #e6e6e6);
+  border-radius: 8px;
+}
+
+.notes-panel__hatch-patterns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.notes-panel__hatch-pattern {
+  display: inline-flex;
+  padding: 2px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.notes-panel__hatch-pattern[data-active='true'] {
+  border-color: #1f1f1f;
+}
+
+.notes-panel__hatch-pattern:focus-visible {
+  outline: 2px solid #ffdb4d;
+  outline-offset: 1px;
+}
+
+.notes-panel__hatch-preview {
+  display: block;
+  border: 1px solid var(--border, #e6e6e6);
+  border-radius: 4px;
+}
+
+.notes-panel__hatch-color {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }

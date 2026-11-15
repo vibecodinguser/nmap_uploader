@@ -2,13 +2,17 @@ import { useEffect, useState } from 'react'
 import { useLocale } from '@/hooks/useLocale'
 import { formatDateDisplayInput, isValidDisplayDate } from '@/lib/date_format'
 import {
+  DEFAULT_HATCH,
   NOTE_OPACITY_MAX,
   NOTE_OPACITY_MIN,
+  NOTE_PALETTE,
   NOTE_STROKE_WIDTH_MAX,
   NOTE_STROKE_WIDTH_MIN,
 } from '@/lib/notes/palette'
+import { resolveNoteStyle } from '@/lib/notes/style_resolution'
 import { isFilledKind, type Note } from '@/lib/notes/types'
 import { ColorPicker } from './ColorPicker'
+import { HatchPicker } from './HatchPicker'
 import { NOTES_PANEL_BUTTON_IDS } from './ids'
 
 const kindKey = (kind: Note['kind']) => `notesPanel.kind${kind}` as const
@@ -44,6 +48,11 @@ export const NoteProperties = ({
   }, [note.date])
 
   const dateValid = isValidDisplayDate(date)
+
+  // Итоговые цвета: свои, из группы или из палитры.
+  const resolved = resolveNoteStyle(note)
+  /** Заливка ещё не переопределена и должна следовать за цветом объекта. */
+  const fillFollowsColor = note.style.fillColor !== null && note.style.fillColor === resolved.color
 
   const commitDate = (): void => {
     setDateTouched(true)
@@ -112,13 +121,66 @@ export const NoteProperties = ({
             style: {
               ...note.style,
               color,
-              // У площадных объектов цвет задаёт и обводку, и заливку:
-              // отдельное управление заливкой появится вместе со штриховкой.
-              fillColor: isFilledKind(note.kind) ? color : note.style.fillColor,
+              // Заливка следует за цветом объекта, пока её не задали отдельно:
+              // иначе новый зелёный полигон оставался бы с синей заливкой.
+              fillColor: fillFollowsColor ? color : note.style.fillColor,
             },
           })
         }
       />
+
+      {isFilledKind(note.kind) && (
+        <>
+          <label className="notes-panel__field notes-panel__field--checkbox">
+            <input
+              type="checkbox"
+              checked={note.style.fillColor !== null}
+              onChange={(event) =>
+                onPatch({
+                  style: {
+                    ...note.style,
+                    fillColor: event.target.checked ? resolved.color : null,
+                  },
+                })
+              }
+            />
+            <span>{t('notesPanel.fill')}</span>
+          </label>
+
+          {note.style.fillColor !== null && (
+            <ColorPicker
+              value={note.style.fillColor}
+              label={t('notesPanel.fillColor')}
+              onChange={(fillColor) => onPatch({ style: { ...note.style, fillColor } })}
+            />
+          )}
+
+          <label className="notes-panel__field notes-panel__field--checkbox">
+            <input
+              type="checkbox"
+              checked={note.style.hatch !== null}
+              onChange={(event) =>
+                onPatch({
+                  style: {
+                    ...note.style,
+                    hatch: event.target.checked
+                      ? { ...DEFAULT_HATCH, color: resolved.color }
+                      : null,
+                  },
+                })
+              }
+            />
+            <span>{t('notesPanel.hatch')}</span>
+          </label>
+
+          {note.style.hatch && (
+            <HatchPicker
+              hatch={note.style.hatch}
+              onChange={(hatch) => onPatch({ style: { ...note.style, hatch } })}
+            />
+          )}
+        </>
+      )}
 
       <label className="notes-panel__field notes-panel__field--inline">
         <span className="notes-panel__field-label">{t('notesPanel.opacity')}</span>

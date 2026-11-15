@@ -35,14 +35,18 @@ export const ShapePicker = ({
 }) => {
   const { t } = useLocale()
   const rootRef = useRef<HTMLDivElement | null>(null)
+  // Тень держит ссылку на актуальный обработчик: эффект подписывается один раз,
+  // а колбэк родителя может меняться на каждой перерисовке.
+  const cancelRef = useRef(onCancel)
+  cancelRef.current = onCancel
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) onCancel()
+      if (!rootRef.current?.contains(event.target as Node)) cancelRef.current()
     }
     document.addEventListener('pointerdown', handlePointerDown, true)
     return () => document.removeEventListener('pointerdown', handlePointerDown, true)
-  }, [onCancel])
+  }, [])
 
   return (
     <div className="notes-panel__shape-picker" ref={rootRef} role="menu">
