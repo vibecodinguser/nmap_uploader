@@ -205,6 +205,7 @@ describe('a11y: список заметок', () => {
         onSelect={noop}
         onToggleHidden={noop}
         onLocate={noop}
+        onDelete={noop}
       />,
     )
 

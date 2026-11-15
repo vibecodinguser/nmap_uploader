@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocale } from '@/hooks/useLocale'
 import type { Note } from '@/lib/notes/types'
 import { NoteKindIcon } from './NoteKindIcon'
+import { DeleteIcon, LocateIcon, VisibilityIcon } from './RowIcons'
 
 const ROW_HEIGHT = 56
 const OVERSCAN = 6
@@ -20,6 +21,7 @@ export const NoteList = ({
   onSelect,
   onToggleHidden,
   onLocate,
+  onDelete,
 }: {
   notes: readonly Note[]
   hiddenIds: readonly string[]
@@ -27,6 +29,7 @@ export const NoteList = ({
   onSelect: (noteId: string) => void
   onToggleHidden: (noteId: string) => void
   onLocate: (noteId: string) => void
+  onDelete: (noteId: string) => void
 }) => {
   const { t } = useLocale()
   const viewportRef = useRef<HTMLDivElement | null>(null)
@@ -96,7 +99,7 @@ export const NoteList = ({
                 aria-pressed={!isHidden}
                 onClick={() => onToggleHidden(note.id)}
               >
-                {isHidden ? '○' : '●'}
+                <VisibilityIcon hidden={isHidden} />
               </button>
 
               <button
@@ -106,7 +109,17 @@ export const NoteList = ({
                 aria-label={t('notesPanel.locate')}
                 onClick={() => onLocate(note.id)}
               >
-                ◎
+                <LocateIcon />
+              </button>
+
+              <button
+                type="button"
+                className="notes-panel__row-action notes-panel__row-action--danger"
+                title={t('notesPanel.delete')}
+                aria-label={t('notesPanel.delete')}
+                onClick={() => onDelete(note.id)}
+              >
+                <DeleteIcon />
               </button>
             </div>
           )

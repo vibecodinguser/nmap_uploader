@@ -181,6 +181,7 @@ export const NotesPanelApp = () => {
               onSelect={panel.selectNote}
               onToggleHidden={panel.toggleHidden}
               onLocate={panel.locateNote}
+              onDelete={panel.removeNote}
             />
           ))}
       </div>

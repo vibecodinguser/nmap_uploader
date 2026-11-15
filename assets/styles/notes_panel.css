@@ -252,8 +252,12 @@ body {
 }
 
 .notes-panel__row-action {
+  display: inline-flex;
   width: 28px;
   height: 28px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   border: 0;
   border-radius: 6px;
   background: transparent;
@@ -264,6 +268,29 @@ body {
 
 .notes-panel__row-action:hover {
   background: rgb(0 0 0 / 6%);
+}
+
+.notes-panel__row-action:focus-visible {
+  outline: 2px solid #ffdb4d;
+  outline-offset: -2px;
+}
+
+.notes-panel__row-action--danger:hover {
+  color: #e00000;
+}
+
+/* Иконки строки: размер задаёт панель, классы nk-icon нужны для совместимости. */
+.notes-panel__row-action .nk-icon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+}
+
+.notes-panel__row-action svg {
+  width: 16px;
+  height: 16px;
 }
 
 .notes-panel__properties {

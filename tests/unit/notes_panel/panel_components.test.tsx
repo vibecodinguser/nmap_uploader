@@ -147,6 +147,7 @@ describe('NoteList', () => {
         onSelect={onSelect}
         onToggleHidden={vi.fn()}
         onLocate={vi.fn()}
+        onDelete={vi.fn()}
       />,
     )
 
@@ -165,6 +166,7 @@ describe('NoteList', () => {
         onSelect={vi.fn()}
         onToggleHidden={onToggleHidden}
         onLocate={vi.fn()}
+        onDelete={vi.fn()}
       />,
     )
 
@@ -173,6 +175,92 @@ describe('NoteList', () => {
 
     fireEvent.click(button)
     expect(onToggleHidden).toHaveBeenCalledWith('note-1')
+  })
+
+  it('показывает глаз для видимости и перечёркнутый глаз для скрытой', () => {
+    const { container, rerender } = wrap(
+      <NoteList
+        notes={[note()]}
+        hiddenIds={[]}
+        selectedId={null}
+        onSelect={vi.fn()}
+        onToggleHidden={vi.fn()}
+        onLocate={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    )
+
+    expect(container.querySelector('.notes-panel__row-action .nk-icon svg')).not.toBeNull()
+
+    rerender(
+      <LocaleProvider>
+        <NoteList
+          notes={[note()]}
+          hiddenIds={['note-1']}
+          selectedId={null}
+          onSelect={vi.fn()}
+          onToggleHidden={vi.fn()}
+          onLocate={vi.fn()}
+          onDelete={vi.fn()}
+        />
+      </LocaleProvider>,
+    )
+
+    const hiddenIcon = container.querySelector('.notes-panel__row-action .nk-icon')
+    expect(hiddenIcon?.getAttribute('class')).not.toContain('nk-icon_id_center')
+  })
+
+  it('иконка «Найти на карте» несёт нативные классы редактора', () => {
+    const { container } = wrap(
+      <NoteList
+        notes={[note()]}
+        hiddenIds={[]}
+        selectedId={null}
+        onSelect={vi.fn()}
+        onToggleHidden={vi.fn()}
+        onLocate={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    )
+
+    const locate = container.querySelector('.nk-icon_id_center')
+    expect(locate?.getAttribute('class')).toContain('nk-tracker-settings-view__pos-by-bounds')
+  })
+
+  it('удаляет заметку по кнопке в строке', () => {
+    const onDelete = vi.fn()
+    wrap(
+      <NoteList
+        notes={[note()]}
+        hiddenIds={[]}
+        selectedId={null}
+        onSelect={vi.fn()}
+        onToggleHidden={vi.fn()}
+        onLocate={vi.fn()}
+        onDelete={onDelete}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }))
+
+    expect(onDelete).toHaveBeenCalledWith('note-1')
+  })
+
+  it('иконка удаления несёт нативные классы редактора', () => {
+    const { container } = wrap(
+      <NoteList
+        notes={[note()]}
+        hiddenIds={[]}
+        selectedId={null}
+        onSelect={vi.fn()}
+        onToggleHidden={vi.fn()}
+        onLocate={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    )
+
+    const remove = container.querySelector('.nk-icon_id_delete-small')
+    expect(remove?.getAttribute('class')).toContain('nk-tracker-settings-view__delete')
   })
 
   it('центрирует карту по кнопке', () => {
@@ -185,6 +273,7 @@ describe('NoteList', () => {
         onSelect={vi.fn()}
         onToggleHidden={vi.fn()}
         onLocate={onLocate}
+        onDelete={vi.fn()}
       />,
     )
 
