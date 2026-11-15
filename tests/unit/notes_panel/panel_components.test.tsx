@@ -339,4 +339,30 @@ describe('NoteList: идентификаторы строки', () => {
     const ids = [...container.querySelectorAll('[id]')].map((node) => node.id)
     expect(new Set(ids).size).toBe(ids.length)
   })
+
+  it('действия строки названы по смыслу, а не по виду иконки', () => {
+    const ids = noteRowIds('note-1')
+
+    expect(ids.visibility).toBe('notes-panel_btn_visible_note-1')
+    expect(ids.locate).toBe('notes-panel_btn_find_note-1')
+    expect(ids.delete).toBe('notes-panel_btn_delete_note-1')
+  })
+
+  it('кнопки действий помечены data-action для поиска без разбора id', () => {
+    const { container } = wrap(
+      <NoteList
+        notes={[note()]}
+        hiddenIds={[]}
+        selectedId={null}
+        onSelect={vi.fn()}
+        onToggleHidden={vi.fn()}
+        onLocate={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    )
+
+    expect(container.querySelector('[data-action="visible"]')).not.toBeNull()
+    expect(container.querySelector('[data-action="find"]')).not.toBeNull()
+    expect(container.querySelector('[data-action="delete"]')).not.toBeNull()
+  })
 })

@@ -18,9 +18,11 @@ const DEFAULT_VIEWPORT = 420
 export const noteRowIds = (noteId: string) => ({
   row: `nmap-notes-row-${noteId}`,
   main: `nmap-notes-row-${noteId}-main`,
-  visibility: `nmap-notes-row-${noteId}-visibility`,
-  locate: `nmap-notes-row-${noteId}-locate`,
-  delete: `nmap-notes-row-${noteId}-delete`,
+  // Действия названы по смыслу, а не по виду иконки: «спрятать/показать» —
+  // одно действие, поэтому `visible`, а не `hide`.
+  visibility: `notes-panel_btn_visible_${noteId}`,
+  locate: `notes-panel_btn_find_${noteId}`,
+  delete: `notes-panel_btn_delete_${noteId}`,
 })
 
 /**
@@ -114,6 +116,7 @@ export const NoteList = ({
               <button
                 type="button"
                 id={ids.visibility}
+                data-action="visible"
                 className="notes-panel__row-action"
                 title={isHidden ? t('notesPanel.visible') : t('notesPanel.hidden')}
                 aria-label={isHidden ? t('notesPanel.visible') : t('notesPanel.hidden')}
@@ -126,6 +129,7 @@ export const NoteList = ({
               <button
                 type="button"
                 id={ids.locate}
+                data-action="find"
                 className="notes-panel__row-action"
                 title={t('notesPanel.locate')}
                 aria-label={t('notesPanel.locate')}
@@ -137,6 +141,7 @@ export const NoteList = ({
               <button
                 type="button"
                 id={ids.delete}
+                data-action="delete"
                 className="notes-panel__row-action notes-panel__row-action--danger"
                 title={t('notesPanel.delete')}
                 aria-label={t('notesPanel.delete')}
