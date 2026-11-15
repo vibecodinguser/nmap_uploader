@@ -227,6 +227,8 @@ export const enMessages = {
     deleteGroupKeepNotes: 'Ungroup (notes stay on the map)',
     deleteGroupCascade: 'Delete with notes',
     group: 'Group',
+    hideGroup: 'Hide group',
+    showGroup: 'Show group',
     groupColor: 'Group color',
     groupHint: 'Drag a note into a group to move it',
   },

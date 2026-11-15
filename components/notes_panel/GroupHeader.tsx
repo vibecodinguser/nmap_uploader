@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocale } from '@/hooks/useLocale'
+import type { GroupVisibility } from '@/lib/notes/grouping'
 import { NOTES_PANEL_BUTTON_IDS, rowButtonId } from './ids'
+import { VisibilityIcon } from './RowIcons'
 
 /** Стрелка «раскрыть/свернуть» — одна на заголовок группы. */
 const Chevron = ({ collapsed }: { collapsed: boolean }) => (
@@ -56,6 +58,7 @@ export const groupHeaderIds = (groupId: string | null) => {
   return {
     header: `nmapUploaderNotesGroup-${suffix}`,
     toggle: rowButtonId(NOTES_PANEL_BUTTON_IDS.groupToggle, suffix),
+    visibility: rowButtonId(NOTES_PANEL_BUTTON_IDS.groupVisible, suffix),
     rename: rowButtonId(NOTES_PANEL_BUTTON_IDS.groupRename, suffix),
     remove: rowButtonId(NOTES_PANEL_BUTTON_IDS.groupDelete, suffix),
     color: rowButtonId(NOTES_PANEL_BUTTON_IDS.groupColor, suffix),
@@ -79,6 +82,8 @@ export const GroupHeader = ({
   onRecolor,
   onRemove,
   onDropNote,
+  visibility,
+  onToggleVisibility,
 }: {
   groupId: string | null
   title: string
@@ -91,6 +96,9 @@ export const GroupHeader = ({
   onRemove?: () => void
   /** Заметку перетащили на заголовок: перенести её в эту группу. */
   onDropNote?: (groupId: string | null) => void
+  /** Видимость группы целиком: видна, скрыта или частично. */
+  visibility: GroupVisibility
+  onToggleVisibility: () => void
 }) => {
   const { t } = useLocale()
   const [isEditing, setIsEditing] = useState(false)
@@ -179,48 +187,66 @@ export const GroupHeader = ({
         <span className="notes-panel__group-count">{notesCount}</span>
       </button>
 
-      {editable && !isEditing && (
-        <div className="notes-panel__group-actions">
-          <label
-            id={ids.color}
-            data-action="group-color"
-            className="notes-panel__group-color"
-            title={t('notesPanel.groupColor')}
-          >
-            <input
-              type="color"
-              value={color ?? '#1a8cff'}
-              aria-label={t('notesPanel.groupColor')}
-              onChange={(event) => onRecolor?.(event.target.value)}
-            />
-          </label>
-          <button
-            type="button"
-            id={ids.rename}
-            data-action="rename-group"
-            className="notes-panel__row-action"
-            title={t('notesPanel.renameGroup')}
-            aria-label={t('notesPanel.renameGroup')}
-            onClick={() => {
-              setDraft(title)
-              setIsEditing(true)
-            }}
-          >
-            <PencilIcon />
-          </button>
-          <button
-            type="button"
-            id={ids.remove}
-            data-action="delete-group"
-            className="notes-panel__row-action notes-panel__row-action--danger"
-            title={t('notesPanel.deleteGroup')}
-            aria-label={t('notesPanel.deleteGroup')}
-            onClick={onRemove}
-          >
-            <TrashIcon />
-          </button>
-        </div>
-      )}
+      <div className="notes-panel__group-actions">
+        <button
+          type="button"
+          id={ids.visibility}
+          data-action="group-visible"
+          data-visibility={visibility}
+          className="notes-panel__row-action"
+          title={visibility === 'hidden' ? t('notesPanel.showGroup') : t('notesPanel.hideGroup')}
+          aria-label={
+            visibility === 'hidden' ? t('notesPanel.showGroup') : t('notesPanel.hideGroup')
+          }
+          aria-pressed={visibility !== 'hidden'}
+          onClick={onToggleVisibility}
+        >
+          <VisibilityIcon hidden={visibility === 'hidden'} mixed={visibility === 'mixed'} />
+        </button>
+
+        {editable && !isEditing && (
+          <>
+            <label
+              id={ids.color}
+              data-action="group-color"
+              className="notes-panel__group-color"
+              title={t('notesPanel.groupColor')}
+            >
+              <input
+                type="color"
+                value={color ?? '#1a8cff'}
+                aria-label={t('notesPanel.groupColor')}
+                onChange={(event) => onRecolor?.(event.target.value)}
+              />
+            </label>
+            <button
+              type="button"
+              id={ids.rename}
+              data-action="rename-group"
+              className="notes-panel__row-action"
+              title={t('notesPanel.renameGroup')}
+              aria-label={t('notesPanel.renameGroup')}
+              onClick={() => {
+                setDraft(title)
+                setIsEditing(true)
+              }}
+            >
+              <PencilIcon />
+            </button>
+            <button
+              type="button"
+              id={ids.remove}
+              data-action="delete-group"
+              className="notes-panel__row-action notes-panel__row-action--danger"
+              title={t('notesPanel.deleteGroup')}
+              aria-label={t('notesPanel.deleteGroup')}
+              onClick={onRemove}
+            >
+              <TrashIcon />
+            </button>
+          </>
+        )}
+      </div>
     </div>
   )
 }

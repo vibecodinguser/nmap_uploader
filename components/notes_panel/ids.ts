@@ -17,6 +17,8 @@ export const NOTES_PANEL_BUTTON_IDS = {
   createGroup: 'nmapUploaderNotesPanelBtnCreateGroup',
   /** Свернуть или раскрыть группу. */
   groupToggle: 'nmapUploaderNotesPanelBtnGroupToggle',
+  /** Скрыть или показать все объекты группы. */
+  groupVisible: 'nmapUploaderNotesPanelBtnGroupVisible',
   /** Переименовать группу. */
   groupRename: 'nmapUploaderNotesPanelBtnGroupRename',
   /** Удалить группу. */

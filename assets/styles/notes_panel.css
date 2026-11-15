@@ -644,6 +644,11 @@ body {
   cursor: pointer;
 }
 
+/* Частично скрытая группа: глаз приглушён, но не перечёркнут. */
+.notes-panel__row-action .nk-icon[data-mixed='true'] {
+  opacity: 0.45;
+}
+
 /* Заголовок группы принимает перетаскиваемую заметку. */
 .notes-panel__group[data-drop-hover='true'] {
   outline: 2px dashed #ffdb4d;

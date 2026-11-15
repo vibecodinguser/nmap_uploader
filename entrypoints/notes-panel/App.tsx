@@ -218,6 +218,7 @@ export const NotesPanelApp = () => {
               onRecolorGroup={panel.recolorGroup}
               onRemoveGroup={(groupId) => setGroupToDelete(groupId)}
               onMoveNote={panel.moveNoteToGroup}
+              onToggleGroupVisibility={panel.toggleGroupHidden}
             />
           ))}
       </div>

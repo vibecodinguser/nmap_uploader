@@ -10,7 +10,7 @@ import {
   squareCornersFromDrag,
   zoomForBounds,
 } from '@/lib/notes/geometry'
-import { collapseKey } from '@/lib/notes/grouping'
+import { collapseKey, type GroupVisibility, groupVisibility } from '@/lib/notes/grouping'
 import { mergeManifests, type NotesManifest } from '@/lib/notes/manifest'
 import {
   type DrawableNoteKind,
@@ -31,6 +31,7 @@ import { NOTE_PALETTE } from '@/lib/notes/palette'
 import { type GeometryShard, shardIdForDate } from '@/lib/notes/shards'
 import { createDefaultStyle } from '@/lib/notes/style_resolution'
 import type { Note, NoteGeometry, NoteGroup, NoteKind } from '@/lib/notes/types'
+import { setNotesHidden, toggleHiddenNoteId } from '@/lib/notes/visibility'
 import { NOTES_PANEL_PREVIEW_MESSAGE, NOTES_PANEL_SHOW_NOTE_MESSAGE } from '@/lib/notes_panel/host'
 import { CANCEL_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
 import { STORAGE_TOKEN_KEY, STORAGE_USER_KEY } from '@/lib/yandex/constants'
@@ -639,19 +640,34 @@ export const useNotesPanel = () => {
     [geometryOf],
   )
 
-  const toggleHidden = useCallback((noteId: string) => {
-    setSnapshot((previous) => {
-      if (!previous) return previous
-      const hidden = new Set(previous.hiddenIds)
-      if (hidden.has(noteId)) hidden.delete(noteId)
-      else hidden.add(noteId)
-      const hiddenIds = [...hidden]
-      browser.runtime
-        .sendMessage({ action: NOTES_HIDDEN_CHANGED_ACTION, hiddenIds })
-        .catch(() => {})
-      return { ...previous, hiddenIds }
-    })
+  /** Применить новый набор скрытых: состояние и карта обновляются одним сообщением. */
+  const commitHiddenIds = useCallback((hiddenIds: string[]) => {
+    setSnapshot((previous) => (previous ? { ...previous, hiddenIds } : previous))
+    browser.runtime.sendMessage({ action: NOTES_HIDDEN_CHANGED_ACTION, hiddenIds }).catch(() => {})
   }, [])
+
+  const toggleHidden = useCallback(
+    (noteId: string) => {
+      const current = snapshot?.hiddenIds ?? []
+      commitHiddenIds(toggleHiddenNoteId(current, noteId))
+    },
+    [commitHiddenIds, snapshot?.hiddenIds],
+  )
+
+  /**
+   * Переключить видимость группы.
+   *
+   * Правило как у чекбокса «выбрать всё»: если видно хотя бы что-то, скрываем
+   * всю группу, иначе показываем всю. Иначе при частично скрытой группе первый
+   * клик оставлял бы половину объектов на карте.
+   */
+  const toggleGroupHidden = useCallback(
+    (noteIds: readonly string[], visibility: GroupVisibility) => {
+      const current = snapshot?.hiddenIds ?? []
+      commitHiddenIds(setNotesHidden(current, noteIds, visibility !== 'hidden'))
+    },
+    [commitHiddenIds, snapshot?.hiddenIds],
+  )
 
   const startDrawing = useCallback((kind: DrawableKind) => {
     setDrawingKind(kind)
@@ -883,6 +899,7 @@ export const useNotesPanel = () => {
     selectNote,
     locateNote,
     toggleHidden,
+    toggleGroupHidden,
     updateNote,
     removeNote,
     undo,

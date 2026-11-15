@@ -19,6 +19,8 @@ export type GroupHeaderRow = {
   color: string | null
   notesCount: number
   collapsed: boolean
+  /** id заметок группы: по ним считается видимость и переключается вся группа. */
+  noteIds: string[]
 }
 
 export type NoteRow = {
@@ -88,6 +90,7 @@ export const buildListRows = ({
       color: group.color,
       notesCount: groupNotes.length,
       collapsed: collapsed.has(group.id),
+      noteIds: groupNotes.map((note) => note.id),
     })
     if (!collapsed.has(group.id)) {
       for (const note of groupNotes) rows.push({ type: 'note', note })
@@ -108,6 +111,7 @@ export const buildListRows = ({
       color: null,
       notesCount: ungroupedNotes.length,
       collapsed: collapsed.has(collapseKey(null)),
+      noteIds: ungroupedNotes.map((note) => note.id),
     })
   }
 
@@ -178,6 +182,29 @@ export const visibleSlice = (
   }
 
   return { items, startIndex }
+}
+
+export type GroupVisibility = 'visible' | 'hidden' | 'mixed'
+
+/**
+ * Состояние видимости группы.
+ *
+ * «Смешанное» бывает, когда часть заметок скрыли по одной: кнопка группы
+ * должна это показывать, иначе она врёт о состоянии и первый клик скрывает не
+ * всё, чего ждёт пользователь.
+ */
+export const groupVisibility = (
+  noteIds: readonly string[],
+  hiddenIds: readonly string[],
+): GroupVisibility => {
+  if (noteIds.length === 0) return 'visible'
+
+  const hidden = new Set(hiddenIds)
+  const hiddenCount = noteIds.reduce((count, id) => (hidden.has(id) ? count + 1 : count), 0)
+
+  if (hiddenCount === 0) return 'visible'
+  if (hiddenCount === noteIds.length) return 'hidden'
+  return 'mixed'
 }
 
 /** Сколько заметок в каждой группе — для подписи в заголовке. */

@@ -27,6 +27,7 @@ export const listProps = (props: Partial<NoteListProps> = {}): NoteListProps => 
   onRecolorGroup: () => {},
   onRemoveGroup: () => {},
   onMoveNote: () => {},
+  onToggleGroupVisibility: () => {},
   ...props,
 })
 

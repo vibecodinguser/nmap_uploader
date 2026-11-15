@@ -250,3 +250,159 @@ describe('группа в свойствах заметки', () => {
     cleanup()
   })
 })
+
+describe('видимость группы', () => {
+  const twoInGroup = [
+    sampleNote({ id: 'a', groupId: 'group-1' }),
+    sampleNote({ id: 'b', groupId: 'group-1' }),
+    sampleNote({ id: 'c' }),
+  ]
+
+  it('скрывает все объекты группы одним нажатием', () => {
+    const onToggleGroupVisibility = vi.fn()
+    render(
+      <LocaleProvider>
+        <NoteList
+          {...listProps({
+            notes: twoInGroup,
+            groups: [sampleGroup()],
+            onToggleGroupVisibility,
+          })}
+        />
+      </LocaleProvider>,
+    )
+
+    fireEvent.click(
+      document.getElementById('nmapUploaderNotesPanelBtnGroupVisible-group-1') as HTMLElement,
+    )
+
+    expect(onToggleGroupVisibility).toHaveBeenCalledWith(['a', 'b'], 'visible')
+  })
+
+  it('показывает группу, если она скрыта', () => {
+    const onToggleGroupVisibility = vi.fn()
+    render(
+      <LocaleProvider>
+        <NoteList
+          {...listProps({
+            notes: twoInGroup,
+            groups: [sampleGroup()],
+            hiddenIds: ['a', 'b'],
+            onToggleGroupVisibility,
+          })}
+        />
+      </LocaleProvider>,
+    )
+
+    fireEvent.click(
+      document.getElementById('nmapUploaderNotesPanelBtnGroupVisible-group-1') as HTMLElement,
+    )
+
+    expect(onToggleGroupVisibility).toHaveBeenCalledWith(['a', 'b'], 'hidden')
+  })
+
+  it('частично скрытая группа показывает приглушённый глаз', () => {
+    render(
+      <LocaleProvider>
+        <NoteList
+          {...listProps({
+            notes: twoInGroup,
+            groups: [sampleGroup()],
+            hiddenIds: ['a'],
+          })}
+        />
+      </LocaleProvider>,
+    )
+
+    const button = document.getElementById(
+      'nmapUploaderNotesPanelBtnGroupVisible-group-1',
+    ) as HTMLElement
+    expect(button.dataset.visibility).toBe('mixed')
+    expect(button.querySelector('.nk-icon')?.getAttribute('data-mixed')).toBe('true')
+  })
+
+  it('у корня тоже есть переключатель видимости', () => {
+    render(
+      <LocaleProvider>
+        <NoteList {...listProps({ notes: twoInGroup, groups: [sampleGroup()] })} />
+      </LocaleProvider>,
+    )
+
+    expect(document.getElementById('nmapUploaderNotesPanelBtnGroupVisible-ungrouped')).toBeTruthy()
+  })
+
+  it('кнопка группы скрывает весь набор, даже если часть уже скрыта', () => {
+    // Правило «выбрать всё»: при частично скрытой группе скрываем остаток.
+    const onToggle = vi.fn()
+    render(
+      <LocaleProvider>
+        <NoteList
+          {...listProps({
+            notes: twoInGroup,
+            groups: [sampleGroup()],
+            hiddenIds: ['a'],
+            onToggleGroupVisibility: onToggle,
+          })}
+        />
+      </LocaleProvider>,
+    )
+
+    fireEvent.click(
+      document.getElementById('nmapUploaderNotesPanelBtnGroupVisible-group-1') as HTMLElement,
+    )
+
+    expect(onToggle).toHaveBeenCalledWith(['a', 'b'], 'mixed')
+  })
+})
+
+describe('хук: видимость группы', () => {
+  it('скрывает всю группу и отправляет один набор скрытых', async () => {
+    const { useNotesPanel } = await import('@/hooks/useNotesPanel')
+    const { renderHook, waitFor, act } = await import('@testing-library/react')
+    const { browser } = await import('wxt/browser')
+    const { resetBrowserMocks } = await import('@/tests/setup/browser_mock')
+    await resetBrowserMocks()
+
+    const notes = [
+      sampleNote({ id: 'a', groupId: 'group-1' }),
+      sampleNote({ id: 'b', groupId: 'group-1' }),
+    ]
+    const snapshot = {
+      manifest: {
+        version: 1,
+        updatedAt: '2026-11-14T10:00:00.000Z',
+        groups: [sampleGroup()],
+        notes,
+      },
+      shards: {},
+      hiddenIds: [],
+      fromCache: false,
+    }
+
+    const sendMessage = vi.spyOn(browser.runtime, 'sendMessage').mockResolvedValue({
+      ok: true,
+      snapshot,
+    } as never)
+
+    const { result } = renderHook(() => useNotesPanel(), {
+      wrapper: ({ children }) => <LocaleProvider>{children}</LocaleProvider>,
+    })
+    await waitFor(() => expect(result.current.status).toBe('ready'))
+
+    act(() => {
+      result.current.toggleGroupHidden(['a', 'b'], 'visible')
+    })
+
+    expect(result.current.hiddenIds.sort()).toEqual(['a', 'b'])
+    expect(sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'NOTES_HIDDEN_CHANGED', hiddenIds: ['a', 'b'] }),
+    )
+
+    act(() => {
+      result.current.toggleGroupHidden(['a', 'b'], 'hidden')
+    })
+
+    expect(result.current.hiddenIds).toEqual([])
+    cleanup()
+  })
+})

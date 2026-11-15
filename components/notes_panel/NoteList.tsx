@@ -3,6 +3,8 @@ import { useLocale } from '@/hooks/useLocale'
 import {
   buildListRows,
   collapseKey,
+  type GroupVisibility,
+  groupVisibility,
   type NoteListRow,
   positionRows,
   totalHeight,
@@ -153,6 +155,7 @@ export const NoteList = ({
   onRecolorGroup,
   onRemoveGroup,
   onMoveNote,
+  onToggleGroupVisibility,
 }: {
   notes: readonly Note[]
   groups: readonly NoteGroup[]
@@ -168,6 +171,8 @@ export const NoteList = ({
   onRecolorGroup: (groupId: string, color: string) => void
   onRemoveGroup: (groupId: string) => void
   onMoveNote: (noteId: string, groupId: string | null) => void
+  /** Скрыть или показать все объекты группы. */
+  onToggleGroupVisibility: (noteIds: readonly string[], visibility: GroupVisibility) => void
 }) => {
   const { t } = useLocale()
   const viewportRef = useRef<HTMLDivElement | null>(null)
@@ -250,6 +255,10 @@ export const NoteList = ({
           }
           onRemove={row.groupId ? () => onRemoveGroup(row.groupId as string) : undefined}
           onDropNote={moveDraggedNote}
+          visibility={groupVisibility(row.noteIds, hiddenIds)}
+          onToggleVisibility={() =>
+            onToggleGroupVisibility(row.noteIds, groupVisibility(row.noteIds, hiddenIds))
+          }
         />
       )
     }

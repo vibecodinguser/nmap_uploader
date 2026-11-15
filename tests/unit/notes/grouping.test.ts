@@ -3,6 +3,7 @@ import {
   buildListRows,
   collapseKey,
   GROUP_HEADER_HEIGHT,
+  groupVisibility,
   NOTE_ROW_HEIGHT,
   positionRows,
   sortGroups,
@@ -166,5 +167,35 @@ describe('раскладка', () => {
     // Окно 400 px при строке 56 px — около 8 строк плюс запас.
     expect(items.length).toBeLessThan(30)
     expect(items[0].top).toBeLessThanOrEqual(2000)
+  })
+})
+
+describe('видимость группы', () => {
+  it('видна, если ничего не скрыто', () => {
+    expect(groupVisibility(['a', 'b'], [])).toBe('visible')
+  })
+
+  it('скрыта, если скрыты все заметки', () => {
+    expect(groupVisibility(['a', 'b'], ['a', 'b', 'c'])).toBe('hidden')
+  })
+
+  it('частично скрыта, если скрыта только часть', () => {
+    expect(groupVisibility(['a', 'b'], ['a'])).toBe('mixed')
+  })
+
+  it('пустая группа считается видимой', () => {
+    expect(groupVisibility([], ['a'])).toBe('visible')
+  })
+
+  it('заголовки групп знают свои заметки', () => {
+    const list = rows({
+      notes: [note({ id: 'a', groupId: 'g1' }), note({ id: 'b' })],
+      groups: [group()],
+    })
+    const groupRow = list[0]
+    const rootRow = list[2]
+
+    expect(groupRow.type === 'group' && groupRow.noteIds).toEqual(['a'])
+    expect(rootRow.type === 'group' && rootRow.noteIds).toEqual(['b'])
   })
 })

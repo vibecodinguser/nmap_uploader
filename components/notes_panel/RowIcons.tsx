@@ -18,8 +18,19 @@ export const ROW_ICON_CLASS = {
 
 const SIZE = 16
 
-export const VisibilityIcon = ({ hidden }: { hidden: boolean }) => (
-  <span className={hidden ? ROW_ICON_CLASS.show : ROW_ICON_CLASS.hide} aria-hidden="true">
+export const VisibilityIcon = ({
+  hidden,
+  mixed = false,
+}: {
+  hidden: boolean
+  /** Часть объектов скрыта: глаз приглушён, но не перечёркнут. */
+  mixed?: boolean
+}) => (
+  <span
+    className={hidden ? ROW_ICON_CLASS.show : ROW_ICON_CLASS.hide}
+    data-mixed={mixed && !hidden}
+    aria-hidden="true"
+  >
     {hidden ? <EyeOff size={SIZE} /> : <Eye size={SIZE} />}
   </span>
 )

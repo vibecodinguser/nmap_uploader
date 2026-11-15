@@ -228,6 +228,8 @@ export type Messages = {
     deleteGroupKeepNotes: string
     deleteGroupCascade: string
     group: string
+    hideGroup: string
+    showGroup: string
     groupColor: string
     groupHint: string
   }

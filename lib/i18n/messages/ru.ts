@@ -227,6 +227,8 @@ export const ruMessages = {
     deleteGroupKeepNotes: 'Распустить (заметки останутся на карте)',
     deleteGroupCascade: 'Удалить вместе с заметками',
     group: 'Группа',
+    hideGroup: 'Скрыть группу',
+    showGroup: 'Показать группу',
     groupColor: 'Цвет группы',
     groupHint: 'Перетащите заметку в группу, чтобы перенести',
   },
