@@ -20,6 +20,7 @@ import { createDefaultStyle } from '@/lib/notes/style_resolution'
 import type { Note, NoteGeometry, NoteKind } from '@/lib/notes/types'
 import { NOTES_PANEL_SHOW_NOTE_MESSAGE } from '@/lib/notes_panel/host'
 import { CANCEL_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
+import { STORAGE_TOKEN_KEY, STORAGE_USER_KEY } from '@/lib/yandex/constants'
 
 export type NotesPanelMode = 'list' | 'properties'
 
@@ -120,14 +121,13 @@ export const useNotesPanel = () => {
     [flushSave],
   )
 
-  // Загрузка при открытии: сначала кэш, потом Диск широковещательно.
-  useEffect(() => {
-    let isMounted = true
+  // Загрузка: при монтировании, после входа и по кнопке «Повторить».
+  const loadNotes = useCallback((options: { silent?: boolean } = {}) => {
+    if (!options.silent) setStatus('loading')
 
     browser.runtime
       .sendMessage({ action: NOTES_LOAD_ACTION })
       .then((response: unknown) => {
-        if (!isMounted) return
         const payload = response as { ok?: boolean; error?: string; snapshot?: SnapshotState }
         if (payload?.ok && payload.snapshot) {
           setSnapshot({
@@ -140,15 +140,66 @@ export const useNotesPanel = () => {
         }
         setStatus(payload?.error === 'AUTH_REQUIRED' ? 'auth' : 'error')
       })
-      .catch(() => {
-        if (isMounted) setStatus('error')
-      })
+      .catch(() => setStatus('error'))
+  }, [])
 
-    return () => {
-      isMounted = false
-      flushSave()
+  useEffect(() => {
+    loadNotes()
+  }, [loadNotes])
+
+  // Незаписанная правка не должна потеряться при закрытии панели.
+  useEffect(() => () => flushSave(), [flushSave])
+
+  /**
+   * Вход в Яндекс меняет токен в `storage.local`.
+   *
+   * Панель живёт в постоянно смонтированном iframe, поэтому без этой
+   * подписки она навсегда осталась бы в состоянии «Войдите в Яндекс».
+   */
+  useEffect(() => {
+    const handleStorageChange = (
+      changes: Record<string, { newValue?: unknown }>,
+      area: string,
+    ): void => {
+      if (area !== 'local') return
+      if (!(STORAGE_TOKEN_KEY in changes) && !(STORAGE_USER_KEY in changes)) return
+
+      const token = changes[STORAGE_TOKEN_KEY]?.newValue
+      if (typeof token === 'string' && token) {
+        loadNotes({ silent: true })
+        return
+      }
+      setStatus('auth')
+      setSnapshot(null)
     }
-  }, [flushSave])
+
+    browser.storage.onChanged.addListener(handleStorageChange)
+    return () => browser.storage.onChanged.removeListener(handleStorageChange)
+  }, [loadNotes])
+
+  /**
+   * Страховка на случай пропущенного события storage.
+   *
+   * Панель скрыта через `display: none` у контейнера, поэтому при показе
+   * документ снова становится видимым — это хороший момент перечитать данные.
+   */
+  useEffect(() => {
+    const handleVisibility = (): void => {
+      if (document.visibilityState === 'visible') loadNotes({ silent: true })
+    }
+
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [loadNotes])
+
+  /** Вход прямо из панели: токена нет, а карта открыта. */
+  const login = useCallback(() => {
+    setStatus('loading')
+    browser.runtime
+      .sendMessage({ action: 'login' })
+      .then(() => loadNotes({ silent: true }))
+      .catch(() => setStatus('auth'))
+  }, [loadNotes])
 
   // Снимки и события карты.
   useEffect(() => {
@@ -382,6 +433,8 @@ export const useNotesPanel = () => {
   return {
     t,
     status,
+    loadNotes,
+    login,
     error,
     mode,
     setMode,

@@ -120,11 +120,23 @@ export const NotesPanelApp = () => {
           <div className="notes-panel__status">{t('notesPanel.loading')}</div>
         )}
         {panel.status === 'auth' && (
-          <div className="notes-panel__status">{t('notesPanel.authRequired')}</div>
+          <div className="notes-panel__status">
+            <p>{t('notesPanel.authRequired')}</p>
+            <button
+              type="button"
+              className="notes-panel__button notes-panel__button--primary"
+              onClick={panel.login}
+            >
+              {t('notesPanel.login')}
+            </button>
+          </div>
         )}
         {panel.status === 'error' && (
           <div className="notes-panel__status notes-panel__status--error">
-            {t('notesPanel.loadError')}
+            <p>{t('notesPanel.loadError')}</p>
+            <button type="button" className="notes-panel__button" onClick={() => panel.loadNotes()}>
+              {t('notesPanel.retry')}
+            </button>
           </div>
         )}
 

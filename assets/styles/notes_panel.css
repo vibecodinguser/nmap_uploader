@@ -161,7 +161,16 @@ body {
   text-align: center;
 }
 
+.notes-panel__status p {
+  margin: 0 0 12px;
+}
+
 .notes-panel__status--error {
+  color: #e00000;
+}
+
+.notes-panel__status--error .notes-panel__button {
+  border-color: #e00000;
   color: #e00000;
 }
 

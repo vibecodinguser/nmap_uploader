@@ -168,6 +168,8 @@ export const ruMessages = {
     searchPlaceholder: 'Поиск по названию',
     loading: 'Загрузка заметок…',
     authRequired: 'Войдите в Яндекс, чтобы видеть заметки',
+    login: 'Войти',
+    retry: 'Повторить',
     loadError: 'Не удалось загрузить заметки',
     empty: 'Заметок пока нет — создайте первую',
     emptySearch: 'Ничего не найдено',

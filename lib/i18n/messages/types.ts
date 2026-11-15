@@ -169,6 +169,8 @@ export type Messages = {
     searchPlaceholder: string
     loading: string
     authRequired: string
+    login: string
+    retry: string
     loadError: string
     empty: string
     emptySearch: string

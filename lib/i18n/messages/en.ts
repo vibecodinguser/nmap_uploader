@@ -168,6 +168,8 @@ export const enMessages = {
     searchPlaceholder: 'Search by name',
     loading: 'Loading notes…',
     authRequired: 'Sign in to Yandex to see your notes',
+    login: 'Sign in',
+    retry: 'Retry',
     loadError: 'Failed to load notes',
     empty: 'No notes yet — create the first one',
     emptySearch: 'Nothing found',
