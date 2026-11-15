@@ -13,6 +13,21 @@ import { assertAllowedDiskHref } from './disk_url'
 
 type DiskFileRequest = { logicalPath: string; token: string }
 
+/**
+ * Задержки перед повтором загрузки.
+ *
+ * `423 LOCKED` значит, что файл занят другой записью (часто — собственной,
+ * чуть более ранней). `503` — временная недоступность Диска. Оба случая
+ * лечатся ожиданием, а не сообщением об ошибке пользователю.
+ */
+const UPLOAD_RETRY_DELAYS_MS = [200, 600, 1500]
+
+const TRANSIENT_UPLOAD_STATUSES = new Set([423, 429, 503])
+
+const isTransientUploadStatus = (status: number): boolean => TRANSIENT_UPLOAD_STATUSES.has(status)
+
+const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
+
 const requestDownloadHref = async ({
   logicalPath,
   token,
@@ -130,41 +145,61 @@ export const uploadDiskFile = async ({
 }): Promise<void> => {
   await ensureParentFolders({ logicalPath, token })
 
-  let meta = await requestUploadHref({ logicalPath, token })
-
-  // 409 после успешной проверки значит, что папку удалили между запросами:
-  // пересоздаём её и пробуем ещё раз, а не показываем пользователю конфликт.
-  if (meta.status === 409) {
-    const parentPath = getParentLogicalPath(logicalPath)
-    if (parentPath) {
-      ensuredFoldersFor(token).delete(parentPath)
-      await ensureParentFolders({ logicalPath, token })
-    }
-    meta = await requestUploadHref({ logicalPath, token })
-  }
-
-  if (!meta.ok) {
-    throw new ProcessingError(
-      ERR_NETWORK,
-      `Не удалось получить ссылку на загрузку ${logicalPath}: ${meta.statusText}`,
-    )
-  }
-
-  const { href } = (await meta.json()) as { href?: string }
-  if (!href) {
-    throw new ProcessingError(ERR_NETWORK, `Не удалось получить ссылку на загрузку ${logicalPath}`)
-  }
-
-  assertAllowedDiskHref(href)
-
   const payload = typeof body === 'string' ? new TextEncoder().encode(body) : body
-  const response = await safeFetch(href, {
-    method: 'PUT',
-    headers: { 'Content-Type': contentType },
-    body: payload as unknown as BodyInit,
-  })
 
-  if (!response.ok) {
+  for (let attempt = 0; ; attempt += 1) {
+    const meta = await requestUploadHref({ logicalPath, token })
+
+    if (meta.status === 409) {
+      // Папку удалили или ещё не создали: пересоздаём и пробуем снова.
+      const parentPath = getParentLogicalPath(logicalPath)
+      if (parentPath) {
+        ensuredFoldersFor(token).delete(parentPath)
+        await ensureParentFolders({ logicalPath, token })
+      }
+      if (attempt < UPLOAD_RETRY_DELAYS_MS.length) continue
+      throw new ProcessingError(
+        ERR_NETWORK,
+        `Не удалось получить ссылку на загрузку ${logicalPath}: ${meta.statusText}`,
+      )
+    }
+
+    if (isTransientUploadStatus(meta.status) && attempt < UPLOAD_RETRY_DELAYS_MS.length) {
+      // `423 LOCKED` — файл занят другой записью; `503` — временная недоступность.
+      await delay(UPLOAD_RETRY_DELAYS_MS[attempt])
+      continue
+    }
+
+    if (!meta.ok) {
+      throw new ProcessingError(
+        ERR_NETWORK,
+        `Не удалось получить ссылку на загрузку ${logicalPath}: ${meta.statusText}`,
+      )
+    }
+
+    const { href } = (await meta.json()) as { href?: string }
+    if (!href) {
+      throw new ProcessingError(
+        ERR_NETWORK,
+        `Не удалось получить ссылку на загрузку ${logicalPath}`,
+      )
+    }
+
+    assertAllowedDiskHref(href)
+
+    const response = await safeFetch(href, {
+      method: 'PUT',
+      headers: { 'Content-Type': contentType },
+      body: payload as unknown as BodyInit,
+    })
+
+    if (response.ok) return
+
+    if (isTransientUploadStatus(response.status) && attempt < UPLOAD_RETRY_DELAYS_MS.length) {
+      await delay(UPLOAD_RETRY_DELAYS_MS[attempt])
+      continue
+    }
+
     throw new ProcessingError(ERR_NETWORK, `Ошибка загрузки ${logicalPath}: ${response.statusText}`)
   }
 }

@@ -9,6 +9,7 @@ import {
 import type { Note, NoteGeometry, NoteGroup } from '../types'
 import type { NotesCache } from './cache'
 import type { NotesRemote } from './remote'
+import { enqueueNotesWrite } from './write_queue'
 
 export type NotesPorts = {
   remote: NotesRemote
@@ -105,7 +106,7 @@ const writeShard = async (
  * переписывает геометрию остальных. Смена даты через границу месяца переносит
  * геометрию из старого шарда в новый.
  */
-export const saveNote = async ({
+const saveNoteNow = async ({
   ports,
   note,
   geometry,
@@ -146,7 +147,7 @@ export const saveNote = async ({
 }
 
 /** Удаляет заметку вместе с геометрией. */
-export const deleteNote = async ({
+const deleteNoteNow = async ({
   ports,
   noteId,
 }: {
@@ -175,7 +176,7 @@ export const deleteNote = async ({
   return { manifest, shards }
 }
 
-export const saveGroup = async ({
+const saveGroupNow = async ({
   ports,
   group,
 }: {
@@ -200,7 +201,7 @@ export const saveGroup = async ({
  * `keepNotes` оставляет заметки в корне, `cascade` удаляет их вместе с
  * геометрией.
  */
-export const deleteGroup = async ({
+const deleteGroupNow = async ({
   ports,
   groupId,
   mode,
@@ -243,7 +244,7 @@ export const deleteGroup = async ({
 }
 
 /** Переносит заметку в группу (или в корень при `groupId = null`). */
-export const moveNoteToGroup = async ({
+const moveNoteToGroupNow = async ({
   ports,
   noteId,
   groupId,
@@ -265,3 +266,18 @@ export const moveNoteToGroup = async ({
 
   return { manifest: await writeManifest(ports, manifest), shards: {} }
 }
+
+/*
+ * Наружу изменения отдаются через очередь записи: одновременно идущие
+ * операции писали один и тот же файл, и Яндекс.Диск отвечал `423 LOCKED`.
+ */
+export const saveNote = (args: Parameters<typeof saveNoteNow>[0]) =>
+  enqueueNotesWrite(() => saveNoteNow(args))
+export const deleteNote = (args: Parameters<typeof deleteNoteNow>[0]) =>
+  enqueueNotesWrite(() => deleteNoteNow(args))
+export const saveGroup = (args: Parameters<typeof saveGroupNow>[0]) =>
+  enqueueNotesWrite(() => saveGroupNow(args))
+export const deleteGroup = (args: Parameters<typeof deleteGroupNow>[0]) =>
+  enqueueNotesWrite(() => deleteGroupNow(args))
+export const moveNoteToGroup = (args: Parameters<typeof moveNoteToGroupNow>[0]) =>
+  enqueueNotesWrite(() => moveNoteToGroupNow(args))

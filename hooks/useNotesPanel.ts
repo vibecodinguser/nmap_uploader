@@ -76,8 +76,32 @@ export const useNotesPanel = () => {
   const [undo, setUndo] = useState<{ note: Note; geometry: NoteGeometry } | null>(null)
   const saveTimer = useRef<number | null>(null)
   const pendingNote = useRef<{ note: Note; geometry: NoteGeometry } | null>(null)
+  /**
+   * Цепочка отправок.
+   *
+   * Дебаунс ограничивает частоту, но не запрещает вторую отправку, пока первая
+   * ещё в пути. Две параллельные записи одного файла дают от Диска
+   * `423 LOCKED`, поэтому запросы идут строго по одному.
+   */
+  const saveChain = useRef<Promise<unknown>>(Promise.resolve())
   const createNoteRef = useRef<((kind: DrawableKind, coords: [number, number][]) => void) | null>(
     null,
+  )
+
+  const enqueueSaveMessage = useCallback(
+    (
+      message: Record<string, unknown>,
+      handlers: {
+        onSuccess: (response: MutationResponse) => void
+        onError: () => void
+      },
+    ) => {
+      saveChain.current = saveChain.current
+        .then(() => browser.runtime.sendMessage(message))
+        .then((response: unknown) => handlers.onSuccess(response as MutationResponse))
+        .catch(() => handlers.onError())
+    },
+    [],
   )
 
   const applyMutation = useCallback((response: MutationResponse) => {
@@ -102,15 +126,18 @@ export const useNotesPanel = () => {
     if (!pending) return
     pendingNote.current = null
 
-    browser.runtime
-      .sendMessage({
+    enqueueSaveMessage(
+      {
         action: NOTES_SAVE_NOTE_ACTION,
         note: pending.note,
         geometry: pending.geometry,
-      })
-      .then((response: unknown) => applyMutation(response as MutationResponse))
-      .catch(() => setError(t('notesPanel.saveError')))
-  }, [applyMutation, t])
+      },
+      {
+        onSuccess: applyMutation,
+        onError: () => setError(t('notesPanel.saveError')),
+      },
+    )
+  }, [applyMutation, enqueueSaveMessage, t])
 
   const scheduleSave = useCallback(
     (note: Note, geometry: NoteGeometry) => {
@@ -294,16 +321,19 @@ export const useNotesPanel = () => {
         updatedAt: timestamp,
       }
 
-      browser.runtime
-        .sendMessage({ action: NOTES_SAVE_NOTE_ACTION, note, geometry })
-        .then((response: unknown) => {
-          applyMutation(response as MutationResponse)
-          setSelectedId(note.id)
-          setMode('properties')
-        })
-        .catch(() => setError(t('notesPanel.createFailed')))
+      enqueueSaveMessage(
+        { action: NOTES_SAVE_NOTE_ACTION, note, geometry },
+        {
+          onSuccess: (response) => {
+            applyMutation(response)
+            setSelectedId(note.id)
+            setMode('properties')
+          },
+          onError: () => setError(t('notesPanel.createFailed')),
+        },
+      )
     },
-    [applyMutation, snapshot?.manifest.notes, t],
+    [applyMutation, enqueueSaveMessage, snapshot?.manifest.notes, t],
   )
 
   createNoteRef.current = createNote
@@ -339,30 +369,46 @@ export const useNotesPanel = () => {
       const geometry = geometries[noteId]
       if (!note || !geometry) return
 
-      browser.runtime
-        .sendMessage({ action: NOTES_DELETE_NOTE_ACTION, noteId })
-        .then((response: unknown) => {
-          applyMutation(response as MutationResponse)
-          setUndo({ note, geometry })
-          setSelectedId(null)
-          setMode('list')
-          window.setTimeout(() => setUndo(null), UNDO_TIMEOUT_MS)
-        })
-        .catch(() => setError(t('notesPanel.saveError')))
+      // Удаление должно попасть в очередь после незаписанных правок:
+      // иначе отложенное сохранение может вернуть уже удалённую заметку.
+      if (saveTimer.current !== null) {
+        window.clearTimeout(saveTimer.current)
+        saveTimer.current = null
+      }
+      if (pendingNote.current?.note.id === noteId) {
+        pendingNote.current = null
+      }
+
+      enqueueSaveMessage(
+        { action: NOTES_DELETE_NOTE_ACTION, noteId },
+        {
+          onSuccess: (response) => {
+            applyMutation(response)
+            setUndo({ note, geometry })
+            setSelectedId(null)
+            setMode('list')
+            window.setTimeout(() => setUndo(null), UNDO_TIMEOUT_MS)
+          },
+          onError: () => setError(t('notesPanel.saveError')),
+        },
+      )
     },
-    [applyMutation, geometries, snapshot?.manifest.notes, t],
+    [applyMutation, enqueueSaveMessage, geometries, snapshot?.manifest.notes, t],
   )
 
   const undoRemove = useCallback(() => {
     if (!undo) return
-    browser.runtime
-      .sendMessage({ action: NOTES_SAVE_NOTE_ACTION, note: undo.note, geometry: undo.geometry })
-      .then((response: unknown) => {
-        applyMutation(response as MutationResponse)
-        setUndo(null)
-      })
-      .catch(() => setError(t('notesPanel.saveError')))
-  }, [applyMutation, t, undo])
+    enqueueSaveMessage(
+      { action: NOTES_SAVE_NOTE_ACTION, note: undo.note, geometry: undo.geometry },
+      {
+        onSuccess: (response) => {
+          applyMutation(response)
+          setUndo(null)
+        },
+        onError: () => setError(t('notesPanel.saveError')),
+      },
+    )
+  }, [applyMutation, enqueueSaveMessage, t, undo])
 
   const selectNote = useCallback((noteId: string | null) => {
     setSelectedId(noteId)

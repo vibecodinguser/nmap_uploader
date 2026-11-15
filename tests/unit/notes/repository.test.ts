@@ -247,3 +247,42 @@ describe('loadRemoteSnapshot', () => {
     expect(snapshot.fromCache).toBe(false)
   })
 })
+
+describe('сериализация записей', () => {
+  it('параллельные сохранения не перемешивают записи одного шарда', async () => {
+    const remote = createMemoryRemote()
+    const order: string[] = []
+    const originalWrite = remote.writeShard
+
+    remote.writeShard = async (shardId, shard) => {
+      order.push(`begin:${shardId}`)
+      // Искусственная задержка: без очереди две записи шли бы внахлёст.
+      await new Promise((resolve) => setTimeout(resolve, 5))
+      await originalWrite(shardId, shard)
+      order.push(`end:${shardId}`)
+    }
+
+    const notePorts = ports(remote)
+    await Promise.all([
+      saveNote({
+        ports: notePorts,
+        note: note({ id: 'a' }),
+        geometry: { kind: 'Point', coords: [37, 55] },
+      }),
+      saveNote({
+        ports: notePorts,
+        note: note({ id: 'b' }),
+        geometry: { kind: 'Point', coords: [38, 56] },
+      }),
+    ])
+
+    // Каждая запись шарда завершается до начала следующей.
+    for (let index = 0; index < order.length; index += 2) {
+      expect(order[index].startsWith('begin:')).toBe(true)
+      expect(order[index + 1].startsWith('end:')).toBe(true)
+    }
+
+    const manifest = remote.files.get('manifest') as NotesManifest
+    expect(manifest.notes.map((item) => item.id).sort()).toEqual(['a', 'b'])
+  })
+})
