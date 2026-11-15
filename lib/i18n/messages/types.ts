@@ -179,7 +179,10 @@ export type Messages = {
     kindPolygon: string
     kindSquare: string
     kindCircle: string
-    drawHint: string
+    drawHintClicks: string
+    drawHintDrag: string
+    drawHintDragActive: string
+    drawHintClicksActive: string
     namePlaceholder: string
     descriptionPlaceholder: string
     date: string
@@ -192,6 +195,7 @@ export type Messages = {
     hidden: string
     delete: string
     deleteConfirm: string
+    cancel: string
     undoDelete: string
     undo: string
     back: string

@@ -133,6 +133,9 @@ body {
 }
 
 .notes-panel__shape-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 7px 10px;
   border: 0;
   border-radius: 6px;
@@ -141,6 +144,16 @@ body {
   font: inherit;
   text-align: left;
   cursor: pointer;
+}
+
+.notes-panel__shape-item:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.notes-panel__shape-item-icon {
+  display: inline-flex;
+  color: var(--muted-foreground, #6b6b6b);
 }
 
 .notes-panel__shape-item:hover {

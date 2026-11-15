@@ -3,9 +3,17 @@ import { browser } from 'wxt/browser'
 import { useLocale } from '@/hooks/useLocale'
 import { formatDateDisplay } from '@/lib/date_format'
 import { buildAutoNoteName } from '@/lib/notes/autonames'
-import { geometryAnchor, geometryBounds, zoomForBounds } from '@/lib/notes/geometry'
+import {
+  distanceMeters,
+  geometryAnchor,
+  geometryBounds,
+  squareCornersFromDrag,
+  zoomForBounds,
+} from '@/lib/notes/geometry'
 import { mergeManifests, type NotesManifest } from '@/lib/notes/manifest'
 import {
+  type DrawableNoteKind,
+  isDrawableNoteKind,
   NOTES_DELETE_NOTE_ACTION,
   NOTES_DRAW_FINISHED_ACTION,
   NOTES_HIDDEN_CHANGED_ACTION,
@@ -24,7 +32,7 @@ import { STORAGE_TOKEN_KEY, STORAGE_USER_KEY } from '@/lib/yandex/constants'
 
 export type NotesPanelMode = 'list' | 'properties'
 
-export type DrawableKind = Extract<NoteKind, 'Point' | 'Line' | 'Polygon'>
+export type DrawableKind = DrawableNoteKind
 
 type SnapshotState = {
   manifest: NotesManifest
@@ -89,6 +97,46 @@ const withoutNote = (snapshot: SnapshotState, noteId: string): SnapshotState => 
 })
 
 /**
+ * Геометрия из того, что нарисовал пользователь.
+ *
+ * Точка, линия и многоугольник приходят набором вершин; квадрат и круг —
+ * двумя точками (углы и «центр → окружность»). Возвращает `null`, если по
+ * нарисованному фигуру не построить: например, протяжка нулевой длины.
+ */
+export const geometryFromDrawCoords = (
+  kind: DrawableKind,
+  coords: [number, number][],
+): NoteGeometry | null => {
+  if (coords.length === 0) return null
+
+  switch (kind) {
+    case 'Point':
+      return { kind: 'Point', coords: coords[0] }
+    case 'Line':
+      return coords.length >= 2 ? { kind: 'Line', coords } : null
+    case 'Polygon':
+      return coords.length >= 3 ? { kind: 'Polygon', coords } : null
+    case 'Square': {
+      const [start, end] = coords
+      if (!start || !end) return null
+      const corners = squareCornersFromDrag(start, end)
+      // Вырожденная протяжка по одной оси не даёт квадрата.
+      if (corners[0][0] === corners[1][0] || corners[0][1] === corners[1][1]) return null
+      return { kind: 'Square', corners }
+    }
+    case 'Circle': {
+      const [center, edge] = coords
+      if (!center || !edge) return null
+      const radiusMeters = distanceMeters(center, edge)
+      if (!Number.isFinite(radiusMeters) || radiusMeters < 1) return null
+      return { kind: 'Circle', center, radiusMeters }
+    }
+    default:
+      return null
+  }
+}
+
+/**
  * Наложение серверного снимка на локальный.
  *
  * Широковещательный снимок приходит уже после записи, но локально может быть
@@ -136,9 +184,7 @@ export const useNotesPanel = () => {
    * `423 LOCKED`, поэтому запросы идут строго по одному.
    */
   const saveChain = useRef<Promise<unknown>>(Promise.resolve())
-  const createNoteRef = useRef<((kind: DrawableKind, coords: [number, number][]) => void) | null>(
-    null,
-  )
+  const createNoteRef = useRef<((kind: DrawableKind, geometry: NoteGeometry) => void) | null>(null)
 
   const enqueueSaveMessage = useCallback(
     (
@@ -325,12 +371,9 @@ export const useNotesPanel = () => {
           const kind = message.kind
           const coords = message.coords
           setDrawingKind(null)
-          if (
-            (kind === 'Point' || kind === 'Line' || kind === 'Polygon') &&
-            Array.isArray(coords) &&
-            coords.length > 0
-          ) {
-            createNoteRef.current?.(kind, coords as [number, number][])
+          if (isDrawableNoteKind(kind) && Array.isArray(coords)) {
+            const geometry = geometryFromDrawCoords(kind, coords as [number, number][])
+            if (geometry) createNoteRef.current?.(kind, geometry)
           }
           break
         }
@@ -365,7 +408,7 @@ export const useNotesPanel = () => {
   )
 
   const createNote = useCallback(
-    (kind: DrawableKind, coords: [number, number][]) => {
+    (kind: DrawableKind, geometry: NoteGeometry) => {
       const date = formatDateDisplay(new Date())
       const existingNames = (snapshot?.manifest.notes ?? []).map((note) => note.name)
       const name = buildAutoNoteName({
@@ -373,13 +416,6 @@ export const useNotesPanel = () => {
         kindLabel: t(kindLabelKey(kind)),
         existingNames,
       })
-
-      const geometry: NoteGeometry =
-        kind === 'Point'
-          ? { kind: 'Point', coords: coords[0] }
-          : kind === 'Line'
-            ? { kind: 'Line', coords }
-            : { kind: 'Polygon', coords }
 
       const timestamp = new Date().toISOString()
       const note: Note = {

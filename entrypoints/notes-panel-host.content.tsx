@@ -9,8 +9,9 @@ import {
   notifyStartPickPoint,
   parsePointPickedEvent,
 } from '@/lib/nmaps_pick_point_notify'
-import type { NotesSnapshotPayload } from '@/lib/notes/messages'
+import type { DrawableNoteKind, NotesSnapshotPayload } from '@/lib/notes/messages'
 import {
+  isDrawableNoteKind,
   NOTES_DRAW_FINISHED_ACTION,
   NOTES_HIDDEN_CHANGED_ACTION,
   NOTES_LOAD_ACTION,
@@ -19,7 +20,7 @@ import {
   NOTES_START_DRAW_ACTION,
   NOTES_VISIBILITY_ACTION,
 } from '@/lib/notes/messages'
-import type { LonLat, NoteKind } from '@/lib/notes/types'
+import type { LonLat } from '@/lib/notes/types'
 import {
   NMAPS_NOTE_SELECTED_EVENT,
   NMAPS_RENDER_NOTES_EVENT,
@@ -38,12 +39,20 @@ import {
   NOTES_PANEL_PREVIEW_MESSAGE,
 } from '@/lib/notes_panel/host'
 
-type DrawableKind = Extract<NoteKind, 'Point' | 'Line' | 'Polygon'>
+type DrawableKind = DrawableNoteKind
 
+/**
+ * Вид заметки → тип, который понимает оверлей рисования.
+ *
+ * Квадрат и круг передаются своими именами: оверлей по ним включает режим
+ * протяжки, а не накопления кликов.
+ */
 const PICKER_GEOM_TYPES: Record<DrawableKind, string> = {
   Point: 'Point',
   Line: 'LineString',
   Polygon: 'Polygon',
+  Square: 'Square',
+  Circle: 'Circle',
 }
 
 /** Переставляет кнопку «Редактировать», если нативные контролы перерисовались. */
@@ -176,8 +185,10 @@ export default defineContentScript({
 
       const kind = drawingKind
       drawingKind = null
-      if (parsed.coords.length === 0) return
 
+      // Пустой набор — это отмена (Esc, двойной клик без вершин, протяжка
+      // нулевой длины). Отправляем его тоже: иначе панель осталась бы в режиме
+      // рисования с заблокированными кнопками.
       const coords: LonLat[] = parsed.coords.map((coord) => [coord[1], coord[0]])
       browser.runtime
         .sendMessage({ action: NOTES_DRAW_FINISHED_ACTION, kind, coords })
@@ -221,9 +232,8 @@ export default defineContentScript({
           break
         }
         case NOTES_START_DRAW_ACTION: {
-          const kind = message.kind
-          if (kind === 'Point' || kind === 'Line' || kind === 'Polygon') {
-            startDrawing(kind)
+          if (isDrawableNoteKind(message.kind)) {
+            startDrawing(message.kind)
           }
           break
         }

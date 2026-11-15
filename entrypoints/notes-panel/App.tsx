@@ -5,6 +5,7 @@ import { ShapePicker } from '@/components/notes_panel/ShapePicker'
 import { useLocale } from '@/hooks/useLocale'
 import { useNotesPanel } from '@/hooks/useNotesPanel'
 import { buildAutoNoteName } from '@/lib/notes/autonames'
+import type { DrawableNoteKind } from '@/lib/notes/messages'
 import type { Note } from '@/lib/notes/types'
 import {
   NOTES_PANEL_CLOSE_MESSAGE,
@@ -13,6 +14,9 @@ import {
 } from '@/lib/notes_panel/host'
 
 const kindLabelKey = (kind: Note['kind']) => `notesPanel.kind${kind}` as const
+
+/** Квадрат и круг рисуются протяжкой, остальные — кликами по вершинам. */
+const isDragShape = (kind: DrawableNoteKind): boolean => kind === 'Square' || kind === 'Circle'
 
 const requestLayout = (layout: 'compact' | 'full'): void => {
   window.parent?.postMessage({ action: NOTES_PANEL_LAYOUT_MESSAGE, layout }, '*')
@@ -142,13 +146,19 @@ export const NotesPanelApp = () => {
 
         {panel.status === 'ready' && panel.drawingKind && (
           <div className="notes-panel__hint notes-panel__hint--draw">
-            <span>{t('notesPanel.drawHint')}</span>
+            <span>
+              {t(
+                isDragShape(panel.drawingKind)
+                  ? 'notesPanel.drawHintDragActive'
+                  : 'notesPanel.drawHintClicksActive',
+              )}
+            </span>
             <button
               type="button"
               className="notes-panel__link-button"
               onClick={panel.cancelDrawing}
             >
-              {t('notesPanel.undo')}
+              {t('notesPanel.cancel')}
             </button>
           </div>
         )}

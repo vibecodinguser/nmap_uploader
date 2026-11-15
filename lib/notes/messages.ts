@@ -115,15 +115,29 @@ export const NOTES_DRAW_FINISHED_ACTION = 'NOTES_DRAW_FINISHED'
 /** Скрытие заметок: локальное состояние, но карте нужно перерисоваться. */
 export const NOTES_HIDDEN_CHANGED_ACTION = 'NOTES_HIDDEN_CHANGED'
 
+/** Виды, которые пользователь рисует на карте. */
+export const DRAWABLE_NOTE_KINDS = ['Point', 'Line', 'Polygon', 'Square', 'Circle'] as const
+
+export type DrawableNoteKind = (typeof DRAWABLE_NOTE_KINDS)[number]
+
+export const isDrawableNoteKind = (value: unknown): value is DrawableNoteKind =>
+  typeof value === 'string' && (DRAWABLE_NOTE_KINDS as readonly string[]).includes(value)
+
 export type NotesStartDrawRequest = {
   action: typeof NOTES_START_DRAW_ACTION
-  kind: 'Point' | 'Line' | 'Polygon'
+  kind: DrawableNoteKind
 }
 
 export type NotesDrawFinishedMessage = {
   action: typeof NOTES_DRAW_FINISHED_ACTION
-  kind: 'Point' | 'Line' | 'Polygon'
-  /** Координаты в порядке GeoJSON: [lon, lat]. */
+  kind: DrawableNoteKind
+  /**
+   * Координаты в порядке GeoJSON: [lon, lat].
+   *
+   * Точка — одна координата, линия и многоугольник — все вершины, квадрат и
+   * круг — две точки: у квадрата это противоположные углы, у круга — центр и
+   * точка на окружности.
+   */
   coords: [number, number][]
 }
 

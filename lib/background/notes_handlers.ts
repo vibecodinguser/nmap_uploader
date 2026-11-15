@@ -36,6 +36,7 @@ import {
 } from '@/lib/notes'
 import { normalizeGroup } from '@/lib/notes/manifest'
 import {
+  isDrawableNoteKind,
   NOTES_DELETE_GROUP_ACTION,
   NOTES_DELETE_NOTE_ACTION,
   NOTES_DRAW_FINISHED_ACTION,
@@ -340,7 +341,7 @@ export const handleNotesStartDraw: MessageHandler = (message, sender, sendRespon
   }
 
   const kind = message.kind
-  if (kind !== 'Point' && kind !== 'Line' && kind !== 'Polygon') {
+  if (!isDrawableNoteKind(kind)) {
     sendResponse({ ok: false, error: 'INVALID_PAYLOAD' })
     return true
   }
@@ -368,7 +369,7 @@ export const handleNotesDrawFinished: MessageHandler = (message, sender, sendRes
 
   const kind = message.kind
   const coords = Array.isArray(message.coords) ? message.coords : null
-  if ((kind !== 'Point' && kind !== 'Line' && kind !== 'Polygon') || !coords) {
+  if (!isDrawableNoteKind(kind) || !coords) {
     sendResponse({ ok: false, error: 'INVALID_PAYLOAD' })
     return true
   }

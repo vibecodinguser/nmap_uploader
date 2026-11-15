@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { NoteList, noteRowIds } from '@/components/notes_panel/NoteList'
 import { NoteProperties } from '@/components/notes_panel/NoteProperties'
+import { ShapePicker } from '@/components/notes_panel/ShapePicker'
 import { LocaleProvider } from '@/hooks/useLocale'
 import { createDefaultStyle } from '@/lib/notes/style_resolution'
 import type { Note } from '@/lib/notes/types'
@@ -364,5 +365,31 @@ describe('NoteList: идентификаторы строки', () => {
     expect(container.querySelector('[data-action="visible"]')).not.toBeNull()
     expect(container.querySelector('[data-action="find"]')).not.toBeNull()
     expect(container.querySelector('[data-action="delete"]')).not.toBeNull()
+  })
+})
+
+describe('ShapePicker', () => {
+  it('предлагает все пять видов фигуры', () => {
+    wrap(<ShapePicker onPick={vi.fn()} onCancel={vi.fn()} busy={false} />)
+
+    const labels = screen.getAllByRole('menuitem').map((item) => item.textContent)
+    expect(labels).toEqual(['Точка', 'Линия', 'Многоугольник', 'Квадрат', 'Круг'])
+  })
+
+  it('передаёт выбранный вид', () => {
+    const onPick = vi.fn()
+    wrap(<ShapePicker onPick={onPick} onCancel={vi.fn()} busy={false} />)
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Круг' }))
+
+    expect(onPick).toHaveBeenCalledWith('Circle')
+  })
+
+  it('блокирует выбор, пока идёт рисование', () => {
+    wrap(<ShapePicker onPick={vi.fn()} onCancel={vi.fn()} busy />)
+
+    for (const item of screen.getAllByRole('menuitem')) {
+      expect((item as HTMLButtonElement).disabled).toBe(true)
+    }
   })
 })
