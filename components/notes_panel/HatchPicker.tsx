@@ -1,43 +1,76 @@
+import type { ReactElement } from 'react'
 import { useLocale } from '@/hooks/useLocale'
 import type { HatchPattern, NoteHatch } from '@/lib/notes/types'
 
 /**
  * Пять узоров штриховки.
  *
- * Рисуются в SVG прямо здесь: пользователю важно видеть узор, а не читать его
- * название. Те же пять узоров уходят на карту как тайловый паттерн, поэтому
- * предпросмотр повторяет то, что увидят на карте.
+ * Превью рисует не один тайл, а четыре (2×2 в поле 16×16): один тайл в плитке
+ * 8×8 выглядит как пара редких линий, и различить узоры в списке было трудно.
+ * Плотность и наклон повторяют то, что уходит на карту.
  *
- * Цвет узора в предпросмотре нейтральный: на карте штриховка рисуется цветом
- * самого объекта, а здесь важно сравнить рисунок, а не цвет.
+ * Цвет линий берётся из `currentColor`: в светлой теме это тёмные линии на
+ * светлом поле, в тёмной — наоборот. Жёсткий цвет делал превью нечитаемым в
+ * одной из тем.
  */
-const PREVIEW_SIZE = 28
-const PREVIEW_COLOR = '#1f1f1f'
+export const HATCH_PREVIEW_SIZE = 32
+
+/** Один тайл узора размером 8×8, повторённый 2×2 в поле 16×16. */
+const TILE = 8
+const TILE_OFFSETS = [0, TILE]
+
+type TileProps = { offsetX: number; offsetY: number }
+
+const strokeProps = {
+  stroke: 'currentColor',
+  strokeWidth: 1.6,
+  strokeLinecap: 'round',
+} as const
+
+const DiagonalTile = ({ offsetX, offsetY }: TileProps) => (
+  <path d={`M${offsetX} ${offsetY + TILE} L${offsetX + TILE} ${offsetY}`} {...strokeProps} />
+)
+
+const BackDiagonalTile = ({ offsetX, offsetY }: TileProps) => (
+  <path d={`M${offsetX} ${offsetY} L${offsetX + TILE} ${offsetY + TILE}`} {...strokeProps} />
+)
+
+const HorizontalTile = ({ offsetX, offsetY }: TileProps) => (
+  <path d={`M${offsetX} ${offsetY + TILE / 2} H${offsetX + TILE}`} {...strokeProps} />
+)
+
+const DotsTile = ({ offsetX, offsetY }: TileProps) => (
+  <circle cx={offsetX + TILE / 2} cy={offsetY + TILE / 2} r={1.5} fill="currentColor" />
+)
+
+/** Все четыре тайла одного рисунка. */
+const Tiled = ({ render }: { render: (props: TileProps) => ReactElement }) => (
+  <>
+    {TILE_OFFSETS.flatMap((offsetY) =>
+      TILE_OFFSETS.map((offsetX) => (
+        <g key={`${offsetX}-${offsetY}`}>{render({ offsetX, offsetY })}</g>
+      )),
+    )}
+  </>
+)
 
 const PatternLines = ({ pattern }: { pattern: HatchPattern }) => {
-  const stroke = PREVIEW_COLOR
-
   switch (pattern) {
     case 'diagonal':
-      return <path d="M-4 8 L8 -4 M0 12 L12 0 M4 16 L16 4" stroke={stroke} strokeWidth={2} />
+      return <Tiled render={(props) => <DiagonalTile {...props} />} />
     case 'backDiagonal':
-      return <path d="M-4 -4 L8 8 M0 -4 L12 8 M4 -4 L16 8" stroke={stroke} strokeWidth={2} />
+      return <Tiled render={(props) => <BackDiagonalTile {...props} />} />
     case 'grid':
       return (
         <>
-          <path d="M-4 8 L8 -4 M0 12 L12 0 M4 16 L16 4" stroke={stroke} strokeWidth={2} />
-          <path d="M-4 -4 L8 8 M0 -4 L12 8 M4 -4 L16 8" stroke={stroke} strokeWidth={2} />
+          <Tiled render={(props) => <DiagonalTile {...props} />} />
+          <Tiled render={(props) => <BackDiagonalTile {...props} />} />
         </>
       )
     case 'horizontal':
-      return <path d="M0 6 H16 M0 14 H16" stroke={stroke} strokeWidth={2} />
+      return <Tiled render={(props) => <HorizontalTile {...props} />} />
     case 'dots':
-      return (
-        <>
-          <circle cx={6} cy={6} r={1.6} fill={stroke} />
-          <circle cx={14} cy={14} r={1.6} fill={stroke} />
-        </>
-      )
+      return <Tiled render={(props) => <DotsTile {...props} />} />
     default:
       return null
   }
@@ -45,7 +78,7 @@ const PatternLines = ({ pattern }: { pattern: HatchPattern }) => {
 
 export const HatchPreview = ({
   pattern,
-  size = PREVIEW_SIZE,
+  size = HATCH_PREVIEW_SIZE,
 }: {
   pattern: HatchPattern
   size?: number
@@ -55,9 +88,9 @@ export const HatchPreview = ({
     height={size}
     viewBox="0 0 16 16"
     aria-hidden="true"
+    focusable="false"
     className="notes-panel__hatch-preview"
   >
-    <rect width={16} height={16} fill="#ffffff" />
     <PatternLines pattern={pattern} />
   </svg>
 )
@@ -98,7 +131,7 @@ export const HatchPicker = ({
             title={t(patternLabelKey(pattern))}
             onClick={() => onChange({ pattern })}
           >
-            <HatchPreview pattern={pattern} size={22} />
+            <HatchPreview pattern={pattern} />
           </button>
         ))}
       </div>

@@ -9,7 +9,7 @@
  */
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { HatchPreview } from '@/components/notes_panel/HatchPicker'
+import { HATCH_PREVIEW_SIZE, HatchPreview } from '@/components/notes_panel/HatchPicker'
 import { NoteProperties } from '@/components/notes_panel/NoteProperties'
 import { LocaleProvider } from '@/hooks/useLocale'
 import { createDefaultStyle } from '@/lib/notes/style_resolution'
@@ -177,11 +177,46 @@ describe('заливка по умолчанию', () => {
 })
 
 describe('HatchPreview', () => {
+  const renderPattern = (pattern: Parameters<typeof HatchPreview>[0]['pattern']) => {
+    const { container } = render(<HatchPreview pattern={pattern} />)
+    return container
+  }
+
   it('рисует разные узоры по-разному', () => {
-    const { container: diagonal } = render(<HatchPreview pattern="diagonal" />)
-    const { container: dots } = render(<HatchPreview pattern="dots" />)
+    const diagonal = renderPattern('diagonal')
+    const dots = renderPattern('dots')
 
     expect(diagonal.innerHTML).not.toBe(dots.innerHTML)
+    cleanup()
+  })
+
+  it('плитка достаточно крупная, чтобы узор читался', () => {
+    const container = renderPattern('diagonal')
+    const svg = container.querySelector('svg')
+
+    expect(svg?.getAttribute('width')).toBe(String(HATCH_PREVIEW_SIZE))
+    // Меньше 28 px узор снова сливается в пару штрихов.
+    expect(HATCH_PREVIEW_SIZE).toBeGreaterThanOrEqual(28)
+    cleanup()
+  })
+
+  it('узоры замощены, а не нарисованы одним тайлом', () => {
+    // Диагональ: 4 линии в поле (2×2 тайла), сетка: 8, точки: 4.
+    const diagonal = renderPattern('diagonal')
+    const grid = renderPattern('grid')
+    const dots = renderPattern('dots')
+
+    expect(diagonal.querySelectorAll('path')).toHaveLength(4)
+    expect(grid.querySelectorAll('path')).toHaveLength(8)
+    expect(dots.querySelectorAll('circle')).toHaveLength(4)
+    cleanup()
+  })
+
+  it('линии берут цвет из currentColor, а не жёсткий чёрный', () => {
+    const container = renderPattern('diagonal')
+    const path = container.querySelector('path')
+
+    expect(path?.getAttribute('stroke')).toBe('currentColor')
     cleanup()
   })
 })
