@@ -9,6 +9,7 @@ import {
 } from '@/lib/notes/palette'
 import { isFilledKind, type Note } from '@/lib/notes/types'
 import { ColorPicker } from './ColorPicker'
+import { NOTES_PANEL_BUTTON_IDS } from './ids'
 
 const kindKey = (kind: Note['kind']) => `notesPanel.kind${kind}` as const
 
@@ -159,14 +160,25 @@ export const NoteProperties = ({
       </label>
 
       <div className="notes-panel__actions">
-        <button type="button" className="notes-panel__button" onClick={onLocate}>
+        <button
+          type="button"
+          id={NOTES_PANEL_BUTTON_IDS.find}
+          className="notes-panel__button"
+          onClick={onLocate}
+        >
           {t('notesPanel.locate')}
         </button>
-        <button type="button" className="notes-panel__button" onClick={onToggleHidden}>
+        <button
+          type="button"
+          id={NOTES_PANEL_BUTTON_IDS.visible}
+          className="notes-panel__button"
+          onClick={onToggleHidden}
+        >
           {hidden ? t('notesPanel.visible') : t('notesPanel.hidden')}
         </button>
         <button
           type="button"
+          id={NOTES_PANEL_BUTTON_IDS.delete}
           className="notes-panel__button notes-panel__button--danger"
           onClick={onDelete}
         >
