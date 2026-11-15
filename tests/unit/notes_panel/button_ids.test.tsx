@@ -9,7 +9,7 @@
  */
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { NoteList } from '@/components/notes_panel/NoteList'
+import { NoteList, noteRowIds } from '@/components/notes_panel/NoteList'
 import { NoteProperties } from '@/components/notes_panel/NoteProperties'
 import { LocaleProvider } from '@/hooks/useLocale'
 import { createDefaultStyle } from '@/lib/notes/style_resolution'
@@ -106,7 +106,7 @@ describe('id кнопок в свойствах заметки', () => {
 })
 
 describe('id кнопок в строке списка', () => {
-  it('id уникальны для каждой заметки', () => {
+  it('строятся по схеме noteRowIds и уникальны для каждой заметки', () => {
     wrap(
       <NoteList
         notes={[note({ id: 'note-1' }), note({ id: 'note-2', name: 'Вторая' })]}
@@ -119,12 +119,12 @@ describe('id кнопок в строке списка', () => {
       />,
     )
 
-    expect(document.getElementById('notes_panel_btn_find_note-1')).not.toBeNull()
-    expect(document.getElementById('notes_panel_btn_find_note-2')).not.toBeNull()
-    expect(document.querySelectorAll('#notes_panel_btn_find')).toHaveLength(0)
+    expect(document.getElementById(noteRowIds('note-1').visibility)).not.toBeNull()
+    expect(document.getElementById(noteRowIds('note-2').visibility)).not.toBeNull()
+    expect(noteRowIds('note-1').delete).not.toBe(noteRowIds('note-2').delete)
   })
 
-  it('кнопки строки несут data-note-id', () => {
+  it('кнопки строки несут data-action, строка — data-note-id', () => {
     wrap(
       <NoteList
         notes={[note()]}
@@ -137,8 +137,12 @@ describe('id кнопок в строке списка', () => {
       />,
     )
 
-    const button = document.getElementById('notes_panel_btn_delete_note-1')
-    expect(button?.getAttribute('data-note-id')).toBe('note-1')
+    expect(document.getElementById(noteRowIds('note-1').delete)?.getAttribute('data-action')).toBe(
+      'delete',
+    )
+    expect(document.getElementById(noteRowIds('note-1').row)?.getAttribute('data-note-id')).toBe(
+      'note-1',
+    )
   })
 
   it('id строки ведёт на нужное действие', () => {
@@ -156,7 +160,7 @@ describe('id кнопок в строке списка', () => {
       />,
     )
 
-    document.getElementById('notes_panel_btn_delete_note-1')?.click()
+    document.getElementById(noteRowIds('note-1').delete)?.click()
 
     expect(onDelete).toHaveBeenCalledWith('note-1')
   })
