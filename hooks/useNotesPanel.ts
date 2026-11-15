@@ -4,7 +4,7 @@ import { useLocale } from '@/hooks/useLocale'
 import { formatDateDisplay } from '@/lib/date_format'
 import { buildAutoNoteName } from '@/lib/notes/autonames'
 import { geometryAnchor, geometryBounds, zoomForBounds } from '@/lib/notes/geometry'
-import type { NotesManifest } from '@/lib/notes/manifest'
+import { mergeManifests, type NotesManifest } from '@/lib/notes/manifest'
 import {
   NOTES_DELETE_NOTE_ACTION,
   NOTES_DRAW_FINISHED_ACTION,
@@ -15,10 +15,10 @@ import {
   NOTES_SNAPSHOT_ACTION,
   NOTES_START_DRAW_ACTION,
 } from '@/lib/notes/messages'
-import type { GeometryShard } from '@/lib/notes/shards'
+import { type GeometryShard, shardIdForDate } from '@/lib/notes/shards'
 import { createDefaultStyle } from '@/lib/notes/style_resolution'
 import type { Note, NoteGeometry, NoteKind } from '@/lib/notes/types'
-import { NOTES_PANEL_SHOW_NOTE_MESSAGE } from '@/lib/notes_panel/host'
+import { NOTES_PANEL_PREVIEW_MESSAGE, NOTES_PANEL_SHOW_NOTE_MESSAGE } from '@/lib/notes_panel/host'
 import { CANCEL_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
 import { STORAGE_TOKEN_KEY, STORAGE_USER_KEY } from '@/lib/yandex/constants'
 
@@ -57,6 +57,58 @@ const kindLabelKey = (kind: NoteKind) =>
     | 'notesPanel.kindPolygon'
     | 'notesPanel.kindSquare'
     | 'notesPanel.kindCircle'
+
+/** Снимок с добавленной заметкой и её геометрией. Чистая функция — удобно сравнивать. */
+const withNote = (snapshot: SnapshotState, note: Note, geometry: NoteGeometry): SnapshotState => {
+  const shardId = shardIdForDate(note.date)
+  const others = snapshot.manifest.notes.filter((item) => item.id !== note.id)
+
+  return {
+    ...snapshot,
+    manifest: { ...snapshot.manifest, notes: [...others, note] },
+    shards: shardId
+      ? {
+          ...snapshot.shards,
+          [shardId]: {
+            version: snapshot.shards[shardId]?.version ?? 1,
+            updatedAt: new Date().toISOString(),
+            notes: { ...(snapshot.shards[shardId]?.notes ?? {}), [note.id]: geometry },
+          },
+        }
+      : snapshot.shards,
+  }
+}
+
+/** Снимок без заметки. Геометрию не трогаем: она уедет вместе со снимком с Диска. */
+const withoutNote = (snapshot: SnapshotState, noteId: string): SnapshotState => ({
+  ...snapshot,
+  manifest: {
+    ...snapshot.manifest,
+    notes: snapshot.manifest.notes.filter((item) => item.id !== noteId),
+  },
+})
+
+/**
+ * Наложение серверного снимка на локальный.
+ *
+ * Широковещательный снимок приходит уже после записи, но локально может быть
+ * более свежая правка, которая ещё не улетела на Диск. Побеждает более свежий
+ * `updatedAt`, иначе ответ сервера откатывал бы только что сделанное изменение.
+ */
+const mergeSnapshot = (incoming: SnapshotState, local: SnapshotState | null): SnapshotState => {
+  if (!local) return incoming
+  return {
+    manifest: mergeManifests(incoming.manifest, local.manifest),
+    shards: { ...local.shards, ...incoming.shards },
+    hiddenIds: incoming.hiddenIds,
+  }
+}
+
+const EMPTY_SNAPSHOT: SnapshotState = {
+  manifest: { version: 1, updatedAt: new Date(0).toISOString(), groups: [], notes: [] },
+  shards: {},
+  hiddenIds: [],
+}
 
 /**
  * Состояние панели заметок.
@@ -112,6 +164,20 @@ export const useNotesPanel = () => {
     },
     [],
   )
+
+  /**
+   * Показать состояние карте немедленно.
+   *
+   * Панель — iframe страницы карты, поэтому снимок можно отдать напрямую в
+   * хост, не дожидаясь, пока background запишет файлы на Диск.
+   */
+  const postPreview = useCallback((next: SnapshotState) => {
+    try {
+      window.parent?.postMessage({ action: NOTES_PANEL_PREVIEW_MESSAGE, snapshot: next }, '*')
+    } catch {
+      // Кросс-доменный родитель — карта просто догонит широковещательным снимком.
+    }
+  }, [])
 
   const applyMutation = useCallback((response: MutationResponse) => {
     if (!response.ok || !response.manifest) {
@@ -244,7 +310,7 @@ export const useNotesPanel = () => {
         case NOTES_SNAPSHOT_ACTION: {
           const next = message.snapshot as SnapshotState | undefined
           if (next?.manifest) {
-            setSnapshot(next)
+            setSnapshot((previous) => mergeSnapshot(next, previous))
             setStatus('ready')
           }
           break
@@ -330,19 +396,47 @@ export const useNotesPanel = () => {
         updatedAt: timestamp,
       }
 
+      // Оптимистичное создание: заметка появляется на карте и в списке сразу,
+      // не дожидаясь Диска. Полный цикл записи — несколько сетевых round-trip,
+      // и держать пользователя в ожидании после каждого клика по карте незачем.
+      const optimistic = withNote(snapshot ?? EMPTY_SNAPSHOT, note, geometry)
+      setSnapshot(optimistic)
+      postPreview(optimistic)
+      setSelectedId(note.id)
+      setMode('properties')
+
       enqueueSaveMessage(
         { action: NOTES_SAVE_NOTE_ACTION, note, geometry },
         {
           onSuccess: (response) => {
-            applyMutation(response)
-            setSelectedId(note.id)
-            setMode('properties')
+            if (response.manifest) {
+              setSnapshot((previous) =>
+                previous
+                  ? {
+                      ...previous,
+                      manifest: response.manifest as NotesManifest,
+                      shards: { ...previous.shards, ...(response.shards ?? {}) },
+                    }
+                  : previous,
+              )
+            }
           },
-          onError: () => setError(t('notesPanel.createFailed')),
+          onError: () => {
+            // Не записалось — убираем заметку с карты и из списка, чтобы не
+            // осталось призрака, которого нет на других устройствах.
+            if (snapshot) {
+              const reverted = withoutNote(snapshot, note.id)
+              setSnapshot(reverted)
+              postPreview(reverted)
+            }
+            setSelectedId(null)
+            setMode('list')
+            setError(t('notesPanel.createFailed'))
+          },
         },
       )
     },
-    [applyMutation, enqueueSaveMessage, snapshot?.manifest.notes, t],
+    [enqueueSaveMessage, postPreview, snapshot, t],
   )
 
   createNoteRef.current = createNote
@@ -355,21 +449,23 @@ export const useNotesPanel = () => {
 
       const next: Note = { ...note, ...patch, updatedAt: new Date().toISOString() }
 
-      setSnapshot((previous) =>
-        previous
-          ? {
-              ...previous,
-              manifest: {
-                ...previous.manifest,
-                notes: previous.manifest.notes.map((item) => (item.id === noteId ? next : item)),
-              },
-            }
-          : previous,
-      )
+      if (snapshot) {
+        // Правка видна на карте сразу: цвет, подпись и название не должны
+        // ждать записи на Диск.
+        const optimistic: SnapshotState = {
+          ...snapshot,
+          manifest: {
+            ...snapshot.manifest,
+            notes: snapshot.manifest.notes.map((item) => (item.id === noteId ? next : item)),
+          },
+        }
+        setSnapshot(optimistic)
+        postPreview(optimistic)
+      }
 
       scheduleSave(next, geometry)
     },
-    [geometries, scheduleSave, snapshot?.manifest.notes],
+    [geometries, postPreview, scheduleSave, snapshot],
   )
 
   const removeNote = useCallback(
@@ -390,17 +486,11 @@ export const useNotesPanel = () => {
 
       // Оптимистичное удаление: строка исчезает сразу, не дожидаясь Диска.
       // Если запись не пройдёт, заметка вернётся на место с сообщением об ошибке.
-      setSnapshot((previous) =>
-        previous
-          ? {
-              ...previous,
-              manifest: {
-                ...previous.manifest,
-                notes: previous.manifest.notes.filter((item) => item.id !== noteId),
-              },
-            }
-          : previous,
-      )
+      if (snapshot) {
+        const optimistic = withoutNote(snapshot, noteId)
+        setSnapshot(optimistic)
+        postPreview(optimistic)
+      }
       setSelectedId(null)
       setMode('list')
       setUndo({ note, geometry })
@@ -424,39 +514,57 @@ export const useNotesPanel = () => {
             }
           },
           onError: () => {
-            setSnapshot((previous) =>
-              previous
-                ? {
-                    ...previous,
-                    manifest: {
-                      ...previous.manifest,
-                      notes: [...previous.manifest.notes, note],
-                    },
-                  }
-                : previous,
-            )
+            if (snapshot) {
+              const restored = withNote(snapshot, note, geometry)
+              setSnapshot(restored)
+              postPreview(restored)
+            }
             setUndo(null)
             setError(t('notesPanel.saveError'))
           },
         },
       )
     },
-    [enqueueSaveMessage, geometries, snapshot?.manifest.notes, t],
+    [enqueueSaveMessage, geometries, postPreview, snapshot, t],
   )
 
   const undoRemove = useCallback(() => {
     if (!undo) return
+
+    if (snapshot) {
+      const restored = withNote(snapshot, undo.note, undo.geometry)
+      setSnapshot(restored)
+      postPreview(restored)
+    }
+    setUndo(null)
+
     enqueueSaveMessage(
       { action: NOTES_SAVE_NOTE_ACTION, note: undo.note, geometry: undo.geometry },
       {
         onSuccess: (response) => {
-          applyMutation(response)
-          setUndo(null)
+          if (response.manifest) {
+            setSnapshot((previous) =>
+              previous
+                ? {
+                    ...previous,
+                    manifest: response.manifest as NotesManifest,
+                    shards: { ...previous.shards, ...(response.shards ?? {}) },
+                  }
+                : previous,
+            )
+          }
         },
-        onError: () => setError(t('notesPanel.saveError')),
+        onError: () => {
+          if (snapshot) {
+            const reverted = withoutNote(snapshot, undo.note.id)
+            setSnapshot(reverted)
+            postPreview(reverted)
+          }
+          setError(t('notesPanel.saveError'))
+        },
       },
     )
-  }, [applyMutation, enqueueSaveMessage, t, undo])
+  }, [enqueueSaveMessage, postPreview, snapshot, t, undo])
 
   const selectNote = useCallback((noteId: string | null) => {
     setSelectedId(noteId)

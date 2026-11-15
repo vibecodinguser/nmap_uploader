@@ -115,8 +115,16 @@ const saveNoteNow = async ({
   note: Note
   geometry: NoteGeometry
 }): Promise<NotesMutationResult> => {
-  const remoteManifest = (await ports.remote.readManifest()) ?? createEmptyManifest()
   const stamped: Note = { ...note, updatedAt: new Date().toISOString() }
+  const nextShardId = shardIdForDate(stamped.date)
+
+  // Манифест и шард читаются параллельно: месяц известен из даты заметки,
+  // поэтому ждать манифест ради поиска шарда незачем.
+  const [remoteManifest, prefetchedShard] = await Promise.all([
+    ports.remote.readManifest().then((value) => value ?? createEmptyManifest()),
+    nextShardId ? ports.remote.readShard(nextShardId).catch(() => null) : Promise.resolve(null),
+  ])
+
   const manifest = mergeManifests(remoteManifest, {
     version: remoteManifest.version,
     updatedAt: stamped.updatedAt,
@@ -125,24 +133,27 @@ const saveNoteNow = async ({
   })
 
   const previous = remoteManifest.notes.find((item) => item.id === note.id)
-  const nextShardId = shardIdForDate(stamped.date)
   const previousShardId = previous ? shardIdForDate(previous.date) : null
+  const movedBetweenShards = Boolean(previousShardId && previousShardId !== nextShardId)
 
   const shards: Record<string, GeometryShard> = {}
+  const shardWrites: Array<Promise<unknown>> = []
 
-  if (previousShardId && previousShardId !== nextShardId) {
+  if (movedBetweenShards && previousShardId) {
     const previousShard = removeShardGeometry(await readShard(ports, previousShardId), stamped.id)
-    await writeShard(ports, previousShardId, previousShard)
     shards[previousShardId] = previousShard
+    shardWrites.push(writeShard(ports, previousShardId, previousShard))
   }
 
   if (nextShardId) {
-    const nextShard = setShardGeometry(await readShard(ports, nextShardId), stamped.id, geometry)
-    await writeShard(ports, nextShardId, nextShard)
+    const base = prefetchedShard ?? (await readShard(ports, nextShardId))
+    const nextShard = setShardGeometry(base, stamped.id, geometry)
     shards[nextShardId] = nextShard
+    shardWrites.push(writeShard(ports, nextShardId, nextShard))
   }
 
-  const savedManifest = await writeManifest(ports, manifest)
+  // Манифест и шарды — разные файлы, их можно отправить одновременно.
+  const [savedManifest] = await Promise.all([writeManifest(ports, manifest), ...shardWrites])
   return { manifest: savedManifest, shards }
 }
 

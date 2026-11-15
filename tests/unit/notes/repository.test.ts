@@ -384,3 +384,35 @@ describe('удаление: скорость', () => {
     expect(shard.notes['note-1']).toBeUndefined()
   })
 })
+
+describe('создание: скорость', () => {
+  it('читает манифест и шард параллельно', async () => {
+    const remote = createMemoryRemote()
+    const order: string[] = []
+    const originalReadManifest = remote.readManifest
+    const originalReadShard = remote.readShard
+
+    remote.readManifest = async () => {
+      order.push('manifest:start')
+      await new Promise((resolve) => setTimeout(resolve, 15))
+      const value = await originalReadManifest()
+      order.push('manifest:end')
+      return value
+    }
+    remote.readShard = async (shardId) => {
+      order.push('shard:start')
+      await new Promise((resolve) => setTimeout(resolve, 15))
+      const value = await originalReadShard(shardId)
+      order.push('shard:end')
+      return value
+    }
+
+    await saveNote({
+      ports: ports(remote),
+      note: note(),
+      geometry: { kind: 'Point', coords: [37, 55] },
+    })
+
+    expect(order.slice(0, 2).sort()).toEqual(['manifest:start', 'shard:start'])
+  })
+})

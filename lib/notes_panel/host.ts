@@ -21,6 +21,8 @@ export const NOTES_PANEL_CLOSE_MESSAGE = 'NOTES_PANEL_CLOSE'
 /** Сообщения хост → iframe. */
 export const NOTES_PANEL_STATE_MESSAGE = 'NOTES_PANEL_STATE'
 export const NOTES_PANEL_SHOW_NOTE_MESSAGE = 'NOTES_PANEL_SHOW_NOTE'
+/** iframe → хост: показать снимок сразу, не дожидаясь ответа Диска. */
+export const NOTES_PANEL_PREVIEW_MESSAGE = 'NOTES_PANEL_PREVIEW'
 
 export type NotesPanelLayout = 'compact' | 'full'
 

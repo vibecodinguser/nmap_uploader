@@ -32,7 +32,11 @@ import {
   removeNotesEditButton,
 } from '@/lib/notes_panel/edit_button'
 import { NMAPS_TOGGLE_NOTES_PANEL_EVENT } from '@/lib/notes_panel/events'
-import { createNotesPanelHost, ensureNotesPanelStyles } from '@/lib/notes_panel/host'
+import {
+  createNotesPanelHost,
+  ensureNotesPanelStyles,
+  NOTES_PANEL_PREVIEW_MESSAGE,
+} from '@/lib/notes_panel/host'
 
 type DrawableKind = Extract<NoteKind, 'Point' | 'Line' | 'Polygon'>
 
@@ -141,6 +145,24 @@ export default defineContentScript({
     }
     document.addEventListener(NMAPS_NOTE_SELECTED_EVENT, handleNoteSelected)
 
+    /**
+     * Мгновенный отклик карты на действие в панели.
+     *
+     * Панель присылает снимок до сохранения на Диске: иначе созданная заметка
+     * появлялась бы на карте через несколько секунд, а до этого «ничего не
+     * происходит».
+     */
+    const handlePanelPreview = (event: MessageEvent): void => {
+      const data = event.data as
+        | { action?: string; snapshot?: NotesSnapshotPayload }
+        | null
+        | undefined
+      if (data?.action !== NOTES_PANEL_PREVIEW_MESSAGE) return
+      if (!data.snapshot?.manifest || !data.snapshot.shards) return
+      renderSnapshot(data.snapshot)
+    }
+    window.addEventListener('message', handlePanelPreview)
+
     const handleTogglePanel = (): void => {
       host.toggle()
     }
@@ -242,6 +264,7 @@ export default defineContentScript({
       browser.storage.onChanged.removeListener(handleStorageChange)
       browser.runtime.onMessage.removeListener(handleRuntimeMessage)
       document.removeEventListener(NMAPS_NOTE_SELECTED_EVENT, handleNoteSelected)
+      window.removeEventListener('message', handlePanelPreview)
       document.removeEventListener(NMAPS_TOGGLE_NOTES_PANEL_EVENT, handleTogglePanel)
       document.removeEventListener(NMAPS_POINT_PICKED_EVENT, handlePointPicked)
       document.removeEventListener(NMAPS_CANCEL_PICK_POINT_EVENT, handleCancelPick)
