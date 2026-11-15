@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useLocale } from '@/hooks/useLocale'
 import type { GroupVisibility } from '@/lib/notes/grouping'
 import { NOTES_PANEL_BUTTON_IDS, rowButtonId } from './ids'
-import { VisibilityIcon } from './RowIcons'
+import { DeleteIcon, VisibilityIcon } from './RowIcons'
 
 /** Стрелка «раскрыть/свернуть» — одна на заголовок группы. */
 const Chevron = ({ collapsed }: { collapsed: boolean }) => (
@@ -35,21 +35,6 @@ const PencilIcon = () => (
     aria-hidden="true"
   >
     <path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3z" />
-  </svg>
-)
-
-const TrashIcon = () => (
-  <svg
-    width={14}
-    height={14}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    aria-hidden="true"
-  >
-    <path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13" />
   </svg>
 )
 
@@ -246,7 +231,7 @@ export const GroupHeader = ({
               aria-label={t('notesPanel.deleteGroup')}
               onClick={onRemove}
             >
-              <TrashIcon />
+              <DeleteIcon />
             </button>
           </>
         )}

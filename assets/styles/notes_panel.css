@@ -667,7 +667,8 @@ body {
 }
 
 .notes-panel__dialog {
-  width: min(420px, calc(100% - 32px));
+  /* Ширина с запасом: три кнопки в ряд должны поместиться целиком. */
+  width: min(520px, calc(100% - 32px));
   padding: 16px 18px;
   border-radius: 10px;
   background: var(--background, #ffffff);
@@ -689,7 +690,75 @@ body {
 
 .notes-panel__dialog-actions {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
   justify-content: flex-end;
+}
+
+/*
+ * Три кнопки в один ряд: все три исхода видны одновременно и равнозначны по
+ * весу, а «Удалить» не уезжает на отдельную строку, откуда её легче нажать
+ * случайно.
+ */
+.notes-panel__dialog-actions .notes-panel__button {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 6px 10px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/*
+ * Только на совсем узкой панели ряд переносится: обрезать «Разгруппировать»
+ * многоточием хуже, чем разложить кнопки в две строки.
+ */
+@media (width <= 380px) {
+  .notes-panel__dialog-actions {
+    flex-wrap: wrap;
+  }
+
+  .notes-panel__dialog-actions .notes-panel__button {
+    flex: 1 1 45%;
+  }
+}
+
+/*
+ * Иконки повторяют нативные `nk-icon nk-icon_interactive`: приглушены по
+ * умолчанию и оживают при наведении. Это делает действия строки спокойными,
+ * пока на них не навели курсор.
+ */
+.notes-panel .nk-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-foreground, #6b6b6b);
+  transition: color 0.15s ease;
+}
+
+/* stylelint-disable-next-line selector-class-pattern -- модификатор нативных nk-icon */
+.notes-panel .nk-icon_interactive:hover {
+  color: var(--foreground, #1f1f1f);
+}
+
+/* Кнопка «Удалить» с иконкой: повторяет действие из строки списка. */
+.notes-panel__dialog-actions .notes-panel__button--danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.notes-panel__dialog-actions .notes-panel__button--danger .nk-icon {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+}
+
+.notes-panel__dialog-actions .notes-panel__button--danger .nk-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Как у нативного `nk-tracker-settings-view__delete`: удаление краснеет. */
+.notes-panel__dialog-actions .notes-panel__button--danger:hover .nk-icon {
+  color: #e00000;
 }

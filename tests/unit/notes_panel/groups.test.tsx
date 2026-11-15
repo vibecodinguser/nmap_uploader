@@ -8,6 +8,7 @@
  */
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { DeleteGroupDialog } from '@/components/notes_panel/DeleteGroupDialog'
 import { NoteList } from '@/components/notes_panel/NoteList'
 import { NoteProperties } from '@/components/notes_panel/NoteProperties'
 import { LocaleProvider } from '@/hooks/useLocale'
@@ -481,5 +482,60 @@ describe('всплытие события drop', () => {
 
     expect(onMoveNote).toHaveBeenCalledWith('a', null)
     cleanup()
+  })
+})
+
+describe('диалог удаления группы', () => {
+  const renderDialog = (onConfirm = vi.fn()) => {
+    render(
+      <LocaleProvider>
+        <DeleteGroupDialog
+          groupName="Мосты"
+          notesCount={3}
+          onCancel={vi.fn()}
+          onConfirm={onConfirm}
+        />
+      </LocaleProvider>,
+    )
+    return onConfirm
+  }
+
+  it('подписывает исходы коротко: «Разгруппировать» и «Удалить»', () => {
+    renderDialog()
+
+    expect(screen.getByRole('button', { name: /Разгруппировать/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Удалить/ })).toBeTruthy()
+    expect(screen.queryByText(/заметки останутся на карте/)).toBeNull()
+  })
+
+  it('все три кнопки стоят в одном ряду', () => {
+    renderDialog()
+
+    const actions = document.querySelector('.notes-panel__dialog-actions') as HTMLElement
+    expect(actions.children).toHaveLength(3)
+    for (const child of Array.from(actions.children)) {
+      expect(child.className).toContain('notes-panel__button')
+    }
+  })
+
+  it('«Удалить» несёт нативную иконку удаления', () => {
+    renderDialog()
+
+    const icon = document.querySelector('.nk-icon_id_delete-small')
+    expect(icon).toBeTruthy()
+    expect(icon?.getAttribute('class')).toContain('nk-tracker-settings-view__delete')
+    expect(icon?.getAttribute('class')).toContain('nk-icon_interactive')
+  })
+
+  it('возвращает выбранный исход', () => {
+    const onConfirm = renderDialog()
+
+    fireEvent.click(screen.getByRole('button', { name: /Разгруппировать/ }))
+    expect(onConfirm).toHaveBeenCalledWith('keepNotes')
+
+    cleanup()
+    const second = renderDialog()
+    fireEvent.click(screen.getByRole('button', { name: /^Удалить$/ }))
+    expect(second).toHaveBeenCalledWith('cascade')
   })
 })
