@@ -416,3 +416,64 @@ describe('создание: скорость', () => {
     expect(order.slice(0, 2).sort()).toEqual(['manifest:start', 'shard:start'])
   })
 })
+
+describe('updatedAt клиента', () => {
+  it('сохраняет метку времени из запроса, а не ставит свою', async () => {
+    const remote = createMemoryRemote()
+    const clientStamp = '2026-11-14T09:00:00.000Z'
+
+    const result = await saveNote({
+      ports: ports(remote),
+      note: note({ updatedAt: clientStamp }),
+      geometry: { kind: 'Point', coords: [37, 55] },
+    })
+
+    expect(result.manifest.notes[0].updatedAt).toBe(clientStamp)
+  })
+
+  it('не затирает перенос в группу более старой правкой', async () => {
+    // Сценарий: правка отправлена раньше переноса, но выполнена позже.
+    const remote = createMemoryRemote()
+    const notePorts = ports(remote)
+
+    await saveNote({
+      ports: notePorts,
+      note: note({ updatedAt: '2026-11-14T10:00:00.000Z' }),
+      geometry: { kind: 'Point', coords: [37, 55] },
+    })
+    await saveGroup({ ports: notePorts, group: group() })
+
+    // Перенос в группу — метка времени позже правки.
+    await moveNoteToGroup({
+      ports: notePorts,
+      noteId: 'note-1',
+      groupId: 'group-1',
+    })
+
+    // Отложенная правка со СТАРОЙ меткой приходит после переноса.
+    const result = await saveNote({
+      ports: notePorts,
+      note: note({
+        groupId: null,
+        updatedAt: '2026-11-14T09:00:00.000Z',
+      }),
+      geometry: { kind: 'Point', coords: [37, 55] },
+    })
+
+    // Побеждает более свежая запись — перенос в группу сохранён.
+    expect(result.manifest.notes[0].groupId).toBe('group-1')
+  })
+
+  it('ставит метку сама, если клиент прислал мусор', async () => {
+    const remote = createMemoryRemote()
+    const before = Date.now()
+
+    const result = await saveNote({
+      ports: ports(remote),
+      note: note({ updatedAt: 'не дата' }),
+      geometry: { kind: 'Point', coords: [37, 55] },
+    })
+
+    expect(Date.parse(result.manifest.notes[0].updatedAt)).toBeGreaterThanOrEqual(before - 1000)
+  })
+})

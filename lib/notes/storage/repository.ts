@@ -38,6 +38,9 @@ const shardIdsOf = (manifest: NotesManifest): string[] => {
   return [...ids].sort()
 }
 
+const isValidTimestamp = (value: unknown): value is string =>
+  typeof value === 'string' && !Number.isNaN(Date.parse(value))
+
 const readShard = async (ports: NotesPorts, shardId: string | null): Promise<GeometryShard> => {
   if (!shardId) return createEmptyShard()
   return (await ports.remote.readShard(shardId)) ?? createEmptyShard()
@@ -115,7 +118,14 @@ const saveNoteNow = async ({
   note: Note
   geometry: NoteGeometry
 }): Promise<NotesMutationResult> => {
-  const stamped: Note = { ...note, updatedAt: new Date().toISOString() }
+  // `updatedAt` приходит от клиента и НЕ перештамповывается здесь: иначе
+  // отложенная правка, отправленная раньше переноса в группу, но выполненная
+  // позже, получала бы самый свежий штамп и затирала перенос — заметка
+  // возвращалась в корень.
+  const stamped: Note = {
+    ...note,
+    updatedAt: isValidTimestamp(note.updatedAt) ? note.updatedAt : new Date().toISOString(),
+  }
   const nextShardId = shardIdForDate(stamped.date)
 
   // Манифест и шард читаются параллельно: месяц известен из даты заметки,
