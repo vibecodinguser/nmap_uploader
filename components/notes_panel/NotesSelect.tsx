@@ -23,6 +23,9 @@ const POPUP_GAP = 4
 /** Предел высоты списка: выше — прокрутка, как у `nk-menu` в попапе. */
 const POPUP_MAX_HEIGHT = 280
 
+/** Отступ от края окна, чтобы список не прилипал к рамке. */
+const VIEWPORT_MARGIN = 8
+
 const clampIndex = (index: number, length: number): number =>
   Math.min(Math.max(index, 0), Math.max(length - 1, 0))
 
@@ -36,6 +39,8 @@ interface Anchor {
 interface Placement {
   anchor: Anchor
   side: 'top' | 'bottom'
+  /** Левый край уже с поправкой на ширину содержимого. */
+  left: number
 }
 
 /**
@@ -57,6 +62,12 @@ interface Placement {
  *
  * Одно отличие, осознанное: пункты выше нативных 24 px. Панель считается под
  * палец — как и чекбокс, рисунок сохранён, а размер увеличен.
+ *
+ * Список расширяется по содержимому, а не по кнопке: у нативного `nk-select`
+ * попап шире кнопки, если в пунктах длинные названия — иначе группа с длинным
+ * именем обрезалась бы многоточием. Ширину задаёт CSS (`width: max-content`),
+ * а `left` считается уже по ней: если список вылезает за правый край, он
+ * сдвигается влево.
  *
  * Список рисуется в портале на `body`, как `nk-popup` в редакторе, и это не
  * украшение: панель фильтров живёт внутри `.notes-panel__body` с
@@ -99,6 +110,13 @@ export const NotesSelect = ({
   const selectedIndex = options.findIndex((option) => option.value === value)
   const current = selectedIndex >= 0 ? options[selectedIndex] : options[0]
 
+  /*
+   * Замер положения.
+   *
+   * Ширину списка задаёт CSS (`width: max-content`), поэтому её приходится
+   * читать из DOM уже после монтирования: без неё не посчитать `left`, и список
+   * вылез бы за правый край окна.
+   */
   const measure = useCallback((side?: 'top' | 'bottom'): Placement | null => {
     const button = buttonRef.current
     if (!button) return null
@@ -110,13 +128,21 @@ export const NotesSelect = ({
       bottom: rect.bottom,
       width: rect.width,
     }
-    if (side) return { anchor, side }
 
-    const height = Math.min(popupRef.current?.offsetHeight ?? 0, POPUP_MAX_HEIGHT)
+    const popup = popupRef.current
+    const width = popup?.offsetWidth ?? anchor.width
+    const left = Math.max(
+      VIEWPORT_MARGIN,
+      Math.min(anchor.left, window.innerWidth - width - VIEWPORT_MARGIN),
+    )
+
+    if (side) return { anchor, side, left }
+
+    const height = Math.min(popup?.offsetHeight ?? 0, POPUP_MAX_HEIGHT)
     const spaceBelow = window.innerHeight - rect.bottom - POPUP_GAP
     const spaceAbove = rect.top - POPUP_GAP
     const fitsBelow = spaceBelow >= height
-    return { anchor, side: fitsBelow || spaceBelow >= spaceAbove ? 'bottom' : 'top' }
+    return { anchor, side: fitsBelow || spaceBelow >= spaceAbove ? 'bottom' : 'top', left }
   }, [])
 
   const openMenu = useCallback(
@@ -161,9 +187,9 @@ export const NotesSelect = ({
   }, [closeMenu, open])
 
   /*
-   * Точное направление считаем после монтирования списка: только тогда известна
-   * его высота. `useLayoutEffect` — чтобы список не успел мигнуть не на той
-   * стороне.
+   * Точное положение и направление считаем после монтирования списка: только
+   * тогда известны его размеры. `useLayoutEffect` — чтобы список не успел
+   * мигнуть не на той стороне и не на той ширине.
    */
   useLayoutEffect(() => {
     if (!open) return
@@ -172,8 +198,10 @@ export const NotesSelect = ({
     setPlacement((previous) =>
       previous &&
       previous.side === next.side &&
+      previous.left === next.left &&
       previous.anchor.top === next.anchor.top &&
-      previous.anchor.left === next.anchor.left
+      previous.anchor.left === next.anchor.left &&
+      previous.anchor.width === next.anchor.width
         ? previous
         : next,
     )
@@ -192,7 +220,8 @@ export const NotesSelect = ({
           previous &&
           previous.anchor.top === next.anchor.top &&
           previous.anchor.left === next.anchor.left &&
-          previous.anchor.width === next.anchor.width
+          previous.anchor.width === next.anchor.width &&
+          previous.left === next.left
         ) {
           return previous
         }
@@ -291,13 +320,14 @@ export const NotesSelect = ({
   }
 
   /*
-   * Ширина списка равна кнопке, но не меньше его содержимого: пункт с длинным
-   * названием группы не должен обрезаться на 132 px.
+   * Ширину списка не задаём: её определяет содержимое (`max-content`), а
+   * `min-width` держит её не уже кнопки — как у нативного попапа, который
+   * расширяется под длинное название группы.
    */
   const popupStyle = placement
     ? {
-        left: placement.anchor.left,
-        width: placement.anchor.width,
+        left: placement.left,
+        minWidth: placement.anchor.width,
         ...(placement.side === 'bottom'
           ? { top: placement.anchor.bottom + POPUP_GAP }
           : { bottom: window.innerHeight - placement.anchor.top + POPUP_GAP }),

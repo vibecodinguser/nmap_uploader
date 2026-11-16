@@ -134,6 +134,21 @@ describe('портал', () => {
   })
 })
 
+describe('ширина', () => {
+  it('список не сжат до ширины кнопки', () => {
+    // У нативного `nk-select` попап расширяется по содержимому: длинное
+    // название группы не обрезается многоточием. Поэтому ширина задаётся
+    // содержимым, а ширина кнопки — только нижняя граница.
+    renderSelect()
+
+    fireEvent.click(trigger())
+
+    const popup = screen.getByRole('listbox')
+    expect(popup.style.width).toBe('')
+    expect(popup.style.minWidth).not.toBe('')
+  })
+})
+
 describe('клавиатура', () => {
   it('стрелка вниз раскрывает список', () => {
     renderSelect()
