@@ -136,13 +136,16 @@ body {
   content: "";
   position: absolute;
 
-  /* Галочка чуть крупнее квадрата и стоит по центру: `left`/`top` в
-     процентах считаются от обёртки, поэтому смещение — половина разницы
-     размеров. */
+  /* Галочка крупнее квадрата и сдвинута вправо-вверх — ровно как в редакторе,
+     где при квадрате 14 px она имеет размер 15 px со `left: 2px; top: -5px`:
+     она выступает за правую и верхнюю грани. Отсюда узнаваемый вид «галочка
+     за углом». Обе величины заданы в долях размера квадрата (15/14, 2/14,
+     5/14), поэтому при смене размера рисунок масштабируется целиком и остаётся
+     таким же, как у нативного, — просто крупнее. */
   width: calc(var(--check-size) * 15 / 14);
   height: calc(var(--check-size) * 15 / 14);
-  left: calc((var(--check-size) - var(--check-size) * 15 / 14) / 2);
-  top: calc((var(--check-size) - var(--check-size) * 15 / 14) / 2);
+  left: calc(var(--check-size) * 2 / 14);
+  top: calc(var(--check-size) * -5 / 14);
   background: var(--check-tick, #000000);
   opacity: 0;
   pointer-events: none;
@@ -173,9 +176,25 @@ body {
     inset 0 0 0 1px #ffcc00;
 }
 
-/* Недоступный: приглушённая заливка и полупрозрачная галочка. */
-.notes-panel__check:has(input:disabled) {
-  opacity: 0.6;
+/*
+ * Недоступный — как в редакторе: заливка не рисуется вовсе, остаётся серый
+ * квадрат, а галочка приглушается до 40 %. У отмеченного серый чуть темнее.
+ */
+.notes-panel__check:has(input:disabled)::before {
+  display: none;
+}
+
+.notes-panel__check:has(input:disabled) input {
+  background: rgb(0 0 0 / 5%);
+  cursor: default;
+}
+
+.notes-panel__check:has(input:checked:disabled)::after {
+  opacity: 0.4;
+}
+
+.notes-panel__check:has(input:checked:disabled) input {
+  background: rgb(0 0 0 / 10%);
 }
 
 /* Подпись, нужная только скринридеру. */
