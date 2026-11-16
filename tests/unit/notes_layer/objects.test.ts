@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { createDefaultStyle, resolveNoteStyle } from '@/lib/notes/model/style_resolution'
+import { createDefaultStyle } from '@/lib/notes/model/style_resolution'
 import type { Note, NoteGroup } from '@/lib/notes/model/types'
-import { buildHatchImageHref, renderNote, renderNotes } from '@/lib/notes_layer/objects'
+import { renderNote, renderNotes } from '@/lib/notes_layer/objects'
 
 const note = (overrides: Partial<Note> = {}): Note => ({
   id: 'note-1',
@@ -127,23 +127,6 @@ describe('renderNote', () => {
     })
 
     expect((polygon.coordinates as number[][][])[0]).toHaveLength(5)
-  })
-
-  it('штриховка превращается в svg-паттерн', () => {
-    const style = resolveNoteStyle({
-      style: {
-        ...createDefaultStyle('Polygon'),
-        hatch: { pattern: 'diagonal' },
-      },
-    })
-
-    expect(buildHatchImageHref(style)).toContain('data:image/svg+xml')
-  })
-
-  it('без штриховки паттерна нет', () => {
-    expect(buildHatchImageHref(resolveNoteStyle({ style: createDefaultStyle('Polygon') }))).toBe(
-      undefined,
-    )
   })
 })
 

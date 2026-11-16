@@ -3,7 +3,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import type { ComponentProps } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { NoteList as NoteListBase, noteRowIds } from '@/components/notes_panel/NoteList'
+import { NoteList as NoteListBase } from '@/components/notes_panel/NoteList'
 import { NoteProperties } from '@/components/notes_panel/NoteProperties'
 import { ShapePicker } from '@/components/notes_panel/ShapePicker'
 import { LocaleProvider } from '@/hooks/useLocale'
@@ -301,90 +301,6 @@ describe('NoteList', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Найти на карте' }))
 
     expect(onLocate).toHaveBeenCalledWith('note-1')
-  })
-})
-
-describe('NoteList: идентификаторы строки', () => {
-  it('строка и её кнопки имеют предсказуемые id', () => {
-    const { container } = wrap(
-      <NoteList
-        notes={[note()]}
-        hiddenIds={[]}
-        selectedId={null}
-        onSelect={vi.fn()}
-        onToggleHidden={vi.fn()}
-        onLocate={vi.fn()}
-        onDelete={vi.fn()}
-      />,
-    )
-
-    const ids = noteRowIds('note-1')
-    expect(container.querySelector(`#${ids.row}`)).not.toBeNull()
-    expect(container.querySelector(`#${ids.main}`)).not.toBeNull()
-    expect(container.querySelector(`#${ids.visibility}`)).not.toBeNull()
-    expect(container.querySelector(`#${ids.locate}`)).not.toBeNull()
-    expect(container.querySelector(`#${ids.delete}`)).not.toBeNull()
-  })
-
-  it('строка несёт id заметки и её вид', () => {
-    const { container } = wrap(
-      <NoteList
-        notes={[note()]}
-        hiddenIds={[]}
-        selectedId={null}
-        onSelect={vi.fn()}
-        onToggleHidden={vi.fn()}
-        onLocate={vi.fn()}
-        onDelete={vi.fn()}
-      />,
-    )
-
-    const row = container.querySelector('.notes-panel__row')
-    expect(row?.getAttribute('data-note-id')).toBe('note-1')
-    expect(row?.getAttribute('data-note-kind')).toBe('Point')
-  })
-
-  it('id не повторяются у разных заметок', () => {
-    const { container } = wrap(
-      <NoteList
-        notes={[note(), note({ id: 'note-2', name: 'Вторая' })]}
-        hiddenIds={[]}
-        selectedId={null}
-        onSelect={vi.fn()}
-        onToggleHidden={vi.fn()}
-        onLocate={vi.fn()}
-        onDelete={vi.fn()}
-      />,
-    )
-
-    const ids = [...container.querySelectorAll('[id]')].map((node) => node.id)
-    expect(new Set(ids).size).toBe(ids.length)
-  })
-
-  it('действия строки названы по смыслу, а не по виду иконки', () => {
-    const ids = noteRowIds('note-1')
-
-    expect(ids.visibility).toBe('nmapUploaderNotesPanelBtnVisible-note-1')
-    expect(ids.locate).toBe('nmapUploaderNotesPanelBtnFind-note-1')
-    expect(ids.delete).toBe('nmapUploaderNotesPanelBtnDelete-note-1')
-  })
-
-  it('кнопки действий помечены data-action для поиска без разбора id', () => {
-    const { container } = wrap(
-      <NoteList
-        notes={[note()]}
-        hiddenIds={[]}
-        selectedId={null}
-        onSelect={vi.fn()}
-        onToggleHidden={vi.fn()}
-        onLocate={vi.fn()}
-        onDelete={vi.fn()}
-      />,
-    )
-
-    expect(container.querySelector('[data-action="visible"]')).not.toBeNull()
-    expect(container.querySelector('[data-action="find"]')).not.toBeNull()
-    expect(container.querySelector('[data-action="delete"]')).not.toBeNull()
   })
 })
 

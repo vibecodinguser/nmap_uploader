@@ -1,11 +1,11 @@
 // @vitest-environment happy-dom
 
 /**
- * Characterization-тесты правки и удаления заметки в панели.
+ * Правка заметки: дебаунс, очередь отправки и сброс при закрытии панели.
  *
- * Дебаунс, очередь отправки и откат живут только в `useNotesPanel` и до сих
- * пор не были покрыты: переписать их, не зафиксировав текущее поведение,
- * значило бы гадать, что из этого контракт, а что дефект.
+ * Удаление и отмена проверяются в `use_notes_panel_delete.test.tsx` и
+ * `notes_undo_timer.test.tsx`; здесь только правка, чтобы одно и то же
+ * поведение не описывалось в двух местах.
  */
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -13,11 +13,7 @@ import { browser } from 'wxt/browser'
 import { LocaleProvider } from '@/hooks/useLocale'
 import { useNotesPanel } from '@/hooks/useNotesPanel'
 import type { Note } from '@/lib/notes/model/types'
-import {
-  NOTES_DELETE_NOTE_ACTION,
-  NOTES_LOAD_ACTION,
-  NOTES_SAVE_NOTE_ACTION,
-} from '@/lib/notes/protocol'
+import { NOTES_LOAD_ACTION, NOTES_SAVE_NOTE_ACTION } from '@/lib/notes/protocol'
 import { sampleNote } from '@/tests/unit/notes_panel/list_props'
 
 const geometry = { kind: 'Point' as const, coords: [37.6, 55.7] as [number, number] }
@@ -172,78 +168,5 @@ describe('useNotesPanel: правка заметки', () => {
     await new Promise((resolve) => setTimeout(resolve, 800))
     expect(saves()).toHaveLength(0)
     expect(nameOf(result.current.notes, 'note-3')).toBe('Без геометрии')
-  })
-})
-
-describe('useNotesPanel: удаление и отмена', () => {
-  let sent: Array<Record<string, unknown>> = []
-
-  const actions = (): string[] => sent.map((message) => message.action as string)
-
-  beforeEach(() => {
-    vi.restoreAllMocks()
-    sent = []
-
-    vi.spyOn(browser.runtime, 'sendMessage').mockImplementation((async (
-      message: Record<string, unknown>,
-    ) => {
-      sent.push(message)
-      if (message.action === NOTES_LOAD_ACTION) return { ok: true, snapshot }
-      // Ответ как у background: манифест с уже применённой правкой.
-      if (message.action === NOTES_SAVE_NOTE_ACTION) {
-        const saved = message.note as Note
-        return {
-          ok: true,
-          patch: {
-            manifest: {
-              ...snapshot.manifest,
-              notes: snapshot.manifest.notes.map((note) => (note.id === saved.id ? saved : note)),
-            },
-            shards: {},
-          },
-        }
-      }
-      return { ok: true, patch: { manifest: snapshot.manifest, shards: {} } }
-    }) as never)
-  })
-
-  it('убирает строку сразу, запоминает её для отмены и возвращает обратно', async () => {
-    const { result } = renderPanel()
-    await waitFor(() => expect(result.current.status).toBe('ready'))
-
-    act(() => {
-      result.current.removeNote('note-1')
-    })
-
-    expect(result.current.notes.map((note) => note.id)).not.toContain('note-1')
-    expect(result.current.undo?.note.id).toBe('note-1')
-    await waitFor(() => expect(actions()).toContain(NOTES_DELETE_NOTE_ACTION))
-
-    act(() => {
-      result.current.undoRemove()
-    })
-
-    expect(result.current.notes.map((note) => note.id)).toContain('note-1')
-    expect(result.current.undo).toBeNull()
-    await waitFor(() =>
-      expect(
-        sent.some(
-          (message) =>
-            message.action === NOTES_SAVE_NOTE_ACTION && (message.note as Note).id === 'note-1',
-        ),
-      ).toBe(true),
-    )
-  })
-
-  it('не удаляет заметку без загруженной геометрии', async () => {
-    const { result } = renderPanel()
-    await waitFor(() => expect(result.current.status).toBe('ready'))
-
-    act(() => {
-      result.current.removeNote('note-3')
-    })
-
-    expect(result.current.notes.map((note) => note.id)).toContain('note-3')
-    expect(actions()).not.toContain(NOTES_DELETE_NOTE_ACTION)
   })
 })

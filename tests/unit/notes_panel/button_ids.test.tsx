@@ -136,7 +136,10 @@ describe('id кнопок в строке списка', () => {
       />,
     )
 
-    expect(document.getElementById(noteRowIds('note-1').visibility)).not.toBeNull()
+    // Все элементы строки адресуемы: строка, кнопка выбора и три действия.
+    for (const id of Object.values(noteRowIds('note-1'))) {
+      expect(document.getElementById(id)).not.toBeNull()
+    }
     expect(document.getElementById(noteRowIds('note-2').visibility)).not.toBeNull()
     expect(noteRowIds('note-1').delete).not.toBe(noteRowIds('note-2').delete)
   })
@@ -157,9 +160,9 @@ describe('id кнопок в строке списка', () => {
     expect(document.getElementById(noteRowIds('note-1').delete)?.getAttribute('data-action')).toBe(
       'delete',
     )
-    expect(document.getElementById(noteRowIds('note-1').row)?.getAttribute('data-note-id')).toBe(
-      'note-1',
-    )
+    const row = document.getElementById(noteRowIds('note-1').row)
+    expect(row?.getAttribute('data-note-id')).toBe('note-1')
+    expect(row?.getAttribute('data-note-kind')).toBe('Point')
   })
 
   it('id строки ведёт на нужное действие', () => {

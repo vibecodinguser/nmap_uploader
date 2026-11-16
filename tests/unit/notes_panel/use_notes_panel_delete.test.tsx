@@ -110,6 +110,44 @@ describe('useNotesPanel: удаление', () => {
     expect(result.current.error).toBeTruthy()
   })
 
+  it('не удаляет заметку без загруженной геометрии', async () => {
+    // Заметка из манифеста, но её шард не загружен: удалять нечего, и молчание
+    // здесь — осознанное поведение, а не сбой.
+    const withoutGeometry = {
+      ...snapshot,
+      manifest: {
+        ...snapshot.manifest,
+        notes: [
+          note,
+          {
+            ...note,
+            id: 'note-3',
+            name: 'Без геометрии',
+          },
+        ],
+      },
+    }
+    vi.spyOn(browser.runtime, 'sendMessage').mockImplementation(((message: { action?: string }) => {
+      if (message.action === 'NOTES_LOAD') {
+        return Promise.resolve({ ok: true, snapshot: withoutGeometry }) as never
+      }
+      return Promise.resolve({
+        ok: true,
+        patch: { manifest: withoutGeometry.manifest, shards: {} },
+      })
+    }) as never)
+
+    const { result } = renderPanel()
+    await waitFor(() => expect(result.current.notes).toHaveLength(2))
+
+    act(() => {
+      result.current.removeNote('note-3')
+    })
+
+    expect(result.current.notes.map((item) => item.id)).toContain('note-3')
+    expect(result.current.undo).toBeNull()
+  })
+
   it('передаёт дату заметки, чтобы шард нашелся без чтения манифеста', async () => {
     const sendMessage = vi.spyOn(browser.runtime, 'sendMessage').mockImplementation(((message: {
       action?: string
