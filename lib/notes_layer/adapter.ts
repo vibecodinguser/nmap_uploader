@@ -2,7 +2,8 @@ import { findActiveMap, type YmapsMapLike } from '@/lib/nmaps/map_discovery'
 import { centerMapOnLocation } from '@/lib/nmaps/repaint'
 import type { LonLat } from '@/lib/notes/model/types'
 import { renderCluster } from './cluster_object'
-import { CLUSTER_MAX_ZOOM, clusterPoints } from './clustering'
+import { clusterPoints } from './clustering'
+import { selectVisibleLabels } from './label_layout'
 import { LABEL_MIN_ZOOM, type RenderedNote, renderNotes } from './objects'
 import { dispatchLayerEvent, NMAPS_NOTE_SELECTED_EVENT, type NotesLayerInput } from './protocol'
 
@@ -112,10 +113,12 @@ export class NotesLayer {
     const zoom = map.getZoom()
     const shouldHideLabels = zoom < LABEL_MIN_ZOOM
     const zoomBucket = Math.round(zoom)
-    const labelsChanged = shouldHideLabels !== this.labelsHidden
-    const clustersChanged = zoomBucket !== this.zoomBucket && zoom <= CLUSTER_MAX_ZOOM + 1
+    const labelsHiddenChanged = shouldHideLabels !== this.labelsHidden
+    // Кластеры и подписи зависят от зума: на новом масштабе и расстояния на
+    // экране другие, поэтому пересчитывать надо и то, и другое.
+    const zoomChanged = zoomBucket !== this.zoomBucket
 
-    if (!labelsChanged && !clustersChanged) return
+    if (!labelsHiddenChanged && !zoomChanged) return
 
     this.labelsHidden = shouldHideLabels
     this.zoomBucket = zoomBucket
@@ -269,6 +272,31 @@ export class NotesLayer {
     return [...rest, ...grouped.map(renderCluster)]
   }
 
+  /**
+   * Убирает подписи, которые наезжают друг на друга.
+   *
+   * Подпись — HTML-строка под объектом; на плотном наборе они складываются в
+   * нечитаемую кашу. Показывается подпись выбранной заметки, затем остальные в
+   * стабильном порядке: так при перерисовке подписи не прыгают местами.
+   */
+  private withVisibleLabels(rendered: RenderedNote[], zoom: number): RenderedNote[] {
+    const labels = rendered.filter((item) => item.kind === 'label')
+    if (labels.length < 2) return rendered
+
+    const visible = selectVisibleLabels({
+      labels: labels.map((item) => ({
+        id: item.id,
+        coordinates: item.coordinates as [number, number],
+        text: String(item.properties.iconContent ?? ''),
+      })),
+      zoom,
+      priority: this.selectedId ? [this.selectedId] : [],
+    })
+
+    const keep = new Set(visible.map((label) => label.id))
+    return rendered.filter((item) => item.kind !== 'label' || keep.has(item.id))
+  }
+
   private apply(): void {
     const context = this.ensureCollection()
     if (!context || !this.collection) return
@@ -277,15 +305,18 @@ export class NotesLayer {
     const zoom = this.map?.getZoom() ?? 16
     this.zoomBucket = Math.round(zoom)
 
-    const rendered = this.withClusters(
-      renderNotes({
-        notes: this.input.notes,
-        geometries: this.input.geometries,
-        groups: this.input.groups,
-        hiddenIds: this.input.hiddenIds,
-        selectedId: this.selectedId,
-        iconUrls: this.input.iconUrls,
-      }),
+    const rendered = this.withVisibleLabels(
+      this.withClusters(
+        renderNotes({
+          notes: this.input.notes,
+          geometries: this.input.geometries,
+          groups: this.input.groups,
+          hiddenIds: this.input.hiddenIds,
+          selectedId: this.selectedId,
+          iconUrls: this.input.iconUrls,
+        }),
+        zoom,
+      ),
       zoom,
     )
 
