@@ -9,7 +9,7 @@ import {
 import type { Note, NoteGeometry, NoteGroup } from '../model/types'
 import type { NotesData, NotesPatch } from '../protocol'
 import { enqueueNotesWrite } from './write_queue'
-import { type NotesPorts, readShard, writeManifest, writeShard } from './writes'
+import { type NotesPorts, readShard, withTombstone, writeManifest, writeShard } from './writes'
 
 const shardIdsOf = (manifest: NotesManifest): string[] => {
   const ids = new Set<string>()
@@ -110,6 +110,7 @@ const saveNoteNow = async ({
     updatedAt: stamped.updatedAt,
     groups: [],
     notes: [stamped],
+    deletedNotes: [],
   })
 
   // Слияние могло оставить серверную версию: она новее по `updatedAt`.
@@ -185,10 +186,7 @@ const deleteNoteNow = async ({
 
   // Запись манифеста и шарда независима: два файла можно отправить разом.
   const [manifest] = await Promise.all([
-    writeManifest(ports, {
-      ...remoteManifest,
-      notes: remoteManifest.notes.filter((note) => note.id !== noteId),
-    }),
+    writeManifest(ports, withTombstone(remoteManifest, noteId, target.updatedAt)),
     shardId && shard ? writeShard(ports, shardId, shard) : Promise.resolve(),
   ])
 

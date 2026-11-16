@@ -22,6 +22,7 @@ const snapshot: NotesSnapshot = {
     version: 1,
     updatedAt: '2026-11-14T10:00:00.000Z',
     groups: [],
+    deletedNotes: [],
     notes: [
       sampleNote({ id: 'note-1', name: 'Первая' }),
       sampleNote({ id: 'note-2', name: 'Вторая' }),

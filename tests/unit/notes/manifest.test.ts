@@ -29,6 +29,7 @@ describe('parseManifest', () => {
       version: 1,
       updatedAt: '2026-11-14T10:00:00.000Z',
       groups: [{ id: 'g1', name: 'Группа', color: '#1a8cff', order: 0 }],
+      deletedNotes: [],
       notes: [
         baseNote(),
         { id: 'broken', kind: 'Unknown', date: '14-11-2026' },

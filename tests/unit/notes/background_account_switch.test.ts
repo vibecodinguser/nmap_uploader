@@ -122,6 +122,7 @@ beforeEach(() => {
           version: 1,
           updatedAt: '2026-11-16T10:00:00.000Z',
           groups: [],
+          deletedNotes: [],
           notes: [
             {
               id: 'note-a',
@@ -150,6 +151,7 @@ beforeEach(() => {
           version: 1,
           updatedAt: '2026-11-16T10:00:00.000Z',
           groups: [],
+          deletedNotes: [],
           notes: [],
         } satisfies NotesManifest,
       ],

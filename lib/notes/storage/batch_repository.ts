@@ -2,7 +2,7 @@ import { createEmptyManifest, mergeManifests } from '../model/manifest'
 import { type GeometryShard, removeShardGeometry, shardIdForDate } from '../model/shards'
 import type { NotesPatch } from '../protocol'
 import { enqueueNotesWrite } from './write_queue'
-import { type NotesPorts, readShard, writeManifest, writeShard } from './writes'
+import { type NotesPorts, readShard, withTombstone, writeManifest, writeShard } from './writes'
 
 /**
  * Пакетные операции над заметками.
@@ -31,10 +31,13 @@ const deleteNotesNow = async ({
   const removed = remoteManifest.notes.filter((note) => doomed.has(note.id))
   if (removed.length === 0) return { manifest: remoteManifest, shards: {} }
 
-  const manifest = await writeManifest(ports, {
-    ...remoteManifest,
-    notes: remoteManifest.notes.filter((note) => !doomed.has(note.id)),
-  })
+  // Каждой удалённой заметке — своё надгробие: без него другое устройство
+  // вернуло бы её при следующем слиянии.
+  const withTombstones = removed.reduce(
+    (manifest, note) => withTombstone(manifest, note.id, note.updatedAt),
+    remoteManifest,
+  )
+  const manifest = await writeManifest(ports, withTombstones)
 
   // Один шард на месяц, а не на заметку: удаляемые могут лежать в одном файле.
   const shardIds = new Set<string>()
@@ -93,6 +96,7 @@ const moveNotesToGroupNow = async ({
     updatedAt: timestamp,
     groups: [],
     notes: moved,
+    deletedNotes: [],
   })
   // Применяем перенос ко всему манифесту: `mergeManifests` может оставить
   // серверную версию заметки, если она новее.

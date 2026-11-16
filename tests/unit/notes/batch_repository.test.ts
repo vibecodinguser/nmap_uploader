@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { NotesManifest } from '@/lib/notes/model/manifest'
+import { NOTES_MANIFEST_VERSION, type NotesManifest } from '@/lib/notes/model/manifest'
 import type { GeometryShard } from '@/lib/notes/model/shards'
 import { deleteNotes, moveNotesToGroup } from '@/lib/notes/storage/batch_repository'
 import { createNoopNotesCache } from '@/lib/notes/storage/cache'
@@ -36,10 +36,11 @@ const ports = (remote: NotesRemote) => ({ remote, cache: createNoopNotesCache() 
 const point = { kind: 'Point' as const, coords: [37, 55] as [number, number] }
 
 const manifestWith = (notes: NotesManifest['notes'], groups: NotesManifest['groups'] = []) => ({
-  version: 1,
+  version: NOTES_MANIFEST_VERSION,
   updatedAt: '2026-11-16T10:00:00.000Z',
   groups,
   notes,
+  deletedNotes: [],
 })
 
 describe('массовое удаление', () => {

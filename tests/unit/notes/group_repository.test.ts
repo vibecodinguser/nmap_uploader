@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { NotesManifest } from '@/lib/notes/model/manifest'
+import { NOTES_MANIFEST_VERSION, type NotesManifest } from '@/lib/notes/model/manifest'
 import type { GeometryShard } from '@/lib/notes/model/shards'
 import type { Note, NoteGroup } from '@/lib/notes/model/types'
 import { createNoopNotesCache } from '@/lib/notes/storage/cache'
@@ -37,10 +37,11 @@ const createMemoryRemote = () => {
 const ports = (remote: NotesRemote) => ({ remote, cache: createNoopNotesCache() })
 
 const manifest = (notes: Note[], groups: NoteGroup[]): NotesManifest => ({
-  version: 1,
+  version: NOTES_MANIFEST_VERSION,
   updatedAt: '2026-11-16T10:00:00.000Z',
   groups,
   notes,
+  deletedNotes: [],
 })
 
 describe('роспуск группы', () => {

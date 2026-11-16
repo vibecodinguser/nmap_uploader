@@ -301,6 +301,7 @@ describe('правка атрибутов без изменения геомет
       version: 1,
       updatedAt: '2026-11-14T10:00:00.000Z',
       groups: [],
+      deletedNotes: [],
       notes: [],
     })
 
@@ -321,6 +322,7 @@ describe('запись проигравшей версии', () => {
       version: 1,
       updatedAt: '2026-11-14T12:00:00.000Z',
       groups: [],
+      deletedNotes: [],
       notes: [note({ id: 'note-1', name: 'Серверная', updatedAt: '2026-11-14T12:00:00.000Z' })],
     })
     remote.files.set('shard:2026-11', {
@@ -352,6 +354,7 @@ describe('запись проигравшей версии', () => {
       version: 1,
       updatedAt: '2026-11-14T10:00:00.000Z',
       groups: [],
+      deletedNotes: [],
       notes: [note({ id: 'note-1', name: 'Старая', updatedAt: '2026-11-14T10:00:00.000Z' })],
     })
 

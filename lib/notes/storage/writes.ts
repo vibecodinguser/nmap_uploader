@@ -1,4 +1,4 @@
-import type { NotesManifest } from '../model/manifest'
+import { type NotesManifest, pruneTombstones } from '../model/manifest'
 import { createEmptyShard, type GeometryShard } from '../model/shards'
 import type { NotesCache } from './cache'
 import type { NotesRemote } from './remote'
@@ -23,11 +23,45 @@ export const readShard = async (
   return (await ports.remote.readShard(shardId)) ?? createEmptyShard()
 }
 
+/**
+ * Помечает заметку удалённой и убирает её из манифеста.
+ *
+ * Надгробие — единственный способ передать удаление: по отсутствию записи
+ * другой манифест не отличит «удалено» от «я этого ещё не видел» и вернёт
+ * заметку при слиянии.
+ *
+ * `noteUpdatedAt` нужен, чтобы дата удаления была заведомо позже правки: иначе
+ * слияние сочло бы заметку более свежей и воскресило её.
+ */
+export const withTombstone = (
+  manifest: NotesManifest,
+  noteId: string,
+  noteUpdatedAt?: string,
+): NotesManifest => {
+  const now = Date.now()
+  const updatedAt = noteUpdatedAt ? Math.max(now, Date.parse(noteUpdatedAt) + 1) : now
+  const deletedAt = new Date(updatedAt).toISOString()
+
+  return {
+    ...manifest,
+    notes: manifest.notes.filter((note) => note.id !== noteId),
+    deletedNotes: [
+      ...manifest.deletedNotes.filter((tombstone) => tombstone.id !== noteId),
+      { id: noteId, deletedAt },
+    ],
+  }
+}
+
 export const writeManifest = async (
   ports: NotesPorts,
   manifest: NotesManifest,
 ): Promise<NotesManifest> => {
-  const next = { ...manifest, updatedAt: new Date().toISOString() }
+  // Единственный шлюз записи: здесь же чистим надгробия, срок которых вышел.
+  const next = {
+    ...manifest,
+    updatedAt: new Date().toISOString(),
+    deletedNotes: pruneTombstones(manifest.deletedNotes),
+  }
   await ports.remote.writeManifest(next)
   await ports.cache.writeManifest(next)
   return next

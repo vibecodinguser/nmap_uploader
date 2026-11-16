@@ -35,6 +35,7 @@ const snapshot = {
     version: 1,
     updatedAt: '2026-11-14T10:00:00.000Z',
     groups: [],
+    deletedNotes: [],
     notes: [note],
   },
   shards: {

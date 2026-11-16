@@ -1,3 +1,4 @@
+import { NOTES_MANIFEST_VERSION } from '@/lib/notes/model/manifest'
 import type { NotesSnapshot } from '@/lib/notes/protocol'
 
 /**
@@ -7,7 +8,13 @@ import type { NotesSnapshot } from '@/lib/notes/protocol'
  * заметку раньше, чем ответит Диск.
  */
 export const EMPTY_NOTES_SNAPSHOT: NotesSnapshot = {
-  manifest: { version: 1, updatedAt: new Date(0).toISOString(), groups: [], notes: [] },
+  manifest: {
+    version: NOTES_MANIFEST_VERSION,
+    updatedAt: new Date(0).toISOString(),
+    groups: [],
+    notes: [],
+    deletedNotes: [],
+  },
   shards: {},
   hiddenIds: [],
 }

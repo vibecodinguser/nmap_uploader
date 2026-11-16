@@ -17,6 +17,7 @@ import {
   type NoteHatch,
   type NoteIcon,
   type NoteStyle,
+  type NoteTombstone,
 } from '../types'
 import { NOTES_MANIFEST_VERSION, type NotesManifest } from './schema'
 
@@ -119,6 +120,22 @@ export const normalizeGroup = (value: unknown): NoteGroup | null => {
   }
 }
 
+const isIsoTimestamp = (value: unknown): value is string =>
+  typeof value === 'string' && value !== '' && !Number.isNaN(Date.parse(value))
+
+/**
+ * Надгробие из файла.
+ *
+ * Битое надгробие отбрасывается: без даты удаления его нельзя сравнить с
+ * правкой, и оно либо удаляло бы заметку навсегда, либо ничего не делало.
+ */
+export const normalizeTombstone = (value: unknown): NoteTombstone | null => {
+  if (!isRecord(value)) return null
+  if (typeof value.id !== 'string' || value.id === '') return null
+  if (!isIsoTimestamp(value.deletedAt)) return null
+  return { id: value.id, deletedAt: value.deletedAt }
+}
+
 /** Разбирает манифест с Диска. `null` — файл не похож на манифест вовсе. */
 export const parseManifest = (raw: unknown): NotesManifest | null => {
   if (!isRecord(raw)) return null
@@ -130,12 +147,19 @@ export const parseManifest = (raw: unknown): NotesManifest | null => {
   const groups = Array.isArray(raw.groups)
     ? raw.groups.map(normalizeGroup).filter((group): group is NoteGroup => group !== null)
     : []
+  // Файлы первой версии поля не имеют: это значит «ничего не удаляли».
+  const deletedNotes = Array.isArray(raw.deletedNotes)
+    ? raw.deletedNotes
+        .map(normalizeTombstone)
+        .filter((tombstone): tombstone is NoteTombstone => tombstone !== null)
+    : []
 
   return {
     version: isFiniteNumber(raw.version) ? raw.version : NOTES_MANIFEST_VERSION,
     updatedAt: typeof raw.updatedAt === 'string' ? raw.updatedAt : new Date(0).toISOString(),
     groups,
     notes,
+    deletedNotes,
   }
 }
 

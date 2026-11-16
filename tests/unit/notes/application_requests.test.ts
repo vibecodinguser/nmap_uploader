@@ -23,6 +23,7 @@ const manifest = (notes: Note[]): NotesManifest => ({
   updatedAt: '2026-11-14T10:00:00.000Z',
   groups: [],
   notes,
+  deletedNotes: [],
 })
 
 describe('разбор запросов заметок', () => {

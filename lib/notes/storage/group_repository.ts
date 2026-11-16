@@ -3,7 +3,7 @@ import { type GeometryShard, removeShardGeometry, shardIdForDate } from '../mode
 import type { NoteGroup } from '../model/types'
 import type { NotesPatch } from '../protocol'
 import { enqueueNotesWrite } from './write_queue'
-import { type NotesPorts, readShard, writeManifest, writeShard } from './writes'
+import { type NotesPorts, readShard, withTombstone, writeManifest, writeShard } from './writes'
 
 /**
  * Мутации групп.
@@ -27,6 +27,7 @@ const saveGroupNow = async ({
     updatedAt: stamped.updatedAt,
     groups: [stamped],
     notes: [],
+    deletedNotes: [],
   })
 
   return { manifest: await writeManifest(ports, manifest), shards: {} }
@@ -61,9 +62,19 @@ const deleteGroupNow = async ({
           note.groupId === groupId ? { ...note, groupId: null, updatedAt: timestamp } : note,
         )
 
+  // При каскаде удалённые заметки получают надгробия: иначе они вернулись бы
+  // с устройства, которое ещё не видело удаления группы.
+  const base =
+    mode === 'cascade'
+      ? doomed.reduce(
+          (manifest, note) => withTombstone(manifest, note.id, note.updatedAt),
+          remoteManifest,
+        )
+      : remoteManifest
+
   const manifest = await writeManifest(ports, {
-    ...remoteManifest,
-    notes,
+    ...base,
+    notes: mode === 'cascade' ? base.notes : notes,
     groups: remoteManifest.groups.filter((group) => group.id !== groupId),
   })
 
@@ -114,6 +125,7 @@ const moveNoteToGroupNow = async ({
     updatedAt: timestamp,
     groups: [],
     notes: [{ ...target, groupId: nextGroupId, updatedAt: timestamp }],
+    deletedNotes: [],
   })
 
   return { manifest: await writeManifest(ports, manifest), shards: {} }

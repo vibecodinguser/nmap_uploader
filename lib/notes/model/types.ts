@@ -68,6 +68,20 @@ export type NoteGroup = {
   updatedAt: string
 }
 
+/**
+ * Надгробие удалённой заметки.
+ *
+ * Удаление — это факт, который надо передать другим устройствам, а не только
+ * отсутствие записи: иначе устройство с более старой копией при слиянии
+ * вернуло бы заметку. Надгробие живёт в манифесте ограниченное время и
+ * вычищается, когда его уже нельзя не заметить.
+ */
+export type NoteTombstone = {
+  id: string
+  /** Когда заметку удалили. Позднее этой метки `updatedAt` означает «вернули». */
+  deletedAt: string
+}
+
 export const NOTE_KINDS: readonly NoteKind[] = ['Point', 'Line', 'Polygon', 'Square', 'Circle']
 
 export const isNoteKind = (value: unknown): value is NoteKind =>

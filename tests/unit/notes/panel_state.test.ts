@@ -21,6 +21,7 @@ const snapshot = (overrides: Partial<NotesSnapshot> = {}): NotesSnapshot => ({
     version: 1,
     updatedAt: '2026-11-14T10:00:00.000Z',
     groups: [],
+    deletedNotes: [],
     notes: [],
   },
   shards: {},
@@ -53,6 +54,7 @@ describe('редьюсер панели: снимок', () => {
           version: 1,
           updatedAt: 'x',
           groups: [],
+          deletedNotes: [],
           notes: [
             sampleNote({ id: 'n1', name: 'Локальная', updatedAt: '2026-11-14T12:00:00.000Z' }),
           ],
@@ -64,6 +66,7 @@ describe('редьюсер панели: снимок', () => {
         version: 1,
         updatedAt: 'x',
         groups: [],
+        deletedNotes: [],
         notes: [sampleNote({ id: 'n1', name: 'Серверная', updatedAt: '2026-11-14T11:00:00.000Z' })],
       },
     })
@@ -72,6 +75,68 @@ describe('редьюсер панели: снимок', () => {
 
     expect(selectNotes(state)[0]?.name).toBe('Локальная')
     expect(state.status).toBe('ready')
+  })
+
+  it('снимок с надгробием убирает заметку, удалённую на другом устройстве', () => {
+    // Панель на устройстве B держит заметку, устройство A её удалило.
+    const local = ready(
+      snapshot({
+        manifest: {
+          version: 1,
+          updatedAt: 'x',
+          groups: [],
+          notes: [sampleNote({ id: 'note-1', updatedAt: '2026-11-16T10:00:00.000Z' })],
+          deletedNotes: [],
+        },
+      }),
+    )
+    const incoming = snapshot({
+      manifest: {
+        version: 1,
+        updatedAt: 'x',
+        groups: [],
+        notes: [],
+        deletedNotes: [{ id: 'note-1', deletedAt: '2026-11-16T12:00:00.000Z' }],
+      },
+    })
+
+    const state = notesPanelReducer(local, { type: 'merged', snapshot: incoming })
+
+    expect(selectNotes(state)).toEqual([])
+    expect(state.snapshot?.manifest.deletedNotes.map((tombstone) => tombstone.id)).toEqual([
+      'note-1',
+    ])
+  })
+
+  it('снимок без надгробия не воскрешает локальную правку', () => {
+    const local = ready(
+      snapshot({
+        manifest: {
+          version: 1,
+          updatedAt: 'x',
+          groups: [],
+          notes: [
+            sampleNote({ id: 'note-1', name: 'Правка', updatedAt: '2026-11-16T13:00:00.000Z' }),
+          ],
+          deletedNotes: [],
+        },
+      }),
+    )
+    const incoming = snapshot({
+      manifest: {
+        version: 1,
+        updatedAt: 'x',
+        groups: [],
+        notes: [
+          sampleNote({ id: 'note-1', name: 'Старое', updatedAt: '2026-11-16T10:00:00.000Z' }),
+        ],
+        deletedNotes: [],
+      },
+    })
+
+    const state = notesPanelReducer(local, { type: 'merged', snapshot: incoming })
+
+    expect(selectNotes(state)[0]?.name).toBe('Правка')
   })
 
   it('очистка сбрасывает выбор и историю отмены', () => {
@@ -104,7 +169,13 @@ describe('редьюсер панели: снимок', () => {
       {
         type: 'patchApplied',
         patch: {
-          manifest: { version: 1, updatedAt: 'new', groups: [], notes: [sampleNote({ id: 'n1' })] },
+          manifest: {
+            version: 1,
+            updatedAt: 'new',
+            groups: [],
+            notes: [sampleNote({ id: 'n1' })],
+            deletedNotes: [],
+          },
           shards: { '2026-11': { version: 1, updatedAt: 'new', notes: { n1: point } } },
         },
       },
@@ -359,6 +430,7 @@ describe('редьюсер панели: отметки и массовые де
           version: 1,
           updatedAt: 'x',
           groups: [sampleGroup()],
+          deletedNotes: [],
           notes: [
             sampleNote({ id: 'a', name: 'Первая' }),
             sampleNote({ id: 'b', name: 'Вторая' }),
@@ -436,6 +508,7 @@ describe('редьюсер панели: отметки и массовые де
             version: 1,
             updatedAt: 'x',
             groups: [sampleGroup()],
+            deletedNotes: [],
             notes: [sampleNote({ id: 'a', groupId: 'group-1' }), sampleNote({ id: 'b' })],
           },
         }),
@@ -461,6 +534,7 @@ describe('селекторы панели', () => {
           version: 1,
           updatedAt: 'x',
           groups: [sampleGroup()],
+          deletedNotes: [],
           notes: [
             sampleNote({ id: 'n2', name: 'Яблоко', description: 'сад' }),
             sampleNote({ id: 'n1', name: 'Арбуз', description: '' }),

@@ -14,7 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { browser } from 'wxt/browser'
 import type { MessageHandler } from '@/lib/background/message_router'
 import type { RuntimeMessageSender } from '@/lib/message_auth'
-import type { NotesManifest } from '@/lib/notes/model/manifest'
+import { NOTES_MANIFEST_VERSION, type NotesManifest } from '@/lib/notes/model/manifest'
 import type { GeometryShard } from '@/lib/notes/model/shards'
 import type { Note } from '@/lib/notes/model/types'
 import type { NotesPatch } from '@/lib/notes/protocol'
@@ -154,10 +154,11 @@ const responsesOf = (sendResponse: ReturnType<typeof vi.fn>): Array<Record<strin
   sendResponse.mock.calls.map(([response]) => response as Record<string, unknown>)
 
 const manifestWith = (notes: Note[], groups: NotesManifest['groups'] = []): NotesManifest => ({
-  version: 1,
+  version: NOTES_MANIFEST_VERSION,
   updatedAt: '2026-11-14T10:00:00.000Z',
   groups,
   notes,
+  deletedNotes: [],
 })
 
 /** Порядок записи манифеста и шарда не гарантирован: файлы уходят параллельно. */

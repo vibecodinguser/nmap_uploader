@@ -106,6 +106,7 @@ beforeEach(() => {
     version: 1,
     updatedAt: '2026-11-16T10:00:00.000Z',
     groups: [],
+    deletedNotes: [],
     notes: [sampleNote({ id: 'note-1', name: 'Исходное', date: '16-11-2026' })],
   }
   store.shards.clear()

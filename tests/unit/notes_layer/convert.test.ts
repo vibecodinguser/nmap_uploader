@@ -10,6 +10,7 @@ const manifest = (notes: NotesManifest['notes']): NotesManifest => ({
   updatedAt: '2026-11-14T10:00:00.000Z',
   groups: [sampleGroup()],
   notes,
+  deletedNotes: [],
 })
 
 const shard = (notes: GeometryShard['notes']): GeometryShard => ({

@@ -23,7 +23,13 @@ import {
 import { resetBrowserMocks } from '@/tests/setup/browser_mock'
 
 const snapshot: NotesSnapshot = {
-  manifest: { version: 1, updatedAt: '2026-11-14T10:00:00.000Z', groups: [], notes: [] },
+  manifest: {
+    version: 1,
+    updatedAt: '2026-11-14T10:00:00.000Z',
+    groups: [],
+    notes: [],
+    deletedNotes: [],
+  },
   shards: {},
   hiddenIds: [],
 }
