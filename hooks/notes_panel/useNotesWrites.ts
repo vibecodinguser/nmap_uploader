@@ -10,7 +10,15 @@ import {
 import { NOTES_PANEL_PREVIEW_MESSAGE } from '@/lib/notes_panel/host'
 import type { NotesPanelStore } from './useNotesPanelState'
 
-const SAVE_DEBOUNCE_MS = 700
+/**
+ * Пауза перед записью на Диск.
+ *
+ * Таймер перезапускается на каждое изменение, поэтому при наборе текста или
+ * протяжке слайдера запись всё равно одна — сдвигается только её начало.
+ * Значение подобрано так, чтобы правка уходила на Диск заметно раньше, чем
+ * пользователь успевает усомниться, сохранилась ли она.
+ */
+const SAVE_DEBOUNCE_MS = 350
 export const UNDO_TIMEOUT_MS = 5000
 
 type PendingSave = { note: Note; geometry: NoteGeometry }

@@ -57,10 +57,18 @@ const mergeSnapshot = (incoming: NotesSnapshot, local: NotesSnapshot | null): No
   }
 }
 
-/** Наложение патча: манифест целиком, шарды — только затронутые. */
+/**
+ * Наложение патча ответа Диска.
+ *
+ * Манифест сливается по `updatedAt`, а не заменяется: ответ несёт состояние
+ * Диска на момент записи, а в панели к этому времени может быть более свежая
+ * правка — следующая порция набранного текста или правка другой заметки.
+ * Замена возвращала бы поле к предыдущему значению, пока не доедет следующий
+ * ответ: пользователь видел «прыжок назад и возврат».
+ */
 const withPatch = (snapshot: NotesSnapshot, patch: NotesPatch): NotesSnapshot => ({
   ...snapshot,
-  manifest: patch.manifest,
+  manifest: mergeManifests(patch.manifest, snapshot.manifest),
   shards: { ...snapshot.shards, ...patch.shards },
 })
 
