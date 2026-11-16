@@ -615,14 +615,14 @@ describe('скрытие', () => {
   })
 })
 
-describe('известные дефекты (characterization)', () => {
-  it('сбой рассылки даёт второй ответ ok:false после успешного ok:true', async () => {
+describe('надёжность рассылки', () => {
+  it('сбой рассылки не порождает второй ответ на успешную мутацию', async () => {
     await signIn()
     const { handleNotesSaveNote } = await loadHandlers()
     const realGet = browser.storage.local.get.bind(browser.storage.local)
 
-    // Рассылка снимка читает скрытые id и не ловит ошибку чтения: исключение
-    // улетает в общий catch обработчика мутации и порождает второй ответ.
+    // Рассылка читает скрытые id; ошибка чтения не должна превращать уже
+    // успешную запись в отказ — иначе панель откатила бы сохранённую заметку.
     vi.spyOn(browser.storage.local, 'get').mockImplementation((async (keys?: unknown) => {
       if (keys === HIDDEN_NOTE_IDS_STORAGE_KEY) {
         throw new Error('storage down')
@@ -640,9 +640,8 @@ describe('известные дефекты (characterization)', () => {
       panelSender(),
     )
 
-    await vi.waitFor(() => expect(sendResponse).toHaveBeenCalledTimes(2))
-    const responses = responsesOf(sendResponse)
-    expect(responses[0]).toMatchObject({ ok: true })
-    expect(responses[1]).toEqual({ ok: false, error: 'storage down' })
+    await vi.waitFor(() => expect(sendResponse).toHaveBeenCalledTimes(1))
+    expect(responsesOf(sendResponse)[0]).toMatchObject({ ok: true })
+    expect(store.writes).toContain('manifest')
   })
 })
