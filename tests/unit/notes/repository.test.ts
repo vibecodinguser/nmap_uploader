@@ -247,6 +247,73 @@ describe('loadRemoteSnapshot', () => {
   })
 })
 
+describe('правка атрибутов без изменения геометрии', () => {
+  const pointGeometry = { kind: 'Point' as const, coords: [37, 55] as [number, number] }
+
+  const seed = async (remote: ReturnType<typeof createMemoryRemote>) => {
+    await saveNote({
+      ports: ports(remote),
+      note: note({ id: 'note-1', name: 'Исходное', date: '14-11-2026' }),
+      geometry: pointGeometry,
+    })
+    remote.writes.length = 0
+  }
+
+  it('не переписывает шард, если координаты те же', async () => {
+    const remote = createMemoryRemote()
+    await seed(remote)
+
+    const result = await saveNote({
+      ports: ports(remote),
+      note: note({ id: 'note-1', name: 'Новое имя', date: '14-11-2026' }),
+      geometry: pointGeometry,
+    })
+
+    // Один запрос вместо двух: шард не изменился.
+    expect(remote.writes).toEqual(['manifest'])
+    expect(result.manifest.notes[0]?.name).toBe('Новое имя')
+    expect((remote.files.get('shard:2026-11') as GeometryShard).notes['note-1']).toEqual(
+      pointGeometry,
+    )
+  })
+
+  it('переписывает шард, если координаты сдвинулись', async () => {
+    const remote = createMemoryRemote()
+    await seed(remote)
+
+    await saveNote({
+      ports: ports(remote),
+      note: note({ id: 'note-1', name: 'Новое имя', date: '14-11-2026' }),
+      geometry: { kind: 'Point', coords: [38, 56] },
+    })
+
+    // Манифест и шард уходят параллельно: порядок записи не гарантирован.
+    expect([...remote.writes].sort()).toEqual(['manifest', 'shard:2026-11'])
+    expect((remote.files.get('shard:2026-11') as GeometryShard).notes['note-1']).toEqual({
+      kind: 'Point',
+      coords: [38, 56],
+    })
+  })
+
+  it('пишет шард, когда заметки в нём ещё нет', async () => {
+    const remote = createMemoryRemote()
+    remote.files.set('manifest', {
+      version: 1,
+      updatedAt: '2026-11-14T10:00:00.000Z',
+      groups: [],
+      notes: [],
+    })
+
+    await saveNote({
+      ports: ports(remote),
+      note: note({ id: 'note-1', date: '14-11-2026' }),
+      geometry: pointGeometry,
+    })
+
+    expect(remote.writes).toContain('shard:2026-11')
+  })
+})
+
 describe('запись проигравшей версии', () => {
   it('не пишет геометрию, если на Диске уже есть более свежая версия заметки', async () => {
     const remote = createMemoryRemote()

@@ -5,7 +5,7 @@ import { applyPatch, currentSnapshot, rememberSnapshot } from '@/lib/notes/appli
 import type { Parsed } from '@/lib/notes/application/requests'
 import type { NotesPatch } from '@/lib/notes/protocol'
 import type { NotesPorts } from '@/lib/notes/storage/repository'
-import { broadcastSnapshot, createPorts, guard } from './guard'
+import { broadcastSnapshot, createPorts, forgetNotesReads, guard } from './guard'
 
 /**
  * Обработчик мутации: проверить отправителя, разобрать запрос, применить
@@ -47,6 +47,9 @@ export const mutationHandler = <T>({
         sendResponse({ ok: true, patch })
         await broadcastSnapshot(data)
       } catch (error: unknown) {
+        // После ошибки нельзя быть уверенным, что кэш совпадает с Диском:
+        // часть запросов могла пройти, часть — нет.
+        forgetNotesReads()
         sendResponse({ ok: false, error: getErrorMessage(error, 'STORAGE_ERROR') })
       }
     })()

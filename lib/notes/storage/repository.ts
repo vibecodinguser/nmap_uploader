@@ -23,6 +23,18 @@ const shardIdsOf = (manifest: NotesManifest): string[] => {
 const isValidTimestamp = (value: unknown): value is string =>
   typeof value === 'string' && !Number.isNaN(Date.parse(value))
 
+/**
+ * Совпадает ли геометрия с уже сохранённой.
+ *
+ * Сравнивается сериализованный вид: геометрия — небольшой неизменяемый объект
+ * (координаты либо углы), и порядок ключей в ней всегда одинаков, потому что
+ * она собирается одними и теми же функциями.
+ */
+const isSameGeometry = (stored: NoteGeometry | undefined, next: NoteGeometry): boolean => {
+  if (!stored) return false
+  return JSON.stringify(stored) === JSON.stringify(next)
+}
+
 /** Снимок из кэша: панель может открыться до ответа Диска. */
 export const loadCachedSnapshot = async (ports: NotesPorts): Promise<NotesData | null> => {
   const manifest = await ports.cache.readManifest()
@@ -124,8 +136,11 @@ const saveNoteNow = async ({
   if (nextShardId) {
     const base = prefetchedShard ?? (await readShard(ports, nextShardId))
     const nextShard = setShardGeometry(base, stamped.id, geometry)
-    shards[nextShardId] = nextShard
-    shardWrites.push(writeShard(ports, nextShardId, nextShard))
+    // Правка названия, цвета или прозрачности не меняет геометрию: переписывать
+    // шард незачем. Экономит один запрос из четырёх на самое частое действие.
+    const unchanged = isSameGeometry(base.notes[stamped.id], geometry)
+    shards[nextShardId] = unchanged ? base : nextShard
+    if (!unchanged) shardWrites.push(writeShard(ports, nextShardId, nextShard))
   }
 
   // Манифест и шарды — разные файлы, их можно отправить одновременно.

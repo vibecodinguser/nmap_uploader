@@ -11,6 +11,7 @@ import { withHiddenIds } from '@/lib/notes/application/load'
 import type { NotesData } from '@/lib/notes/protocol'
 import { NOTES_RENDER_ACTION, NOTES_SNAPSHOT_ACTION } from '@/lib/notes/protocol'
 import { createIndexedDbNotesCache } from '@/lib/notes/storage/cache'
+import { createCachingNotesRemote } from '@/lib/notes/storage/caching_remote'
 import { readHiddenNoteIds } from '@/lib/notes/storage/hidden_ids'
 import { createDiskNotesRemote } from '@/lib/notes/storage/remote'
 import type { NotesPorts } from '@/lib/notes/storage/repository'
@@ -24,13 +25,38 @@ import { getStoredAuth } from '@/lib/yandex/client'
  * `lib/notes/**` и тестируются без `chrome.*`.
  */
 
+/**
+ * Порты и кэш чтений для текущего аккаунта.
+ *
+ * Кэш живёт между сообщениями: серия правок идёт без повторных чтений
+ * манифеста и шарда. Смена аккаунта означает другой диск — кэш прошлого
+ * пользователя не должен попасть в новый.
+ */
+let session: { token: string; invalidate: () => void; ports: NotesPorts } | null = null
+
 export const createPorts = async (): Promise<NotesPorts | null> => {
   const auth = await getStoredAuth()
-  if (!auth) return null
-  return {
-    remote: createDiskNotesRemote({ token: auth.token }),
-    cache: createIndexedDbNotesCache(),
+  if (!auth) {
+    session = null
+    return null
   }
+  if (session?.token === auth.token) return session.ports
+
+  const remote = createCachingNotesRemote(createDiskNotesRemote({ token: auth.token }))
+  const ports: NotesPorts = { remote, cache: createIndexedDbNotesCache() }
+  session = { token: auth.token, invalidate: remote.invalidate, ports }
+  return ports
+}
+
+/**
+ * Сброс кэша чтений.
+ *
+ * Нужен там, где смысл обращения — именно свежесть: явная загрузка снимка
+ * панелью и любая ошибка записи (после неё непонятно, совпадает ли кэш с
+ * Диском, поэтому прочитанное забывается).
+ */
+export const forgetNotesReads = (): void => {
+  session?.invalidate()
 }
 
 /**

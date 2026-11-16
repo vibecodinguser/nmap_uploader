@@ -4,7 +4,7 @@ import { getErrorMessage } from '@/lib/errors'
 import { planNotesLoad, rememberSnapshot, withHiddenIds } from '@/lib/notes/application/load'
 import { NOTES_LOAD_ACTION } from '@/lib/notes/protocol'
 import { readHiddenNoteIds } from '@/lib/notes/storage/hidden_ids'
-import { broadcastSnapshot, createPorts, guard } from './guard'
+import { broadcastSnapshot, createPorts, forgetNotesReads, guard } from './guard'
 
 /**
  * Загрузка снимка: кэш отвечает сразу, Диск — широковещательно.
@@ -25,6 +25,9 @@ export const handleNotesLoad: MessageHandler = guard(
         return
       }
 
+      // Явная загрузка означает «покажи, что сейчас на Диске»: прочитанное
+      // для прошлых правок больше не годится как источник истины.
+      forgetNotesReads()
       const plan = await planNotesLoad(ports)
       if (plan.cached) {
         sendResponse({ ok: true, snapshot: await withHiddenIds(plan.cached, readHiddenNoteIds) })
