@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { DeleteGroupDialog } from '@/components/notes_panel/DeleteGroupDialog'
+import { FilterBar } from '@/components/notes_panel/FilterBar'
 import { NoteList } from '@/components/notes_panel/NoteList'
 import { NoteProperties } from '@/components/notes_panel/NoteProperties'
 import { PanelHeader, type PanelLayout } from '@/components/notes_panel/PanelHeader'
@@ -62,6 +63,15 @@ export const NotesPanelApp = () => {
           onRetry={() => panel.loadNotes()}
         />
 
+        {panel.status === 'ready' && panel.mode === 'list' && (
+          <FilterBar
+            filter={panel.filters}
+            groups={panel.groups}
+            onChange={panel.setFilters}
+            onReset={panel.resetFilters}
+          />
+        )}
+
         {panel.status === 'ready' && panel.drawingKind && (
           <div className="notes-panel__hint notes-panel__hint--draw">
             <span>
@@ -101,7 +111,7 @@ export const NotesPanelApp = () => {
           panel.mode === 'list' &&
           (panel.notes.length === 0 ? (
             <div className="notes-panel__empty">
-              {panel.query ? t('notesPanel.emptySearch') : t('notesPanel.empty')}
+              {panel.hasNarrowing ? t('notesPanel.emptySearch') : t('notesPanel.empty')}
             </div>
           ) : (
             <NoteList

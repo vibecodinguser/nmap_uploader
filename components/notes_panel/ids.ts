@@ -27,6 +27,16 @@ export const NOTES_PANEL_BUTTON_IDS = {
   groupColor: 'nmapUploaderNotesPanelBtnGroupColor',
   /** Выбор группы в свойствах заметки. */
   noteGroup: 'nmapUploaderNotesPanelSelectGroup',
+  /** Фильтр по виду фигуры. К нему добавляется вид: `...Kind-Point`. */
+  filterKind: 'nmapUploaderNotesPanelBtnFilterKind',
+  /** Сброс всех фильтров списка. */
+  filterReset: 'nmapUploaderNotesPanelBtnFilterReset',
+  /** Выбор группы для фильтра списка. */
+  filterGroup: 'nmapUploaderNotesPanelSelectFilterGroup',
+  /** Фильтр по видимости. */
+  filterVisibility: 'nmapUploaderNotesPanelSelectFilterVisibility',
+  /** Порядок списка. */
+  filterSort: 'nmapUploaderNotesPanelSelectFilterSort',
 } as const
 
 /**

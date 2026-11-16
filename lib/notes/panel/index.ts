@@ -1,5 +1,6 @@
 export * from './edits'
 export * from './empty'
+export * from './filters'
 export * from './labels'
 export * from './reducer'
 export * from './rows'

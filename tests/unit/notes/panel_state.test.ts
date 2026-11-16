@@ -5,6 +5,7 @@ import {
   selectFilteredNotes,
   selectGeometries,
   selectGeometry,
+  selectHasNarrowing,
   selectHiddenIds,
   selectNotes,
   selectSelectedNote,
@@ -299,6 +300,54 @@ describe('редьюсер панели: режимы и мелочи', () => {
     })
 
     expect(state.snapshot).toBeNull()
+  })
+})
+
+describe('редьюсер панели: фильтры', () => {
+  it('частичный патч меняет только переданные поля', () => {
+    const state = notesPanelReducer(initialNotesPanelState, {
+      type: 'filtersChanged',
+      filters: { kinds: ['Line'] },
+    })
+
+    expect(state.filters.kinds).toEqual(['Line'])
+    expect(state.filters.sort).toBe('name')
+    expect(state.filters.visibility).toBe('all')
+  })
+
+  it('сортировка не считается фильтром', () => {
+    const state = notesPanelReducer(initialNotesPanelState, {
+      type: 'filtersChanged',
+      filters: { sort: 'dateDesc' },
+    })
+
+    expect(selectHasNarrowing(state)).toBe(false)
+  })
+
+  it('фильтр по виду считается сужением списка', () => {
+    const state = notesPanelReducer(initialNotesPanelState, {
+      type: 'filtersChanged',
+      filters: { kinds: ['Point'] },
+    })
+
+    expect(selectHasNarrowing(state)).toBe(true)
+  })
+
+  it('загрузка снимка фильтры не сбрасывает', () => {
+    const filtered = notesPanelReducer(initialNotesPanelState, {
+      type: 'filtersChanged',
+      filters: { kinds: ['Line'], sort: 'date' },
+    })
+    const loaded = notesPanelReducer(filtered, {
+      type: 'loaded',
+      snapshot: snapshot(),
+    })
+
+    expect(loaded.filters).toEqual({
+      ...initialNotesPanelState.filters,
+      kinds: ['Line'],
+      sort: 'date',
+    })
   })
 })
 

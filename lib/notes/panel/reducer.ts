@@ -2,6 +2,7 @@ import { mergeManifests } from '../model/manifest'
 import type { Note, NoteGeometry, NoteGroup, NoteKind } from '../model/types'
 import type { NotesPatch, NotesSnapshot } from '../protocol'
 import { replaceNote, withGroup, withNote, withNoteGroup, withoutGroup, withoutNote } from './edits'
+import type { NotesFilter } from './filters'
 import type {
   GroupDeleteMode,
   NotesPanelMode,
@@ -25,6 +26,7 @@ export type NotesPanelAction =
   | { type: 'modeChanged'; mode: NotesPanelMode }
   | { type: 'noteSelected'; noteId: string | null }
   | { type: 'queryChanged'; query: string }
+  | { type: 'filtersChanged'; filters: Partial<NotesFilter> }
   | { type: 'noteAdded'; note: Note; geometry: NoteGeometry }
   | { type: 'notePatched'; note: Note }
   | { type: 'noteRemoved'; noteId: string }
@@ -105,6 +107,9 @@ export const notesPanelReducer = (
 
     case 'queryChanged':
       return { ...state, query: action.query }
+
+    case 'filtersChanged':
+      return { ...state, filters: { ...state.filters, ...action.filters } }
 
     case 'noteAdded':
       return state.snapshot

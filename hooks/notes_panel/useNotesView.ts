@@ -4,12 +4,14 @@ import { geometryAnchor, geometryBounds, zoomForBounds } from '@/lib/notes/model
 import { type GroupVisibility, groupVisibility } from '@/lib/notes/model/grouping'
 import type { NoteGeometry } from '@/lib/notes/model/types'
 import { setNotesHidden, toggleHiddenNoteId } from '@/lib/notes/model/visibility'
+import { DEFAULT_NOTES_FILTER, type NotesFilter } from '@/lib/notes/panel/filters'
 import { collapseKey } from '@/lib/notes/panel/rows'
 import {
   selectFilteredNotes,
   selectGeometries,
   selectGeometry,
   selectGroups,
+  selectHasNarrowing,
   selectHiddenIds,
   selectSelectedNote,
 } from '@/lib/notes/panel/selectors'
@@ -112,6 +114,9 @@ export const useNotesView = ({ state, dispatch }: NotesPanelStore) => {
     selectedNote,
     selectedId: state.selectedId,
     query: state.query,
+    filters: state.filters,
+    /** Есть ли поиск или фильтры: по этому отличают «пусто» от «не найдено». */
+    hasNarrowing: selectHasNarrowing(state),
     mode: state.mode,
     collapsedGroupIds: state.collapsedGroupIds,
     geometryOf,
@@ -122,6 +127,8 @@ export const useNotesView = ({ state, dispatch }: NotesPanelStore) => {
     toggleGroupCollapsed,
     groupVisibility,
     setQuery: (query: string) => dispatch({ type: 'queryChanged', query }),
+    setFilters: (filters: Partial<NotesFilter>) => dispatch({ type: 'filtersChanged', filters }),
+    resetFilters: () => dispatch({ type: 'filtersChanged', filters: DEFAULT_NOTES_FILTER }),
     setMode: (mode: typeof state.mode) => dispatch({ type: 'modeChanged', mode }),
   }
 }

@@ -55,6 +55,84 @@ body {
   outline-offset: 1px;
 }
 
+/* Подпись, нужная только скринридеру. */
+.notes-panel__visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+/*
+ * Фильтры списка: ряд кнопок видов и три селекта. Держим их тонкими и в одну
+ * строку с переносом — панель по умолчанию занимает четверть экрана.
+ */
+.notes-panel__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border, #e6e6e6);
+}
+
+.notes-panel__filter-kinds {
+  display: flex;
+  gap: 2px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.notes-panel__filter-kind {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: var(--muted-foreground, #6b6b6b);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.notes-panel__filter-kind:hover {
+  color: var(--foreground, #1f1f1f);
+  background: var(--muted, rgb(0 0 0 / 6%));
+}
+
+.notes-panel__filter-kind:focus-visible {
+  outline: 2px solid var(--foreground, #1f1f1f);
+  outline-offset: 1px;
+}
+
+.notes-panel__filter-kind[data-active='true'] {
+  color: var(--foreground, #1f1f1f);
+  background: var(--muted, rgb(0 0 0 / 8%));
+  border-color: var(--foreground, #1f1f1f);
+}
+
+.notes-panel__filter-select {
+  max-width: 168px;
+  padding: 3px 6px;
+  font: inherit;
+  font-size: 12px;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--border, #e6e6e6);
+  border-radius: 5px;
+}
+
+.notes-panel__filter-select:focus-visible {
+  outline: 2px solid var(--foreground, #1f1f1f);
+  outline-offset: 1px;
+}
+
 .notes-panel__head-actions {
   display: flex;
   align-items: center;

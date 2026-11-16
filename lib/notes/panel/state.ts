@@ -1,5 +1,6 @@
 import type { Note, NoteGeometry, NoteKind } from '../model/types'
 import type { NotesSnapshot } from '../protocol'
+import { DEFAULT_NOTES_FILTER, type NotesFilter } from './filters'
 
 /**
  * Состояние панели заметок.
@@ -23,6 +24,8 @@ export type NotesPanelState = {
   mode: NotesPanelMode
   selectedId: string | null
   query: string
+  /** Виды, группа, видимость и порядок списка. */
+  filters: NotesFilter
   drawingKind: NoteKind | null
   undo: UndoEntry | null
   /** Ключи свёрнутых групп: id группы или `''` для корня. */
@@ -36,6 +39,7 @@ export const initialNotesPanelState: NotesPanelState = {
   mode: 'list',
   selectedId: null,
   query: '',
+  filters: DEFAULT_NOTES_FILTER,
   drawingKind: null,
   undo: null,
   collapsedGroupIds: [],

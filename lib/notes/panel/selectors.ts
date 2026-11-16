@@ -1,4 +1,5 @@
 import type { Note, NoteGeometry, NoteGroup } from '../model/types'
+import { filterNotes, hasActiveFilters } from './filters'
 import type { NotesPanelState } from './state'
 
 /**
@@ -29,23 +30,23 @@ export const selectGeometry = (
   noteId: string,
 ): NoteGeometry | null => geometries[noteId] ?? null
 
-/**
- * Заметки для списка: поиск по названию и описанию, порядок по имени.
- *
- * Сортировка по-русски захардкожена: заметки создаются с русскими автоименами,
- * и `localeCompare` без локали даёт непредсказуемый порядок на «Ё».
- */
-export const selectFilteredNotes = (state: NotesPanelState): Note[] => {
-  const needle = state.query.trim().toLowerCase()
-  const list = [...selectNotes(state)].sort((left, right) =>
-    left.name.localeCompare(right.name, 'ru'),
-  )
-  if (!needle) return list
-  return list.filter(
-    (note) =>
-      note.name.toLowerCase().includes(needle) || note.description.toLowerCase().includes(needle),
-  )
-}
+/** Заметки для списка: поиск, фильтры по виду/группе/видимости и сортировка. */
+export const selectFilteredNotes = (state: NotesPanelState): Note[] =>
+  filterNotes({
+    notes: selectNotes(state),
+    groups: selectGroups(state),
+    hiddenIds: selectHiddenIds(state),
+    query: state.query,
+    filter: state.filters,
+  })
+
+/** Есть ли чем сузить список: по этому отличают «пусто» от «ничего не найдено». */
+export const selectHasNarrowing = (state: NotesPanelState): boolean =>
+  state.query.trim() !== '' || hasActiveFilters(state.filters)
+
+/** Сколько заметок скрыто фильтрами и поиском — для подписи под панелью. */
+export const selectHiddenByFilters = (state: NotesPanelState): number =>
+  selectNotes(state).length - selectFilteredNotes(state).length
 
 export const selectSelectedNote = (state: NotesPanelState): Note | null =>
   selectNotes(state).find((note) => note.id === state.selectedId) ?? null

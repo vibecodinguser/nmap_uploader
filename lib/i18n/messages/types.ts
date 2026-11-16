@@ -229,6 +229,19 @@ export type Messages = {
     groupColor: string
     icon: string
     iconNone: string
+    filterKind: string
+    filterGroup: string
+    filterAllGroups: string
+    filterVisibility: string
+    filterVisibilityAll: string
+    filterVisible: string
+    filterHidden: string
+    filterReset: string
+    sort: string
+    sortName: string
+    sortNameDesc: string
+    sortDate: string
+    sortDateDesc: string
   }
   mapPointCounter: {
     points: string
