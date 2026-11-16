@@ -3,6 +3,7 @@ import { useLocale } from '@/hooks/useLocale'
 import type { NoteGeometry } from '@/lib/notes/model/types'
 import { withNote, withoutNote } from '@/lib/notes/panel/edits'
 import { selectGeometries } from '@/lib/notes/panel/selectors'
+import type { UndoEntry } from '@/lib/notes/panel/state'
 import { NOTES_DELETE_NOTE_ACTION, NOTES_SAVE_NOTE_ACTION } from '@/lib/notes/protocol'
 import type { NotesPanelStore } from './useNotesPanelState'
 import { type NotesWrites, UNDO_TIMEOUT_MS } from './useNotesWrites'
@@ -25,6 +26,34 @@ export const useNoteRemoval = (
     latest.current = state
   }, [state])
 
+  /**
+   * Таймер тоста «Отменить».
+   *
+   * Один на панель и всегда свой у последнего удаления: иначе таймер первого
+   * удаления гасил бы тост второго, и отменить его было бы нельзя.
+   */
+  const undoTimer = useRef<number | null>(null)
+
+  const clearUndoTimer = useCallback(() => {
+    if (undoTimer.current === null) return
+    window.clearTimeout(undoTimer.current)
+    undoTimer.current = null
+  }, [])
+
+  useEffect(() => clearUndoTimer, [clearUndoTimer])
+
+  const showUndo = useCallback(
+    (entry: UndoEntry) => {
+      clearUndoTimer()
+      dispatch({ type: 'undoSet', entry })
+      undoTimer.current = window.setTimeout(() => {
+        undoTimer.current = null
+        dispatch({ type: 'undoCleared' })
+      }, UNDO_TIMEOUT_MS)
+    },
+    [clearUndoTimer, dispatch],
+  )
+
   const removeNote = useCallback(
     (noteId: string) => {
       const note = (state.snapshot?.manifest.notes ?? []).find((item) => item.id === noteId)
@@ -39,8 +68,7 @@ export const useNoteRemoval = (
       // Если запись не пройдёт, заметка вернётся на место с сообщением об ошибке.
       dispatch({ type: 'noteRemoved', noteId })
       postPreview(withoutNote(state.snapshot, noteId))
-      dispatch({ type: 'undoSet', entry: { note, geometry } })
-      window.setTimeout(() => dispatch({ type: 'undoCleared' }), UNDO_TIMEOUT_MS)
+      showUndo({ note, geometry })
 
       enqueueSaveMessage(
         { action: NOTES_DELETE_NOTE_ACTION, noteId, date: note.date },
@@ -52,13 +80,24 @@ export const useNoteRemoval = (
           onError: () => {
             const current = latest.current.snapshot
             if (current) postPreview(withNote(current, note, geometry))
+            clearUndoTimer()
             dispatch({ type: 'noteRestored', entry: { note, geometry } })
             dispatch({ type: 'errorChanged', error: t('notesPanel.saveError') })
           },
         },
       )
     },
-    [cancelPending, dispatch, enqueueSaveMessage, geometries, postPreview, state.snapshot, t],
+    [
+      cancelPending,
+      clearUndoTimer,
+      dispatch,
+      enqueueSaveMessage,
+      geometries,
+      postPreview,
+      showUndo,
+      state.snapshot,
+      t,
+    ],
   )
 
   const undoRemove = useCallback(() => {
@@ -66,6 +105,7 @@ export const useNoteRemoval = (
     if (!undo || !state.snapshot) return
     const { note, geometry }: { note: typeof undo.note; geometry: NoteGeometry } = undo
 
+    clearUndoTimer()
     dispatch({ type: 'noteRestored', entry: undo })
     postPreview(withNote(state.snapshot, note, geometry))
 
@@ -83,7 +123,7 @@ export const useNoteRemoval = (
         },
       },
     )
-  }, [dispatch, enqueueSaveMessage, postPreview, state.snapshot, state.undo, t])
+  }, [clearUndoTimer, dispatch, enqueueSaveMessage, postPreview, state.snapshot, state.undo, t])
 
   return { removeNote, undoRemove }
 }
