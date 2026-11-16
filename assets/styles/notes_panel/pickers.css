@@ -1,0 +1,56 @@
+/*
+ * Выбор узора штриховки.
+ */
+
+/* Штриховка: узор, цвет и толщина линий. */
+.notes-panel__hatch {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--border, #e6e6e6);
+  border-radius: 8px;
+}
+
+.notes-panel__hatch-patterns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/*
+ * Плитка узора: светлое поле и тёмные линии в светлой теме, наоборот — в
+ * тёмной. Узор рисуется `currentColor`, поэтому цвет линий задаётся здесь.
+ */
+.notes-panel__hatch-pattern {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: 2px solid var(--border, #e6e6e6);
+  border-radius: 8px;
+  background: var(--background, #ffffff);
+  color: var(--foreground, #1f1f1f);
+  cursor: pointer;
+}
+
+.notes-panel__hatch-pattern:hover {
+  border-color: var(--muted-foreground, #6b6b6b);
+}
+
+.notes-panel__hatch-pattern[data-active='true'] {
+  border-color: #ffdb4d;
+  box-shadow: 0 0 0 1px #ffdb4d inset;
+}
+
+.notes-panel__hatch-pattern:focus-visible {
+  outline: 2px solid #ffdb4d;
+  outline-offset: 1px;
+}
+
+.notes-panel__hatch-preview {
+  display: block;
+  border-radius: 4px;
+}
+

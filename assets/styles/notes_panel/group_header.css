@@ -1,0 +1,118 @@
+/*
+ * Заголовки групп в списке.
+ */
+
+/* Группы в списке заметок. */
+.notes-panel__group {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px 0 4px;
+  border-top: 1px solid var(--border, #e6e6e6);
+  background: color-mix(in srgb, var(--foreground, #1f1f1f) 4%, transparent);
+  box-sizing: border-box;
+}
+
+.notes-panel__group-toggle {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.notes-panel__group-toggle:focus-visible {
+  outline: 2px solid #ffdb4d;
+  outline-offset: -2px;
+}
+
+.notes-panel__group-chevron {
+  flex: 0 0 auto;
+  color: var(--muted-foreground, #6b6b6b);
+  transition: transform 0.15s ease;
+}
+
+.notes-panel__group-chevron[data-collapsed='true'] {
+  transform: rotate(-90deg);
+}
+
+.notes-panel__group-dot {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.notes-panel__group-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notes-panel__group-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 2px 6px;
+  border: 1px solid #ffdb4d;
+  border-radius: 4px;
+  background: var(--background, #ffffff);
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+}
+
+.notes-panel__group-count {
+  flex: 0 0 auto;
+  color: var(--muted-foreground, #6b6b6b);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.notes-panel__group-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 2px;
+}
+
+.notes-panel__group-color {
+  position: relative;
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border, #e6e6e6);
+  border-radius: 50%;
+  background: conic-gradient(#ff8c42, #ffdb4d, #5aa845, #1a8cff, #8a5cd6, #ff8c42);
+  cursor: pointer;
+}
+
+.notes-panel__group-color input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Частично скрытая группа: глаз приглушён, но не перечёркнут. */
+.notes-panel__row-action .nk-icon[data-mixed='true'] {
+  opacity: 0.45;
+}
+
+/* Заголовок группы принимает перетаскиваемую заметку. */
+.notes-panel__group[data-drop-hover='true'] {
+  outline: 2px dashed #ffdb4d;
+  outline-offset: -2px;
+}
+

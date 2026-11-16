@@ -1,0 +1,144 @@
+/*
+ * Список заметок: виртуализированные строки и их действия.
+ */
+
+.notes-panel__list {
+  height: 100%;
+  overflow-y: auto;
+}
+
+.notes-panel__list-inner {
+  position: relative;
+}
+
+/*
+ * Обёртка строки задаёт место в виртуализированном списке: у заголовка группы
+ * и у заметки разная высота, поэтому смещение считает раскладка, а не CSS.
+ */
+.notes-panel__list-row {
+  position: absolute;
+  right: 0;
+  left: 0;
+}
+
+.notes-panel__row {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  gap: 4px;
+  padding-right: 8px;
+  box-sizing: border-box;
+}
+
+/* Заметку тащат в группу: подсвечиваем её как приподнятую. */
+.notes-panel__row[draggable='true'] {
+  cursor: grab;
+}
+
+.notes-panel__row[draggable='true']:active {
+  cursor: grabbing;
+}
+
+.notes-panel__row[data-dragging='true'] {
+  opacity: 0.5;
+}
+
+.notes-panel__row:hover {
+  background: color-mix(in srgb, var(--foreground, #1f1f1f) 6%, transparent);
+}
+
+.notes-panel__row[data-selected='true'] {
+  background: color-mix(in srgb, #ffdb4d 30%, transparent);
+}
+
+.notes-panel__row-main {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  height: 100%;
+  padding: 0 4px 0 12px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.notes-panel__row-main:focus-visible {
+  outline: 2px solid #ffdb4d;
+  outline-offset: -2px;
+}
+
+.notes-panel__row-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: #6b6b6b;
+}
+
+.notes-panel__row-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.notes-panel__row-name {
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notes-panel__row[data-hidden='true'] .notes-panel__row-text {
+  opacity: 0.45;
+}
+
+.notes-panel__row-meta {
+  color: var(--muted-foreground, #6b6b6b);
+  font-size: 11px;
+}
+
+.notes-panel__row-action {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.notes-panel__row-action:hover {
+  background: color-mix(in srgb, var(--foreground, #1f1f1f) 8%, transparent);
+}
+
+.notes-panel__row-action:focus-visible {
+  outline: 2px solid #ffdb4d;
+  outline-offset: -2px;
+}
+
+.notes-panel__row-action--danger:hover {
+  color: #e00000;
+}
+
+/* Иконки строки: размер задаёт панель, классы nk-icon нужны для совместимости. */
+.notes-panel__row-action .nk-icon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+}
+
+.notes-panel__row-action svg {
+  width: 16px;
+  height: 16px;
+}
+
