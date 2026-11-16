@@ -7,8 +7,7 @@
  * протяжки получается именно фигура, а не вырожденный контур.
  */
 import { describe, expect, it } from 'vitest'
-import { geometryFromDrawCoords } from '@/hooks/useNotesPanel'
-import { geometryBounds } from '@/lib/notes/model/geometry'
+import { geometryBounds, geometryFromDrawCoords } from '@/lib/notes/model/geometry'
 
 describe('geometryFromDrawCoords: точка, линия, многоугольник', () => {
   it('точка берёт первую координату', () => {

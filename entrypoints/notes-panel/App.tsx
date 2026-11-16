@@ -8,14 +8,13 @@ import { useLocale } from '@/hooks/useLocale'
 import { useNotesPanel } from '@/hooks/useNotesPanel'
 import { buildAutoNoteName } from '@/lib/notes/model/autonames'
 import type { Note } from '@/lib/notes/model/types'
+import { kindLabelKey } from '@/lib/notes/panel/labels'
 import type { DrawableNoteKind } from '@/lib/notes/protocol'
 import {
   NOTES_PANEL_CLOSE_MESSAGE,
   NOTES_PANEL_LAYOUT_MESSAGE,
   NOTES_PANEL_STATE_MESSAGE,
 } from '@/lib/notes_panel/host'
-
-const kindLabelKey = (kind: Note['kind']) => `notesPanel.kind${kind}` as const
 
 /** Квадрат и круг рисуются протяжкой, остальные — кликами по вершинам. */
 const isDragShape = (kind: DrawableNoteKind): boolean => kind === 'Square' || kind === 'Circle'
