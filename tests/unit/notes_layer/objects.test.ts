@@ -173,3 +173,143 @@ describe('renderNotes', () => {
     expect(rendered).toEqual([])
   })
 })
+
+describe('иконка заметки', () => {
+  it('встроенная иконка заменяет кружок у точки', () => {
+    const [point] = renderNote({
+      note: note({
+        icon: { kind: 'builtin', value: 'flag' },
+        style: { ...createDefaultStyle('Point'), color: '#e96b7c' },
+      }),
+      geometry: { kind: 'Point', coords: [37, 55] },
+      group: null,
+      selected: false,
+    })
+
+    const href = decodeURIComponent(String(point.options.iconImageHref))
+    expect(href).toContain('stroke="#e96b7c"')
+    // Кружок рисуется другим сборщиком: в иконке нет заливки круга.
+    expect(href).not.toContain('fill="#ffffff" fill-opacity="0.9"')
+  })
+
+  it('без иконки точка остаётся кружком', () => {
+    const [point] = renderNote({
+      note: note(),
+      geometry: { kind: 'Point', coords: [37, 55] },
+      group: null,
+      selected: false,
+    })
+
+    expect(String(point.options.iconImageHref)).toContain('%23ffffff')
+  })
+
+  it('у линии иконка стоит в центре отдельным объектом', () => {
+    const rendered = renderNote({
+      note: note({ id: 'line-1', kind: 'Line', icon: { kind: 'builtin', value: 'route' } }),
+      geometry: {
+        kind: 'Line',
+        coords: [
+          [37, 55],
+          [38, 56],
+        ],
+      },
+      group: null,
+      selected: false,
+    })
+
+    const icon = rendered.find((item) => item.kind === 'icon')
+    expect(icon).toBeDefined()
+    expect(icon?.coordinates).toEqual([37.5, 55.5])
+    // Линия рисуется как прежде: иконка заметки её не заменяет.
+    expect(rendered.some((item) => item.kind === 'line')).toBe(true)
+  })
+
+  it('у полигона иконка стоит в центре и не мешает заливке', () => {
+    const rendered = renderNote({
+      note: note({
+        id: 'poly-1',
+        kind: 'Polygon',
+        icon: { kind: 'builtin', value: 'trees' },
+        style: { ...createDefaultStyle('Polygon'), color: '#5aa845', fillColor: '#5aa845' },
+      }),
+      geometry: {
+        kind: 'Polygon',
+        coords: [
+          [37, 55],
+          [38, 55],
+          [38, 56],
+          [37, 56],
+          [37, 55],
+        ],
+      },
+      group: null,
+      selected: false,
+    })
+
+    const polygon = rendered.find((item) => item.kind === 'polygon')
+    const icon = rendered.find((item) => item.kind === 'icon')
+
+    expect(icon).toBeDefined()
+    expect(polygon?.options.fillImageHref).toBeUndefined()
+    expect(String(polygon?.options.fillColor)).toContain('rgba(90, 168, 69')
+  })
+
+  it('без иконки у линии и полигона объекта иконки нет', () => {
+    const rendered = renderNote({
+      note: note({ id: 'line-1', kind: 'Line' }),
+      geometry: {
+        kind: 'Line',
+        coords: [
+          [37, 55],
+          [38, 56],
+        ],
+      },
+      group: null,
+      selected: false,
+    })
+
+    expect(rendered.some((item) => item.kind === 'icon')).toBe(false)
+  })
+
+  it('неизвестный id встроенной иконки не рисуется', () => {
+    const rendered = renderNote({
+      note: note({ id: 'line-1', kind: 'Line', icon: { kind: 'builtin', value: 'no-such' } }),
+      geometry: {
+        kind: 'Line',
+        coords: [
+          [37, 55],
+          [38, 56],
+        ],
+      },
+      group: null,
+      selected: false,
+    })
+
+    expect(rendered.some((item) => item.kind === 'icon')).toBe(false)
+  })
+
+  it('файловая иконка берётся из iconUrls и работает у любой фигуры', () => {
+    const rendered = renderNote({
+      note: note({
+        id: 'poly-1',
+        kind: 'Polygon',
+        icon: { kind: 'file', value: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa.png' },
+      }),
+      geometry: {
+        kind: 'Polygon',
+        coords: [
+          [37, 55],
+          [38, 55],
+          [38, 56],
+          [37, 55],
+        ],
+      },
+      group: null,
+      selected: false,
+      iconUrls: { 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa.png': 'data:image/png;base64,AAA' },
+    })
+
+    const icon = rendered.find((item) => item.kind === 'icon')
+    expect(icon?.options.iconImageHref).toBe('data:image/png;base64,AAA')
+  })
+})

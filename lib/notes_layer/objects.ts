@@ -5,6 +5,8 @@
  * нарисовать. Так правила оформления тестируются без карты, а адаптер
  * (`NotesLayer`) остаётся тонким.
  */
+
+import { buildBuiltinIconHref, findBuiltinIcon } from '@/lib/notes/icons'
 import {
   circleRing,
   geometryAnchor,
@@ -19,7 +21,7 @@ import {
 } from '@/lib/notes/model/style_resolution'
 import type { LonLat, Note, NoteGeometry, NoteGroup } from '@/lib/notes/model/types'
 
-export type RenderedKind = 'point' | 'line' | 'polygon' | 'label'
+export type RenderedKind = 'point' | 'line' | 'polygon' | 'label' | 'icon'
 
 export type RenderedNote = {
   /** id заметки, к которой относится объект. */
@@ -44,8 +46,10 @@ export const SELECTED_STROKE_BONUS = 2
 export const LABEL_MIN_ZOOM = 13
 
 export const POINT_ICON_SIZE = 20
-const LABEL_OFFSET_POINT = 14
-const LABEL_OFFSET_SHAPE = 0
+/** Иконка заметки крупнее кружка: глиф должен читаться на карте. */
+export const NOTE_ICON_SIZE = 26
+const LABEL_OFFSET_POINT = 20
+const LABEL_OFFSET_SHAPE = 12
 
 /** Прозрачная картинка 1×1 — основа подписи без иконки. */
 export const TRANSPARENT_PIXEL =
@@ -53,6 +57,29 @@ export const TRANSPARENT_PIXEL =
 
 const escapeXml = (value: string): string =>
   value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
+/**
+ * Ссылка на картинку иконки заметки.
+ *
+ * Встроенная иконка рисуется из реестра — общий источник с панелью. Файл
+ * пользователя приходит готовым `data:`-URL в `iconUrls`: сам слой к Диску и
+ * кэшу не обращается.
+ */
+const iconHrefOf = ({
+  note,
+  color,
+  iconUrls,
+}: {
+  note: Note
+  color: string
+  iconUrls: Record<string, string>
+}): string | null => {
+  if (!note.icon) return null
+  if (note.icon.kind === 'file') return iconUrls[note.icon.value] ?? null
+
+  const icon = findBuiltinIcon(note.icon.value)
+  return icon ? buildBuiltinIconHref({ icon, color }) : null
+}
 
 /**
  * Иконка точки: круг цвета заметки с белой обводкой.
@@ -188,10 +215,9 @@ export const renderNote = ({
   const rendered: RenderedNote[] = []
   let labelOffset = LABEL_OFFSET_SHAPE
 
-  if (geometry.kind === 'Point') {
-    const fileIcon =
-      note.icon?.kind === 'file' ? (iconUrls[note.icon.value] ?? undefined) : undefined
+  const iconHref = iconHrefOf({ note, color: style.color, iconUrls })
 
+  if (geometry.kind === 'Point') {
     rendered.push({
       id: note.id,
       kind: 'point',
@@ -200,9 +226,13 @@ export const renderNote = ({
         cursor: 'pointer',
         hintContent,
         iconLayout: 'default#image',
-        iconImageHref: fileIcon ?? buildPointIconHref(style),
-        iconImageSize: [POINT_ICON_SIZE, POINT_ICON_SIZE],
-        iconImageOffset: [-POINT_ICON_SIZE / 2, -POINT_ICON_SIZE / 2],
+        iconImageHref: iconHref ?? buildPointIconHref(style),
+        iconImageSize: iconHref
+          ? [NOTE_ICON_SIZE, NOTE_ICON_SIZE]
+          : [POINT_ICON_SIZE, POINT_ICON_SIZE],
+        iconImageOffset: iconHref
+          ? [-NOTE_ICON_SIZE / 2, -NOTE_ICON_SIZE / 2]
+          : [-POINT_ICON_SIZE / 2, -POINT_ICON_SIZE / 2],
       },
       properties: { noteId: note.id, hintContent },
     })
@@ -237,6 +267,28 @@ export const renderNote = ({
       },
       properties: { noteId: note.id, hintContent },
     })
+  }
+
+  // У линии и площадных фигур иконка стоит в центре отдельным объектом:
+  // так заметка-полигон тоже получает видимую категорию.
+  if (geometry.kind !== 'Point' && iconHref) {
+    const anchor = geometryAnchor(geometry)
+    if (anchor) {
+      rendered.push({
+        id: note.id,
+        kind: 'icon',
+        coordinates: anchor,
+        options: {
+          cursor: 'pointer',
+          hintContent,
+          iconLayout: 'default#image',
+          iconImageHref: iconHref,
+          iconImageSize: [NOTE_ICON_SIZE, NOTE_ICON_SIZE],
+          iconImageOffset: [-NOTE_ICON_SIZE / 2, -NOTE_ICON_SIZE / 2],
+        },
+        properties: { noteId: note.id, hintContent },
+      })
+    }
   }
 
   if (note.showLabel) {

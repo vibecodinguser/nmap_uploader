@@ -160,7 +160,7 @@ export class NotesLayer {
     const { coordinates, properties, options } = rendered
     const safeOptions = { ...options, hasBalloon: false, hasHint: true }
 
-    if (rendered.kind === 'point' || rendered.kind === 'label') {
+    if (rendered.kind === 'point' || rendered.kind === 'label' || rendered.kind === 'icon') {
       return new ymaps.Placemark(coordinates as LonLat, properties, safeOptions)
     }
     if (rendered.kind === 'line') {
