@@ -6,17 +6,17 @@
 .notes-panel__hatch {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 14px;
-  padding: 10px 12px;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px;
   border: 1px solid var(--border, #e6e6e6);
-  border-radius: 8px;
+  border-radius: var(--notes-radius, 8px);
 }
 
 .notes-panel__hatch-patterns {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
 }
 
 /*
@@ -27,9 +27,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 6px;
   border: 2px solid var(--border, #e6e6e6);
-  border-radius: 8px;
+  border-radius: var(--notes-radius-sm, 6px);
   background: var(--background, #ffffff);
   color: var(--foreground, #1f1f1f);
   cursor: pointer;
@@ -40,12 +42,12 @@
 }
 
 .notes-panel__hatch-pattern[data-active='true'] {
-  border-color: #ffdb4d;
-  box-shadow: 0 0 0 1px #ffdb4d inset;
+  border-color: var(--notes-accent, #ffdb4d);
+  box-shadow: 0 0 0 1px var(--notes-accent, #ffdb4d) inset;
 }
 
 .notes-panel__hatch-pattern:focus-visible {
-  outline: 2px solid #ffdb4d;
+  outline: 2px solid var(--notes-accent, #ffdb4d);
   outline-offset: 1px;
 }
 

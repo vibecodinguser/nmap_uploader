@@ -228,6 +228,8 @@ export const ruMessages = {
     groupColor: 'Цвет группы',
     icon: 'Иконка',
     iconNone: 'Без иконки',
+    sectionMain: 'Основное',
+    sectionAppearance: 'Оформление',
     filterKind: 'Фильтр по виду',
     filterGroup: 'Фильтр по группе',
     filterAllGroups: 'Все группы',

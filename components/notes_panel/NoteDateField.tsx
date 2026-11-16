@@ -36,26 +36,24 @@ export const NoteDateField = ({
   }
 
   return (
-    <>
-      <label className="notes-panel__field notes-panel__field--inline">
-        <span className="notes-panel__field-label">{t('notesPanel.date')}</span>
-        <input
-          className="notes-panel__input"
-          value={draft}
-          inputMode="numeric"
-          placeholder="дд.мм.гггг"
-          onChange={(event) => {
-            setDraft(formatDateDisplayInput(event.target.value))
-            setTouched(true)
-          }}
-          onBlur={commit}
-        />
-      </label>
+    <label className="notes-panel__field">
+      <span className="notes-panel__field-label">{t('notesPanel.date')}</span>
+      <input
+        className="notes-panel__input"
+        value={draft}
+        inputMode="numeric"
+        placeholder="дд.мм.гггг"
+        onChange={(event) => {
+          setDraft(formatDateDisplayInput(event.target.value))
+          setTouched(true)
+        }}
+        onBlur={commit}
+      />
       {touched && !valid && (
         <span className="notes-panel__hint notes-panel__hint--error">
           {t('notesPanel.dateInvalid')}
         </span>
       )}
-    </>
+    </label>
   )
 }

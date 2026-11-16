@@ -1,10 +1,14 @@
 /*
- * Свойства заметки: поля, палитра, действия.
+ * Свойства заметки: разделы, поля, палитра, действия.
+ *
+ * Поля идут сеткой в ширину: в карточке объекта много свободного места, и
+ * короткие поля встают по два в ряд. На узкой панели сетка сама схлопывается
+ * в одну колонку, поэтому отдельного медиа-запроса не нужно.
  */
 
 .notes-panel__properties {
   height: 100%;
-  padding: 12px 16px 24px;
+  padding: 16px 18px 32px;
   overflow-y: auto;
   box-sizing: border-box;
 }
@@ -13,73 +17,136 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .notes-panel__properties-kind {
   color: var(--muted-foreground, #6b6b6b);
 }
 
-.notes-panel__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 14px;
+/* Раздел карточки: подпись сверху, под ней сетка полей. */
+.notes-panel__section {
+  margin-bottom: 22px;
 }
 
-.notes-panel__field--inline {
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
+.notes-panel__section:last-of-type {
+  margin-bottom: 0;
+}
+
+.notes-panel__section-title {
+  margin: 0 0 12px;
+  color: var(--muted-foreground, #6b6b6b);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/*
+ * Сетка полей.
+ *
+ * `auto-fit` с минимумом 200 px: при ширине панели около 480 px (четверть
+ * экрана) получается две колонки, на телефоне — одна. Широкие поля (название,
+ * описание, иконки, палитра) занимают всю строку.
+ */
+.notes-panel__fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px 18px;
+  align-items: start;
+}
+
+.notes-panel__field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.notes-panel__field--wide {
+  grid-column: 1 / -1;
 }
 
 .notes-panel__field--checkbox {
   flex-direction: row;
+  min-height: 36px;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.notes-panel__field--checkbox input {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--notes-accent, #ffdb4d);
+  cursor: pointer;
 }
 
 .notes-panel__field-label {
-  flex: 0 0 auto;
   color: var(--muted-foreground, #6b6b6b);
   font-size: 12px;
 }
 
+/* Подпись с текущим значением справа: используется у ползунков. */
+.notes-panel__field-label--split {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .notes-panel__input {
-  padding: 7px 10px;
+  width: 100%;
+  min-height: var(--notes-control, 40px);
+  padding: 0 12px;
   border: 1px solid var(--border, #e6e6e6);
-  border-radius: 6px;
+  border-radius: var(--notes-radius-sm, 6px);
   background: var(--background, #ffffff);
   color: inherit;
   font: inherit;
+  box-sizing: border-box;
 }
 
 .notes-panel__input:focus-visible {
-  outline: 2px solid #ffdb4d;
+  outline: 2px solid var(--notes-accent, #ffdb4d);
   outline-offset: 1px;
 }
 
 .notes-panel__textarea {
-  min-height: 72px;
+  min-height: 84px;
+  padding: 10px 12px;
+  line-height: 1.4;
   resize: vertical;
 }
 
 .notes-panel__value {
-  min-width: 40px;
   color: var(--muted-foreground, #6b6b6b);
   font-variant-numeric: tabular-nums;
-  text-align: right;
+}
+
+/*
+ * Ползунок: сам трек тонкий, но зона нажатия высотой 28 px — иначе пальцем
+ * по нему не попасть.
+ */
+.notes-panel__range {
+  width: 100%;
+  height: 28px;
+  margin: 0;
+  accent-color: var(--notes-accent, #ffdb4d);
+  cursor: pointer;
 }
 
 .notes-panel__colors {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 
 .notes-panel__color {
-  width: 22px;
-  height: 22px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   border: 2px solid transparent;
   border-radius: 50%;
@@ -97,43 +164,43 @@
  */
 .notes-panel__icons {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
   gap: 4px;
-  max-height: 132px;
+  max-height: 168px;
   overflow-y: auto;
   padding: 2px;
 }
 
 .notes-panel__icon-choice {
   display: inline-flex;
+  width: 40px;
+  height: 40px;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
   padding: 0;
   color: var(--foreground, #1f1f1f);
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--notes-radius-sm, 6px);
   cursor: pointer;
 }
 
 .notes-panel__icon-choice:hover {
-  background: var(--muted, rgb(0 0 0 / 6%));
+  background: var(--notes-hover, rgb(0 0 0 / 6%));
 }
 
 .notes-panel__icon-choice:focus-visible {
-  outline: 2px solid var(--foreground, #1f1f1f);
+  outline: 2px solid var(--notes-accent, #ffdb4d);
   outline-offset: 1px;
 }
 
 .notes-panel__icon-choice[data-active='true'] {
   border-color: var(--foreground, #1f1f1f);
-  background: var(--muted, rgb(0 0 0 / 6%));
+  background: var(--notes-hover, rgb(0 0 0 / 6%));
 }
 
 .notes-panel__icon-choice--none {
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1;
   color: var(--muted-foreground, #6b6b6b);
 }
@@ -154,22 +221,38 @@
 
 .notes-panel__actions {
   display: flex;
+  grid-column: 1 / -1;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 6px;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.notes-panel__actions .notes-panel__button {
+  flex: 1 1 auto;
+  min-height: var(--notes-tap, 44px);
 }
 
 .notes-panel__link-button {
-  padding: 0;
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  padding: 0 6px;
   border: 0;
+  border-radius: var(--notes-radius-sm, 6px);
   background: none;
-  color: #0055cc;
+  color: var(--notes-link, #0055cc);
   font: inherit;
   cursor: pointer;
 }
 
 .notes-panel__link-button:hover {
+  background: var(--notes-hover, rgb(0 0 0 / 6%));
   text-decoration: underline;
+}
+
+.notes-panel__link-button:focus-visible {
+  outline: 2px solid var(--notes-accent, #ffdb4d);
+  outline-offset: 1px;
 }
 
 .notes-panel__hint {
@@ -178,14 +261,17 @@
 }
 
 .notes-panel__hint--error {
-  color: #e00000;
+  color: var(--notes-danger, #e00000);
 }
 
 .notes-panel__hint--draw {
   display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
+  border-bottom: 1px solid var(--border, #e6e6e6);
 }
 
 .notes-panel__toast {
@@ -195,8 +281,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px 14px;
-  border-radius: 8px;
+  padding: 10px 16px;
+  border-radius: var(--notes-radius, 8px);
   background: #333333;
   color: #ffffff;
   box-shadow: 0 8px 24px rgb(0 0 0 / 24%);
@@ -204,10 +290,9 @@
 }
 
 .notes-panel__toast .notes-panel__link-button {
-  color: #ffdb4d;
+  color: var(--notes-accent, #ffdb4d);
 }
 
 .notes-panel__toast--error {
-  background: #e00000;
+  background: var(--notes-danger, #e00000);
 }
-

@@ -228,6 +228,8 @@ export const enMessages = {
     groupColor: 'Group color',
     icon: 'Icon',
     iconNone: 'No icon',
+    sectionMain: 'Main',
+    sectionAppearance: 'Appearance',
     filterKind: 'Filter by shape',
     filterGroup: 'Filter by group',
     filterAllGroups: 'All groups',

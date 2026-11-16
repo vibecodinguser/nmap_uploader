@@ -2,9 +2,12 @@
  * Панель заметок.
  *
  * Стили живут отдельно от `uploader.css`: панель — самостоятельная страница в
- * iframe. Порядок импортов задаёт каскад, поэтому он один на весь набор.
+ * iframe. Порядок импортов задаёт каскад, и он один на весь набор: `@import`
+ * обязан идти до любых правил, поэтому токены размеров вынесены в отдельный
+ * файл, а не объявлены здесь.
  */
 @import './theme_tokens.css';
+@import './notes_panel/tokens.css';
 @import './notes_panel/layout.css';
 @import './notes_panel/note_list.css';
 @import './notes_panel/note_properties.css';

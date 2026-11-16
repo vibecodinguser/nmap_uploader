@@ -1,10 +1,20 @@
 /*
  * Список заметок: виртуализированные строки и их действия.
+ *
+ * Высота строки задана раскладкой (`NOTE_ROW_HEIGHT` в `panel/rows.ts`), а не
+ * этим файлом: список виртуализирован, и смещения считаются по числу из кода.
+ * При правке высоты менять надо оба места.
  */
 
 .notes-panel__list {
   height: 100%;
   overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.notes-panel__list:focus-visible {
+  outline: 2px solid var(--notes-accent, #ffdb4d);
+  outline-offset: -2px;
 }
 
 .notes-panel__list-inner {
@@ -25,7 +35,7 @@
   display: flex;
   height: 100%;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   padding-right: 8px;
   box-sizing: border-box;
 }
@@ -44,7 +54,7 @@
 }
 
 .notes-panel__row:hover {
-  background: color-mix(in srgb, var(--foreground, #1f1f1f) 6%, transparent);
+  background: var(--notes-hover, rgb(0 0 0 / 6%));
 }
 
 /* Курсор клавиатуры: отдельная рамка, чтобы не путать с открытой заметкой. */
@@ -54,13 +64,21 @@
 }
 
 .notes-panel__row[data-selected='true'] {
-  background: color-mix(in srgb, #ffdb4d 30%, transparent);
+  background: color-mix(in srgb, var(--notes-accent, #ffdb4d) 30%, transparent);
 }
 
-/* Отметка для массовых действий: слева от строки, не мешая клику по ней. */
+/*
+ * Отметка для массовых действий.
+ *
+ * Нативный чекбокс мельче 16 px и на телефоне в него трудно попасть, поэтому
+ * размер задан явно, а `accent-color` перекрашивает его в акцент редактора.
+ */
 .notes-panel__row-check {
   flex: 0 0 auto;
-  margin: 0 2px 0 0;
+  width: 20px;
+  height: 20px;
+  margin: 0 2px 0 12px;
+  accent-color: var(--notes-accent, #ffdb4d);
   cursor: pointer;
 }
 
@@ -68,10 +86,10 @@
   display: flex;
   flex: 1 1 auto;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   min-width: 0;
   height: 100%;
-  padding: 0 4px 0 12px;
+  padding: 0 6px;
   border: 0;
   background: transparent;
   color: inherit;
@@ -81,20 +99,26 @@
 }
 
 .notes-panel__row-main:focus-visible {
-  outline: 2px solid #ffdb4d;
+  outline: 2px solid var(--notes-accent, #ffdb4d);
   outline-offset: -2px;
 }
 
 .notes-panel__row-icon {
   display: inline-flex;
   flex: 0 0 auto;
-  color: #6b6b6b;
+  color: var(--muted-foreground, #6b6b6b);
+}
+
+.notes-panel__row-icon svg {
+  width: 22px;
+  height: 22px;
 }
 
 .notes-panel__row-text {
   display: flex;
   min-width: 0;
   flex-direction: column;
+  gap: 2px;
 }
 
 .notes-panel__row-name {
@@ -110,18 +134,19 @@
 
 .notes-panel__row-meta {
   color: var(--muted-foreground, #6b6b6b);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .notes-panel__row-action {
   display: inline-flex;
-  width: 28px;
-  height: 28px;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
   align-items: center;
   justify-content: center;
   padding: 0;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--notes-radius-sm, 6px);
   background: transparent;
   color: inherit;
   font-size: 14px;
@@ -129,29 +154,28 @@
 }
 
 .notes-panel__row-action:hover {
-  background: color-mix(in srgb, var(--foreground, #1f1f1f) 8%, transparent);
+  background: var(--notes-hover-strong, rgb(0 0 0 / 10%));
 }
 
 .notes-panel__row-action:focus-visible {
-  outline: 2px solid #ffdb4d;
+  outline: 2px solid var(--notes-accent, #ffdb4d);
   outline-offset: -2px;
 }
 
 .notes-panel__row-action--danger:hover {
-  color: #e00000;
+  color: var(--notes-danger, #e00000);
 }
 
 /* Иконки строки: размер задаёт панель, классы nk-icon нужны для совместимости. */
 .notes-panel__row-action .nk-icon {
   display: inline-flex;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   align-items: center;
   justify-content: center;
 }
 
 .notes-panel__row-action svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
-

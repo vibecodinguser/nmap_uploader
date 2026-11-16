@@ -22,6 +22,9 @@ import { IconPicker } from './IconPicker'
  *
  * У точки прозрачности и толщины границы нет: это иконка фиксированного
  * размера, оба ползунка ничего не меняли на карте.
+ *
+ * Поля идут в общую сетку карточки (`notes-panel__fields`): широкие элементы
+ * занимают всю строку, короткие встают по два в ряд, если места хватает.
  */
 export const NoteAppearance = ({
   note,
@@ -100,10 +103,14 @@ export const NoteAppearance = ({
 
       {hasAdjustableStroke(note.kind) && (
         <>
-          <label className="notes-panel__field notes-panel__field--inline">
-            <span className="notes-panel__field-label">{t('notesPanel.opacity')}</span>
+          <label className="notes-panel__field">
+            <span className="notes-panel__field-label notes-panel__field-label--split">
+              {t('notesPanel.opacity')}
+              <span className="notes-panel__value">{Math.round(note.style.opacity * 100)}%</span>
+            </span>
             <input
               type="range"
+              className="notes-panel__range"
               min={NOTE_OPACITY_MIN}
               max={NOTE_OPACITY_MAX}
               step={0.05}
@@ -112,13 +119,16 @@ export const NoteAppearance = ({
                 onPatch({ style: { ...note.style, opacity: Number(event.target.value) } })
               }
             />
-            <span className="notes-panel__value">{Math.round(note.style.opacity * 100)}%</span>
           </label>
 
-          <label className="notes-panel__field notes-panel__field--inline">
-            <span className="notes-panel__field-label">{t('notesPanel.strokeWidth')}</span>
+          <label className="notes-panel__field">
+            <span className="notes-panel__field-label notes-panel__field-label--split">
+              {t('notesPanel.strokeWidth')}
+              <span className="notes-panel__value">{note.style.strokeWidth}</span>
+            </span>
             <input
               type="range"
+              className="notes-panel__range"
               min={NOTE_STROKE_WIDTH_MIN}
               max={NOTE_STROKE_WIDTH_MAX}
               step={1}
@@ -127,7 +137,6 @@ export const NoteAppearance = ({
                 onPatch({ style: { ...note.style, strokeWidth: Number(event.target.value) } })
               }
             />
-            <span className="notes-panel__value">{note.style.strokeWidth}</span>
           </label>
         </>
       )}

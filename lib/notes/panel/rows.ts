@@ -28,8 +28,16 @@ export type NoteRow = {
 
 export type NoteListRow = GroupHeaderRow | NoteRow
 
-export const GROUP_HEADER_HEIGHT = 40
-export const NOTE_ROW_HEIGHT = 56
+/**
+ * Высоты строк списка.
+ *
+ * Совпадают с CSS один в один: список виртуализирован, и раскладка считает
+ * смещения по этим числам, а не по реальной высоте узлов. Расхождение дало бы
+ * «прыгающую» прокрутку. Размеры рассчитаны на палец: 64 px — комфортная цель
+ * нажатия для строки с тремя действиями.
+ */
+export const GROUP_HEADER_HEIGHT = 48
+export const NOTE_ROW_HEIGHT = 64
 
 /**
  * Ключ свёрнутости.

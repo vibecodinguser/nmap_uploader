@@ -229,6 +229,8 @@ export type Messages = {
     groupColor: string
     icon: string
     iconNone: string
+    sectionMain: string
+    sectionAppearance: string
     filterKind: string
     filterGroup: string
     filterAllGroups: string

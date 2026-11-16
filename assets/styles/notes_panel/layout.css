@@ -13,7 +13,9 @@ body {
   color: var(--foreground, #1f1f1f);
   background: var(--background, #ffffff);
   font-family: "Yandex Sans Text", "YS Text", Arial, Helvetica, sans-serif;
-  font-size: 13px;
+  font-size: var(--notes-font-size, 14px);
+  line-height: 1.45;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .notes-panel {
@@ -27,31 +29,36 @@ body {
 .notes-panel__head {
   display: flex;
   flex: 0 0 auto;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
+  gap: 8px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--border, #e6e6e6);
 }
 
 .notes-panel__title {
   margin: 0;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
   white-space: nowrap;
 }
 
 .notes-panel__search {
-  flex: 1 1 auto;
-  min-width: 120px;
+  flex: 1 1 160px;
+  min-width: 0;
   max-width: 420px;
-  padding: 6px 10px;
+  height: var(--notes-control, 40px);
+  padding: 0 12px;
   border: 1px solid var(--border, #e6e6e6);
-  border-radius: 6px;
+  border-radius: var(--notes-radius, 8px);
+  background: var(--background, #ffffff);
+  color: inherit;
   font: inherit;
+  box-sizing: border-box;
 }
 
 .notes-panel__search:focus-visible {
-  outline: 2px solid #ffdb4d;
+  outline: 2px solid var(--notes-accent, #ffdb4d);
   outline-offset: 1px;
 }
 
@@ -66,21 +73,23 @@ body {
 }
 
 /*
- * Фильтры списка: ряд кнопок видов и три селекта. Держим их тонкими и в одну
- * строку с переносом — панель по умолчанию занимает четверть экрана.
+ * Фильтры списка: ряд кнопок видов и три селекта. Держим их в одну строку с
+ * переносом — панель по умолчанию занимает четверть экрана.
  */
 .notes-panel__filters {
   display: flex;
+  flex: 0 0 auto;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
-  padding: 6px 12px;
+  padding: 8px 14px;
   border-bottom: 1px solid var(--border, #e6e6e6);
 }
 
 .notes-panel__filter-kinds {
   display: flex;
-  gap: 2px;
+  flex-wrap: wrap;
+  gap: 4px;
   min-width: 0;
   margin: 0;
   padding: 0;
@@ -89,47 +98,54 @@ body {
 
 .notes-panel__filter-kind {
   display: inline-flex;
+  width: 38px;
+  height: 38px;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
   padding: 0;
   color: var(--muted-foreground, #6b6b6b);
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 5px;
+  border-radius: var(--notes-radius-sm, 6px);
   cursor: pointer;
 }
 
 .notes-panel__filter-kind:hover {
   color: var(--foreground, #1f1f1f);
-  background: var(--muted, rgb(0 0 0 / 6%));
+  background: var(--notes-hover, rgb(0 0 0 / 6%));
 }
 
 .notes-panel__filter-kind:focus-visible {
-  outline: 2px solid var(--foreground, #1f1f1f);
+  outline: 2px solid var(--notes-accent, #ffdb4d);
   outline-offset: 1px;
 }
 
 .notes-panel__filter-kind[data-active='true'] {
   color: var(--foreground, #1f1f1f);
-  background: var(--muted, rgb(0 0 0 / 8%));
-  border-color: var(--foreground, #1f1f1f);
+
+  /* Акцент, как у выбранного элемента в редакторе: рамка в цвет текста
+     выглядела как ошибка, а не как выбор. */
+  background: color-mix(in srgb, var(--notes-accent, #ffdb4d) 32%, transparent);
+  border-color: var(--notes-accent, #ffdb4d);
 }
 
 .notes-panel__filter-select {
-  max-width: 168px;
-  padding: 3px 6px;
+  flex: 0 0 auto;
+  max-width: 100%;
+  min-width: 132px;
+  min-height: 38px;
+  padding: 0 8px;
   font: inherit;
-  font-size: 12px;
+  font-size: 13px;
   color: inherit;
   background: transparent;
   border: 1px solid var(--border, #e6e6e6);
-  border-radius: 5px;
+  border-radius: var(--notes-radius-sm, 6px);
+  box-sizing: border-box;
 }
 
 .notes-panel__filter-select:focus-visible {
-  outline: 2px solid var(--foreground, #1f1f1f);
+  outline: 2px solid var(--notes-accent, #ffdb4d);
   outline-offset: 1px;
 }
 
@@ -139,11 +155,12 @@ body {
  */
 .notes-panel__selection {
   display: flex;
+  flex: 0 0 auto;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
-  padding: 6px 12px;
-  background: var(--muted, rgb(0 0 0 / 4%));
+  padding: 8px 14px;
+  background: var(--notes-hover, rgb(0 0 0 / 6%));
   border-bottom: 1px solid var(--border, #e6e6e6);
 }
 
@@ -153,8 +170,9 @@ body {
 
 .notes-panel__head-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   margin-left: auto;
 }
 
@@ -163,50 +181,67 @@ body {
 }
 
 .notes-panel__button {
-  padding: 6px 12px;
+  display: inline-flex;
+  min-height: var(--notes-control, 40px);
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
   border: 1px solid var(--border, #e6e6e6);
-  border-radius: 6px;
+  border-radius: var(--notes-radius, 8px);
   background: var(--background, #ffffff);
   color: inherit;
   font: inherit;
   cursor: pointer;
+  box-sizing: border-box;
 }
 
 .notes-panel__button:hover {
-  background: color-mix(in srgb, var(--foreground, #1f1f1f) 6%, transparent);
+  background: var(--notes-hover, rgb(0 0 0 / 6%));
 }
 
 .notes-panel__button:focus-visible {
-  outline: 2px solid #ffdb4d;
+  outline: 2px solid var(--notes-accent, #ffdb4d);
   outline-offset: 1px;
 }
 
 .notes-panel__button--primary {
-  border-color: #ffdb4d;
-  background: #ffdb4d;
+  border-color: var(--notes-accent, #ffdb4d);
+  background: var(--notes-accent, #ffdb4d);
   color: #1f1f1f;
   font-weight: 600;
 }
 
+.notes-panel__button--primary:hover {
+  background: #f5d03f;
+}
+
 .notes-panel__button--danger {
-  border-color: #e00000;
-  color: #e00000;
+  border-color: var(--notes-danger, #e00000);
+  color: var(--notes-danger, #e00000);
 }
 
 .notes-panel__icon-button {
-  width: 28px;
-  height: 28px;
+  display: inline-flex;
+  width: var(--notes-control, 40px);
+  height: var(--notes-control, 40px);
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--border, #e6e6e6);
-  border-radius: 6px;
+  border-radius: var(--notes-radius, 8px);
   background: transparent;
   color: inherit;
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1;
   cursor: pointer;
 }
 
 .notes-panel__icon-button:hover {
-  background: color-mix(in srgb, var(--foreground, #1f1f1f) 6%, transparent);
+  background: var(--notes-hover, rgb(0 0 0 / 6%));
+}
+
+.notes-panel__icon-button:focus-visible {
+  outline: 2px solid var(--notes-accent, #ffdb4d);
+  outline-offset: 1px;
 }
 
 .notes-panel__shape-picker {
@@ -215,22 +250,23 @@ body {
   left: 0;
   z-index: 10;
   display: flex;
-  min-width: 180px;
+  min-width: 220px;
   flex-direction: column;
-  padding: 4px;
+  padding: 6px;
   border: 1px solid var(--border, #e6e6e6);
-  border-radius: 8px;
+  border-radius: var(--notes-radius, 8px);
   background: var(--background, #ffffff);
   box-shadow: 0 8px 24px rgb(0 0 0 / 16%);
 }
 
 .notes-panel__shape-item {
   display: flex;
+  min-height: var(--notes-tap, 44px);
   align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
+  gap: 10px;
+  padding: 0 12px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--notes-radius-sm, 6px);
   background: transparent;
   color: inherit;
   font: inherit;
@@ -248,8 +284,8 @@ body {
   color: var(--muted-foreground, #6b6b6b);
 }
 
-.notes-panel__shape-item:hover {
-  background: color-mix(in srgb, var(--foreground, #1f1f1f) 7%, transparent);
+.notes-panel__shape-item:hover:not(:disabled) {
+  background: var(--notes-hover, rgb(0 0 0 / 6%));
 }
 
 .notes-panel__body {
@@ -261,21 +297,20 @@ body {
 
 .notes-panel__status,
 .notes-panel__empty {
-  padding: 24px;
+  padding: 32px 24px;
   color: var(--muted-foreground, #6b6b6b);
   text-align: center;
 }
 
 .notes-panel__status p {
-  margin: 0 0 12px;
+  margin: 0 0 14px;
 }
 
 .notes-panel__status--error {
-  color: #e00000;
+  color: var(--notes-danger, #e00000);
 }
 
 .notes-panel__status--error .notes-panel__button {
-  border-color: #e00000;
-  color: #e00000;
+  border-color: var(--notes-danger, #e00000);
+  color: var(--notes-danger, #e00000);
 }
-

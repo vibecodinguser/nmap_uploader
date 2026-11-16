@@ -20,7 +20,7 @@ export const ColorPicker = ({
   }, [value])
 
   return (
-    <div className="notes-panel__field">
+    <div className="notes-panel__field notes-panel__field--wide">
       <span className="notes-panel__field-label">{label}</span>
       <div className="notes-panel__colors">
         {NOTE_PALETTE.map((color) => (

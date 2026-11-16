@@ -42,51 +42,69 @@ export const NoteProperties = ({
         <span className="notes-panel__properties-kind">{t(kindLabelKey(note.kind))}</span>
       </div>
 
-      <label className="notes-panel__field">
-        <span className="notes-panel__field-label">{t('notesPanel.namePlaceholder')}</span>
-        <input
-          className="notes-panel__input"
-          value={note.name}
-          onChange={(event) => onPatch({ name: event.target.value })}
-          onBlur={() => {
-            if (!note.name.trim()) onPatch({ name: fallbackName })
-          }}
-          placeholder={t('notesPanel.namePlaceholder')}
-        />
-      </label>
+      <section className="notes-panel__section">
+        <h2 className="notes-panel__section-title">{t('notesPanel.sectionMain')}</h2>
 
-      <label className="notes-panel__field">
-        <span className="notes-panel__field-label">{t('notesPanel.descriptionPlaceholder')}</span>
-        <textarea
-          className="notes-panel__input notes-panel__textarea"
-          value={note.description}
-          onChange={(event) => onPatch({ description: event.target.value })}
-          placeholder={t('notesPanel.descriptionPlaceholder')}
-        />
-      </label>
+        {/*
+         * Поля в ширину, а не столбиком: в карточке много свободного места, и
+         * короткие поля (дата, группа) встают по два в ряд. На узкой панели
+         * сетка сама схлопывается в одну колонку.
+         */}
+        <div className="notes-panel__fields">
+          <label className="notes-panel__field notes-panel__field--wide">
+            <span className="notes-panel__field-label">{t('notesPanel.namePlaceholder')}</span>
+            <input
+              className="notes-panel__input"
+              value={note.name}
+              onChange={(event) => onPatch({ name: event.target.value })}
+              onBlur={() => {
+                if (!note.name.trim()) onPatch({ name: fallbackName })
+              }}
+              placeholder={t('notesPanel.namePlaceholder')}
+            />
+          </label>
 
-      <NoteDateField date={note.date} onCommit={(date) => onPatch({ date })} />
+          <label className="notes-panel__field notes-panel__field--wide">
+            <span className="notes-panel__field-label">
+              {t('notesPanel.descriptionPlaceholder')}
+            </span>
+            <textarea
+              className="notes-panel__input notes-panel__textarea"
+              value={note.description}
+              onChange={(event) => onPatch({ description: event.target.value })}
+              placeholder={t('notesPanel.descriptionPlaceholder')}
+            />
+          </label>
 
-      {groups.length > 0 && (
-        <label className="notes-panel__field notes-panel__field--inline">
-          <span className="notes-panel__field-label">{t('notesPanel.group')}</span>
-          <select
-            id={NOTES_PANEL_BUTTON_IDS.noteGroup}
-            className="notes-panel__input"
-            value={note.groupId ?? ''}
-            onChange={(event) => onMoveToGroup(event.target.value || null)}
-          >
-            <option value="">{t('notesPanel.ungrouped')}</option>
-            {groups.map((group) => (
-              <option key={group.id} value={group.id}>
-                {group.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
+          <NoteDateField date={note.date} onCommit={(date) => onPatch({ date })} />
 
-      <NoteAppearance note={note} onPatch={onPatch} />
+          {groups.length > 0 && (
+            <label className="notes-panel__field">
+              <span className="notes-panel__field-label">{t('notesPanel.group')}</span>
+              <select
+                id={NOTES_PANEL_BUTTON_IDS.noteGroup}
+                className="notes-panel__input"
+                value={note.groupId ?? ''}
+                onChange={(event) => onMoveToGroup(event.target.value || null)}
+              >
+                <option value="">{t('notesPanel.ungrouped')}</option>
+                {groups.map((group) => (
+                  <option key={group.id} value={group.id}>
+                    {group.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
+      </section>
+
+      <section className="notes-panel__section">
+        <h2 className="notes-panel__section-title">{t('notesPanel.sectionAppearance')}</h2>
+        <div className="notes-panel__fields">
+          <NoteAppearance note={note} onPatch={onPatch} />
+        </div>
+      </section>
 
       <div className="notes-panel__actions">
         <button

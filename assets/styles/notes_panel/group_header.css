@@ -8,7 +8,7 @@
   height: 100%;
   align-items: center;
   gap: 4px;
-  padding: 0 8px 0 4px;
+  padding: 0 10px 0 4px;
   border-top: 1px solid var(--border, #e6e6e6);
   background: color-mix(in srgb, var(--foreground, #1f1f1f) 4%, transparent);
   box-sizing: border-box;
@@ -20,8 +20,8 @@
   min-width: 0;
   height: 100%;
   align-items: center;
-  gap: 6px;
-  padding: 0 8px;
+  gap: 8px;
+  padding: 0 10px;
   border: 0;
   background: transparent;
   color: inherit;
@@ -32,7 +32,7 @@
 }
 
 .notes-panel__group-toggle:focus-visible {
-  outline: 2px solid #ffdb4d;
+  outline: 2px solid var(--notes-accent, #ffdb4d);
   outline-offset: -2px;
 }
 
@@ -48,8 +48,8 @@
 
 .notes-panel__group-dot {
   flex: 0 0 auto;
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
 }
 
@@ -62,9 +62,10 @@
 .notes-panel__group-input {
   flex: 1 1 auto;
   min-width: 0;
-  padding: 2px 6px;
-  border: 1px solid #ffdb4d;
-  border-radius: 4px;
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--notes-accent, #ffdb4d);
+  border-radius: var(--notes-radius-sm, 6px);
   background: var(--background, #ffffff);
   color: inherit;
   font: inherit;
@@ -74,7 +75,7 @@
 .notes-panel__group-count {
   flex: 0 0 auto;
   color: var(--muted-foreground, #6b6b6b);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
 }
 
@@ -88,8 +89,8 @@
 .notes-panel__group-color {
   position: relative;
   display: inline-flex;
-  width: 20px;
-  height: 20px;
+  width: 28px;
+  height: 28px;
   border: 1px solid var(--border, #e6e6e6);
   border-radius: 50%;
   background: conic-gradient(#ff8c42, #ffdb4d, #5aa845, #1a8cff, #8a5cd6, #ff8c42);
@@ -112,7 +113,7 @@
 
 /* Заголовок группы принимает перетаскиваемую заметку. */
 .notes-panel__group[data-drop-hover='true'] {
-  outline: 2px dashed #ffdb4d;
+  outline: 2px dashed var(--notes-accent, #ffdb4d);
   outline-offset: -2px;
 }
 

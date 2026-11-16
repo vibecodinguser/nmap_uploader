@@ -139,7 +139,14 @@ describe('раскладка', () => {
   it('расставляет строки подряд без дыр', () => {
     const positioned = positionRows(list)
 
-    expect(positioned.map((item) => item.top)).toEqual([0, 40, 96, 136])
+    // Считаем от констант, а не от литералов: высоты строк связаны с CSS и
+    // меняются вместе с ним.
+    expect(positioned.map((item) => item.top)).toEqual([
+      0,
+      GROUP_HEADER_HEIGHT,
+      GROUP_HEADER_HEIGHT + NOTE_ROW_HEIGHT,
+      GROUP_HEADER_HEIGHT * 2 + NOTE_ROW_HEIGHT,
+    ])
     expect(positioned[3].top + positioned[3].height).toBe(totalHeight(list))
   })
 
