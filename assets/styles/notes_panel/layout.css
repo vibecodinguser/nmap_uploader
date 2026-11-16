@@ -62,6 +62,42 @@ body {
   outline-offset: 1px;
 }
 
+/*
+ * Чекбокс в стиле нативного `nk-checkbox__box`.
+ *
+ * В панели нет CSS редактора (она живёт в iframe), поэтому нативный класс
+ * неоткуда взять — размер и вид повторены вручную: 16 px, радиус 3 px, жёлтая
+ * заливка с тёмной галочкой. Совпадает с чекбоксами в настройках редактора.
+ */
+.notes-panel__row-check,
+.notes-panel__field--checkbox input {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  appearance: none;
+  border: 1px solid var(--border, #e6e6e6);
+  border-radius: 3px;
+  background-color: var(--background, #ffffff);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 12px 12px;
+  cursor: pointer;
+}
+
+.notes-panel__row-check:checked,
+.notes-panel__field--checkbox input:checked {
+  border-color: var(--notes-accent, #ffdb4d);
+  background-color: var(--notes-accent, #ffdb4d);
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.3 4.9 8.7 9.5 3.6' fill='none' stroke='%231f1f1f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.notes-panel__row-check:focus-visible,
+.notes-panel__field--checkbox input:focus-visible {
+  outline: 2px solid var(--notes-accent, #ffdb4d);
+  outline-offset: 1px;
+}
+
 /* Подпись, нужная только скринридеру. */
 .notes-panel__visually-hidden {
   position: absolute;
@@ -120,6 +156,13 @@ body {
   outline-offset: 1px;
 }
 
+/* Глиф вида в фильтре того же размера, что в строке списка: иначе фильтры
+   выглядят из другого набора иконок. */
+.notes-panel__filter-kind svg {
+  width: var(--notes-icon-size, 22px);
+  height: var(--notes-icon-size, 22px);
+}
+
 .notes-panel__filter-kind[data-active='true'] {
   color: var(--foreground, #1f1f1f);
 
@@ -138,10 +181,20 @@ body {
   font: inherit;
   font-size: 13px;
   color: inherit;
-  background: transparent;
+
+  /* Фон панели, а не системный: прозрачный селект рисовал белое поле поверх
+     тёмной темы, и список выглядел чужим. */
+  background: var(--background, #ffffff);
   border: 1px solid var(--border, #e6e6e6);
   border-radius: var(--notes-radius-sm, 6px);
   box-sizing: border-box;
+}
+
+/* Раскрытый список: системный рендер красит пункты в белый независимо от
+   темы, поэтому цвета задаются явно. */
+.notes-panel__filter-select option {
+  color: var(--foreground, #1f1f1f);
+  background: var(--background, #ffffff);
 }
 
 .notes-panel__filter-select:focus-visible {
@@ -230,9 +283,16 @@ body {
   border-radius: var(--notes-radius, 8px);
   background: transparent;
   color: inherit;
-  font-size: 16px;
+  font-size: 22px;
   line-height: 1;
   cursor: pointer;
+}
+
+/* Значок внутри квадратной кнопки: стрелки и крестик заданы текстом, поэтому
+   размер задаётся шрифтом, а не иконкой. */
+.notes-panel__icon-button svg {
+  width: 22px;
+  height: 22px;
 }
 
 .notes-panel__icon-button:hover {
@@ -282,6 +342,11 @@ body {
 .notes-panel__shape-item-icon {
   display: inline-flex;
   color: var(--muted-foreground, #6b6b6b);
+}
+
+.notes-panel__shape-item-icon svg {
+  width: var(--notes-icon-size, 22px);
+  height: var(--notes-icon-size, 22px);
 }
 
 .notes-panel__shape-item:hover:not(:disabled) {

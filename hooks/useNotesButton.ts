@@ -8,7 +8,9 @@ import {
 } from '@/lib/notes_button'
 
 export function useNotesButton() {
-  const [isEnabled, setIsEnabledState] = useState(false)
+  // Стартовое значение совпадает с умолчанием в хранилище: иначе кнопка на
+  // мгновение появлялась бы выключенной, пока идёт чтение настройки.
+  const [isEnabled, setIsEnabledState] = useState(true)
   const [isLoaded, setIsLoaded] = useState(false)
 
   useEffect(function getIsEnabledEffect() {

@@ -60,7 +60,7 @@ export const FilterBar = ({
               aria-label={t(kindLabelKey(kind))}
               onClick={() => toggleKind(kind)}
             >
-              <NoteKindIcon kind={kind} size={16} />
+              <NoteKindIcon kind={kind} />
             </button>
           )
         })}

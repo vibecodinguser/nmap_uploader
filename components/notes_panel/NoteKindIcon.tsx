@@ -3,6 +3,15 @@ import type { NoteIcon, NoteKind } from '@/lib/notes/model/types'
 import { BuiltinIconGlyph } from './IconPicker'
 
 /**
+ * Размер глифа вида заметки.
+ *
+ * Один на весь интерфейс: иконка вида в строке списка, в фильтрах и в выборе
+ * фигуры должна быть одного размера, иначе элементы выглядят из разных
+ * наборов. 22 px — размер строки списка.
+ */
+export const NOTE_KIND_ICON_SIZE = 22
+
+/**
  * Иконка строки списка.
  *
  * Если у заметки выбрана своя иконка, показывается она — та же, что на карте:
@@ -12,7 +21,7 @@ import { BuiltinIconGlyph } from './IconPicker'
 export const NoteRowIcon = ({
   kind,
   icon,
-  size = 18,
+  size = NOTE_KIND_ICON_SIZE,
 }: {
   kind: NoteKind
   icon: NoteIcon | null
@@ -37,7 +46,13 @@ const PATHS: Record<NoteKind, string> = {
   Circle: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z',
 }
 
-export const NoteKindIcon = ({ kind, size = 18 }: { kind: NoteKind; size?: number }) => (
+export const NoteKindIcon = ({
+  kind,
+  size = NOTE_KIND_ICON_SIZE,
+}: {
+  kind: NoteKind
+  size?: number
+}) => (
   <svg
     width={size}
     height={size}

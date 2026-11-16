@@ -69,18 +69,9 @@
 
 .notes-panel__field--checkbox {
   flex-direction: row;
-  min-height: 36px;
+  min-height: 32px;
   align-items: center;
   gap: 10px;
-  cursor: pointer;
-}
-
-.notes-panel__field--checkbox input {
-  flex: 0 0 auto;
-  width: 20px;
-  height: 20px;
-  margin: 0;
-  accent-color: var(--notes-accent, #ffdb4d);
   cursor: pointer;
 }
 

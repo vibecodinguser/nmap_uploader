@@ -21,6 +21,9 @@
   --notes-hover: rgb(0 0 0 / 6%);
   --notes-hover-strong: rgb(0 0 0 / 10%);
   --notes-font-size: 14px;
+
+  /* Один размер глифов вида: строка списка, фильтры, выбор фигуры. */
+  --notes-icon-size: 22px;
 }
 
 .dark,

@@ -62,7 +62,7 @@ export const ShapePicker = ({
           onClick={() => onPick(kind)}
         >
           <span className="notes-panel__shape-item-icon" aria-hidden="true">
-            <NoteKindIcon kind={kind} size={16} />
+            <NoteKindIcon kind={kind} />
           </span>
           {t(labelKey)}
         </button>

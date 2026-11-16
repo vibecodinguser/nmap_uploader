@@ -27,10 +27,17 @@ export const createNotesButton = (ariaLabel = ''): HTMLButtonElement => {
   return markNmapOwned(button)
 }
 
+/**
+ * Включена ли кнопка заметок.
+ *
+ * По умолчанию включена: кнопка — единственный вход в панель, и выключенная по
+ * умолчанию означала бы, что функцию нужно сначала найти в настройках. Ключ не
+ * записан — значит пользователь ещё ничего не выбирал, а не что он отказался.
+ */
 export const getStoredNotesButtonEnabled = async (): Promise<boolean> => {
   const stored = await browser.storage.local.get(NOTES_BUTTON_ENABLED_STORAGE_KEY)
   const value = stored[NOTES_BUTTON_ENABLED_STORAGE_KEY]
-  return value === undefined ? false : Boolean(value)
+  return value === undefined ? true : Boolean(value)
 }
 
 export const setStoredNotesButtonEnabled = async (enabled: boolean): Promise<void> => {

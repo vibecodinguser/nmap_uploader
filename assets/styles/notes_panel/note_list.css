@@ -67,19 +67,10 @@
   background: color-mix(in srgb, var(--notes-accent, #ffdb4d) 30%, transparent);
 }
 
-/*
- * Отметка для массовых действий.
- *
- * Нативный чекбокс мельче 16 px и на телефоне в него трудно попасть, поэтому
- * размер задан явно, а `accent-color` перекрашивает его в акцент редактора.
- */
+/* Отметка для массовых действий: вид и размер заданы в layout.css, здесь —
+   только положение в строке. */
 .notes-panel__row-check {
-  flex: 0 0 auto;
-  width: 20px;
-  height: 20px;
   margin: 0 2px 0 12px;
-  accent-color: var(--notes-accent, #ffdb4d);
-  cursor: pointer;
 }
 
 .notes-panel__row-main {
@@ -110,8 +101,8 @@
 }
 
 .notes-panel__row-icon svg {
-  width: 22px;
-  height: 22px;
+  width: var(--notes-icon-size, 22px);
+  height: var(--notes-icon-size, 22px);
 }
 
 .notes-panel__row-text {

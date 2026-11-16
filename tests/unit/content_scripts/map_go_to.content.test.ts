@@ -196,7 +196,7 @@ describe('map-go-to.content', () => {
     })
   })
 
-  it('по умолчанию не монтирует split-view и заметки при первом запуске', async () => {
+  it('при первом запуске ставит кнопку заметок, но не split-view', async () => {
     await browser.storage.local.clear()
     mountNmapsToolbarAnchor()
     mapGoToScript.main?.(ctx)
@@ -204,8 +204,9 @@ describe('map-go-to.content', () => {
     await vi.waitFor(() => {
       expect(document.getElementById(GO_TO_SERVICE_BUTTON_ID)).not.toBeNull()
       expect(document.getElementById(POLYGON_UPLOAD_BUTTON_ID)).not.toBeNull()
+      // Заметки включены по умолчанию: это единственный вход в панель.
+      expect(document.getElementById(NOTES_BUTTON_ID)).not.toBeNull()
       expect(document.getElementById(GO_TO_SPLIT_BUTTON_ID)).toBeNull()
-      expect(document.getElementById(NOTES_BUTTON_ID)).toBeNull()
     })
   })
 
