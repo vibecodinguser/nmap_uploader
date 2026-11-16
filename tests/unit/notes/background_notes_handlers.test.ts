@@ -15,6 +15,7 @@ import { browser } from 'wxt/browser'
 import type { MessageHandler } from '@/lib/background/message_router'
 import type { RuntimeMessageSender } from '@/lib/message_auth'
 import type { NotesManifest } from '@/lib/notes/manifest'
+import type { NotesPatch } from '@/lib/notes/protocol'
 import {
   NOTES_DELETE_GROUP_ACTION,
   NOTES_DELETE_NOTE_ACTION,
@@ -30,7 +31,7 @@ import {
   NOTES_START_DRAW_ACTION,
   NOTES_UPLOAD_ICON_ACTION,
   NOTES_VISIBILITY_ACTION,
-} from '@/lib/notes/messages'
+} from '@/lib/notes/protocol'
 import type { GeometryShard } from '@/lib/notes/shards'
 import type { Note } from '@/lib/notes/types'
 import { HIDDEN_NOTE_IDS_STORAGE_KEY } from '@/lib/notes/visibility'
@@ -231,7 +232,6 @@ describe('NOTES_LOAD', () => {
     await vi.waitFor(() => expect(sendResponse).toHaveBeenCalledTimes(1))
     const [snapshot] = responsesOf(sendResponse)
     expect(snapshot.ok).toBe(true)
-    expect((snapshot.snapshot as { fromCache: boolean }).fromCache).toBe(false)
 
     // Снимок догружается в кэш: панель сможет открыться до ответа Диска.
     expect(store.cacheManifest?.notes.map((item) => item.id)).toEqual(['note-1'])
@@ -261,7 +261,6 @@ describe('NOTES_LOAD', () => {
 
     await vi.waitFor(() => expect(sendResponse).toHaveBeenCalledTimes(1))
     const [cached] = responsesOf(sendResponse)
-    expect((cached.snapshot as { fromCache: boolean }).fromCache).toBe(true)
     expect((cached.snapshot as { manifest: NotesManifest }).manifest.notes[0]?.id).toBe(
       'cached-note',
     )
@@ -270,10 +269,9 @@ describe('NOTES_LOAD', () => {
     // Второй ответ не уходит: свежий снимок доезжает широковещательно.
     await vi.waitFor(() => {
       const hubSnapshot = store.hub.find((message) => message.action === NOTES_SNAPSHOT_ACTION) as {
-        snapshot: { manifest: NotesManifest; fromCache: boolean }
+        snapshot: { manifest: NotesManifest }
       }
       expect(hubSnapshot.snapshot.manifest.notes[0]?.id).toBe('remote-note')
-      expect(hubSnapshot.snapshot.fromCache).toBe(false)
     })
     expect(sendResponse).toHaveBeenCalledTimes(1)
   })
@@ -313,13 +311,17 @@ describe('мутации заметок', () => {
     await vi.waitFor(() => expect(sendResponse).toHaveBeenCalledTimes(1))
     const [response] = responsesOf(sendResponse)
     expect(response.ok).toBe(true)
-    expect((response.manifest as NotesManifest).notes.map((item) => item.id)).toEqual(['note-1'])
+    expect((response.patch as NotesPatch).manifest.notes.map((item) => item.id)).toEqual(['note-1'])
     expect(writes()).toEqual(['manifest', 'shard:2026-11'])
     expect(store.shards.get('2026-11')?.notes['note-1']).toEqual(pointGeometry)
 
     await vi.waitFor(() => expect(store.relayed).not.toHaveLength(0))
-    expect(store.relayed[0]?.message.action).toBe(NOTES_RENDER_ACTION)
-    expect(store.relayed[0]?.message.hiddenIds).toEqual([])
+    const render = store.relayed[0]?.message as {
+      action: string
+      snapshot: { hiddenIds: string[] }
+    }
+    expect(render.action).toBe(NOTES_RENDER_ACTION)
+    expect(render.snapshot.hiddenIds).toEqual([])
   })
 
   it('NOTES_SAVE_NOTE с битой заметкой отвечает INVALID_PAYLOAD и ничего не пишет', async () => {
@@ -351,7 +353,7 @@ describe('мутации заметок', () => {
 
     await vi.waitFor(() => expect(sendResponse).toHaveBeenCalledTimes(1))
     const [response] = responsesOf(sendResponse)
-    expect((response.manifest as NotesManifest).notes).toEqual([])
+    expect((response.patch as NotesPatch).manifest.notes).toEqual([])
     expect(store.shards.get('2026-11')?.notes).toEqual({})
     expect(writes()).toEqual(['manifest', 'shard:2026-11'])
   })
@@ -369,7 +371,7 @@ describe('мутации заметок', () => {
 
     await vi.waitFor(() => expect(sendResponse).toHaveBeenCalledTimes(1))
     const [response] = responsesOf(sendResponse)
-    expect((response.manifest as NotesManifest).notes[0]?.groupId).toBe('group-1')
+    expect((response.patch as NotesPatch).manifest.notes[0]?.groupId).toBe('group-1')
   })
 })
 
@@ -386,7 +388,7 @@ describe('группы', () => {
 
     await vi.waitFor(() => expect(sendResponse).toHaveBeenCalledTimes(1))
     const [response] = responsesOf(sendResponse)
-    expect((response.manifest as NotesManifest).groups).toEqual([
+    expect((response.patch as NotesPatch).manifest.groups).toEqual([
       expect.objectContaining({ id: 'group-1', name: 'Мосты' }),
     ])
   })
@@ -407,8 +409,8 @@ describe('группы', () => {
 
     await vi.waitFor(() => expect(sendResponse).toHaveBeenCalledTimes(1))
     const [response] = responsesOf(sendResponse)
-    expect((response.manifest as NotesManifest).groups).toEqual([])
-    expect((response.manifest as NotesManifest).notes[0]?.groupId).toBeNull()
+    expect((response.patch as NotesPatch).manifest.groups).toEqual([])
+    expect((response.patch as NotesPatch).manifest.notes[0]?.groupId).toBeNull()
     // Геометрия не тронута: шард не переписывался.
     expect(writes()).toEqual(['manifest'])
   })
@@ -430,7 +432,7 @@ describe('группы', () => {
 
     await vi.waitFor(() => expect(sendResponse).toHaveBeenCalledTimes(1))
     const [response] = responsesOf(sendResponse)
-    expect((response.manifest as NotesManifest).notes).toEqual([])
+    expect((response.patch as NotesPatch).manifest.notes).toEqual([])
     expect(store.shards.get('2026-11')?.notes).toEqual({})
   })
 })

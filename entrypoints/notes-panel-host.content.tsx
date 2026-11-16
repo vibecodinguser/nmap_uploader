@@ -9,7 +9,7 @@ import {
   notifyStartPickPoint,
   parsePointPickedEvent,
 } from '@/lib/nmaps_pick_point_notify'
-import type { DrawableNoteKind, NotesSnapshotPayload } from '@/lib/notes/messages'
+import type { DrawableNoteKind, NotesSnapshot } from '@/lib/notes/protocol'
 import {
   isDrawableNoteKind,
   NOTES_DRAW_FINISHED_ACTION,
@@ -19,7 +19,7 @@ import {
   NOTES_SELECT_ACTION,
   NOTES_START_DRAW_ACTION,
   NOTES_VISIBILITY_ACTION,
-} from '@/lib/notes/messages'
+} from '@/lib/notes/protocol'
 import type { LonLat } from '@/lib/notes/types'
 import {
   NMAPS_NOTE_SELECTED_EVENT,
@@ -77,10 +77,10 @@ export default defineContentScript({
 
     let selectedNoteId: string | null = null
     let drawingKind: DrawableKind | null = null
-    let snapshot: NotesSnapshotPayload | null = null
+    let snapshot: NotesSnapshot | null = null
     let editLabel = 'Редактировать'
 
-    const renderSnapshot = (next: NotesSnapshotPayload): void => {
+    const renderSnapshot = (next: NotesSnapshot): void => {
       snapshot = next
       dispatchToPage(NMAPS_RENDER_NOTES_EVENT, snapshotToLayerInput(next))
     }
@@ -162,10 +162,7 @@ export default defineContentScript({
      * происходит».
      */
     const handlePanelPreview = (event: MessageEvent): void => {
-      const data = event.data as
-        | { action?: string; snapshot?: NotesSnapshotPayload }
-        | null
-        | undefined
+      const data = event.data as { action?: string; snapshot?: NotesSnapshot } | null | undefined
       if (data?.action !== NOTES_PANEL_PREVIEW_MESSAGE) return
       if (!data.snapshot?.manifest || !data.snapshot.shards) return
       renderSnapshot(data.snapshot)
@@ -204,15 +201,12 @@ export default defineContentScript({
     const handleRuntimeMessage = (message: Record<string, unknown>): void => {
       switch (message.action) {
         case NOTES_RENDER_ACTION: {
-          const payload = message as unknown as NotesSnapshotPayload & {
-            action: string
-          }
-          if (payload.manifest && payload.shards) {
+          const next = message.snapshot as NotesSnapshot | undefined
+          if (next?.manifest && next.shards) {
             renderSnapshot({
-              manifest: payload.manifest,
-              shards: payload.shards,
-              hiddenIds: Array.isArray(payload.hiddenIds) ? payload.hiddenIds : [],
-              fromCache: false,
+              manifest: next.manifest,
+              shards: next.shards,
+              hiddenIds: Array.isArray(next.hiddenIds) ? next.hiddenIds : [],
             })
           }
           break
@@ -253,7 +247,7 @@ export default defineContentScript({
     browser.runtime
       .sendMessage({ action: NOTES_LOAD_ACTION })
       .then((response: unknown) => {
-        const payload = response as { ok?: boolean; snapshot?: NotesSnapshotPayload } | undefined
+        const payload = response as { ok?: boolean; snapshot?: NotesSnapshot } | undefined
         if (payload?.ok && payload.snapshot) {
           renderSnapshot(payload.snapshot)
         }

@@ -26,6 +26,8 @@ import {
   moveNoteToGroup,
   type Note,
   type NoteGeometry,
+  type NotesData,
+  type NotesPatch,
   type NotesSnapshot,
   normalizeGeometry,
   normalizeNote,
@@ -53,12 +55,12 @@ import {
   NOTES_START_DRAW_ACTION,
   NOTES_UPLOAD_ICON_ACTION,
   NOTES_VISIBILITY_ACTION,
-} from '@/lib/notes/messages'
+} from '@/lib/notes/protocol'
 import { isAllowedIconFileName } from '@/lib/notes/storage/paths'
 import type { NotesPorts } from '@/lib/notes/storage/repository'
 import { getStoredAuth } from '@/lib/yandex/client'
 
-let lastSnapshot: NotesSnapshot | null = null
+let lastSnapshot: NotesData | null = null
 
 const createPorts = async (): Promise<NotesPorts | null> => {
   const auth = await getStoredAuth()
@@ -73,39 +75,34 @@ const isTrustedNotesSender = (sender: RuntimeMessageSender): boolean =>
   isTrustedPanelSender(sender) || isTrustedNmapsContentSender(sender)
 
 /**
+ * Добавляет к состоянию хранилища локальные скрытые id.
+ *
+ * Скрытие живёт в `storage.local`, а не на Диске, поэтому читается при каждой
+ * выдаче снимка, а не хранится вместе с манифестом.
+ */
+const withHidden = async (data: NotesData): Promise<NotesSnapshot> => ({
+  ...data,
+  hiddenIds: await readHiddenNoteIds(),
+})
+
+/**
  * Рассылает снимок панели и карте.
  *
  * Панель получает `NOTES_SNAPSHOT` как широковещательное сообщение, карта —
  * команду перерисовки. Отсутствие получателей не ошибка: панель может быть
  * закрыта, а вкладок карты — ни одной.
  */
-const broadcastSnapshot = async (snapshot: NotesSnapshot): Promise<void> => {
-  const hiddenIds = await readHiddenNoteIds()
-  const payload = { ...snapshot, hiddenIds }
+const broadcastSnapshot = async (data: NotesData): Promise<void> => {
+  const snapshot = await withHidden(data)
 
-  browser.runtime.sendMessage({ action: NOTES_SNAPSHOT_ACTION, snapshot: payload }).catch(() => {})
+  browser.runtime.sendMessage({ action: NOTES_SNAPSHOT_ACTION, snapshot }).catch(() => {})
 
-  await relayMessageToMapTabs(
-    {},
-    {
-      action: NOTES_RENDER_ACTION,
-      manifest: snapshot.manifest,
-      shards: snapshot.shards,
-      hiddenIds,
-    },
-  ).catch(() => {})
+  await relayMessageToMapTabs({}, { action: NOTES_RENDER_ACTION, snapshot }).catch(() => {})
 }
 
-const mergeMutation = (result: {
-  manifest: NotesSnapshot['manifest']
-  shards: NotesSnapshot['shards']
-}): NotesSnapshot => {
+const mergeMutation = (patch: NotesPatch): NotesData => {
   const base = lastSnapshot
-  return {
-    manifest: result.manifest,
-    shards: { ...(base?.shards ?? {}), ...result.shards },
-    fromCache: false,
-  }
+  return { manifest: patch.manifest, shards: { ...(base?.shards ?? {}), ...patch.shards } }
 }
 
 export const handleNotesLoad: MessageHandler = (_message, sender, sendResponse) => {
@@ -126,8 +123,7 @@ export const handleNotesLoad: MessageHandler = (_message, sender, sendResponse) 
 
     const cached = lastSnapshot ?? (await loadCachedSnapshot(ports))
     if (cached) {
-      const hiddenIds = await readHiddenNoteIds()
-      sendResponse({ ok: true, snapshot: { ...cached, hiddenIds } })
+      sendResponse({ ok: true, snapshot: await withHidden(cached) })
     }
 
     try {
@@ -135,8 +131,7 @@ export const handleNotesLoad: MessageHandler = (_message, sender, sendResponse) 
       lastSnapshot = fresh
       await broadcastSnapshot(fresh)
       if (!cached) {
-        const hiddenIds = await readHiddenNoteIds()
-        sendResponse({ ok: true, snapshot: { ...fresh, hiddenIds } })
+        sendResponse({ ok: true, snapshot: await withHidden(fresh) })
       }
     } catch (error: unknown) {
       if (!cached) {
@@ -162,10 +157,7 @@ const mutationHandler = ({
   run,
 }: {
   action: string
-  run: (
-    ports: NotesPorts,
-    message: Record<string, unknown>,
-  ) => Promise<{ manifest: NotesSnapshot['manifest']; shards: NotesSnapshot['shards'] }>
+  run: (ports: NotesPorts, message: Record<string, unknown>) => Promise<NotesPatch>
 }): MessageHandler => {
   return (message, sender, sendResponse) => {
     if (!isTrustedNotesSender(sender)) {
@@ -188,11 +180,7 @@ const mutationHandler = ({
 
         // Ответ уходит сразу: рассылка снимка панели и вкладкам карты не
         // должна задерживать интерфейс.
-        sendResponse({
-          ok: true,
-          manifest: result.manifest,
-          shards: result.shards,
-        })
+        sendResponse({ ok: true, patch: result })
         await broadcastSnapshot(snapshot)
       } catch (error: unknown) {
         sendResponse({ ok: false, error: getErrorMessage(error, 'STORAGE_ERROR') })

@@ -44,7 +44,6 @@ const snapshot = {
     },
   },
   hiddenIds: [],
-  fromCache: false,
 }
 
 const renderPanel = () =>
@@ -82,8 +81,7 @@ describe('useNotesPanel: удаление', () => {
     await act(async () => {
       resolveDelete({
         ok: true,
-        manifest: { ...snapshot.manifest, notes: [] },
-        shards: {},
+        patch: { manifest: { ...snapshot.manifest, notes: [] }, shards: {} },
       })
       await deletePending
     })
@@ -117,7 +115,10 @@ describe('useNotesPanel: удаление', () => {
       action?: string
     }) => {
       if (message.action === 'NOTES_DELETE_NOTE') {
-        return Promise.resolve({ ok: true, manifest: snapshot.manifest, shards: {} }) as never
+        return Promise.resolve({
+          ok: true,
+          patch: { manifest: snapshot.manifest, shards: {} },
+        }) as never
       }
       return Promise.resolve({ ok: true, snapshot }) as never
     }) as never)

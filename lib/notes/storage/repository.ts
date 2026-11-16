@@ -1,4 +1,5 @@
 import { createEmptyManifest, mergeManifests, type NotesManifest } from '../manifest'
+import type { NotesData, NotesPatch } from '../protocol'
 import {
   createEmptyShard,
   type GeometryShard,
@@ -14,19 +15,6 @@ import { enqueueNotesWrite } from './write_queue'
 export type NotesPorts = {
   remote: NotesRemote
   cache: NotesCache
-}
-
-export type NotesSnapshot = {
-  manifest: NotesManifest
-  /** Шарды геометрии по ключу `YYYY-MM`. */
-  shards: Record<string, GeometryShard>
-  /** Снимок собран из кэша и ещё не подтверждён Диском. */
-  fromCache: boolean
-}
-
-export type NotesMutationResult = {
-  manifest: NotesManifest
-  shards: Record<string, GeometryShard>
 }
 
 const shardIdsOf = (manifest: NotesManifest): string[] => {
@@ -47,7 +35,7 @@ const readShard = async (ports: NotesPorts, shardId: string | null): Promise<Geo
 }
 
 /** Снимок из кэша: панель может открыться до ответа Диска. */
-export const loadCachedSnapshot = async (ports: NotesPorts): Promise<NotesSnapshot | null> => {
+export const loadCachedSnapshot = async (ports: NotesPorts): Promise<NotesData | null> => {
   const manifest = await ports.cache.readManifest()
   if (!manifest) return null
 
@@ -57,11 +45,11 @@ export const loadCachedSnapshot = async (ports: NotesPorts): Promise<NotesSnapsh
     if (shard) shards[shardId] = shard
   }
 
-  return { manifest, shards, fromCache: true }
+  return { manifest, shards }
 }
 
 /** Полный снимок с Диска: манифест и геометрия всех дат. */
-export const loadRemoteSnapshot = async (ports: NotesPorts): Promise<NotesSnapshot> => {
+export const loadRemoteSnapshot = async (ports: NotesPorts): Promise<NotesData> => {
   const manifest = (await ports.remote.readManifest()) ?? createEmptyManifest()
   const shards: Record<string, GeometryShard> = {}
 
@@ -80,7 +68,7 @@ export const loadRemoteSnapshot = async (ports: NotesPorts): Promise<NotesSnapsh
     Object.entries(shards).map(([shardId, shard]) => ports.cache.writeShard(shardId, shard)),
   )
 
-  return { manifest, shards, fromCache: false }
+  return { manifest, shards }
 }
 
 const writeManifest = async (
@@ -117,7 +105,7 @@ const saveNoteNow = async ({
   ports: NotesPorts
   note: Note
   geometry: NoteGeometry
-}): Promise<NotesMutationResult> => {
+}): Promise<NotesPatch> => {
   // `updatedAt` приходит от клиента и НЕ перештамповывается здесь: иначе
   // отложенная правка, отправленная раньше переноса в группу, но выполненная
   // позже, получала бы самый свежий штамп и затирала перенос — заметка
@@ -177,7 +165,7 @@ const deleteNoteNow = async ({
   noteId: string
   /** Дата заметки из панели: позволяет читать шард, не дожидаясь манифеста. */
   date?: string
-}): Promise<NotesMutationResult> => {
+}): Promise<NotesPatch> => {
   const hintedShardId = date ? shardIdForDate(date) : null
 
   // Манифест и шард читаются параллельно: панель знает дату заметки, поэтому
@@ -220,7 +208,7 @@ const saveGroupNow = async ({
 }: {
   ports: NotesPorts
   group: NoteGroup
-}): Promise<NotesMutationResult> => {
+}): Promise<NotesPatch> => {
   const remoteManifest = (await ports.remote.readManifest()) ?? createEmptyManifest()
   const stamped: NoteGroup = { ...group, updatedAt: new Date().toISOString() }
   const manifest = mergeManifests(remoteManifest, {
@@ -247,7 +235,7 @@ const deleteGroupNow = async ({
   ports: NotesPorts
   groupId: string
   mode: 'keepNotes' | 'cascade'
-}): Promise<NotesMutationResult> => {
+}): Promise<NotesPatch> => {
   const remoteManifest = (await ports.remote.readManifest()) ?? createEmptyManifest()
   const doomed = remoteManifest.notes.filter((note) => note.groupId === groupId)
 
@@ -290,7 +278,7 @@ const moveNoteToGroupNow = async ({
   ports: NotesPorts
   noteId: string
   groupId: string | null
-}): Promise<NotesMutationResult> => {
+}): Promise<NotesPatch> => {
   const remoteManifest = (await ports.remote.readManifest()) ?? createEmptyManifest()
   const target = remoteManifest.notes.find((note) => note.id === noteId)
   if (!target) return { manifest: remoteManifest, shards: {} }

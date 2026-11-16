@@ -55,7 +55,7 @@ import {
   NOTES_SELECT_ACTION,
   NOTES_START_DRAW_ACTION,
   NOTES_UPLOAD_ICON_ACTION,
-} from '@/lib/notes/messages'
+} from '@/lib/notes/protocol'
 import {
   initNspdContentScriptSync,
   syncNspdContentScriptsFromStorage,

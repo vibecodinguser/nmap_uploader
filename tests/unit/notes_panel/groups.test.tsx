@@ -377,7 +377,6 @@ describe('хук: видимость группы', () => {
       },
       shards: {},
       hiddenIds: [],
-      fromCache: false,
     }
 
     const sendMessage = vi.spyOn(browser.runtime, 'sendMessage').mockResolvedValue({

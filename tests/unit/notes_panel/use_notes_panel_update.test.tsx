@@ -16,7 +16,7 @@ import {
   NOTES_DELETE_NOTE_ACTION,
   NOTES_LOAD_ACTION,
   NOTES_SAVE_NOTE_ACTION,
-} from '@/lib/notes/messages'
+} from '@/lib/notes/protocol'
 import type { Note } from '@/lib/notes/types'
 import { sampleNote } from '@/tests/unit/notes_panel/list_props'
 
@@ -46,7 +46,6 @@ const snapshot = {
     },
   },
   hiddenIds: [],
-  fromCache: false,
 }
 
 const renderPanel = () =>
@@ -74,7 +73,7 @@ describe('useNotesPanel: правка заметки', () => {
     ) => {
       sent.push(message)
       if (message.action === NOTES_LOAD_ACTION) return { ok: true, snapshot }
-      return { ok: true }
+      return { ok: true, patch: { manifest: snapshot.manifest, shards: {} } }
     }) as never)
   })
 
@@ -156,7 +155,7 @@ describe('useNotesPanel: удаление и отмена', () => {
     ) => {
       sent.push(message)
       if (message.action === NOTES_LOAD_ACTION) return { ok: true, snapshot }
-      return { ok: true }
+      return { ok: true, patch: { manifest: snapshot.manifest, shards: {} } }
     }) as never)
   })
 

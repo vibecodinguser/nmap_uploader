@@ -244,7 +244,6 @@ describe('loadRemoteSnapshot', () => {
     const snapshot = await loadRemoteSnapshot(notePorts)
     expect(Object.keys(snapshot.shards).sort()).toEqual(['2026-11', '2026-12'])
     expect(snapshot.manifest.notes).toHaveLength(2)
-    expect(snapshot.fromCache).toBe(false)
   })
 })
 

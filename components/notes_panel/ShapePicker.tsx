@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useLocale } from '@/hooks/useLocale'
-import type { DrawableNoteKind } from '@/lib/notes/messages'
+import type { DrawableNoteKind } from '@/lib/notes/protocol'
 import { NoteKindIcon } from './NoteKindIcon'
 
 type ShapeOption = {

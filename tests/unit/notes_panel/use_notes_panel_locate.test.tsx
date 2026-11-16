@@ -11,7 +11,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { browser } from 'wxt/browser'
 import { LocaleProvider } from '@/hooks/useLocale'
 import { useNotesPanel } from '@/hooks/useNotesPanel'
-import { NOTES_SELECT_ACTION } from '@/lib/notes/messages'
+import { NOTES_SELECT_ACTION } from '@/lib/notes/protocol'
 import { createDefaultStyle } from '@/lib/notes/style_resolution'
 import type { Note } from '@/lib/notes/types'
 import { resetBrowserMocks } from '@/tests/setup/browser_mock'
@@ -45,7 +45,6 @@ const snapshot = {
     },
   },
   hiddenIds: [],
-  fromCache: false,
 }
 
 const renderPanel = () =>

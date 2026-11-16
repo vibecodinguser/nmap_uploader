@@ -12,6 +12,7 @@ import {
 } from '@/lib/notes/geometry'
 import { collapseKey, type GroupVisibility, groupVisibility } from '@/lib/notes/grouping'
 import { mergeManifests, type NotesManifest } from '@/lib/notes/manifest'
+import { NOTE_PALETTE } from '@/lib/notes/palette'
 import {
   type DrawableNoteKind,
   isDrawableNoteKind,
@@ -26,8 +27,10 @@ import {
   NOTES_SELECT_ACTION,
   NOTES_SNAPSHOT_ACTION,
   NOTES_START_DRAW_ACTION,
-} from '@/lib/notes/messages'
-import { NOTE_PALETTE } from '@/lib/notes/palette'
+  type NotesMutationResponse,
+  type NotesPatch,
+  type NotesSnapshot,
+} from '@/lib/notes/protocol'
 import { type GeometryShard, shardIdForDate } from '@/lib/notes/shards'
 import { createDefaultStyle } from '@/lib/notes/style_resolution'
 import type { Note, NoteGeometry, NoteGroup, NoteKind } from '@/lib/notes/types'
@@ -39,19 +42,6 @@ import { STORAGE_TOKEN_KEY, STORAGE_USER_KEY } from '@/lib/yandex/constants'
 export type NotesPanelMode = 'list' | 'properties'
 
 export type DrawableKind = DrawableNoteKind
-
-type SnapshotState = {
-  manifest: NotesManifest
-  shards: Record<string, GeometryShard>
-  hiddenIds: string[]
-}
-
-type MutationResponse = {
-  ok?: boolean
-  error?: string
-  manifest?: NotesManifest
-  shards?: Record<string, GeometryShard>
-}
 
 const SAVE_DEBOUNCE_MS = 700
 const UNDO_TIMEOUT_MS = 5000
@@ -73,7 +63,7 @@ const kindLabelKey = (kind: NoteKind) =>
     | 'notesPanel.kindCircle'
 
 /** Снимок с добавленной заметкой и её геометрией. Чистая функция — удобно сравнивать. */
-const withNote = (snapshot: SnapshotState, note: Note, geometry: NoteGeometry): SnapshotState => {
+const withNote = (snapshot: NotesSnapshot, note: Note, geometry: NoteGeometry): NotesSnapshot => {
   const shardId = shardIdForDate(note.date)
   const others = snapshot.manifest.notes.filter((item) => item.id !== note.id)
 
@@ -94,7 +84,7 @@ const withNote = (snapshot: SnapshotState, note: Note, geometry: NoteGeometry): 
 }
 
 /** Снимок без заметки. Геометрию не трогаем: она уедет вместе со снимком с Диска. */
-const withoutNote = (snapshot: SnapshotState, noteId: string): SnapshotState => ({
+const withoutNote = (snapshot: NotesSnapshot, noteId: string): NotesSnapshot => ({
   ...snapshot,
   manifest: {
     ...snapshot.manifest,
@@ -149,7 +139,7 @@ export const geometryFromDrawCoords = (
  * более свежая правка, которая ещё не улетела на Диск. Побеждает более свежий
  * `updatedAt`, иначе ответ сервера откатывал бы только что сделанное изменение.
  */
-const mergeSnapshot = (incoming: SnapshotState, local: SnapshotState | null): SnapshotState => {
+const mergeSnapshot = (incoming: NotesSnapshot, local: NotesSnapshot | null): NotesSnapshot => {
   if (!local) return incoming
   return {
     manifest: mergeManifests(incoming.manifest, local.manifest),
@@ -158,7 +148,7 @@ const mergeSnapshot = (incoming: SnapshotState, local: SnapshotState | null): Sn
   }
 }
 
-const EMPTY_SNAPSHOT: SnapshotState = {
+const EMPTY_SNAPSHOT: NotesSnapshot = {
   manifest: { version: 1, updatedAt: new Date(0).toISOString(), groups: [], notes: [] },
   shards: {},
   hiddenIds: [],
@@ -172,7 +162,7 @@ const EMPTY_SNAPSHOT: SnapshotState = {
  */
 export const useNotesPanel = () => {
   const { t } = useLocale()
-  const [snapshot, setSnapshot] = useState<SnapshotState | null>(null)
+  const [snapshot, setSnapshot] = useState<NotesSnapshot | null>(null)
   const [status, setStatus] = useState<'loading' | 'ready' | 'auth' | 'error'>('loading')
   const [error, setError] = useState<string | null>(null)
   const [mode, setMode] = useState<NotesPanelMode>('list')
@@ -196,21 +186,21 @@ export const useNotesPanel = () => {
     (
       message: Record<string, unknown>,
       handlers: {
-        onSuccess: (response: MutationResponse) => void
+        onSuccess: (response: NotesMutationResponse) => void
         onError: () => void
       },
     ) => {
       saveChain.current = saveChain.current
         .then(() => browser.runtime.sendMessage(message))
         .then((response: unknown) => {
-          const parsed = response as MutationResponse | undefined
+          const parsed = response as NotesMutationResponse | undefined
           // `ok: false` — это тоже неудача: background вернул её вместо
           // исключения, и вызывающий код должен откатить своё состояние.
           if (parsed?.ok === false) {
             handlers.onError()
             return
           }
-          handlers.onSuccess(parsed as MutationResponse)
+          handlers.onSuccess(parsed as NotesMutationResponse)
         })
         .catch(() => handlers.onError())
     },
@@ -223,7 +213,7 @@ export const useNotesPanel = () => {
    * Панель — iframe страницы карты, поэтому снимок можно отдать напрямую в
    * хост, не дожидаясь, пока background запишет файлы на Диск.
    */
-  const postPreview = useCallback((next: SnapshotState) => {
+  const postPreview = useCallback((next: NotesSnapshot) => {
     try {
       window.parent?.postMessage({ action: NOTES_PANEL_PREVIEW_MESSAGE, snapshot: next }, '*')
     } catch {
@@ -231,18 +221,30 @@ export const useNotesPanel = () => {
     }
   }, [])
 
-  const applyMutation = useCallback((response: MutationResponse) => {
-    if (!response.ok || !response.manifest) {
-      setError(response.error ?? null)
-      return
-    }
-    setSnapshot((previous) => ({
-      manifest: response.manifest as NotesManifest,
-      shards: { ...(previous?.shards ?? {}), ...(response.shards ?? {}) },
-      hiddenIds: previous?.hiddenIds ?? [],
-    }))
-    setError(null)
+  /** Наложить патч на текущий снимок: манифест целиком, шарды — по одному. */
+  const applyPatch = useCallback((patch: NotesPatch) => {
+    setSnapshot((previous) =>
+      previous
+        ? {
+            manifest: patch.manifest,
+            shards: { ...previous.shards, ...patch.shards },
+            hiddenIds: previous.hiddenIds,
+          }
+        : previous,
+    )
   }, [])
+
+  const applyMutation = useCallback(
+    (response: NotesMutationResponse) => {
+      if (!response.ok) {
+        setError(response.error)
+        return
+      }
+      applyPatch(response.patch)
+      setError(null)
+    },
+    [applyPatch],
+  )
 
   const flushSave = useCallback(() => {
     if (saveTimer.current !== null) {
@@ -282,7 +284,7 @@ export const useNotesPanel = () => {
     browser.runtime
       .sendMessage({ action: NOTES_LOAD_ACTION })
       .then((response: unknown) => {
-        const payload = response as { ok?: boolean; error?: string; snapshot?: SnapshotState }
+        const payload = response as { ok?: boolean; error?: string; snapshot?: NotesSnapshot }
         if (payload?.ok && payload.snapshot) {
           setSnapshot({
             manifest: payload.snapshot.manifest,
@@ -360,7 +362,7 @@ export const useNotesPanel = () => {
     const handleMessage = (message: Record<string, unknown>) => {
       switch (message.action) {
         case NOTES_SNAPSHOT_ACTION: {
-          const next = message.snapshot as SnapshotState | undefined
+          const next = message.snapshot as NotesSnapshot | undefined
           if (next?.manifest) {
             setSnapshot((previous) => mergeSnapshot(next, previous))
             setStatus('ready')
@@ -451,17 +453,7 @@ export const useNotesPanel = () => {
         { action: NOTES_SAVE_NOTE_ACTION, note, geometry },
         {
           onSuccess: (response) => {
-            if (response.manifest) {
-              setSnapshot((previous) =>
-                previous
-                  ? {
-                      ...previous,
-                      manifest: response.manifest as NotesManifest,
-                      shards: { ...previous.shards, ...(response.shards ?? {}) },
-                    }
-                  : previous,
-              )
-            }
+            if (response.ok) applyPatch(response.patch)
           },
           onError: () => {
             // Не записалось — убираем заметку с карты и из списка, чтобы не
@@ -494,7 +486,7 @@ export const useNotesPanel = () => {
       if (snapshot) {
         // Правка видна на карте сразу: цвет, подпись и название не должны
         // ждать записи на Диск.
-        const optimistic: SnapshotState = {
+        const optimistic: NotesSnapshot = {
           ...snapshot,
           manifest: {
             ...snapshot.manifest,
@@ -543,17 +535,7 @@ export const useNotesPanel = () => {
         {
           onSuccess: (response) => {
             // Манифест с Диска — источник истины; локальная копия уже без заметки.
-            if (response.manifest) {
-              setSnapshot((previous) =>
-                previous
-                  ? {
-                      ...previous,
-                      manifest: response.manifest as NotesManifest,
-                      shards: { ...previous.shards, ...(response.shards ?? {}) },
-                    }
-                  : previous,
-              )
-            }
+            if (response.ok) applyPatch(response.patch)
           },
           onError: () => {
             if (snapshot) {
@@ -584,17 +566,7 @@ export const useNotesPanel = () => {
       { action: NOTES_SAVE_NOTE_ACTION, note: undo.note, geometry: undo.geometry },
       {
         onSuccess: (response) => {
-          if (response.manifest) {
-            setSnapshot((previous) =>
-              previous
-                ? {
-                    ...previous,
-                    manifest: response.manifest as NotesManifest,
-                    shards: { ...previous.shards, ...(response.shards ?? {}) },
-                  }
-                : previous,
-            )
-          }
+          if (response.ok) applyPatch(response.patch)
         },
         onError: () => {
           if (snapshot) {
@@ -710,7 +682,7 @@ export const useNotesPanel = () => {
         const groups = snapshot.manifest.groups.some((item) => item.id === group.id)
           ? snapshot.manifest.groups.map((item) => (item.id === group.id ? group : item))
           : [...snapshot.manifest.groups, group]
-        const optimistic: SnapshotState = {
+        const optimistic: NotesSnapshot = {
           ...snapshot,
           manifest: { ...snapshot.manifest, groups },
         }
@@ -721,17 +693,7 @@ export const useNotesPanel = () => {
         { action: NOTES_SAVE_GROUP_ACTION, group },
         {
           onSuccess: (response) => {
-            if (response.manifest) {
-              setSnapshot((previous) =>
-                previous
-                  ? {
-                      ...previous,
-                      manifest: response.manifest as NotesManifest,
-                      shards: { ...previous.shards, ...(response.shards ?? {}) },
-                    }
-                  : previous,
-              )
-            }
+            if (response.ok) applyPatch(response.patch)
           },
           onError: () => {
             // Группу не сохранили — возвращаем список групп с Диска.
@@ -792,7 +754,7 @@ export const useNotesPanel = () => {
   const removeGroup = useCallback(
     (groupId: string, mode: 'keepNotes' | 'cascade') => {
       if (snapshot) {
-        const optimistic: SnapshotState = {
+        const optimistic: NotesSnapshot = {
           ...snapshot,
           manifest: {
             ...snapshot.manifest,
@@ -813,17 +775,7 @@ export const useNotesPanel = () => {
         { action: NOTES_DELETE_GROUP_ACTION, groupId, mode },
         {
           onSuccess: (response) => {
-            if (response.manifest) {
-              setSnapshot((previous) =>
-                previous
-                  ? {
-                      ...previous,
-                      manifest: response.manifest as NotesManifest,
-                      shards: { ...previous.shards, ...(response.shards ?? {}) },
-                    }
-                  : previous,
-              )
-            }
+            if (response.ok) applyPatch(response.patch)
           },
           onError: () => {
             setError(t('notesPanel.saveError'))
@@ -842,7 +794,7 @@ export const useNotesPanel = () => {
       if (!note) return
 
       if (snapshot) {
-        const optimistic: SnapshotState = {
+        const optimistic: NotesSnapshot = {
           ...snapshot,
           manifest: {
             ...snapshot.manifest,
@@ -858,11 +810,7 @@ export const useNotesPanel = () => {
         { action: NOTES_MOVE_NOTE_ACTION, noteId, groupId },
         {
           onSuccess: (response) => {
-            if (response.manifest) {
-              setSnapshot((previous) =>
-                previous ? { ...previous, manifest: response.manifest as NotesManifest } : previous,
-              )
-            }
+            if (response.ok) applyPatch(response.patch)
           },
           onError: () => {
             setError(t('notesPanel.saveError'))

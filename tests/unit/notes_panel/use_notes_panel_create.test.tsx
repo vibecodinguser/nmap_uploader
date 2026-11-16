@@ -12,7 +12,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { browser } from 'wxt/browser'
 import { LocaleProvider } from '@/hooks/useLocale'
 import { useNotesPanel } from '@/hooks/useNotesPanel'
-import { NOTES_DRAW_FINISHED_ACTION } from '@/lib/notes/messages'
+import { NOTES_DRAW_FINISHED_ACTION } from '@/lib/notes/protocol'
 import { NOTES_PANEL_PREVIEW_MESSAGE } from '@/lib/notes_panel/host'
 import { resetBrowserMocks } from '@/tests/setup/browser_mock'
 
@@ -20,7 +20,6 @@ const snapshot = {
   manifest: { version: 1, updatedAt: '2026-11-14T10:00:00.000Z', groups: [], notes: [] },
   shards: {},
   hiddenIds: [],
-  fromCache: false,
 }
 
 const renderPanel = () =>
@@ -76,7 +75,7 @@ describe('useNotesPanel: создание', () => {
     expect(result.current.mode).toBe('properties')
 
     await act(async () => {
-      resolveSave({ ok: true, manifest: snapshot.manifest, shards: {} })
+      resolveSave({ ok: true, patch: { manifest: snapshot.manifest, shards: {} } })
       await Promise.resolve()
     })
   })
