@@ -7,7 +7,7 @@ import {
   NOTE_STROKE_WIDTH_MIN,
 } from '@/lib/notes/model/palette'
 import { resolveNoteStyle } from '@/lib/notes/model/style_resolution'
-import { isFilledKind, type Note } from '@/lib/notes/model/types'
+import { hasAdjustableStroke, isFilledKind, type Note } from '@/lib/notes/model/types'
 import { ColorPicker } from './ColorPicker'
 import { HatchPicker } from './HatchPicker'
 
@@ -17,6 +17,9 @@ import { HatchPicker } from './HatchPicker'
  * Отдельных цветов у заливки и штриховки нет — обе рисуются цветом объекта.
  * Поэтому в `fillColor` хранится тот же цвет: по нему видно, включена ли
  * заливка, а сам цвет меняется вместе с общим.
+ *
+ * У точки прозрачности и толщины границы нет: это иконка фиксированного
+ * размера, оба ползунка ничего не меняли на карте.
  */
 export const NoteAppearance = ({
   note,
@@ -87,35 +90,39 @@ export const NoteAppearance = ({
         </>
       )}
 
-      <label className="notes-panel__field notes-panel__field--inline">
-        <span className="notes-panel__field-label">{t('notesPanel.opacity')}</span>
-        <input
-          type="range"
-          min={NOTE_OPACITY_MIN}
-          max={NOTE_OPACITY_MAX}
-          step={0.05}
-          value={note.style.opacity}
-          onChange={(event) =>
-            onPatch({ style: { ...note.style, opacity: Number(event.target.value) } })
-          }
-        />
-        <span className="notes-panel__value">{Math.round(note.style.opacity * 100)}%</span>
-      </label>
+      {hasAdjustableStroke(note.kind) && (
+        <>
+          <label className="notes-panel__field notes-panel__field--inline">
+            <span className="notes-panel__field-label">{t('notesPanel.opacity')}</span>
+            <input
+              type="range"
+              min={NOTE_OPACITY_MIN}
+              max={NOTE_OPACITY_MAX}
+              step={0.05}
+              value={note.style.opacity}
+              onChange={(event) =>
+                onPatch({ style: { ...note.style, opacity: Number(event.target.value) } })
+              }
+            />
+            <span className="notes-panel__value">{Math.round(note.style.opacity * 100)}%</span>
+          </label>
 
-      <label className="notes-panel__field notes-panel__field--inline">
-        <span className="notes-panel__field-label">{t('notesPanel.strokeWidth')}</span>
-        <input
-          type="range"
-          min={NOTE_STROKE_WIDTH_MIN}
-          max={NOTE_STROKE_WIDTH_MAX}
-          step={1}
-          value={note.style.strokeWidth}
-          onChange={(event) =>
-            onPatch({ style: { ...note.style, strokeWidth: Number(event.target.value) } })
-          }
-        />
-        <span className="notes-panel__value">{note.style.strokeWidth}</span>
-      </label>
+          <label className="notes-panel__field notes-panel__field--inline">
+            <span className="notes-panel__field-label">{t('notesPanel.strokeWidth')}</span>
+            <input
+              type="range"
+              min={NOTE_STROKE_WIDTH_MIN}
+              max={NOTE_STROKE_WIDTH_MAX}
+              step={1}
+              value={note.style.strokeWidth}
+              onChange={(event) =>
+                onPatch({ style: { ...note.style, strokeWidth: Number(event.target.value) } })
+              }
+            />
+            <span className="notes-panel__value">{note.style.strokeWidth}</span>
+          </label>
+        </>
+      )}
 
       <label className="notes-panel__field notes-panel__field--checkbox">
         <input

@@ -112,7 +112,7 @@ describe('NoteProperties', () => {
     expect(onPatch).toHaveBeenCalledWith({ date: '01-12-2026' })
   })
 
-  it('переключает подпись и прозрачность', () => {
+  it('переключает подпись', () => {
     const onPatch = vi.fn()
     wrap(
       <NoteProperties
@@ -132,6 +132,51 @@ describe('NoteProperties', () => {
     fireEvent.click(screen.getByRole('checkbox'))
 
     expect(onPatch).toHaveBeenCalledWith({ showLabel: true })
+  })
+
+  it('у точки нет прозрачности и толщины границы', () => {
+    wrap(
+      <NoteProperties
+        note={note({ kind: 'Point' })}
+        fallbackName="14.11.2026 Точка"
+        hidden={false}
+        onPatch={vi.fn()}
+        onDelete={vi.fn()}
+        onBack={vi.fn()}
+        onLocate={vi.fn()}
+        onToggleHidden={vi.fn()}
+        groups={[]}
+        onMoveToGroup={() => {}}
+      />,
+    )
+
+    // Точка — иконка фиксированного размера: оба ползунка ничего не меняли.
+    expect(screen.queryByRole('slider')).toBeNull()
+    expect(screen.queryByText('Прозрачность')).toBeNull()
+    expect(screen.queryByText('Толщина границы')).toBeNull()
+    // Подпись у точки остаётся.
+    expect(screen.getByRole('checkbox', { name: 'Подпись на карте' })).toBeTruthy()
+  })
+
+  it('у линии прозрачность и толщина границы есть', () => {
+    wrap(
+      <NoteProperties
+        note={note({ kind: 'Line' })}
+        fallbackName="14.11.2026 Линия"
+        hidden={false}
+        onPatch={vi.fn()}
+        onDelete={vi.fn()}
+        onBack={vi.fn()}
+        onLocate={vi.fn()}
+        onToggleHidden={vi.fn()}
+        groups={[]}
+        onMoveToGroup={() => {}}
+      />,
+    )
+
+    expect(screen.getAllByRole('slider')).toHaveLength(2)
+    expect(screen.getByText('Прозрачность')).toBeTruthy()
+    expect(screen.getByText('Толщина границы')).toBeTruthy()
   })
 
   it('вызывает удаление', () => {

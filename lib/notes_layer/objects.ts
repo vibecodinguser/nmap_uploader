@@ -57,18 +57,18 @@ const escapeXml = (value: string): string =>
 /**
  * Иконка точки: круг цвета заметки с белой обводкой.
  *
- * Рисуется как SVG-картинка, а не пресетом Яндекса: только так прозрачность и
- * цвет совпадают с остальными объектами.
+ * Рисуется как SVG-картинка, а не пресетом Яндекса: только так цвет совпадает
+ * с остальными объектами. Прозрачность не применяется: у точки её нет в
+ * интерфейсе, и полупрозрачная иконка осталась бы без способа это исправить.
  */
 export const buildPointIconHref = (style: ResolvedNoteStyle): string => {
-  const fill = withOpacity(style.color, style.opacity)
   const size = POINT_ICON_SIZE
   const radius = size / 2 - 3
 
   const svg = [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">`,
     `<circle cx="${size / 2}" cy="${size / 2}" r="${radius + 2}" fill="#ffffff" fill-opacity="0.9"/>`,
-    `<circle cx="${size / 2}" cy="${size / 2}" r="${radius}" fill="${fill}"/>`,
+    `<circle cx="${size / 2}" cy="${size / 2}" r="${radius}" fill="${style.color}"/>`,
     '</svg>',
   ].join('')
 

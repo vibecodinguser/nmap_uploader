@@ -41,6 +41,23 @@ describe('renderNote', () => {
     expect(String(point.options.iconImageHref)).toContain('%23e96b7c')
   })
 
+  it('не применяет прозрачность к иконке точки', () => {
+    const [point] = renderNote({
+      note: note({
+        style: { ...createDefaultStyle('Point'), color: '#e96b7c', opacity: 0.5 },
+      }),
+      geometry: { kind: 'Point', coords: [37, 55] },
+      group: null,
+      selected: false,
+    })
+
+    const href = decodeURIComponent(String(point.options.iconImageHref))
+    // Полупрозрачный цвет остался бы в данных без способа его исправить:
+    // у точки ползунка прозрачности нет.
+    expect(href).toContain('fill="#e96b7c"')
+    expect(href).not.toContain('rgba(')
+  })
+
   it('добавляет подпись отдельным объектом, если она включена', () => {
     const rendered = renderNote({
       note: note({ name: 'Мост', showLabel: true }),
