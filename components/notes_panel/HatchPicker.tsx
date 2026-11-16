@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react'
 import { useLocale } from '@/hooks/useLocale'
-import type { HatchPattern, NoteHatch } from '@/lib/notes/types'
+import type { HatchPattern, NoteHatch } from '@/lib/notes/model/types'
 
 /**
  * Пять узоров штриховки.

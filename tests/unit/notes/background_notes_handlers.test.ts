@@ -14,7 +14,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { browser } from 'wxt/browser'
 import type { MessageHandler } from '@/lib/background/message_router'
 import type { RuntimeMessageSender } from '@/lib/message_auth'
-import type { NotesManifest } from '@/lib/notes/manifest'
+import type { NotesManifest } from '@/lib/notes/model/manifest'
+import type { GeometryShard } from '@/lib/notes/model/shards'
+import type { Note } from '@/lib/notes/model/types'
 import type { NotesPatch } from '@/lib/notes/protocol'
 import {
   NOTES_DELETE_GROUP_ACTION,
@@ -32,9 +34,7 @@ import {
   NOTES_UPLOAD_ICON_ACTION,
   NOTES_VISIBILITY_ACTION,
 } from '@/lib/notes/protocol'
-import type { GeometryShard } from '@/lib/notes/shards'
-import type { Note } from '@/lib/notes/types'
-import { HIDDEN_NOTE_IDS_STORAGE_KEY } from '@/lib/notes/visibility'
+import { HIDDEN_NOTE_IDS_STORAGE_KEY } from '@/lib/notes/storage/hidden_ids'
 import { STORAGE_TOKEN_KEY, STORAGE_USER_KEY } from '@/lib/yandex/constants'
 import { EXTENSION_ID, getURL } from '@/tests/setup/browser_mock'
 import { sampleGroup, sampleNote } from '@/tests/unit/notes_panel/list_props'

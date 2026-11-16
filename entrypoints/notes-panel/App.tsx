@@ -6,9 +6,9 @@ import { NoteProperties } from '@/components/notes_panel/NoteProperties'
 import { ShapePicker } from '@/components/notes_panel/ShapePicker'
 import { useLocale } from '@/hooks/useLocale'
 import { useNotesPanel } from '@/hooks/useNotesPanel'
-import { buildAutoNoteName } from '@/lib/notes/autonames'
+import { buildAutoNoteName } from '@/lib/notes/model/autonames'
+import type { Note } from '@/lib/notes/model/types'
 import type { DrawableNoteKind } from '@/lib/notes/protocol'
-import type { Note } from '@/lib/notes/types'
 import {
   NOTES_PANEL_CLOSE_MESSAGE,
   NOTES_PANEL_LAYOUT_MESSAGE,

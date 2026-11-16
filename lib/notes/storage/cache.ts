@@ -1,5 +1,5 @@
-import type { NotesManifest } from '../manifest'
-import type { GeometryShard } from '../shards'
+import type { NotesManifest } from '../model/manifest'
+import type { GeometryShard } from '../model/shards'
 
 /**
  * Локальный кэш заметок в IndexedDB.

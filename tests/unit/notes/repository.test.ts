@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import type { NotesManifest } from '@/lib/notes/manifest'
-import type { GeometryShard } from '@/lib/notes/shards'
+import type { NotesManifest } from '@/lib/notes/model/manifest'
+import type { GeometryShard } from '@/lib/notes/model/shards'
+import type { Note, NoteGroup } from '@/lib/notes/model/types'
 import { createNoopNotesCache } from '@/lib/notes/storage/cache'
 import type { NotesRemote } from '@/lib/notes/storage/remote'
 import {
@@ -11,7 +12,6 @@ import {
   saveGroup,
   saveNote,
 } from '@/lib/notes/storage/repository'
-import type { Note, NoteGroup } from '@/lib/notes/types'
 
 type MemoryRemote = NotesRemote & {
   files: Map<string, unknown>

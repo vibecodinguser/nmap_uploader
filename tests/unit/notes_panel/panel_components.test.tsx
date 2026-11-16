@@ -7,8 +7,8 @@ import { NoteList as NoteListBase, noteRowIds } from '@/components/notes_panel/N
 import { NoteProperties } from '@/components/notes_panel/NoteProperties'
 import { ShapePicker } from '@/components/notes_panel/ShapePicker'
 import { LocaleProvider } from '@/hooks/useLocale'
-import { createDefaultStyle } from '@/lib/notes/style_resolution'
-import type { Note } from '@/lib/notes/types'
+import { createDefaultStyle } from '@/lib/notes/model/style_resolution'
+import type { Note } from '@/lib/notes/model/types'
 import { listProps, type NoteListProps } from './list_props'
 
 const note = (overrides: Partial<Note> = {}): Note => ({

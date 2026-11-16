@@ -18,8 +18,8 @@ import {
   normalizeGeometry,
   zoomForBounds,
 } from '@/lib/notes'
-import type { NotesManifest } from '@/lib/notes/manifest'
-import type { GeometryShard } from '@/lib/notes/shards'
+import type { NotesManifest } from '@/lib/notes/model/manifest'
+import type { GeometryShard } from '@/lib/notes/model/shards'
 import type { PolygonSnapTarget } from '@/lib/tracing/types'
 import { LABEL_MIN_ZOOM, polygonRing, type RenderedNote, renderNotes } from './objects'
 

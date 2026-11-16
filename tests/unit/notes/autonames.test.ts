@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildAutoNoteName, displayNoteName } from '@/lib/notes/autonames'
+import { buildAutoNoteName, displayNoteName } from '@/lib/notes/model/autonames'
 
 describe('buildAutoNoteName', () => {
   it('складывает дату и вид объекта', () => {

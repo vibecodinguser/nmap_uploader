@@ -7,9 +7,9 @@ import {
   NOTE_OPACITY_MIN,
   NOTE_STROKE_WIDTH_MAX,
   NOTE_STROKE_WIDTH_MIN,
-} from '@/lib/notes/palette'
-import { resolveNoteStyle } from '@/lib/notes/style_resolution'
-import { isFilledKind, type Note, type NoteGroup } from '@/lib/notes/types'
+} from '@/lib/notes/model/palette'
+import { resolveNoteStyle } from '@/lib/notes/model/style_resolution'
+import { isFilledKind, type Note, type NoteGroup } from '@/lib/notes/model/types'
 import { ColorPicker } from './ColorPicker'
 import { HatchPicker } from './HatchPicker'
 import { NOTES_PANEL_BUTTON_IDS } from './ids'

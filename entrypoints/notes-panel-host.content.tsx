@@ -9,6 +9,7 @@ import {
   notifyStartPickPoint,
   parsePointPickedEvent,
 } from '@/lib/nmaps_pick_point_notify'
+import type { LonLat } from '@/lib/notes/model/types'
 import type { DrawableNoteKind, NotesSnapshot } from '@/lib/notes/protocol'
 import {
   isDrawableNoteKind,
@@ -20,7 +21,6 @@ import {
   NOTES_START_DRAW_ACTION,
   NOTES_VISIBILITY_ACTION,
 } from '@/lib/notes/protocol'
-import type { LonLat } from '@/lib/notes/types'
 import {
   NMAPS_NOTE_SELECTED_EVENT,
   NMAPS_RENDER_NOTES_EVENT,

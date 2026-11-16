@@ -1,6 +1,6 @@
-import type { NotesManifest } from './manifest'
-import type { GeometryShard } from './shards'
-import type { Note, NoteGeometry, NoteGroup } from './types'
+import type { NotesManifest } from './model/manifest'
+import type { GeometryShard } from './model/shards'
+import type { Note, NoteGeometry, NoteGroup } from './model/types'
 
 /**
  * Контракт заметок между панелью, background, картой и слоем.

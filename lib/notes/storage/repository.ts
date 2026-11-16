@@ -1,13 +1,13 @@
-import { createEmptyManifest, mergeManifests, type NotesManifest } from '../manifest'
-import type { NotesData, NotesPatch } from '../protocol'
+import { createEmptyManifest, mergeManifests, type NotesManifest } from '../model/manifest'
 import {
   createEmptyShard,
   type GeometryShard,
   removeShardGeometry,
   setShardGeometry,
   shardIdForDate,
-} from '../shards'
-import type { Note, NoteGeometry, NoteGroup } from '../types'
+} from '../model/shards'
+import type { Note, NoteGeometry, NoteGroup } from '../model/types'
+import type { NotesData, NotesPatch } from '../protocol'
 import type { NotesCache } from './cache'
 import type { NotesRemote } from './remote'
 import { enqueueNotesWrite } from './write_queue'

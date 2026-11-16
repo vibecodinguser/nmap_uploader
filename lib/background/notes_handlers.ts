@@ -17,26 +17,15 @@ import {
   type RuntimeMessageSender,
 } from '@/lib/message_auth'
 import {
-  createDiskNotesRemote,
-  createIndexedDbNotesCache,
-  deleteGroup,
-  deleteNote,
-  loadCachedSnapshot,
-  loadRemoteSnapshot,
-  moveNoteToGroup,
   type Note,
   type NoteGeometry,
   type NotesData,
   type NotesPatch,
   type NotesSnapshot,
   normalizeGeometry,
+  normalizeGroup,
   normalizeNote,
-  readHiddenNoteIds,
-  saveGroup,
-  saveNote,
-  writeHiddenNoteIds,
 } from '@/lib/notes'
-import { normalizeGroup } from '@/lib/notes/manifest'
 import {
   isDrawableNoteKind,
   NOTES_DELETE_GROUP_ACTION,
@@ -56,8 +45,20 @@ import {
   NOTES_UPLOAD_ICON_ACTION,
   NOTES_VISIBILITY_ACTION,
 } from '@/lib/notes/protocol'
+import { createIndexedDbNotesCache } from '@/lib/notes/storage/cache'
+import { readHiddenNoteIds, writeHiddenNoteIds } from '@/lib/notes/storage/hidden_ids'
 import { isAllowedIconFileName } from '@/lib/notes/storage/paths'
-import type { NotesPorts } from '@/lib/notes/storage/repository'
+import { createDiskNotesRemote } from '@/lib/notes/storage/remote'
+import {
+  deleteGroup,
+  deleteNote,
+  loadCachedSnapshot,
+  loadRemoteSnapshot,
+  moveNoteToGroup,
+  type NotesPorts,
+  saveGroup,
+  saveNote,
+} from '@/lib/notes/storage/repository'
 import { getStoredAuth } from '@/lib/yandex/client'
 
 let lastSnapshot: NotesData | null = null

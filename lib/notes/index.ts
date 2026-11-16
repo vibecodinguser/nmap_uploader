@@ -1,14 +1,9 @@
-export * from './autonames'
-export * from './geometry'
-export * from './grouping'
-export * from './manifest'
-export * from './palette'
+/**
+ * Публичный фасад заметок.
+ *
+ * Здесь только модель и контракт: их можно импортировать откуда угодно, в том
+ * числе из MAIN-мира карты. Хранилище и фоновые операции намеренно не
+ * реэкспортируются — они тянут Диск и `wxt/browser`, а слою карты это не нужно.
+ */
+export * from './model'
 export * from './protocol'
-export * from './shards'
-export * from './storage/cache'
-export * from './storage/paths'
-export * from './storage/remote'
-export * from './storage/repository'
-export * from './style_resolution'
-export * from './types'
-export * from './visibility'

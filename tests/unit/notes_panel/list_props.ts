@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react'
 import type { NoteList } from '@/components/notes_panel/NoteList'
-import type { Note, NoteGroup } from '@/lib/notes/types'
+import type { Note, NoteGroup } from '@/lib/notes/model/types'
 
 /** Полный набор пропсов списка заметок. */
 export type NoteListProps = ComponentProps<typeof NoteList>

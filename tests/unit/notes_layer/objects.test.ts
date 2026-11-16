@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { createDefaultStyle, resolveNoteStyle } from '@/lib/notes/style_resolution'
-import type { Note, NoteGroup } from '@/lib/notes/types'
+import { createDefaultStyle, resolveNoteStyle } from '@/lib/notes/model/style_resolution'
+import type { Note, NoteGroup } from '@/lib/notes/model/types'
 import { buildHatchImageHref, renderNote, renderNotes } from '@/lib/notes_layer/objects'
 
 const note = (overrides: Partial<Note> = {}): Note => ({

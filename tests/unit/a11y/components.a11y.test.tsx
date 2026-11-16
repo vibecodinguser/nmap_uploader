@@ -9,7 +9,7 @@ import { PoligonTab } from '@/components/PoligonTab'
 import { SettingsTab } from '@/components/SettingsTab'
 import { TabBar } from '@/components/TabBar'
 import { UploadStatusMessage } from '@/components/UploadStatusMessage'
-import type { Note } from '@/lib/notes/types'
+import type { Note } from '@/lib/notes/model/types'
 import { cleanupA11y, expectNoA11yViolations, renderA11y } from '@/tests/setup/a11y'
 import { listProps, type NoteListProps } from '@/tests/unit/notes_panel/list_props'
 

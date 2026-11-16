@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocale } from '@/hooks/useLocale'
-import type { GroupVisibility } from '@/lib/notes/grouping'
+import type { GroupVisibility } from '@/lib/notes/model/grouping'
 import { NOTES_PANEL_BUTTON_IDS, rowButtonId } from './ids'
 import { DeleteIcon, VisibilityIcon } from './RowIcons'
 

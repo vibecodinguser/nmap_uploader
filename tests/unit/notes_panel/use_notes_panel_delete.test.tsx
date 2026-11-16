@@ -11,8 +11,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { browser } from 'wxt/browser'
 import { LocaleProvider } from '@/hooks/useLocale'
 import { useNotesPanel } from '@/hooks/useNotesPanel'
-import { createDefaultStyle } from '@/lib/notes/style_resolution'
-import type { Note } from '@/lib/notes/types'
+import { createDefaultStyle } from '@/lib/notes/model/style_resolution'
+import type { Note } from '@/lib/notes/model/types'
 import { resetBrowserMocks } from '@/tests/setup/browser_mock'
 
 const note: Note = {

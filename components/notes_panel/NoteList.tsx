@@ -9,8 +9,8 @@ import {
   positionRows,
   totalHeight,
   visibleSlice,
-} from '@/lib/notes/grouping'
-import type { Note, NoteGroup } from '@/lib/notes/types'
+} from '@/lib/notes/model/grouping'
+import type { Note, NoteGroup } from '@/lib/notes/model/types'
 import { GroupHeader } from './GroupHeader'
 import { NOTES_PANEL_BUTTON_IDS, rowButtonId } from './ids'
 import { NoteKindIcon } from './NoteKindIcon'

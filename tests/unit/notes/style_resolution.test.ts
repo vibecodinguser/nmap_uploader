@@ -4,7 +4,7 @@ import {
   isSupportedColor,
   resolveNoteStyle,
   withOpacity,
-} from '@/lib/notes/style_resolution'
+} from '@/lib/notes/model/style_resolution'
 
 describe('createDefaultStyle', () => {
   it('даёт заливку только площадным видам', () => {

@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { geometryFromDrawCoords } from '@/hooks/useNotesPanel'
-import { geometryBounds } from '@/lib/notes/geometry'
+import { geometryBounds } from '@/lib/notes/model/geometry'
 
 describe('geometryFromDrawCoords: точка, линия, многоугольник', () => {
   it('точка берёт первую координату', () => {

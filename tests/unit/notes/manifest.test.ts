@@ -5,8 +5,8 @@ import {
   normalizeGeometry,
   normalizeNote,
   parseManifest,
-} from '@/lib/notes/manifest'
-import type { Note } from '@/lib/notes/types'
+} from '@/lib/notes/model/manifest'
+import type { Note } from '@/lib/notes/model/types'
 
 const baseNote = (overrides: Partial<Note> = {}): Note => ({
   id: 'note-1',

@@ -1,4 +1,4 @@
-import type { NoteKind } from '@/lib/notes/types'
+import type { NoteKind } from '@/lib/notes/model/types'
 
 /**
  * Иконки видов заметки в списке.

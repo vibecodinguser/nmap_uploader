@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { centerMapOnLocation, requestMapRepaint } from '@/lib/nmaps'
-import type { Note } from '@/lib/notes/types'
+import type { Note } from '@/lib/notes/model/types'
 import { NotesLayer } from '@/lib/notes_layer'
 
 const makeNote = (overrides: Partial<Note> = {}): Note => ({

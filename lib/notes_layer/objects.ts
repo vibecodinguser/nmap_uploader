@@ -10,10 +10,14 @@ import {
   geometryAnchor,
   geometryCoordinates,
   squareFromCorners,
-} from '@/lib/notes/geometry'
-import { HATCH_LINE_WIDTH } from '@/lib/notes/palette'
-import { type ResolvedNoteStyle, resolveNoteStyle, withOpacity } from '@/lib/notes/style_resolution'
-import type { LonLat, Note, NoteGeometry, NoteGroup } from '@/lib/notes/types'
+} from '@/lib/notes/model/geometry'
+import { HATCH_LINE_WIDTH } from '@/lib/notes/model/palette'
+import {
+  type ResolvedNoteStyle,
+  resolveNoteStyle,
+  withOpacity,
+} from '@/lib/notes/model/style_resolution'
+import type { LonLat, Note, NoteGeometry, NoteGroup } from '@/lib/notes/model/types'
 
 export type RenderedKind = 'point' | 'line' | 'polygon' | 'label'
 

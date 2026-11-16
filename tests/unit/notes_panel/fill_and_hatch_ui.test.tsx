@@ -12,8 +12,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { HATCH_PREVIEW_SIZE, HatchPreview } from '@/components/notes_panel/HatchPicker'
 import { NoteProperties } from '@/components/notes_panel/NoteProperties'
 import { LocaleProvider } from '@/hooks/useLocale'
-import { createDefaultStyle } from '@/lib/notes/style_resolution'
-import type { Note } from '@/lib/notes/types'
+import { createDefaultStyle } from '@/lib/notes/model/style_resolution'
+import type { Note } from '@/lib/notes/model/types'
 
 const note = (overrides: Partial<Note> = {}): Note => ({
   id: 'note-1',

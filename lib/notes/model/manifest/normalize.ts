@@ -4,8 +4,8 @@ import {
   NOTE_OPACITY_MIN,
   NOTE_STROKE_WIDTH_MAX,
   NOTE_STROKE_WIDTH_MIN,
-} from './palette'
-import { createDefaultStyle, isSupportedColor } from './style_resolution'
+} from '../palette'
+import { createDefaultStyle, isSupportedColor } from '../style_resolution'
 import {
   type HatchPattern,
   isFilledKind,
@@ -17,23 +17,15 @@ import {
   type NoteHatch,
   type NoteIcon,
   type NoteStyle,
-} from './types'
+} from '../types'
+import { NOTES_MANIFEST_VERSION, type NotesManifest } from './schema'
 
-export const NOTES_MANIFEST_VERSION = 1
-
-export type NotesManifest = {
-  version: number
-  updatedAt: string
-  groups: NoteGroup[]
-  notes: Note[]
-}
-
-export const createEmptyManifest = (): NotesManifest => ({
-  version: NOTES_MANIFEST_VERSION,
-  updatedAt: new Date(0).toISOString(),
-  groups: [],
-  notes: [],
-})
+/**
+ * Приведение прочитанного с Диска к модели.
+ *
+ * Битые записи отбрасываются по одной, а не роняют весь файл: иначе один
+ * испорченный объект закрывает пользователю все заметки.
+ */
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
@@ -127,10 +119,7 @@ export const normalizeGroup = (value: unknown): NoteGroup | null => {
   }
 }
 
-/**
- * Читает манифест с Диска. Битые записи отбрасываются по одной, а не роняют
- * весь файл: иначе один испорченный объект закрывает пользователю все заметки.
- */
+/** Разбирает манифест с Диска. `null` — файл не похож на манифест вовсе. */
 export const parseManifest = (raw: unknown): NotesManifest | null => {
   if (!isRecord(raw)) return null
   if (!Array.isArray(raw.notes) && !Array.isArray(raw.groups)) return null
@@ -145,44 +134,6 @@ export const parseManifest = (raw: unknown): NotesManifest | null => {
   return {
     version: isFiniteNumber(raw.version) ? raw.version : NOTES_MANIFEST_VERSION,
     updatedAt: typeof raw.updatedAt === 'string' ? raw.updatedAt : new Date(0).toISOString(),
-    groups,
-    notes,
-  }
-}
-
-const timestampOf = (value: string): number => {
-  const parsed = Date.parse(value)
-  return Number.isNaN(parsed) ? 0 : parsed
-}
-
-const mergeById = <T extends { id: string; updatedAt: string }>(
-  remote: readonly T[],
-  local: readonly T[],
-): T[] => {
-  const byId = new Map<string, T>()
-  for (const item of remote) byId.set(item.id, item)
-  for (const item of local) {
-    const existing = byId.get(item.id)
-    if (!existing || timestampOf(item.updatedAt) >= timestampOf(existing.updatedAt)) {
-      byId.set(item.id, item)
-    }
-  }
-  return [...byId.values()]
-}
-
-/**
- * Сливает локальные изменения с тем, что лежит на Диске.
- *
- * Побеждает более свежий `updatedAt`. Удаления сюда не попадают: они идут
- * отдельными операциями, которые читают серверную копию и пишут результат.
- */
-export const mergeManifests = (remote: NotesManifest, local: NotesManifest): NotesManifest => {
-  const notes = mergeById(remote.notes, local.notes)
-  const groups = mergeById(remote.groups, local.groups).sort((a, b) => a.order - b.order)
-
-  return {
-    version: NOTES_MANIFEST_VERSION,
-    updatedAt: new Date().toISOString(),
     groups,
     notes,
   }

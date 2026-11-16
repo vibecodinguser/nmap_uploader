@@ -2,17 +2,21 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { browser } from 'wxt/browser'
 import { useLocale } from '@/hooks/useLocale'
 import { formatDateDisplay } from '@/lib/date_format'
-import { buildAutoNoteName } from '@/lib/notes/autonames'
+import { buildAutoNoteName } from '@/lib/notes/model/autonames'
 import {
   distanceMeters,
   geometryAnchor,
   geometryBounds,
   squareCornersFromDrag,
   zoomForBounds,
-} from '@/lib/notes/geometry'
-import { collapseKey, type GroupVisibility, groupVisibility } from '@/lib/notes/grouping'
-import { mergeManifests, type NotesManifest } from '@/lib/notes/manifest'
-import { NOTE_PALETTE } from '@/lib/notes/palette'
+} from '@/lib/notes/model/geometry'
+import { collapseKey, type GroupVisibility, groupVisibility } from '@/lib/notes/model/grouping'
+import { mergeManifests, type NotesManifest } from '@/lib/notes/model/manifest'
+import { NOTE_PALETTE } from '@/lib/notes/model/palette'
+import { type GeometryShard, shardIdForDate } from '@/lib/notes/model/shards'
+import { createDefaultStyle } from '@/lib/notes/model/style_resolution'
+import type { Note, NoteGeometry, NoteGroup, NoteKind } from '@/lib/notes/model/types'
+import { setNotesHidden, toggleHiddenNoteId } from '@/lib/notes/model/visibility'
 import {
   type DrawableNoteKind,
   isDrawableNoteKind,
@@ -31,10 +35,6 @@ import {
   type NotesPatch,
   type NotesSnapshot,
 } from '@/lib/notes/protocol'
-import { type GeometryShard, shardIdForDate } from '@/lib/notes/shards'
-import { createDefaultStyle } from '@/lib/notes/style_resolution'
-import type { Note, NoteGeometry, NoteGroup, NoteKind } from '@/lib/notes/types'
-import { setNotesHidden, toggleHiddenNoteId } from '@/lib/notes/visibility'
 import { NOTES_PANEL_PREVIEW_MESSAGE, NOTES_PANEL_SHOW_NOTE_MESSAGE } from '@/lib/notes_panel/host'
 import { CANCEL_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
 import { STORAGE_TOKEN_KEY, STORAGE_USER_KEY } from '@/lib/yandex/constants'

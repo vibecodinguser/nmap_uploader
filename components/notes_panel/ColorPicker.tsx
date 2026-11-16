@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLocale } from '@/hooks/useLocale'
-import { NOTE_PALETTE } from '@/lib/notes/palette'
+import { NOTE_PALETTE } from '@/lib/notes/model/palette'
 
 /** Выбор цвета заметки: фиксированная палитра плюс свой цвет. */
 export const ColorPicker = ({

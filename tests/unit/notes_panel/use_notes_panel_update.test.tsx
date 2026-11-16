@@ -12,12 +12,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { browser } from 'wxt/browser'
 import { LocaleProvider } from '@/hooks/useLocale'
 import { useNotesPanel } from '@/hooks/useNotesPanel'
+import type { Note } from '@/lib/notes/model/types'
 import {
   NOTES_DELETE_NOTE_ACTION,
   NOTES_LOAD_ACTION,
   NOTES_SAVE_NOTE_ACTION,
 } from '@/lib/notes/protocol'
-import type { Note } from '@/lib/notes/types'
 import { sampleNote } from '@/tests/unit/notes_panel/list_props'
 
 const geometry = { kind: 'Point' as const, coords: [37.6, 55.7] as [number, number] }

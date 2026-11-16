@@ -5,9 +5,9 @@
  * признак тайлового повторения паттерна.
  */
 import { describe, expect, it } from 'vitest'
-import { NOTE_PALETTE } from '@/lib/notes/palette'
-import { createDefaultStyle, resolveNoteStyle } from '@/lib/notes/style_resolution'
-import type { Note, NoteStyle } from '@/lib/notes/types'
+import { NOTE_PALETTE } from '@/lib/notes/model/palette'
+import { createDefaultStyle, resolveNoteStyle } from '@/lib/notes/model/style_resolution'
+import type { Note, NoteStyle } from '@/lib/notes/model/types'
 import { buildFillColor, buildHatchImageHref, renderNote } from '@/lib/notes_layer/objects'
 
 const polygonNote = (style: Partial<NoteStyle> = {}, kind: Note['kind'] = 'Polygon'): Note => ({

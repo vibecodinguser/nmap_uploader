@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { geometryAnchor, geometryBounds, zoomForBounds } from '@/lib/notes/geometry/bounds'
-import { circleRing, distanceMeters, radiusFromDrag } from '@/lib/notes/geometry/circle'
-import { squareCornersFromDrag, squareFromCorners } from '@/lib/notes/geometry/square'
+import { geometryAnchor, geometryBounds, zoomForBounds } from '@/lib/notes/model/geometry/bounds'
+import { circleRing, distanceMeters, radiusFromDrag } from '@/lib/notes/model/geometry/circle'
+import { squareCornersFromDrag, squareFromCorners } from '@/lib/notes/model/geometry/square'
 
 describe('squareFromCorners', () => {
   it('строит замкнутое кольцо из двух углов', () => {

@@ -4,7 +4,7 @@ import {
   removeShardGeometry,
   setShardGeometry,
   shardIdForDate,
-} from '@/lib/notes/shards'
+} from '@/lib/notes/model/shards'
 
 describe('shardIdForDate', () => {
   it('выводит ключ шарда из даты заметки', () => {

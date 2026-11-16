@@ -9,8 +9,8 @@ import {
   sortGroups,
   totalHeight,
   visibleSlice,
-} from '@/lib/notes/grouping'
-import type { Note, NoteGroup } from '@/lib/notes/types'
+} from '@/lib/notes/model/grouping'
+import type { Note, NoteGroup } from '@/lib/notes/model/types'
 
 const group = (overrides: Partial<NoteGroup> = {}): NoteGroup => ({
   id: 'g1',
