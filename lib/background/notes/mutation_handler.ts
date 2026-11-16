@@ -5,7 +5,13 @@ import { applyPatch, currentSnapshot, rememberSnapshot } from '@/lib/notes/appli
 import type { Parsed } from '@/lib/notes/application/requests'
 import type { NotesPatch } from '@/lib/notes/protocol'
 import type { NotesPorts } from '@/lib/notes/storage/repository'
-import { broadcastSnapshot, createPorts, forgetNotesReads, guard } from './guard'
+import {
+  broadcastSnapshot,
+  createPorts,
+  forgetNotesReads,
+  guard,
+  pruneStoredHiddenIds,
+} from './guard'
 
 /**
  * Обработчик мутации: проверить отправителя, разобрать запрос, применить
@@ -43,6 +49,8 @@ export const mutationHandler = <T>({
         const patch = await run(ports, parsed.value)
         const data = applyPatch(currentSnapshot(), patch)
         rememberSnapshot(data)
+        // Удалённая заметка не должна остаться в локально скрытых.
+        await pruneStoredHiddenIds(data)
 
         sendResponse({ ok: true, patch })
         await broadcastSnapshot(data)

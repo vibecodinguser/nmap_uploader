@@ -28,3 +28,18 @@ export const setNotesHidden = (
   }
   return [...next]
 }
+
+/**
+ * Убирает из скрытых id, которых больше нет среди заметок.
+ *
+ * Скрытие хранится локально и живёт дольше самих заметок: удалённая заметка
+ * оставляла бы свой id в `storage.local` навсегда. Набор небольшой, но он
+ * целиком уезжает в каждом сообщении о снимке.
+ */
+export const pruneHiddenIds = (
+  ids: readonly string[],
+  knownNoteIds: readonly string[],
+): string[] => {
+  const known = new Set(knownNoteIds)
+  return ids.filter((id) => known.has(id))
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { setNotesHidden, toggleHiddenNoteId } from '@/lib/notes/model/visibility'
+import { pruneHiddenIds, setNotesHidden, toggleHiddenNoteId } from '@/lib/notes/model/visibility'
 
 describe('notes visibility', () => {
   it('добавляет и убирает id при переключении', () => {
@@ -12,5 +12,11 @@ describe('notes visibility', () => {
     expect(setNotesHidden([], ['a', 'b'], true)).toEqual(['a', 'b'])
     expect(setNotesHidden(['a', 'b'], ['a'], false)).toEqual(['b'])
     expect(setNotesHidden(['a'], ['b'], false)).toEqual(['a'])
+  })
+
+  it('убирает id удалённых заметок', () => {
+    expect(pruneHiddenIds(['a', 'b', 'c'], ['a', 'c'])).toEqual(['a', 'c'])
+    expect(pruneHiddenIds(['deleted'], [])).toEqual([])
+    expect(pruneHiddenIds([], ['a'])).toEqual([])
   })
 })

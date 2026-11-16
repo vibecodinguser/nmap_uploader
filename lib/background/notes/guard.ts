@@ -88,6 +88,27 @@ export const forgetNotesReads = (): void => {
 }
 
 /**
+ * Убирает из локально скрытых id, которых больше нет в манифесте.
+ *
+ * Скрытие живёт дольше заметок: удалённая заметка оставляла бы свой id в
+ * `storage.local` навсегда, а набор целиком едет в каждом сообщении о снимке.
+ * Вызывается после каждой мутации — так закрываются и удаление заметки, и
+ * каскадное удаление группы, и правки с другого устройства.
+ */
+export const pruneStoredHiddenIds = async (data: NotesData): Promise<void> => {
+  try {
+    const stored = await readHiddenNoteIds()
+    const next = pruneHiddenIds(
+      stored,
+      data.manifest.notes.map((note) => note.id),
+    )
+    if (next.length !== stored.length) await writeHiddenNoteIds(next)
+  } catch (error: unknown) {
+    logBackgroundTaskFailure('notes hidden prune', error)
+  }
+}
+
+/**
  * Рассылает снимок панели и карте.
  *
  * Панель получает `NOTES_SNAPSHOT` как широковещательное сообщение, карта —
