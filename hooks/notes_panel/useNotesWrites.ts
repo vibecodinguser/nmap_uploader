@@ -2,24 +2,33 @@ import { useCallback, useEffect, useRef } from 'react'
 import { browser } from 'wxt/browser'
 import { useLocale } from '@/hooks/useLocale'
 import type { Note, NoteGeometry } from '@/lib/notes/model/types'
-import type { NotesSnapshot } from '@/lib/notes/protocol'
-import { NOTES_SAVE_NOTE_ACTION, type NotesMutationResponse } from '@/lib/notes/protocol'
+import {
+  NOTES_SAVE_NOTE_ACTION,
+  type NotesMutationResponse,
+  type NotesSnapshot,
+} from '@/lib/notes/protocol'
 import { NOTES_PANEL_PREVIEW_MESSAGE } from '@/lib/notes_panel/host'
 import type { NotesPanelStore } from './useNotesPanelState'
 
 const SAVE_DEBOUNCE_MS = 700
 export const UNDO_TIMEOUT_MS = 5000
 
+type PendingSave = { note: Note; geometry: NoteGeometry }
+
 /**
  * Запись заметок: очередь, дебаунс и мгновенный отклик карты.
  *
- * Здесь только транспорт записи и отложенная правка. Что именно меняется в
- * снимке, решает редьюсер — этот хук лишь сообщает результат.
+ * Отложенные правки хранятся по id заметки, а не одной ячейкой: пользователь
+ * правит несколько заметок подряд, и «последняя правка вытесняет предыдущую»
+ * теряла бы изменения молча.
+ *
+ * Здесь только транспорт записи. Что именно меняется в снимке, решает
+ * редьюсер — этот хук лишь сообщает результат.
  */
 export const useNotesWrites = ({ dispatch }: NotesPanelStore) => {
   const { t } = useLocale()
   const saveTimer = useRef<number | null>(null)
-  const pendingNote = useRef<{ note: Note; geometry: NoteGeometry } | null>(null)
+  const pendingNotes = useRef(new Map<string, PendingSave>())
   /**
    * Цепочка отправок.
    *
@@ -73,29 +82,32 @@ export const useNotesWrites = ({ dispatch }: NotesPanelStore) => {
       window.clearTimeout(saveTimer.current)
       saveTimer.current = null
     }
-    const pending = pendingNote.current
-    if (!pending) return
-    pendingNote.current = null
+    const batch = [...pendingNotes.current.values()]
+    pendingNotes.current.clear()
 
-    enqueueSaveMessage(
-      { action: NOTES_SAVE_NOTE_ACTION, note: pending.note, geometry: pending.geometry },
-      {
-        onSuccess: (response) => {
-          if (!response.ok) {
-            dispatch({ type: 'errorChanged', error: response.error })
-            return
-          }
-          dispatch({ type: 'patchApplied', patch: response.patch })
-          dispatch({ type: 'errorChanged', error: null })
+    for (const { note, geometry } of batch) {
+      enqueueSaveMessage(
+        { action: NOTES_SAVE_NOTE_ACTION, note, geometry },
+        {
+          onSuccess: (response) => {
+            if (!response.ok) {
+              dispatch({ type: 'errorChanged', error: response.error })
+              return
+            }
+            dispatch({ type: 'patchApplied', patch: response.patch })
+            dispatch({ type: 'errorChanged', error: null })
+          },
+          onError: () => dispatch({ type: 'errorChanged', error: t('notesPanel.saveError') }),
         },
-        onError: () => dispatch({ type: 'errorChanged', error: t('notesPanel.saveError') }),
-      },
-    )
+      )
+    }
   }, [dispatch, enqueueSaveMessage, t])
 
   const scheduleSave = useCallback(
     (note: Note, geometry: NoteGeometry) => {
-      pendingNote.current = { note, geometry }
+      // Для одной заметки побеждает последняя правка: более ранняя уже
+      // неактуальна и отдельной записи не требует.
+      pendingNotes.current.set(note.id, { note, geometry })
       if (saveTimer.current !== null) window.clearTimeout(saveTimer.current)
       saveTimer.current = window.setTimeout(flushSave, SAVE_DEBOUNCE_MS)
     },
@@ -109,16 +121,20 @@ export const useNotesWrites = ({ dispatch }: NotesPanelStore) => {
    * правку другой. Без аргумента отменяет всё — так делает сброс при закрытии.
    */
   const cancelPending = useCallback((noteId?: string) => {
+    if (noteId === undefined) {
+      pendingNotes.current.clear()
+    } else {
+      pendingNotes.current.delete(noteId)
+    }
+
+    if (pendingNotes.current.size > 0) return
     if (saveTimer.current !== null) {
       window.clearTimeout(saveTimer.current)
       saveTimer.current = null
     }
-    if (noteId === undefined || pendingNote.current?.note.id === noteId) {
-      pendingNote.current = null
-    }
   }, [])
 
-  // Незаписанная правка не должна потеряться при закрытии панели.
+  // Незаписанные правки не должны потеряться при закрытии панели.
   useEffect(() => () => flushSave(), [flushSave])
 
   return { enqueueSaveMessage, scheduleSave, flushSave, cancelPending, postPreview }

@@ -58,6 +58,8 @@ const nameOf = (notes: Array<{ id: string; name: string }>, id: string): string 
 
 describe('useNotesPanel: правка заметки', () => {
   let sent: Array<Record<string, unknown>> = []
+  /** «Диск»: накапливает сохранённые заметки, как это делает background. */
+  let stored: Note[] = []
 
   const saves = (): Note[] =>
     sent
@@ -67,13 +69,24 @@ describe('useNotesPanel: правка заметки', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     sent = []
+    stored = [...snapshot.manifest.notes]
 
     vi.spyOn(browser.runtime, 'sendMessage').mockImplementation((async (
       message: Record<string, unknown>,
     ) => {
       sent.push(message)
       if (message.action === NOTES_LOAD_ACTION) return { ok: true, snapshot }
-      return { ok: true, patch: { manifest: snapshot.manifest, shards: {} } }
+      // Ответ как у background: манифест со всеми уже сохранёнными заметками,
+      // а не только с последней — иначе более ранняя запись откатывалась бы.
+      if (message.action === NOTES_SAVE_NOTE_ACTION) {
+        const saved = message.note as Note
+        stored = stored.map((note) => (note.id === saved.id ? saved : note))
+        return {
+          ok: true,
+          patch: { manifest: { ...snapshot.manifest, notes: stored }, shards: {} },
+        }
+      }
+      return { ok: true, patch: { manifest: { ...snapshot.manifest, notes: stored }, shards: {} } }
     }) as never)
   })
 
@@ -95,21 +108,42 @@ describe('useNotesPanel: правка заметки', () => {
     expect(saves()[0]).toMatchObject({ id: 'note-1', name: 'Второй' })
   })
 
-  it('при быстрой правке двух разных заметок сохраняет только последнюю (известный дефект)', async () => {
+  it('сохраняет правки обеих заметок, если правили их подряд', async () => {
     const { result } = renderPanel()
     await waitFor(() => expect(result.current.status).toBe('ready'))
 
     act(() => {
       result.current.updateNote('note-1', { name: 'Правка первой' })
+    })
+    act(() => {
       result.current.updateNote('note-2', { name: 'Правка второй' })
     })
 
-    await waitFor(() => expect(saves()).toHaveLength(1), { timeout: 3000 })
-    // Отложенная правка хранится в одном слоте, а обе правки посчитаны от
-    // одного и того же снимка: правка первой заметки не попала ни на Диск,
-    // ни в состояние панели — она просто исчезла.
-    expect(saves().map((note) => note.id)).toEqual(['note-2'])
-    expect(nameOf(result.current.notes, 'note-1')).toBe('Первая')
+    await waitFor(() => expect(saves()).toHaveLength(2), { timeout: 3000 })
+    // Отложенные правки хранятся по id заметки: вторая правка не вытесняет
+    // первую, и обе уходят на Диск одной паузой дебаунса.
+    expect(
+      saves()
+        .map((note) => note.id)
+        .sort(),
+    ).toEqual(['note-1', 'note-2'])
+    expect(nameOf(result.current.notes, 'note-1')).toBe('Правка первой')
+    expect(nameOf(result.current.notes, 'note-2')).toBe('Правка второй')
+  })
+
+  it('оставляет в очереди последнюю правку каждой заметки', async () => {
+    const { result } = renderPanel()
+    await waitFor(() => expect(result.current.status).toBe('ready'))
+
+    act(() => {
+      result.current.updateNote('note-1', { name: 'Черновик' })
+      result.current.updateNote('note-2', { name: 'Вторая' })
+      result.current.updateNote('note-1', { name: 'Итог' })
+    })
+
+    await waitFor(() => expect(saves()).toHaveLength(2), { timeout: 3000 })
+    expect(saves().find((note) => note.id === 'note-1')?.name).toBe('Итог')
+    expect(saves().find((note) => note.id === 'note-2')?.name).toBe('Вторая')
   })
 
   it('записывает отложенную правку при закрытии панели', async () => {
@@ -155,6 +189,20 @@ describe('useNotesPanel: удаление и отмена', () => {
     ) => {
       sent.push(message)
       if (message.action === NOTES_LOAD_ACTION) return { ok: true, snapshot }
+      // Ответ как у background: манифест с уже применённой правкой.
+      if (message.action === NOTES_SAVE_NOTE_ACTION) {
+        const saved = message.note as Note
+        return {
+          ok: true,
+          patch: {
+            manifest: {
+              ...snapshot.manifest,
+              notes: snapshot.manifest.notes.map((note) => (note.id === saved.id ? saved : note)),
+            },
+            shards: {},
+          },
+        }
+      }
       return { ok: true, patch: { manifest: snapshot.manifest, shards: {} } }
     }) as never)
   })
