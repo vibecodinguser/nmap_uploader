@@ -10,13 +10,14 @@ import {
   squareCornersFromDrag,
   zoomForBounds,
 } from '@/lib/notes/model/geometry'
-import { collapseKey, type GroupVisibility, groupVisibility } from '@/lib/notes/model/grouping'
+import { type GroupVisibility, groupVisibility } from '@/lib/notes/model/grouping'
 import { mergeManifests, type NotesManifest } from '@/lib/notes/model/manifest'
 import { NOTE_PALETTE } from '@/lib/notes/model/palette'
 import { type GeometryShard, shardIdForDate } from '@/lib/notes/model/shards'
 import { createDefaultStyle } from '@/lib/notes/model/style_resolution'
 import type { Note, NoteGeometry, NoteGroup, NoteKind } from '@/lib/notes/model/types'
 import { setNotesHidden, toggleHiddenNoteId } from '@/lib/notes/model/visibility'
+import { collapseKey } from '@/lib/notes/panel/rows'
 import {
   type DrawableNoteKind,
   isDrawableNoteKind,

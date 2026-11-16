@@ -1,0 +1,361 @@
+import { describe, expect, it } from 'vitest'
+import type { NoteGeometry } from '@/lib/notes/model/types'
+import { notesPanelReducer } from '@/lib/notes/panel/reducer'
+import {
+  selectFilteredNotes,
+  selectGeometries,
+  selectGeometry,
+  selectHiddenIds,
+  selectNotes,
+  selectSelectedNote,
+} from '@/lib/notes/panel/selectors'
+import { initialNotesPanelState } from '@/lib/notes/panel/state'
+import type { NotesSnapshot } from '@/lib/notes/protocol'
+import { sampleGroup, sampleNote } from '@/tests/unit/notes_panel/list_props'
+
+const point: NoteGeometry = { kind: 'Point', coords: [37.6, 55.7] }
+
+const snapshot = (overrides: Partial<NotesSnapshot> = {}): NotesSnapshot => ({
+  manifest: {
+    version: 1,
+    updatedAt: '2026-11-14T10:00:00.000Z',
+    groups: [],
+    notes: [],
+  },
+  shards: {},
+  hiddenIds: [],
+  ...overrides,
+})
+
+const ready = (state: NotesSnapshot) =>
+  notesPanelReducer(initialNotesPanelState, {
+    type: 'loaded',
+    snapshot: state,
+  })
+
+describe('редьюсер панели: снимок', () => {
+  it('загрузка снимает ошибку и включает готовность', () => {
+    const state = notesPanelReducer(
+      { ...initialNotesPanelState, error: 'STORAGE_ERROR', status: 'error' },
+      { type: 'loaded', snapshot: snapshot() },
+    )
+
+    expect(state.status).toBe('ready')
+    expect(state.error).toBeNull()
+    expect(state.snapshot).not.toBeNull()
+  })
+
+  it('широковещательный снимок не откатывает более свежую локальную правку', () => {
+    const local = ready(
+      snapshot({
+        manifest: {
+          version: 1,
+          updatedAt: 'x',
+          groups: [],
+          notes: [
+            sampleNote({ id: 'n1', name: 'Локальная', updatedAt: '2026-11-14T12:00:00.000Z' }),
+          ],
+        },
+      }),
+    )
+    const incoming = snapshot({
+      manifest: {
+        version: 1,
+        updatedAt: 'x',
+        groups: [],
+        notes: [sampleNote({ id: 'n1', name: 'Серверная', updatedAt: '2026-11-14T11:00:00.000Z' })],
+      },
+    })
+
+    const state = notesPanelReducer(local, { type: 'merged', snapshot: incoming })
+
+    expect(selectNotes(state)[0]?.name).toBe('Локальная')
+    expect(state.status).toBe('ready')
+  })
+
+  it('очистка сбрасывает выбор и историю отмены', () => {
+    const state = notesPanelReducer(
+      {
+        ...ready(snapshot()),
+        selectedId: 'n1',
+        undo: { note: sampleNote(), geometry: point },
+        mode: 'properties',
+      },
+      { type: 'snapshotCleared' },
+    )
+
+    expect(state.snapshot).toBeNull()
+    expect(state.selectedId).toBeNull()
+    expect(state.undo).toBeNull()
+    expect(state.mode).toBe('list')
+  })
+
+  it('патч заменяет манифест и только затронутый шард', () => {
+    const state = notesPanelReducer(
+      ready(
+        snapshot({
+          shards: {
+            '2026-10': { version: 1, updatedAt: 'old', notes: {} },
+            '2026-11': { version: 1, updatedAt: 'old', notes: {} },
+          },
+        }),
+      ),
+      {
+        type: 'patchApplied',
+        patch: {
+          manifest: { version: 1, updatedAt: 'new', groups: [], notes: [sampleNote({ id: 'n1' })] },
+          shards: { '2026-11': { version: 1, updatedAt: 'new', notes: { n1: point } } },
+        },
+      },
+    )
+
+    expect(selectNotes(state).map((note) => note.id)).toEqual(['n1'])
+    expect(state.snapshot?.shards['2026-10']?.updatedAt).toBe('old')
+    expect(state.snapshot?.shards['2026-11']?.updatedAt).toBe('new')
+  })
+})
+
+describe('редьюсер панели: заметки', () => {
+  it('добавление кладёт геометрию в шард по месяцу и открывает свойства', () => {
+    const state = notesPanelReducer(ready(snapshot()), {
+      type: 'noteAdded',
+      note: sampleNote({ id: 'n1', date: '14-11-2026' }),
+      geometry: point,
+    })
+
+    expect(selectNotes(state).map((note) => note.id)).toEqual(['n1'])
+    expect(state.snapshot?.shards['2026-11']?.notes.n1).toEqual(point)
+    expect(state.selectedId).toBe('n1')
+    expect(state.mode).toBe('properties')
+  })
+
+  it('добавление заметки с нечитаемой датой не создаёт шард', () => {
+    const state = notesPanelReducer(ready(snapshot()), {
+      type: 'noteAdded',
+      note: sampleNote({ id: 'n1', date: 'не дата' }),
+      geometry: point,
+    })
+
+    expect(state.snapshot?.shards).toEqual({})
+    expect(selectNotes(state).map((note) => note.id)).toEqual(['n1'])
+  })
+
+  it('правка меняет атрибуты и не трогает геометрию', () => {
+    const prepared = notesPanelReducer(ready(snapshot()), {
+      type: 'noteAdded',
+      note: sampleNote({ id: 'n1' }),
+      geometry: point,
+    })
+
+    const state = notesPanelReducer(prepared, {
+      type: 'notePatched',
+      note: sampleNote({ id: 'n1', name: 'Новое имя' }),
+    })
+
+    expect(selectNotes(state)[0]?.name).toBe('Новое имя')
+    expect(selectGeometries(state).n1).toEqual(point)
+  })
+
+  it('удаление убирает строку и снимает выбор, геометрию оставляет снимку', () => {
+    const prepared = notesPanelReducer(ready(snapshot()), {
+      type: 'noteAdded',
+      note: sampleNote({ id: 'n1' }),
+      geometry: point,
+    })
+
+    const state = notesPanelReducer(prepared, { type: 'noteRemoved', noteId: 'n1' })
+
+    expect(selectNotes(state)).toEqual([])
+    expect(state.selectedId).toBeNull()
+    expect(state.mode).toBe('list')
+    // Геометрия уедет следующим снимком с Диска: локально её не вычищаем.
+    expect(selectGeometries(state).n1).toEqual(point)
+  })
+
+  it('возврат удалённой заметки восстанавливает её и закрывает отмену', () => {
+    const state = notesPanelReducer(ready(snapshot()), {
+      type: 'noteRestored',
+      entry: { note: sampleNote({ id: 'n1' }), geometry: point },
+    })
+
+    expect(selectNotes(state).map((note) => note.id)).toEqual(['n1'])
+    expect(selectGeometries(state).n1).toEqual(point)
+    expect(state.undo).toBeNull()
+  })
+
+  it('перенос ставит группу и новый updatedAt', () => {
+    const prepared = notesPanelReducer(ready(snapshot()), {
+      type: 'noteAdded',
+      note: sampleNote({ id: 'n1' }),
+      geometry: point,
+    })
+
+    const state = notesPanelReducer(prepared, {
+      type: 'noteMoved',
+      noteId: 'n1',
+      groupId: 'group-1',
+      updatedAt: '2026-11-15T10:00:00.000Z',
+    })
+
+    expect(selectNotes(state)[0]?.groupId).toBe('group-1')
+    expect(selectNotes(state)[0]?.updatedAt).toBe('2026-11-15T10:00:00.000Z')
+  })
+})
+
+describe('редьюсер панели: группы', () => {
+  const withGroup = () =>
+    notesPanelReducer(
+      notesPanelReducer(ready(snapshot()), {
+        type: 'noteAdded',
+        note: sampleNote({ id: 'n1', groupId: 'group-1' }),
+        geometry: point,
+      }),
+      { type: 'groupSaved', group: sampleGroup() },
+    )
+
+  it('сохранение создаёт группу, повторное — обновляет', () => {
+    const created = withGroup()
+    expect(created.snapshot?.manifest.groups.map((group) => group.id)).toEqual(['group-1'])
+
+    const renamed = notesPanelReducer(created, {
+      type: 'groupSaved',
+      group: sampleGroup({ name: 'Переименованная' }),
+    })
+    expect(renamed.snapshot?.manifest.groups).toHaveLength(1)
+    expect(renamed.snapshot?.manifest.groups[0]?.name).toBe('Переименованная')
+  })
+
+  it('распуск группы оставляет заметки в корне', () => {
+    const state = notesPanelReducer(withGroup(), {
+      type: 'groupRemoved',
+      groupId: 'group-1',
+      mode: 'keepNotes',
+    })
+
+    expect(state.snapshot?.manifest.groups).toEqual([])
+    expect(selectNotes(state)[0]?.groupId).toBeNull()
+    expect(selectNotes(state)).toHaveLength(1)
+  })
+
+  it('каскадное удаление группы удаляет и заметки', () => {
+    const state = notesPanelReducer(withGroup(), {
+      type: 'groupRemoved',
+      groupId: 'group-1',
+      mode: 'cascade',
+    })
+
+    expect(selectNotes(state)).toEqual([])
+    expect(state.selectedId).toBeNull()
+  })
+})
+
+describe('редьюсер панели: режимы и мелочи', () => {
+  it('выбор заметки переключает режим, снятие выбора возвращает список', () => {
+    const selected = notesPanelReducer(initialNotesPanelState, {
+      type: 'noteSelected',
+      noteId: 'n1',
+    })
+    expect(selected.mode).toBe('properties')
+
+    const cleared = notesPanelReducer(selected, { type: 'noteSelected', noteId: null })
+    expect(cleared.mode).toBe('list')
+  })
+
+  it('скрытие меняет только набор скрытых', () => {
+    const state = notesPanelReducer(ready(snapshot()), {
+      type: 'hiddenChanged',
+      hiddenIds: ['n1'],
+    })
+
+    expect(selectHiddenIds(state)).toEqual(['n1'])
+    expect(selectNotes(state)).toEqual([])
+  })
+
+  it('рисование включается и снимается', () => {
+    const started = notesPanelReducer(initialNotesPanelState, {
+      type: 'drawingStarted',
+      kind: 'Circle',
+    })
+    expect(started.drawingKind).toBe('Circle')
+    expect(notesPanelReducer(started, { type: 'drawingStopped' }).drawingKind).toBeNull()
+  })
+
+  it('свёрнутость групп переключается одним ключом, включая корень', () => {
+    const collapsed = notesPanelReducer(initialNotesPanelState, {
+      type: 'groupCollapsedToggled',
+      key: '',
+    })
+    expect(collapsed.collapsedGroupIds).toEqual([''])
+
+    const expanded = notesPanelReducer(collapsed, { type: 'groupCollapsedToggled', key: '' })
+    expect(expanded.collapsedGroupIds).toEqual([])
+  })
+
+  it('снимок без состояния ничего не ломает', () => {
+    const state = notesPanelReducer(initialNotesPanelState, {
+      type: 'noteAdded',
+      note: sampleNote({ id: 'n1' }),
+      geometry: point,
+    })
+
+    expect(state.snapshot).toBeNull()
+  })
+})
+
+describe('селекторы панели', () => {
+  const filled = () =>
+    ready(
+      snapshot({
+        manifest: {
+          version: 1,
+          updatedAt: 'x',
+          groups: [sampleGroup()],
+          notes: [
+            sampleNote({ id: 'n2', name: 'Яблоко', description: 'сад' }),
+            sampleNote({ id: 'n1', name: 'Арбуз', description: '' }),
+            sampleNote({ id: 'n3', name: 'Груша', description: 'поле' }),
+          ],
+        },
+        shards: {
+          '2026-11': { version: 1, updatedAt: 'x', notes: { n1: point } },
+          '2026-10': {
+            version: 1,
+            updatedAt: 'x',
+            notes: { n2: { kind: 'Point', coords: [38, 56] } },
+          },
+        },
+        hiddenIds: ['n3'],
+      }),
+    )
+
+  it('сортирует по имени по-русски', () => {
+    expect(selectFilteredNotes(filled()).map((note) => note.name)).toEqual([
+      'Арбуз',
+      'Груша',
+      'Яблоко',
+    ])
+  })
+
+  it('ищет по названию и описанию без учёта регистра', () => {
+    const byName = notesPanelReducer(filled(), { type: 'queryChanged', query: 'груш' })
+    expect(selectFilteredNotes(byName).map((note) => note.id)).toEqual(['n3'])
+
+    const byDescription = notesPanelReducer(filled(), { type: 'queryChanged', query: 'САД' })
+    expect(selectFilteredNotes(byDescription).map((note) => note.id)).toEqual(['n2'])
+  })
+
+  it('собирает геометрию из всех шардов', () => {
+    const geometries = selectGeometries(filled())
+
+    expect(Object.keys(geometries).sort()).toEqual(['n1', 'n2'])
+    expect(selectGeometry(geometries, 'n2')).toEqual({ kind: 'Point', coords: [38, 56] })
+    expect(selectGeometry(geometries, 'nope')).toBeNull()
+  })
+
+  it('находит выбранную заметку', () => {
+    const state = notesPanelReducer(filled(), { type: 'noteSelected', noteId: 'n2' })
+
+    expect(selectSelectedNote(state)?.name).toBe('Яблоко')
+    expect(selectSelectedNote(filled())).toBeNull()
+  })
+})

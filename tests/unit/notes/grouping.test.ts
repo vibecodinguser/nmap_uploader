@@ -1,16 +1,15 @@
 import { describe, expect, it } from 'vitest'
+import { groupVisibility, sortGroups } from '@/lib/notes/model/grouping'
+import type { Note, NoteGroup } from '@/lib/notes/model/types'
 import {
   buildListRows,
   collapseKey,
   GROUP_HEADER_HEIGHT,
-  groupVisibility,
   NOTE_ROW_HEIGHT,
   positionRows,
-  sortGroups,
   totalHeight,
   visibleSlice,
-} from '@/lib/notes/model/grouping'
-import type { Note, NoteGroup } from '@/lib/notes/model/types'
+} from '@/lib/notes/panel/rows'
 
 const group = (overrides: Partial<NoteGroup> = {}): NoteGroup => ({
   id: 'g1',

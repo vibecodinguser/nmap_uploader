@@ -1,16 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocale } from '@/hooks/useLocale'
+import { type GroupVisibility, groupVisibility } from '@/lib/notes/model/grouping'
+import type { Note, NoteGroup } from '@/lib/notes/model/types'
 import {
   buildListRows,
   collapseKey,
-  type GroupVisibility,
-  groupVisibility,
   type NoteListRow,
   positionRows,
   totalHeight,
   visibleSlice,
-} from '@/lib/notes/model/grouping'
-import type { Note, NoteGroup } from '@/lib/notes/model/types'
+} from '@/lib/notes/panel/rows'
 import { GroupHeader } from './GroupHeader'
 import { NOTES_PANEL_BUTTON_IDS, rowButtonId } from './ids'
 import { NoteKindIcon } from './NoteKindIcon'
