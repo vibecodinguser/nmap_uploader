@@ -1,6 +1,7 @@
 /**
  * Сервис аутентификации и работы с учетной записью Яндекс для background.
  */
+import { resetNotesSession } from '@/lib/background/notes/guard'
 import { runBackgroundTask } from '@/lib/background/tasks'
 import { getErrorMessage } from '@/lib/errors'
 import {
@@ -103,6 +104,9 @@ export const processLogout = async (
 ): Promise<void> => {
   try {
     await clearAuth({ explicit: true })
+    // Заметки прошлого аккаунта не должны остаться ни в памяти, ни в кэше:
+    // иначе после входа другим пользователем панель показала бы чужой снимок.
+    await resetNotesSession()
     sendResponse({ ok: true })
   } catch (error: unknown) {
     console.error('[nmap_uploader] logout failed:', error)

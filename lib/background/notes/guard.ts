@@ -7,12 +7,13 @@ import {
   logRejectedMessage,
   type RuntimeMessageSender,
 } from '@/lib/message_auth'
-import { withHiddenIds } from '@/lib/notes/application/load'
+import { forgetSnapshot, withHiddenIds } from '@/lib/notes/application/load'
+import { pruneHiddenIds } from '@/lib/notes/model/visibility'
 import type { NotesData } from '@/lib/notes/protocol'
 import { NOTES_RENDER_ACTION, NOTES_SNAPSHOT_ACTION } from '@/lib/notes/protocol'
 import { createIndexedDbNotesCache } from '@/lib/notes/storage/cache'
 import { createCachingNotesRemote } from '@/lib/notes/storage/caching_remote'
-import { readHiddenNoteIds } from '@/lib/notes/storage/hidden_ids'
+import { readHiddenNoteIds, writeHiddenNoteIds } from '@/lib/notes/storage/hidden_ids'
 import { createDiskNotesRemote } from '@/lib/notes/storage/remote'
 import type { NotesPorts } from '@/lib/notes/storage/repository'
 import { getStoredAuth } from '@/lib/yandex/client'
@@ -34,13 +35,40 @@ import { getStoredAuth } from '@/lib/yandex/client'
  */
 let session: { token: string; invalidate: () => void; ports: NotesPorts } | null = null
 
+/**
+ * Забыть всё, что относится к заметкам прошлого аккаунта.
+ *
+ * Без этого после выхода и входа другим аккаунтом панель показывала бы чужой
+ * снимок: он лежит и в памяти background, и в IndexedDB. Данные на Диске при
+ * этом не трогаются — заметки нового пользователя просто читаются заново.
+ */
+export const resetNotesSession = async (): Promise<void> => {
+  session?.invalidate()
+  session = null
+  forgetSnapshot()
+  try {
+    await createIndexedDbNotesCache().clear()
+  } catch (error: unknown) {
+    // Кэш — ускоритель: без очистки данные не потеряются, но следующий
+    // запуск прочитает чужой снимок. Поэтому только логируем.
+    logBackgroundTaskFailure('notes cache clear', error)
+  }
+}
+
 export const createPorts = async (): Promise<NotesPorts | null> => {
   const auth = await getStoredAuth()
   if (!auth) {
-    session = null
+    // Токен исчез между вызовами — сессия относится к прошлому аккаунту.
+    if (session) await resetNotesSession()
     return null
   }
   if (session?.token === auth.token) return session.ports
+
+  if (session) {
+    // Другой токен — другой диск. Очистку делаем до новой сессии, чтобы
+    // снимок прошлого пользователя не успел уехать в панель.
+    await resetNotesSession()
+  }
 
   const remote = createCachingNotesRemote(createDiskNotesRemote({ token: auth.token }))
   const ports: NotesPorts = { remote, cache: createIndexedDbNotesCache() }
