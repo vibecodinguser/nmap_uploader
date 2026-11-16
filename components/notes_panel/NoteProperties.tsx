@@ -1,20 +1,9 @@
-import { useEffect, useState } from 'react'
 import { useLocale } from '@/hooks/useLocale'
-import { formatDateDisplayInput, isValidDisplayDate } from '@/lib/date_format'
-import {
-  DEFAULT_HATCH,
-  NOTE_OPACITY_MAX,
-  NOTE_OPACITY_MIN,
-  NOTE_STROKE_WIDTH_MAX,
-  NOTE_STROKE_WIDTH_MIN,
-} from '@/lib/notes/model/palette'
-import { resolveNoteStyle } from '@/lib/notes/model/style_resolution'
-import { isFilledKind, type Note, type NoteGroup } from '@/lib/notes/model/types'
-import { ColorPicker } from './ColorPicker'
-import { HatchPicker } from './HatchPicker'
+import type { Note, NoteGroup } from '@/lib/notes/model/types'
+import { kindLabelKey } from '@/lib/notes/panel/labels'
 import { NOTES_PANEL_BUTTON_IDS } from './ids'
-
-const kindKey = (kind: Note['kind']) => `notesPanel.kind${kind}` as const
+import { NoteAppearance } from './NoteAppearance'
+import { NoteDateField } from './NoteDateField'
 
 /** Свойства выбранной заметки. */
 export const NoteProperties = ({
@@ -43,26 +32,6 @@ export const NoteProperties = ({
   onMoveToGroup: (groupId: string | null) => void
 }) => {
   const { t } = useLocale()
-  const [date, setDate] = useState(note.date)
-  const [dateTouched, setDateTouched] = useState(false)
-
-  useEffect(() => {
-    setDate(note.date)
-    setDateTouched(false)
-  }, [note.date])
-
-  const dateValid = isValidDisplayDate(date)
-
-  // Итоговый цвет: свой, из группы или из палитры. Им же рисуются заливка и
-  // штриховка — отдельных цветов у них нет.
-  const resolved = resolveNoteStyle(note)
-
-  const commitDate = (): void => {
-    setDateTouched(true)
-    if (dateValid && date !== note.date) {
-      onPatch({ date })
-    }
-  }
 
   return (
     <div className="notes-panel__properties">
@@ -70,7 +39,7 @@ export const NoteProperties = ({
         <button type="button" className="notes-panel__link-button" onClick={onBack}>
           ← {t('notesPanel.back')}
         </button>
-        <span className="notes-panel__properties-kind">{t(kindKey(note.kind))}</span>
+        <span className="notes-panel__properties-kind">{t(kindLabelKey(note.kind))}</span>
       </div>
 
       <label className="notes-panel__field">
@@ -96,25 +65,7 @@ export const NoteProperties = ({
         />
       </label>
 
-      <label className="notes-panel__field notes-panel__field--inline">
-        <span className="notes-panel__field-label">{t('notesPanel.date')}</span>
-        <input
-          className="notes-panel__input"
-          value={date}
-          inputMode="numeric"
-          placeholder="дд.мм.гггг"
-          onChange={(event) => {
-            setDate(formatDateDisplayInput(event.target.value))
-            setDateTouched(true)
-          }}
-          onBlur={commitDate}
-        />
-      </label>
-      {dateTouched && !dateValid && (
-        <span className="notes-panel__hint notes-panel__hint--error">
-          {t('notesPanel.dateInvalid')}
-        </span>
-      )}
+      <NoteDateField date={note.date} onCommit={(date) => onPatch({ date })} />
 
       {groups.length > 0 && (
         <label className="notes-panel__field notes-panel__field--inline">
@@ -135,103 +86,7 @@ export const NoteProperties = ({
         </label>
       )}
 
-      <ColorPicker
-        value={note.style.color}
-        label={t('notesPanel.color')}
-        onChange={(color) =>
-          onPatch({
-            style: {
-              ...note.style,
-              color,
-              // Заливка и штриховка рисуются цветом объекта, поэтому он же
-              // запоминается в fillColor — по нему видно, включена ли заливка.
-              fillColor: note.style.fillColor === null ? null : color,
-            },
-          })
-        }
-      />
-
-      {isFilledKind(note.kind) && (
-        <>
-          <label className="notes-panel__field notes-panel__field--checkbox">
-            <input
-              type="checkbox"
-              checked={resolved.hasFill}
-              onChange={(event) =>
-                onPatch({
-                  style: {
-                    ...note.style,
-                    fillColor: event.target.checked ? resolved.color : null,
-                  },
-                })
-              }
-            />
-            <span>{t('notesPanel.fill')}</span>
-          </label>
-
-          <label className="notes-panel__field notes-panel__field--checkbox">
-            <input
-              type="checkbox"
-              checked={note.style.hatch !== null}
-              onChange={(event) =>
-                onPatch({
-                  style: {
-                    ...note.style,
-                    hatch: event.target.checked ? { ...DEFAULT_HATCH } : null,
-                  },
-                })
-              }
-            />
-            <span>{t('notesPanel.hatch')}</span>
-          </label>
-
-          {note.style.hatch && (
-            <HatchPicker
-              hatch={note.style.hatch}
-              onChange={(hatch) => onPatch({ style: { ...note.style, hatch } })}
-            />
-          )}
-        </>
-      )}
-
-      <label className="notes-panel__field notes-panel__field--inline">
-        <span className="notes-panel__field-label">{t('notesPanel.opacity')}</span>
-        <input
-          type="range"
-          min={NOTE_OPACITY_MIN}
-          max={NOTE_OPACITY_MAX}
-          step={0.05}
-          value={note.style.opacity}
-          onChange={(event) =>
-            onPatch({ style: { ...note.style, opacity: Number(event.target.value) } })
-          }
-        />
-        <span className="notes-panel__value">{Math.round(note.style.opacity * 100)}%</span>
-      </label>
-
-      <label className="notes-panel__field notes-panel__field--inline">
-        <span className="notes-panel__field-label">{t('notesPanel.strokeWidth')}</span>
-        <input
-          type="range"
-          min={NOTE_STROKE_WIDTH_MIN}
-          max={NOTE_STROKE_WIDTH_MAX}
-          step={1}
-          value={note.style.strokeWidth}
-          onChange={(event) =>
-            onPatch({ style: { ...note.style, strokeWidth: Number(event.target.value) } })
-          }
-        />
-        <span className="notes-panel__value">{note.style.strokeWidth}</span>
-      </label>
-
-      <label className="notes-panel__field notes-panel__field--checkbox">
-        <input
-          type="checkbox"
-          checked={note.showLabel}
-          onChange={(event) => onPatch({ showLabel: event.target.checked })}
-        />
-        <span>{t('notesPanel.showLabel')}</span>
-      </label>
+      <NoteAppearance note={note} onPatch={onPatch} />
 
       <div className="notes-panel__actions">
         <button

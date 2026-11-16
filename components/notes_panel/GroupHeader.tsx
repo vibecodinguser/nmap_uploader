@@ -1,42 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
+import { useGroupTitleEditing } from '@/hooks/notes_panel/useGroupTitleEditing'
 import { useLocale } from '@/hooks/useLocale'
 import type { GroupVisibility } from '@/lib/notes/model/grouping'
+import { GroupActions } from './GroupActions'
+import { Chevron } from './GroupIcons'
 import { NOTES_PANEL_BUTTON_IDS, rowButtonId } from './ids'
-import { DeleteIcon, VisibilityIcon } from './RowIcons'
-
-/** Стрелка «раскрыть/свернуть» — одна на заголовок группы. */
-const Chevron = ({ collapsed }: { collapsed: boolean }) => (
-  <svg
-    width={14}
-    height={14}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-    className="notes-panel__group-chevron"
-    data-collapsed={collapsed}
-  >
-    <path d="M6 9l6 6 6-6" />
-  </svg>
-)
-
-const PencilIcon = () => (
-  <svg
-    width={14}
-    height={14}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    aria-hidden="true"
-  >
-    <path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3z" />
-  </svg>
-)
 
 export const groupHeaderIds = (groupId: string | null) => {
   const suffix = groupId ?? 'ungrouped'
@@ -86,30 +54,10 @@ export const GroupHeader = ({
   onToggleVisibility: () => void
 }) => {
   const { t } = useLocale()
-  const [isEditing, setIsEditing] = useState(false)
-  const [draft, setDraft] = useState(title)
   const [isDropHover, setIsDropHover] = useState(false)
-  const inputRef = useRef<HTMLInputElement | null>(null)
-
-  // Фокус ставим вручную: autofocus в разметке перехватывает внимание даже
-  // когда пользователь просто пролистал список.
-  useEffect(() => {
-    if (!isEditing) return
-    inputRef.current?.focus()
-    inputRef.current?.select()
-  }, [isEditing])
+  const editing = useGroupTitleEditing({ title, onRename })
   const ids = groupHeaderIds(groupId)
   const editable = groupId !== null
-
-  const commit = (): void => {
-    setIsEditing(false)
-    const next = draft.trim()
-    if (!next || next === title) {
-      setDraft(title)
-      return
-    }
-    onRename?.(next)
-  }
 
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: цель для перетаскивания, действия — в кнопках
@@ -153,21 +101,18 @@ export const GroupHeader = ({
             aria-hidden="true"
           />
         )}
-        {isEditing ? (
+        {editing.isEditing ? (
           <input
-            ref={inputRef}
+            ref={editing.inputRef}
             className="notes-panel__group-input"
-            value={draft}
+            value={editing.draft}
             aria-label={t('notesPanel.renameGroup')}
             onClick={(event) => event.stopPropagation()}
-            onChange={(event) => setDraft(event.target.value)}
-            onBlur={commit}
+            onChange={(event) => editing.setDraft(event.target.value)}
+            onBlur={editing.commit}
             onKeyDown={(event) => {
-              if (event.key === 'Enter') commit()
-              if (event.key === 'Escape') {
-                setDraft(title)
-                setIsEditing(false)
-              }
+              if (event.key === 'Enter') editing.commit()
+              if (event.key === 'Escape') editing.cancel()
             }}
           />
         ) : (
@@ -176,66 +121,16 @@ export const GroupHeader = ({
         <span className="notes-panel__group-count">{notesCount}</span>
       </button>
 
-      <div className="notes-panel__group-actions">
-        <button
-          type="button"
-          id={ids.visibility}
-          data-action="group-visible"
-          data-visibility={visibility}
-          className="notes-panel__row-action"
-          title={visibility === 'hidden' ? t('notesPanel.showGroup') : t('notesPanel.hideGroup')}
-          aria-label={
-            visibility === 'hidden' ? t('notesPanel.showGroup') : t('notesPanel.hideGroup')
-          }
-          aria-pressed={visibility !== 'hidden'}
-          onClick={onToggleVisibility}
-        >
-          <VisibilityIcon hidden={visibility === 'hidden'} mixed={visibility === 'mixed'} />
-        </button>
-
-        {editable && !isEditing && (
-          <>
-            <label
-              id={ids.color}
-              data-action="group-color"
-              className="notes-panel__group-color"
-              title={t('notesPanel.groupColor')}
-            >
-              <input
-                type="color"
-                value={color ?? '#1a8cff'}
-                aria-label={t('notesPanel.groupColor')}
-                onChange={(event) => onRecolor?.(event.target.value)}
-              />
-            </label>
-            <button
-              type="button"
-              id={ids.rename}
-              data-action="rename-group"
-              className="notes-panel__row-action"
-              title={t('notesPanel.renameGroup')}
-              aria-label={t('notesPanel.renameGroup')}
-              onClick={() => {
-                setDraft(title)
-                setIsEditing(true)
-              }}
-            >
-              <PencilIcon />
-            </button>
-            <button
-              type="button"
-              id={ids.remove}
-              data-action="delete-group"
-              className="notes-panel__row-action notes-panel__row-action--danger"
-              title={t('notesPanel.deleteGroup')}
-              aria-label={t('notesPanel.deleteGroup')}
-              onClick={onRemove}
-            >
-              <DeleteIcon />
-            </button>
-          </>
-        )}
-      </div>
+      <GroupActions
+        ids={ids}
+        color={color}
+        visibility={visibility}
+        editable={editable && !editing.isEditing}
+        onToggleVisibility={onToggleVisibility}
+        onRecolor={onRecolor}
+        onStartRename={editing.start}
+        onRemove={onRemove}
+      />
     </div>
   )
 }
