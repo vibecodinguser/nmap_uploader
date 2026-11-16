@@ -42,7 +42,7 @@ lib/notes/
     geometry/{bounds,circle,square}.ts
     manifest/{schema,normalize,merge}.ts
     shards.ts
-  protocol.ts           NotesSnapshot, NotesPatch, имена действий
+  protocol.ts           NotesData, NotesSnapshot, NotesPatch, имена действий
   storage/              порты и адаптеры: paths, remote, cache, repository, write_queue
   application/          load, save_note, delete_note, save_group, delete_group,
                         move_note, set_visibility, upload_icon
@@ -59,9 +59,9 @@ lib/notes/
 
 ## Контракт
 
-- Один `NotesSnapshot` в `lib/notes/protocol.ts` для панели, background,
-  карты и слоя; ответы мутаций — `NotesPatch`
-  (`{ manifest, shards, removedShardKeys? }`).
+- `NotesData` — манифест и шарды, то, что лежит в хранилище. `NotesSnapshot` —
+  то же плюс локальные `hiddenIds` (скрытие на Диске не хранится).
+  `NotesPatch` — ответ мутации: манифест целиком и только затронутые шарды.
 - Семантика мержа не меняется: аддитивное слияние по `updatedAt` остаётся,
   надгробия для удалений — отдельная продуктовая задача.
 - JSON-ключи на Диске и `notes_hidden_ids` заморожены, включая `NoteStyle.fillColor`
@@ -73,8 +73,8 @@ lib/notes/
 
 **A. Контракт**
 
-1. `test(notes)`: characterization — background и правка заметки.
-2. `refactor(notes)`: единый снимок и патч (`protocol.ts`).
+1. ✅ `test(notes)`: characterization — background и правка заметки.
+2. ✅ `refactor(notes)`: единый снимок и патч (`protocol.ts`).
 
 **B. Домен и транспорт**
 
@@ -125,3 +125,19 @@ lib/notes/
 правка заметки в панели (дебаунс, очередь, откат, undo). Остальные швы
 тестируются уже после переноса. Плюс контрактный тест на имена протокола и
 тест границ из коммита 4.
+
+## Журнал
+
+- **1.** Characterization: 22 теста background, 6 тестов правки/удаления в
+  панели. Уточнения по факту: потеря правки при быстрой правке двух заметок
+  происходит и в состоянии панели (обе правки считаются от одного снимка);
+  `fromCache` не читается нигде, потому что обработчик кладёт его внутрь
+  `snapshot`, а тип панели этого поля не знает; `lastSnapshot` не
+  инвалидируется и после первой загрузки отвечает из памяти даже при пустом
+  Диске.
+- **2.** `lib/notes/protocol.ts` вместо `messages.ts`: `NotesData`,
+  `NotesSnapshot`, `NotesPatch`; ответы — дискриминированные объединения
+  (`{ok:true; patch}` / `{ok:false; error}`), `NOTES_RENDER` несёт снимок
+  целиком, `fromCache` удалён. Форма сообщений поменялась (внутренний
+  протокол расширения), поэтому фикстуры тестов обновлены: это единственное
+  место, где ожидания пришлось тронуть.
