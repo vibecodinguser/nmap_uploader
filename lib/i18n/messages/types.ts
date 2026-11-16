@@ -248,6 +248,7 @@ export type Messages = {
     clearSelection: string
     deleteSelected: string
     moveToGroup: string
+    list: string
   }
   mapPointCounter: {
     points: string

@@ -74,11 +74,14 @@ export const useVirtualRows = ({
     setScrollTop(event.currentTarget.scrollTop)
   }
 
-  return { viewportRef, items, height, onScroll }
+  return { viewportRef, items, height, onScroll, rows, positioned }
 }
 
 export type VirtualRows = {
   items: PositionedRow[]
+  /** Полный набор строк, а не только видимое окно: нужен клавиатуре. */
+  rows: ReturnType<typeof buildListRows>
+  positioned: PositionedRow[]
   height: number
   viewportRef: React.RefObject<HTMLDivElement | null>
   onScroll: (event: React.UIEvent<HTMLDivElement>) => void

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNoteListKeyboard } from '@/hooks/notes_panel/useNoteListKeyboard'
 import { useVirtualRows } from '@/hooks/notes_panel/useVirtualRows'
 import { useLocale } from '@/hooks/useLocale'
 import { type GroupVisibility, groupVisibility } from '@/lib/notes/model/grouping'
@@ -58,10 +59,32 @@ export const NoteList = ({
 }) => {
   const { t } = useLocale()
   const [draggedNoteId, setDraggedNoteId] = useState<string | null>(null)
-  const { viewportRef, items, height, onScroll } = useVirtualRows({
+  const { viewportRef, items, height, onScroll, rows, positioned } = useVirtualRows({
     notes,
     groups,
     collapsedGroupIds,
+  })
+
+  /**
+   * Курсор клавиатуры и прокрутка к нему.
+   *
+   * Строки считаются заново, а не берутся из окна виртуализации: цель может
+   * быть за его пределами, и её надо сначала прокрутить в видимую область.
+   */
+  const keyboard = useNoteListKeyboard({
+    rows,
+    selectedId,
+    onSelect,
+    onToggleChecked: (noteId) => onCheck(noteId, !checkedIds.includes(noteId)),
+    onScrollToId: (noteId) => {
+      const element = viewportRef.current
+      if (!element) return
+      const target = positioned.find(
+        (item) => item.row.type === 'note' && item.row.note.id === noteId,
+      )
+      if (!target) return
+      element.scrollTop = Math.max(0, target.top - element.clientHeight / 2)
+    },
   })
 
   if (notes.length === 0 && groups.length === 0) {
@@ -115,6 +138,7 @@ export const NoteList = ({
         isHidden={hiddenIds.includes(note.id)}
         isSelected={note.id === selectedId}
         checked={checkedIds.includes(note.id)}
+        active={keyboard.activeId === note.id}
         onCheck={(checked) => onCheck(note.id, checked)}
         onSelect={() => onSelect(note.id)}
         onToggleHidden={() => onToggleHidden(note.id)}
@@ -132,10 +156,15 @@ export const NoteList = ({
 
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: контейнер принимает бросок, действия — в строках
-    <div
+    <section
       className="notes-panel__list"
       ref={viewportRef}
       onScroll={onScroll}
+      onKeyDown={keyboard.onKeyDown}
+      // Список получает фокус при переходе клавиатурой: без tabIndex стрелки
+      // работали бы только когда фокус уже внутри.
+      tabIndex={-1}
+      aria-label={t('notesPanel.list')}
       onDragOver={(event) => event.preventDefault()}
       onDrop={dropInto(null)}
     >
@@ -150,6 +179,6 @@ export const NoteList = ({
           </div>
         ))}
       </div>
-    </div>
+    </section>
   )
 }

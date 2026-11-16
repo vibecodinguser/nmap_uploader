@@ -247,6 +247,7 @@ export const enMessages = {
     clearSelection: 'Clear selection',
     deleteSelected: 'Delete selected',
     moveToGroup: 'Move to group',
+    list: 'Notes list',
   },
   mapPointCounter: {
     points: 'Vertices: {count}',

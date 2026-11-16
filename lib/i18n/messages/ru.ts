@@ -247,6 +247,7 @@ export const ruMessages = {
     clearSelection: 'Снять отметки',
     deleteSelected: 'Удалить отмеченные',
     moveToGroup: 'Перенести в группу',
+    list: 'Список заметок',
   },
   mapPointCounter: {
     points: 'Вершин: {count}',

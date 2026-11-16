@@ -47,6 +47,12 @@
   background: color-mix(in srgb, var(--foreground, #1f1f1f) 6%, transparent);
 }
 
+/* Курсор клавиатуры: отдельная рамка, чтобы не путать с открытой заметкой. */
+.notes-panel__row[data-active='true'] {
+  outline: 2px solid var(--foreground, #1f1f1f);
+  outline-offset: -2px;
+}
+
 .notes-panel__row[data-selected='true'] {
   background: color-mix(in srgb, #ffdb4d 30%, transparent);
 }

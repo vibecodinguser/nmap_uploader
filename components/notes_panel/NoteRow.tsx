@@ -29,6 +29,7 @@ export const NoteRow = ({
   isHidden,
   isSelected,
   checked,
+  active,
   onCheck,
   onSelect,
   onToggleHidden,
@@ -43,6 +44,8 @@ export const NoteRow = ({
   isSelected: boolean
   /** Отмечена для массового действия. */
   checked: boolean
+  /** Курсор клавиатуры стоит на этой строке. */
+  active?: boolean
   onCheck: (checked: boolean) => void
   onSelect: () => void
   onToggleHidden: () => void
@@ -66,6 +69,7 @@ export const NoteRow = ({
       data-note-id={note.id}
       data-note-kind={note.kind}
       data-selected={isSelected}
+      data-active={active === true}
       data-hidden={isHidden}
       draggable
       onDragStart={onDragStart}
