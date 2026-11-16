@@ -4,6 +4,7 @@ import { NoteList } from '@/components/notes_panel/NoteList'
 import { NoteProperties } from '@/components/notes_panel/NoteProperties'
 import { PanelHeader, type PanelLayout } from '@/components/notes_panel/PanelHeader'
 import { PanelStatus } from '@/components/notes_panel/PanelStatus'
+import { PanelToasts } from '@/components/notes_panel/PanelToasts'
 import { useLocale } from '@/hooks/useLocale'
 import { useNotesPanel } from '@/hooks/useNotesPanel'
 import { buildAutoNoteName } from '@/lib/notes/model/autonames'
@@ -135,20 +136,7 @@ export const NotesPanelApp = () => {
         />
       )}
 
-      {panel.undo && (
-        <div className="notes-panel__toast" role="status">
-          <span>{t('notesPanel.undoDelete')}</span>
-          <button type="button" className="notes-panel__link-button" onClick={panel.undoRemove}>
-            {t('notesPanel.undo')}
-          </button>
-        </div>
-      )}
-
-      {panel.error && (
-        <div className="notes-panel__toast notes-panel__toast--error" role="alert">
-          {panel.error}
-        </div>
-      )}
+      <PanelToasts undo={panel.undo} error={panel.error} onUndo={panel.undoRemove} />
     </div>
   )
 }

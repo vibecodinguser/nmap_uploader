@@ -8,14 +8,8 @@ import {
 } from '../model/shards'
 import type { Note, NoteGeometry, NoteGroup } from '../model/types'
 import type { NotesData, NotesPatch } from '../protocol'
-import type { NotesCache } from './cache'
-import type { NotesRemote } from './remote'
 import { enqueueNotesWrite } from './write_queue'
-
-export type NotesPorts = {
-  remote: NotesRemote
-  cache: NotesCache
-}
+import { type NotesPorts, readShard, writeManifest, writeShard } from './writes'
 
 const shardIdsOf = (manifest: NotesManifest): string[] => {
   const ids = new Set<string>()
@@ -28,11 +22,6 @@ const shardIdsOf = (manifest: NotesManifest): string[] => {
 
 const isValidTimestamp = (value: unknown): value is string =>
   typeof value === 'string' && !Number.isNaN(Date.parse(value))
-
-const readShard = async (ports: NotesPorts, shardId: string | null): Promise<GeometryShard> => {
-  if (!shardId) return createEmptyShard()
-  return (await ports.remote.readShard(shardId)) ?? createEmptyShard()
-}
 
 /** Снимок из кэша: панель может открыться до ответа Диска. */
 export const loadCachedSnapshot = async (ports: NotesPorts): Promise<NotesData | null> => {
@@ -69,25 +58,6 @@ export const loadRemoteSnapshot = async (ports: NotesPorts): Promise<NotesData> 
   )
 
   return { manifest, shards }
-}
-
-const writeManifest = async (
-  ports: NotesPorts,
-  manifest: NotesManifest,
-): Promise<NotesManifest> => {
-  const next = { ...manifest, updatedAt: new Date().toISOString() }
-  await ports.remote.writeManifest(next)
-  await ports.cache.writeManifest(next)
-  return next
-}
-
-const writeShard = async (
-  ports: NotesPorts,
-  shardId: string,
-  shard: GeometryShard,
-): Promise<void> => {
-  await ports.remote.writeShard(shardId, shard)
-  await ports.cache.writeShard(shardId, shard)
 }
 
 /**
@@ -210,97 +180,6 @@ const deleteNoteNow = async ({
   return { manifest, shards: shardId && shard ? { [shardId]: shard } : {} }
 }
 
-const saveGroupNow = async ({
-  ports,
-  group,
-}: {
-  ports: NotesPorts
-  group: NoteGroup
-}): Promise<NotesPatch> => {
-  const remoteManifest = (await ports.remote.readManifest()) ?? createEmptyManifest()
-  const stamped: NoteGroup = { ...group, updatedAt: new Date().toISOString() }
-  const manifest = mergeManifests(remoteManifest, {
-    version: remoteManifest.version,
-    updatedAt: stamped.updatedAt,
-    groups: [stamped],
-    notes: [],
-  })
-
-  return { manifest: await writeManifest(ports, manifest), shards: {} }
-}
-
-/**
- * Удаляет группу.
- *
- * `keepNotes` оставляет заметки в корне, `cascade` удаляет их вместе с
- * геометрией.
- */
-const deleteGroupNow = async ({
-  ports,
-  groupId,
-  mode,
-}: {
-  ports: NotesPorts
-  groupId: string
-  mode: 'keepNotes' | 'cascade'
-}): Promise<NotesPatch> => {
-  const remoteManifest = (await ports.remote.readManifest()) ?? createEmptyManifest()
-  const doomed = remoteManifest.notes.filter((note) => note.groupId === groupId)
-
-  const notes =
-    mode === 'cascade'
-      ? remoteManifest.notes.filter((note) => note.groupId !== groupId)
-      : remoteManifest.notes.map((note) =>
-          note.groupId === groupId ? { ...note, groupId: null } : note,
-        )
-
-  const manifest = await writeManifest(ports, {
-    ...remoteManifest,
-    notes,
-    groups: remoteManifest.groups.filter((group) => group.id !== groupId),
-  })
-
-  if (mode !== 'cascade') {
-    return { manifest, shards: {} }
-  }
-
-  const shards: Record<string, GeometryShard> = {}
-  for (const note of doomed) {
-    const shardId = shardIdForDate(note.date)
-    if (!shardId) continue
-    const base = shards[shardId] ?? (await readShard(ports, shardId))
-    const shard = removeShardGeometry(base, note.id)
-    await writeShard(ports, shardId, shard)
-    shards[shardId] = shard
-  }
-
-  return { manifest, shards }
-}
-
-/** Переносит заметку в группу (или в корень при `groupId = null`). */
-const moveNoteToGroupNow = async ({
-  ports,
-  noteId,
-  groupId,
-}: {
-  ports: NotesPorts
-  noteId: string
-  groupId: string | null
-}): Promise<NotesPatch> => {
-  const remoteManifest = (await ports.remote.readManifest()) ?? createEmptyManifest()
-  const target = remoteManifest.notes.find((note) => note.id === noteId)
-  if (!target) return { manifest: remoteManifest, shards: {} }
-
-  const manifest = mergeManifests(remoteManifest, {
-    version: remoteManifest.version,
-    updatedAt: new Date().toISOString(),
-    groups: [],
-    notes: [{ ...target, groupId, updatedAt: new Date().toISOString() }],
-  })
-
-  return { manifest: await writeManifest(ports, manifest), shards: {} }
-}
-
 /*
  * Наружу изменения отдаются через очередь записи: одновременно идущие
  * операции писали один и тот же файл, и Яндекс.Диск отвечал `423 LOCKED`.
@@ -309,9 +188,8 @@ export const saveNote = (args: Parameters<typeof saveNoteNow>[0]) =>
   enqueueNotesWrite(() => saveNoteNow(args))
 export const deleteNote = (args: Parameters<typeof deleteNoteNow>[0]) =>
   enqueueNotesWrite(() => deleteNoteNow(args))
-export const saveGroup = (args: Parameters<typeof saveGroupNow>[0]) =>
-  enqueueNotesWrite(() => saveGroupNow(args))
-export const deleteGroup = (args: Parameters<typeof deleteGroupNow>[0]) =>
-  enqueueNotesWrite(() => deleteGroupNow(args))
-export const moveNoteToGroup = (args: Parameters<typeof moveNoteToGroupNow>[0]) =>
-  enqueueNotesWrite(() => moveNoteToGroupNow(args))
+
+// Групповые операции живут отдельно, но остаются на этом входе: background
+// импортирует все мутации из одного места.
+export { deleteGroup, moveNoteToGroup, saveGroup } from './group_repository'
+export type { NotesPorts } from './writes'
