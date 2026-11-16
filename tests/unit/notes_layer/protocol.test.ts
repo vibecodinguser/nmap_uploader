@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  parseGeometryDetail,
-  parseLayerInput,
-  parseNoteSelection,
-} from '@/lib/notes_layer/protocol'
+import { parseLayerInput, parseNoteSelection } from '@/lib/notes_layer/protocol'
 
 /**
  * Протокол между content script и MAIN-миром: данные едут строкой JSON в
@@ -53,16 +49,5 @@ describe('parseNoteSelection', () => {
     expect(parseNoteSelection(JSON.stringify({ noteId: 'n1' }))).toBe('n1')
     expect(parseNoteSelection(JSON.stringify({ noteId: 42 }))).toBeUndefined()
     expect(parseNoteSelection('мусор')).toBeUndefined()
-  })
-})
-
-describe('parseGeometryDetail', () => {
-  it('нормализует геометрию и отбрасывает вырожденную', () => {
-    expect(parseGeometryDetail(JSON.stringify({ kind: 'Point', coords: [37, 55] }))).toEqual({
-      kind: 'Point',
-      coords: [37, 55],
-    })
-    expect(parseGeometryDetail(JSON.stringify({ kind: 'Line', coords: [[37, 55]] }))).toBeNull()
-    expect(parseGeometryDetail('{')).toBeNull()
   })
 })

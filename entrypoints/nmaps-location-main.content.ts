@@ -21,11 +21,9 @@ import {
 import { notifyNmapsUrlChange } from '@/lib/nmaps_url_notify'
 import {
   collectPolygonTargets,
-  NMAPS_LOCATE_NOTE_EVENT,
   NMAPS_RENDER_NOTES_EVENT,
   NMAPS_SELECT_NOTE_EVENT,
   NotesLayer,
-  parseGeometryDetail,
   parseLayerInput,
   parseNoteSelection,
 } from '@/lib/notes_layer'
@@ -211,11 +209,6 @@ export default defineContentScript({
     document.addEventListener(NMAPS_SELECT_NOTE_EVENT, (event: Event) => {
       const noteId = parseNoteSelection((event as CustomEvent).detail)
       if (noteId !== undefined) notesLayer.select(noteId)
-    })
-
-    document.addEventListener(NMAPS_LOCATE_NOTE_EVENT, (event: Event) => {
-      const geometry = parseGeometryDetail((event as CustomEvent).detail)
-      if (geometry) notesLayer.locate(geometry)
     })
 
     globalThis.addEventListener('pagehide', () => notesLayer.destroy(), { once: true })

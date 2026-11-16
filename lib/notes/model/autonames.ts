@@ -26,17 +26,3 @@ export const buildAutoNoteName = ({
   }
   return `${base} ${index}`
 }
-
-/** Имя для показа: своё название, иначе автоимя. */
-export const displayNoteName = (note: {
-  name: string
-  date: string
-  kindLabel: string
-  existingNames?: readonly string[]
-}): string =>
-  note.name.trim() ||
-  buildAutoNoteName({
-    date: note.date,
-    kindLabel: note.kindLabel,
-    existingNames: note.existingNames ?? [],
-  })

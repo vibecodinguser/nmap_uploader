@@ -1,7 +1,5 @@
 import { findActiveMap, type YmapsMapLike } from '@/lib/nmaps/map_discovery'
-import { centerMapOnLocation } from '@/lib/nmaps/repaint'
-import { geometryAnchor, geometryBounds, zoomForBounds } from '@/lib/notes/model/geometry'
-import type { LonLat, NoteGeometry } from '@/lib/notes/model/types'
+import type { LonLat } from '@/lib/notes/model/types'
 import { LABEL_MIN_ZOOM, type RenderedNote, renderNotes } from './objects'
 import { dispatchLayerEvent, NMAPS_NOTE_SELECTED_EVENT, type NotesLayerInput } from './protocol'
 
@@ -75,20 +73,6 @@ export class NotesLayer {
     if (this.selectedId === noteId) return
     this.selectedId = noteId
     this.apply()
-  }
-
-  public getSelectedId(): string | null {
-    return this.selectedId
-  }
-
-  /** Центрирует карту на заметке и подсвечивает её. */
-  public locate(geometry: NoteGeometry): void {
-    const anchor = geometryAnchor(geometry)
-    if (!anchor) return
-
-    const bounds = geometryBounds(geometry)
-    const zoom = bounds ? Math.max(zoomForBounds(bounds), 15) : 17
-    centerMapOnLocation({ latitude: anchor[1], longitude: anchor[0], zoom }, this.getMap)
   }
 
   public destroy(): void {

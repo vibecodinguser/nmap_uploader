@@ -1,7 +1,7 @@
 import type { MessageHandler } from '@/lib/background/message_router'
 import { runBackgroundTask } from '@/lib/background/tasks'
 import { getErrorMessage } from '@/lib/errors'
-import { parseIconUploadRequest } from '@/lib/notes/application/requests'
+import { parseIconUploadRequest } from '@/lib/notes/icons/request'
 import { NOTES_UPLOAD_ICON_ACTION } from '@/lib/notes/protocol'
 import { createPorts, guard } from './guard'
 

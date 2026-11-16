@@ -11,9 +11,6 @@ import type { Note, NoteGroup } from './types'
  * `lib/notes/panel/rows.ts`: она нужна только интерфейсу.
  */
 
-/** Заголовок «Без группы» нужен только когда группы вообще есть. */
-export const UNGROUPED_TITLE_KEY = 'notesPanel.noGroup'
-
 /**
  * Порядок групп: `order`, затем название.
  *
@@ -48,11 +45,3 @@ export const groupVisibility = (
   if (hiddenCount === noteIds.length) return 'hidden'
   return 'mixed'
 }
-
-/** Сколько заметок в каждой группе — для подписи в заголовке. */
-export const countNotesByGroup = (notes: readonly Note[]): Record<string, number> =>
-  notes.reduce<Record<string, number>>((counts, note) => {
-    const key = note.groupId ?? ''
-    counts[key] = (counts[key] ?? 0) + 1
-    return counts
-  }, {})

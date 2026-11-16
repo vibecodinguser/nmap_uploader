@@ -285,15 +285,3 @@ export const renderNotes = ({
 
   return rendered
 }
-
-/** Координаты всех видимых заметок: для «найти на карте» и кластеризации. */
-export const collectVisibleCoordinates = (
-  notes: readonly Note[],
-  geometries: Record<string, NoteGeometry>,
-  hiddenIds: readonly string[],
-): [number, number][] => {
-  const hidden = new Set(hiddenIds)
-  return notes
-    .filter((note) => !hidden.has(note.id) && geometries[note.id])
-    .flatMap((note) => geometryCoordinates(geometries[note.id]))
-}

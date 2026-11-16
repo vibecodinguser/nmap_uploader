@@ -11,7 +11,6 @@ import type { Note, NoteGeometry, NoteGroup } from '@/lib/notes/model/types'
 
 export const NMAPS_RENDER_NOTES_EVENT = 'nmap-uploader-render-notes'
 export const NMAPS_SELECT_NOTE_EVENT = 'nmap-uploader-select-note'
-export const NMAPS_LOCATE_NOTE_EVENT = 'nmap-uploader-locate-note'
 export const NMAPS_NOTE_SELECTED_EVENT = 'nmap-uploader-note-selected'
 
 export type NotesLayerInput = {
@@ -69,7 +68,3 @@ export const parseNoteSelection = (raw: unknown): string | null | undefined => {
   if (noteId === null) return null
   return typeof noteId === 'string' ? noteId : undefined
 }
-
-/** Разбирает геометрию для центрирования карты. */
-export const parseGeometryDetail = (raw: unknown): NoteGeometry | null =>
-  normalizeGeometry(parseDetail(raw))

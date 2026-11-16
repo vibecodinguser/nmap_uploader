@@ -1,8 +1,9 @@
 import { ERR_NETWORK, ProcessingError } from '@/lib/errors'
 import { downloadDiskFile, downloadDiskText, uploadDiskFile } from '@/lib/yandex/disk_files'
+import { notesIconPath } from '../icons'
 import { type NotesManifest, parseManifest } from '../model/manifest'
 import { type GeometryShard, parseShard } from '../model/shards'
-import { notesIconPath, notesManifestPath, notesShardPath } from './paths'
+import { notesManifestPath, notesShardPath } from './paths'
 
 /** Порт удалённого хранилища заметок: чтение и запись файлов на Диске. */
 export type NotesRemote = {

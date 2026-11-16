@@ -191,9 +191,7 @@ export type Messages = {
     opacity: string
     strokeWidth: string
     fill: string
-    fillNone: string
     hatch: string
-    hatchNone: string
     hatchPattern: string
     hatchDiagonal: string
     hatchBackDiagonal: string
@@ -204,18 +202,15 @@ export type Messages = {
     visible: string
     hidden: string
     delete: string
-    deleteConfirm: string
     cancel: string
     undoDelete: string
     undo: string
     back: string
     locate: string
-    saved: string
     saveError: string
     expand: string
     collapse: string
     close: string
-    properties: string
     createFailed: string
     ungrouped: string
     createGroup: string
@@ -232,7 +227,6 @@ export type Messages = {
     hideGroup: string
     showGroup: string
     groupColor: string
-    groupHint: string
   }
   mapPointCounter: {
     points: string

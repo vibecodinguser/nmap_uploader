@@ -4,7 +4,6 @@ import {
   parseDeleteGroupRequest,
   parseDeleteNoteRequest,
   parseHiddenIds,
-  parseIconUploadRequest,
   parseMoveNoteRequest,
   parseSaveGroupRequest,
   parseSaveNoteRequest,
@@ -120,28 +119,6 @@ describe('разбор запросов заметок', () => {
       value: ['a', 'b'],
     })
     expect(parseHiddenIds({ hiddenIds: 'a' }).ok).toBe(false)
-  })
-
-  it('иконка: имя по схеме uuid, известный тип и лимит 64 КБ', () => {
-    const fileName = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa.png'
-    const small = parseIconUploadRequest({
-      fileName,
-      contentType: 'image/png',
-      data: btoa('icon'),
-    })
-    expect(small.ok).toBe(true)
-
-    expect(
-      parseIconUploadRequest({ fileName: '../evil.png', contentType: 'image/png', data: '' }).ok,
-    ).toBe(false)
-    expect(parseIconUploadRequest({ fileName, contentType: 'image/gif', data: '' }).ok).toBe(false)
-    expect(
-      parseIconUploadRequest({
-        fileName,
-        contentType: 'image/png',
-        data: btoa('x'.repeat(64 * 1024 + 1)),
-      }),
-    ).toEqual({ ok: false, error: 'ICON_TOO_LARGE' })
   })
 })
 

@@ -32,8 +32,6 @@ export const DEFAULT_HATCH = {
 /** Толщина линий узора: одна и та же у всех, чтобы штриховка не «жирнела». */
 export const HATCH_LINE_WIDTH = 2
 
-export const NOTE_TEXT_COLOR = '#1f1f1f'
-
 /** Прозрачность по умолчанию зависит от вида: заливка есть только у площадных. */
 export const defaultOpacity = (kind: NoteKind): number => (isFilledKind(kind) ? 0.85 : 1)
 
