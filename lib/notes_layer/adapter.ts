@@ -1,5 +1,8 @@
 import { findActiveMap, type YmapsMapLike } from '@/lib/nmaps/map_discovery'
+import { centerMapOnLocation } from '@/lib/nmaps/repaint'
 import type { LonLat } from '@/lib/notes/model/types'
+import { renderCluster } from './cluster_object'
+import { CLUSTER_MAX_ZOOM, clusterPoints } from './clustering'
 import { LABEL_MIN_ZOOM, type RenderedNote, renderNotes } from './objects'
 import { dispatchLayerEvent, NMAPS_NOTE_SELECTED_EVENT, type NotesLayerInput } from './protocol'
 
@@ -13,6 +16,7 @@ import { dispatchLayerEvent, NMAPS_NOTE_SELECTED_EVENT, type NotesLayerInput } f
 
 type YmapsGeoObject = {
   properties?: { get?: (name: string) => unknown }
+  geometry?: { getCoordinates?: () => unknown }
 }
 
 type YmapsCollection = {
@@ -64,6 +68,8 @@ export class NotesLayer {
   }
   private selectedId: string | null = null
   private labelsHidden = false
+  /** Округлённый зум последней перерисовки: по нему видно, надо ли пересчитать кластеры. */
+  private zoomBucket: number | null = null
   private frame: number | null = null
 
   constructor(private readonly getMap: () => YmapsMapLike | null = findActiveMap) {}
@@ -92,14 +98,27 @@ export class NotesLayer {
     this.map = null
   }
 
+  /**
+   * Зум изменился — пересчитать подписи и кластеры.
+   *
+   * Кластеры зависят от зума, поэтому перерисовка нужна не только на пороге
+   * подписей. Шаг — целый зум: дробные значения приходят десятками за одну
+   * прокрутку колеса, и пересчитывать кластеры на каждое было бы расточительно.
+   */
   private handleBoundsChange = (): void => {
     const map = this.map
     if (!map) return
-    const zoom = map.getZoom()
-    const shouldHide = zoom < LABEL_MIN_ZOOM
-    if (shouldHide === this.labelsHidden) return
 
-    this.labelsHidden = shouldHide
+    const zoom = map.getZoom()
+    const shouldHideLabels = zoom < LABEL_MIN_ZOOM
+    const zoomBucket = Math.round(zoom)
+    const labelsChanged = shouldHideLabels !== this.labelsHidden
+    const clustersChanged = zoomBucket !== this.zoomBucket && zoom <= CLUSTER_MAX_ZOOM + 1
+
+    if (!labelsChanged && !clustersChanged) return
+
+    this.labelsHidden = shouldHideLabels
+    this.zoomBucket = zoomBucket
     this.scheduleApply()
   }
 
@@ -110,6 +129,20 @@ export class NotesLayer {
     this.selectedId = null
     this.apply()
     dispatchLayerEvent(NMAPS_NOTE_SELECTED_EVENT, { noteId: null })
+  }
+
+  /** Приблизить карту к кластеру: следующий шаг зума показывает его заметки. */
+  private zoomIntoCluster(target: YmapsGeoObject): void {
+    const map = this.map
+    if (!map) return
+    const coordinates = target.geometry?.getCoordinates?.()
+    if (!Array.isArray(coordinates) || coordinates.length !== 2) return
+
+    const [lon, lat] = coordinates as [number, number]
+    centerMapOnLocation(
+      { latitude: lat, longitude: lon, zoom: Math.min(map.getZoom() + 2, 19) },
+      this.getMap,
+    )
   }
 
   private scheduleApply(): void {
@@ -145,7 +178,17 @@ export class NotesLayer {
 
       this.collection.events?.add('click', (event: unknown) => {
         const target = (event as { get?: (name: string) => unknown })?.get?.('target')
-        const noteId = (target as YmapsGeoObject | undefined)?.properties?.get?.('noteId')
+        const properties = (target as YmapsGeoObject | undefined)?.properties
+
+        // Клик по кластеру приближает карту: так из него видно отдельные
+        // заметки. Выбирать тут нечего — за значком их несколько.
+        const clusterNoteIds = properties?.get?.('clusterNoteIds')
+        if (typeof clusterNoteIds === 'string') {
+          this.zoomIntoCluster(target as YmapsGeoObject)
+          return
+        }
+
+        const noteId = properties?.get?.('noteId')
         if (typeof noteId !== 'string') return
         this.selectedId = noteId
         this.apply()
@@ -191,19 +234,60 @@ export class NotesLayer {
    * отпечаток; удалённые, скрытые и невидимые на текущем зуме подписи просто
    * убираются из коллекции.
    */
+  /**
+   * Заменяет близкие точки значком кластера.
+   *
+   * Кластеризуются только точки: у линии и полигона важен сам контур, и
+   * прятать его в значок с числом было бы бессмысленно. Подписи и иконки
+   * заметок, попавших в кластер, тоже снимаются — иначе они висели бы поверх
+   * значка.
+   */
+  private withClusters(rendered: RenderedNote[], zoom: number): RenderedNote[] {
+    const points = rendered.filter((item) => item.kind === 'point')
+    if (points.length < 2) return rendered
+
+    const clusters = clusterPoints({
+      points: points.map((item) => ({
+        id: item.id,
+        coordinates: item.coordinates as [number, number],
+      })),
+      zoom,
+    })
+
+    const grouped = clusters.filter((cluster) => cluster.noteIds.length > 1)
+    if (grouped.length === 0) return rendered
+
+    const inCluster = new Set(grouped.flatMap((cluster) => cluster.noteIds))
+    const rest = rendered.filter(
+      (item) =>
+        !(
+          inCluster.has(item.id) &&
+          (item.kind === 'point' || item.kind === 'label' || item.kind === 'icon')
+        ),
+    )
+
+    return [...rest, ...grouped.map(renderCluster)]
+  }
+
   private apply(): void {
     const context = this.ensureCollection()
     if (!context || !this.collection) return
 
     const { ymaps } = context
-    const rendered = renderNotes({
-      notes: this.input.notes,
-      geometries: this.input.geometries,
-      groups: this.input.groups,
-      hiddenIds: this.input.hiddenIds,
-      selectedId: this.selectedId,
-      iconUrls: this.input.iconUrls,
-    })
+    const zoom = this.map?.getZoom() ?? 16
+    this.zoomBucket = Math.round(zoom)
+
+    const rendered = this.withClusters(
+      renderNotes({
+        notes: this.input.notes,
+        geometries: this.input.geometries,
+        groups: this.input.groups,
+        hiddenIds: this.input.hiddenIds,
+        selectedId: this.selectedId,
+        iconUrls: this.input.iconUrls,
+      }),
+      zoom,
+    )
 
     const next = new Map<string, { object: unknown; signature: string }>()
 
