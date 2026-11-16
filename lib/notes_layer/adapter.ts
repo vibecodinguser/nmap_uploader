@@ -17,6 +17,7 @@ type YmapsGeoObject = {
 
 type YmapsCollection = {
   add: (object: unknown) => void
+  remove: (object: unknown) => void
   removeAll: () => void
   events?: { add: (name: string, handler: (event: unknown) => void) => void }
 }
@@ -45,12 +46,15 @@ const getYmaps = (): YmapsNamespace | null => {
 /**
  * Рисует заметки поверх карты.
  *
- * Коллекция пересоздаётся при каждой перерисовке: объектов тысячи, но
- * перерисовка случается только на правку, а не на каждый кадр.
+ * Перерисовка инкрементальная: объект пересоздаётся только если изменился его
+ * вид. Коллекция собирается один раз и дальше дополняется — иначе правка одной
+ * заметки снимала бы с карты и заново ставила все остальные.
  */
 export class NotesLayer {
   private collection: YmapsCollection | null = null
   private map: YmapsMapLike | null = null
+  /** Поставленные на карту объекты по ключу «заметка:вид» и их отпечатки. */
+  private objects = new Map<string, { object: unknown; signature: string }>()
   private input: NotesLayerInput = {
     notes: [],
     geometries: {},
@@ -82,6 +86,7 @@ export class NotesLayer {
     }
     this.collection?.removeAll()
     this.collection = null
+    this.objects.clear()
     this.map?.events.remove('boundschange', this.handleBoundsChange)
     this.map?.events.remove('click', this.handleMapClick)
     this.map = null
@@ -123,8 +128,10 @@ export class NotesLayer {
     if (this.map !== map) {
       this.map?.events.remove('boundschange', this.handleBoundsChange)
       this.map?.events.remove('click', this.handleMapClick)
-      // Прежняя коллекция принадлежала исчезнувшей карте: заводим новую.
+      // Прежняя коллекция принадлежала исчезнувшей карте: заводим новую и
+      // забываем объекты, иначе они остались бы в старой коллекции.
       this.collection = null
+      this.objects.clear()
       this.map = map
       map.events.add('boundschange', this.handleBoundsChange)
       map.events.add('click', this.handleMapClick)
@@ -165,13 +172,30 @@ export class NotesLayer {
     return null
   }
 
+  /**
+   * Отпечаток объекта: всё, что влияет на его вид.
+   *
+   * По нему видно, нужно ли пересоздавать объект: правка названия, цвета или
+   * прозрачности одной заметки не должна снимать с карты остальные.
+   */
+  private static signatureOf(rendered: RenderedNote): string {
+    return JSON.stringify([rendered.coordinates, rendered.properties, rendered.options])
+  }
+
+  /**
+   * Перерисовка с переиспользованием неизменившихся объектов.
+   *
+   * Раньше коллекция очищалась целиком и собиралась заново. На карте это
+   * выглядело мерцанием всех заметок при правке одной, а на тысяче объектов
+   * ещё и стоило времени. Теперь пересоздаётся только то, у чего изменился
+   * отпечаток; удалённые, скрытые и невидимые на текущем зуме подписи просто
+   * убираются из коллекции.
+   */
   private apply(): void {
     const context = this.ensureCollection()
     if (!context || !this.collection) return
 
     const { ymaps } = context
-    this.collection.removeAll()
-
     const rendered = renderNotes({
       notes: this.input.notes,
       geometries: this.input.geometries,
@@ -181,10 +205,32 @@ export class NotesLayer {
       iconUrls: this.input.iconUrls,
     })
 
+    const next = new Map<string, { object: unknown; signature: string }>()
+
     for (const item of rendered) {
       if (this.labelsHidden && item.kind === 'label') continue
+
+      const key = `${item.id}:${item.kind}`
+      const signature = NotesLayer.signatureOf(item)
+      const existing = this.objects.get(key)
+
+      if (existing && existing.signature === signature) {
+        next.set(key, existing)
+        continue
+      }
+      // Объект изменился: старый снимаем, новый ставим. Остальные не трогаем.
+      if (existing) this.collection.remove(existing.object)
+
       const object = this.createObject(ymaps, item)
-      if (object) this.collection.add(object)
+      if (!object) continue
+      this.collection.add(object)
+      next.set(key, { object, signature })
     }
+
+    for (const [key, entry] of this.objects) {
+      if (!next.has(key)) this.collection.remove(entry.object)
+    }
+
+    this.objects = next
   }
 }

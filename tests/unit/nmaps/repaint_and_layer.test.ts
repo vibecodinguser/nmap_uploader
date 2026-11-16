@@ -22,6 +22,7 @@ const makeNote = (overrides: Partial<Note> = {}): Note => ({
 const createYmapsMock = () => {
   const collection = {
     add: vi.fn(),
+    remove: vi.fn(),
     removeAll: vi.fn(),
     events: { add: vi.fn() },
   }
@@ -148,7 +149,44 @@ describe('NotesLayer', () => {
     expect(collection.add).not.toHaveBeenCalled()
   })
 
-  it('перерисовывает объект при выборе и очищает предыдущий набор', () => {
+  it('выбор линии пересоздаёт только её объект, не всю коллекцию', () => {
+    const { ymaps, collection } = createYmapsMock()
+    const map = createMapMock()
+    ;(globalThis as { ymaps?: unknown }).ymaps = ymaps
+
+    const layer = new NotesLayer(() => map as any)
+    layer.render({
+      notes: [
+        makeNote(),
+        makeNote({ id: 'line-1', kind: 'Line', name: 'Линия' }),
+        makeNote({ id: 'note-2', name: 'Вторая точка' }),
+      ],
+      geometries: {
+        'note-1': { kind: 'Point', coords: [37.6, 55.7] },
+        'line-1': {
+          kind: 'Line',
+          coords: [
+            [37.6, 55.7],
+            [37.7, 55.8],
+          ],
+        },
+        'note-2': { kind: 'Point', coords: [38.6, 56.7] },
+      },
+      groups: [],
+      hiddenIds: [],
+      iconUrls: {},
+    })
+    expect(collection.add).toHaveBeenCalledTimes(3)
+
+    layer.select('line-1')
+
+    // У выбранной линии граница толще — её объект пересоздан; точки не тронуты.
+    expect(collection.removeAll).not.toHaveBeenCalled()
+    expect(collection.remove).toHaveBeenCalledTimes(1)
+    expect(collection.add).toHaveBeenCalledTimes(4)
+  })
+
+  it('выбор точки не пересоздаёт объект: у точки выделения нет', () => {
     const { ymaps, collection } = createYmapsMock()
     const map = createMapMock()
     ;(globalThis as { ymaps?: unknown }).ymaps = ymaps
@@ -161,9 +199,11 @@ describe('NotesLayer', () => {
       hiddenIds: [],
       iconUrls: {},
     })
+    collection.add.mockClear()
+
     layer.select('note-1')
 
-    expect(collection.removeAll).toHaveBeenCalledTimes(2)
-    expect(collection.add).toHaveBeenCalledTimes(2)
+    expect(collection.add).not.toHaveBeenCalled()
+    expect(collection.removeAll).not.toHaveBeenCalled()
   })
 })
