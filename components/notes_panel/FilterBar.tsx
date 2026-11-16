@@ -109,7 +109,7 @@ export const FilterBar = ({
         <option value="dateDesc">{t('notesPanel.sortDateDesc')}</option>
       </select>
 
-      {(hasActiveFilters(filter) || filter.kinds.length > 0) && (
+      {hasActiveFilters(filter) && (
         <button
           type="button"
           id={NOTES_PANEL_BUTTON_IDS.filterReset}
