@@ -133,6 +133,24 @@ body {
   outline-offset: 1px;
 }
 
+/*
+ * Панель массовых действий: появляется только при отметках, поэтому живёт
+ * между фильтрами и списком и не занимает места впустую.
+ */
+.notes-panel__selection {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 12px;
+  background: var(--muted, rgb(0 0 0 / 4%));
+  border-bottom: 1px solid var(--border, #e6e6e6);
+}
+
+.notes-panel__selection-count {
+  font-weight: 600;
+}
+
 .notes-panel__head-actions {
   display: flex;
   align-items: center;

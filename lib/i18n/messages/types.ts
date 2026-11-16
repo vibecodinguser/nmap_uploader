@@ -242,6 +242,12 @@ export type Messages = {
     sortNameDesc: string
     sortDate: string
     sortDateDesc: string
+    selection: string
+    selectedCount: string
+    selectAll: string
+    clearSelection: string
+    deleteSelected: string
+    moveToGroup: string
   }
   mapPointCounter: {
     points: string

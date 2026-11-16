@@ -2,16 +2,21 @@ import {
   parseDeleteGroupRequest,
   parseDeleteNoteRequest,
   parseMoveNoteRequest,
+  parseMoveNotesRequest,
+  parseNoteIds,
   parseSaveGroupRequest,
   parseSaveNoteRequest,
 } from '@/lib/notes/application/requests'
 import {
   NOTES_DELETE_GROUP_ACTION,
   NOTES_DELETE_NOTE_ACTION,
+  NOTES_DELETE_NOTES_ACTION,
   NOTES_MOVE_NOTE_ACTION,
+  NOTES_MOVE_NOTES_ACTION,
   NOTES_SAVE_GROUP_ACTION,
   NOTES_SAVE_NOTE_ACTION,
 } from '@/lib/notes/protocol'
+import { deleteNotes, moveNotesToGroup } from '@/lib/notes/storage/batch_repository'
 import {
   deleteGroup,
   deleteNote,
@@ -57,4 +62,25 @@ export const handleNotesMoveNote = mutationHandler({
   action: NOTES_MOVE_NOTE_ACTION,
   parse: parseMoveNoteRequest,
   run: (ports, request) => moveNoteToGroup({ ports, ...request }),
+})
+
+/**
+ * Массовые действия.
+ *
+ * Отдельные действия, а не цикл одиночных: сто заметок — это одна запись
+ * манифеста и по одной записи на затронутый шард, а не сто повторов.
+ */
+export const handleNotesDeleteNotes = mutationHandler({
+  action: NOTES_DELETE_NOTES_ACTION,
+  parse: (message) => {
+    const noteIds = parseNoteIds(message)
+    return noteIds.ok ? { ok: true, value: { noteIds: noteIds.value } } : noteIds
+  },
+  run: (ports, request) => deleteNotes({ ports, ...request }),
+})
+
+export const handleNotesMoveNotes = mutationHandler({
+  action: NOTES_MOVE_NOTES_ACTION,
+  parse: parseMoveNotesRequest,
+  run: (ports, request) => moveNotesToGroup({ ports, ...request }),
 })

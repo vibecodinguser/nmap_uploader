@@ -241,6 +241,12 @@ export const ruMessages = {
     sortNameDesc: 'Название: Я–А',
     sortDate: 'Дата: сначала старые',
     sortDateDesc: 'Дата: сначала новые',
+    selection: 'Отмеченные заметки',
+    selectedCount: 'Отмечено: {count}',
+    selectAll: 'Отметить все',
+    clearSelection: 'Снять отметки',
+    deleteSelected: 'Удалить отмеченные',
+    moveToGroup: 'Перенести в группу',
   },
   mapPointCounter: {
     points: 'Вершин: {count}',

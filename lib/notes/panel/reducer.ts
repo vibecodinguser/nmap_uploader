@@ -26,6 +26,12 @@ export type NotesPanelAction =
   | { type: 'modeChanged'; mode: NotesPanelMode }
   | { type: 'noteSelected'; noteId: string | null }
   | { type: 'queryChanged'; query: string }
+  | { type: 'noteChecked'; noteId: string; checked: boolean }
+  | { type: 'checkedCleared' }
+  | { type: 'checkedReplaced'; noteIds: string[] }
+  | { type: 'checkedRemoved'; noteIds: readonly string[] }
+  | { type: 'notesRemoved'; noteIds: readonly string[] }
+  | { type: 'notesMoved'; noteIds: readonly string[]; groupId: string | null; updatedAt: string }
   | { type: 'filtersChanged'; filters: Partial<NotesFilter> }
   | { type: 'noteAdded'; note: Note; geometry: NoteGeometry }
   | { type: 'notePatched'; note: Note }
@@ -108,6 +114,25 @@ export const notesPanelReducer = (
     case 'queryChanged':
       return { ...state, query: action.query }
 
+    case 'noteChecked':
+      return {
+        ...state,
+        checkedIds: action.checked
+          ? [...new Set([...state.checkedIds, action.noteId])]
+          : state.checkedIds.filter((id) => id !== action.noteId),
+      }
+
+    case 'checkedCleared':
+      return { ...state, checkedIds: [] }
+
+    case 'checkedReplaced':
+      return { ...state, checkedIds: [...new Set(action.noteIds)] }
+
+    case 'checkedRemoved': {
+      const gone = new Set(action.noteIds)
+      return { ...state, checkedIds: state.checkedIds.filter((id) => !gone.has(id)) }
+    }
+
     case 'filtersChanged':
       return { ...state, filters: { ...state.filters, ...action.filters } }
 
@@ -126,6 +151,43 @@ export const notesPanelReducer = (
         ? { ...state, snapshot: replaceNote(state.snapshot, action.note) }
         : state
 
+    case 'notesRemoved': {
+      if (!state.snapshot) return { ...state, checkedIds: [] }
+      const gone = new Set(action.noteIds)
+      return {
+        ...state,
+        snapshot: {
+          ...state.snapshot,
+          manifest: {
+            ...state.snapshot.manifest,
+            notes: state.snapshot.manifest.notes.filter((note) => !gone.has(note.id)),
+          },
+        },
+        selectedId: gone.has(state.selectedId ?? '') ? null : state.selectedId,
+        mode: gone.has(state.selectedId ?? '') ? 'list' : state.mode,
+        checkedIds: [],
+      }
+    }
+
+    case 'notesMoved': {
+      if (!state.snapshot) return state
+      const targets = new Set(action.noteIds)
+      return {
+        ...state,
+        snapshot: {
+          ...state.snapshot,
+          manifest: {
+            ...state.snapshot.manifest,
+            notes: state.snapshot.manifest.notes.map((note) =>
+              targets.has(note.id)
+                ? { ...note, groupId: action.groupId, updatedAt: action.updatedAt }
+                : note,
+            ),
+          },
+        },
+      }
+    }
+
     case 'noteRemoved':
       return state.snapshot
         ? {
@@ -133,6 +195,7 @@ export const notesPanelReducer = (
             snapshot: withoutNote(state.snapshot, action.noteId),
             selectedId: null,
             mode: 'list',
+            checkedIds: state.checkedIds.filter((id) => id !== action.noteId),
           }
         : state
 
@@ -162,6 +225,13 @@ export const notesPanelReducer = (
             snapshot: withoutGroup(state.snapshot, action.groupId, action.mode),
             selectedId: null,
             mode: 'list',
+            // Отметки могли относиться к удалённым каскадом заметкам.
+            checkedIds: state.checkedIds.filter((id) =>
+              state.snapshot?.manifest.notes.some(
+                (note) =>
+                  note.id === id && (action.mode !== 'cascade' || note.groupId !== action.groupId),
+              ),
+            ),
           }
         : state
 

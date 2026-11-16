@@ -58,6 +58,9 @@ export const NOTES_START_DRAW_ACTION = 'NOTES_START_DRAW'
 export const NOTES_DRAW_FINISHED_ACTION = 'NOTES_DRAW_FINISHED'
 /** Скрытие заметок: локальное состояние, но карте нужно перерисоваться. */
 export const NOTES_HIDDEN_CHANGED_ACTION = 'NOTES_HIDDEN_CHANGED'
+/** Массовые действия: удалить или перенести несколько заметок одной операцией. */
+export const NOTES_DELETE_NOTES_ACTION = 'NOTES_DELETE_NOTES'
+export const NOTES_MOVE_NOTES_ACTION = 'NOTES_MOVE_NOTES'
 
 export type NotesLoadResponse = { ok: true; snapshot: NotesSnapshot } | { ok: false; error: string }
 

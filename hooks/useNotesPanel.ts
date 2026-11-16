@@ -2,6 +2,7 @@ import { useLocale } from '@/hooks/useLocale'
 import type { DrawableNoteKind } from '@/lib/notes/protocol'
 import { useNoteGroups } from './notes_panel/useNoteGroups'
 import { useNoteRemoval } from './notes_panel/useNoteRemoval'
+import { useNoteSelection } from './notes_panel/useNoteSelection'
 import { useNotesDrawing } from './notes_panel/useNotesDrawing'
 import { useNotesMutations } from './notes_panel/useNotesMutations'
 import { useNotesPanelState } from './notes_panel/useNotesPanelState'
@@ -30,6 +31,7 @@ export const useNotesPanel = () => {
   const view = useNotesView(store)
   const mutations = useNotesMutations(store, writes)
   const removal = useNoteRemoval(store, writes)
+  const selection = useNoteSelection(store, writes, () => sync.loadNotes({ silent: true }))
   const sync = useNotesSync(store, mutations.createNote)
   const groups = useNoteGroups(store, writes, () => sync.loadNotes({ silent: true }))
   const drawing = useNotesDrawing(store)
@@ -44,6 +46,7 @@ export const useNotesPanel = () => {
     ...view,
     ...mutations,
     ...removal,
+    ...selection,
     ...groups,
     ...drawing,
   }

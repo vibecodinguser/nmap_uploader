@@ -16,6 +16,8 @@ export const listProps = (props: Partial<NoteListProps> = {}): NoteListProps => 
   notes: [],
   hiddenIds: [],
   selectedId: null,
+  checkedIds: [],
+  onCheck: () => {},
   onSelect: () => {},
   onToggleHidden: () => {},
   onLocate: () => {},

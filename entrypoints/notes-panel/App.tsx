@@ -6,6 +6,7 @@ import { NoteProperties } from '@/components/notes_panel/NoteProperties'
 import { PanelHeader, type PanelLayout } from '@/components/notes_panel/PanelHeader'
 import { PanelStatus } from '@/components/notes_panel/PanelStatus'
 import { PanelToasts } from '@/components/notes_panel/PanelToasts'
+import { SelectionBar } from '@/components/notes_panel/SelectionBar'
 import { useLocale } from '@/hooks/useLocale'
 import { useNotesPanel } from '@/hooks/useNotesPanel'
 import { buildAutoNoteName } from '@/lib/notes/model/autonames'
@@ -72,6 +73,17 @@ export const NotesPanelApp = () => {
           />
         )}
 
+        {panel.status === 'ready' && panel.mode === 'list' && (
+          <SelectionBar
+            count={panel.checkedIds.length}
+            groups={panel.groups}
+            onSelectAll={() => panel.checkAllVisible(panel.notes.map((note) => note.id))}
+            onClear={panel.clearChecked}
+            onDelete={panel.deleteChecked}
+            onMoveToGroup={panel.moveCheckedToGroup}
+          />
+        )}
+
         {panel.status === 'ready' && panel.drawingKind && (
           <div className="notes-panel__hint notes-panel__hint--draw">
             <span>
@@ -120,6 +132,8 @@ export const NotesPanelApp = () => {
               collapsedGroupIds={panel.collapsedGroupIds}
               hiddenIds={panel.hiddenIds}
               selectedId={panel.selectedId}
+              checkedIds={panel.checkedIds}
+              onCheck={panel.toggleChecked}
               onSelect={panel.selectNote}
               onToggleHidden={panel.toggleHidden}
               onLocate={panel.locateNote}

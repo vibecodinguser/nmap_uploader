@@ -23,6 +23,8 @@ export const NoteList = ({
   collapsedGroupIds,
   hiddenIds,
   selectedId,
+  checkedIds,
+  onCheck,
   onSelect,
   onToggleHidden,
   onLocate,
@@ -39,6 +41,9 @@ export const NoteList = ({
   collapsedGroupIds: readonly string[]
   hiddenIds: readonly string[]
   selectedId: string | null
+  /** Отмеченные заметки для массовых действий. */
+  checkedIds: readonly string[]
+  onCheck: (noteId: string, checked: boolean) => void
   onSelect: (noteId: string) => void
   onToggleHidden: (noteId: string) => void
   onLocate: (noteId: string) => void
@@ -109,6 +114,8 @@ export const NoteList = ({
         note={note}
         isHidden={hiddenIds.includes(note.id)}
         isSelected={note.id === selectedId}
+        checked={checkedIds.includes(note.id)}
+        onCheck={(checked) => onCheck(note.id, checked)}
         onSelect={() => onSelect(note.id)}
         onToggleHidden={() => onToggleHidden(note.id)}
         onLocate={() => onLocate(note.id)}

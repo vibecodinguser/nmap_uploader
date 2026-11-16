@@ -23,6 +23,13 @@ export type NotesPanelState = {
   error: string | null
   mode: NotesPanelMode
   selectedId: string | null
+  /**
+   * Отмеченные заметки для массовых действий.
+   *
+   * Отдельно от `selectedId`: одна заметка открыта в свойствах, другие могут
+   * быть отмечены для удаления или переноса — это разные состояния.
+   */
+  checkedIds: string[]
   query: string
   /** Виды, группа, видимость и порядок списка. */
   filters: NotesFilter
@@ -38,6 +45,7 @@ export const initialNotesPanelState: NotesPanelState = {
   error: null,
   mode: 'list',
   selectedId: null,
+  checkedIds: [],
   query: '',
   filters: DEFAULT_NOTES_FILTER,
   drawingKind: null,

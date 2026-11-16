@@ -51,6 +51,13 @@
   background: color-mix(in srgb, #ffdb4d 30%, transparent);
 }
 
+/* Отметка для массовых действий: слева от строки, не мешая клику по ней. */
+.notes-panel__row-check {
+  flex: 0 0 auto;
+  margin: 0 2px 0 0;
+  cursor: pointer;
+}
+
 .notes-panel__row-main {
   display: flex;
   flex: 1 1 auto;

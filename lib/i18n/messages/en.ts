@@ -241,6 +241,12 @@ export const enMessages = {
     sortNameDesc: 'Name: Z–A',
     sortDate: 'Date: oldest first',
     sortDateDesc: 'Date: newest first',
+    selection: 'Selected notes',
+    selectedCount: 'Selected: {count}',
+    selectAll: 'Select all',
+    clearSelection: 'Clear selection',
+    deleteSelected: 'Delete selected',
+    moveToGroup: 'Move to group',
   },
   mapPointCounter: {
     points: 'Vertices: {count}',

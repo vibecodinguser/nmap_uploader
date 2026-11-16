@@ -11,7 +11,9 @@ export { handleNotesLoad } from './notes/load'
 export {
   handleNotesDeleteGroup,
   handleNotesDeleteNote,
+  handleNotesDeleteNotes,
   handleNotesMoveNote,
+  handleNotesMoveNotes,
   handleNotesSaveGroup,
   handleNotesSaveNote,
 } from './notes/mutations'

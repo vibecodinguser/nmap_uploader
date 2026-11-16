@@ -14,6 +14,8 @@ import { DeleteIcon, LocateIcon, VisibilityIcon } from './RowIcons'
 export const noteRowIds = (noteId: string) => ({
   row: `nmapUploaderNotesRow-${noteId}`,
   main: `nmapUploaderNotesRow-${noteId}-main`,
+  /** Отметка для массовых действий. */
+  check: `nmapUploaderNotesRow-${noteId}-check`,
   // Действия названы по смыслу, а не по виду иконки: «спрятать/показать» —
   // одно действие, поэтому `visible`, а не `hide`.
   visibility: rowButtonId(NOTES_PANEL_BUTTON_IDS.visible, noteId),
@@ -26,6 +28,8 @@ export const NoteRow = ({
   note,
   isHidden,
   isSelected,
+  checked,
+  onCheck,
   onSelect,
   onToggleHidden,
   onLocate,
@@ -37,6 +41,9 @@ export const NoteRow = ({
   note: Note
   isHidden: boolean
   isSelected: boolean
+  /** Отмечена для массового действия. */
+  checked: boolean
+  onCheck: (checked: boolean) => void
   onSelect: () => void
   onToggleHidden: () => void
   onLocate: () => void
@@ -75,6 +82,15 @@ export const NoteRow = ({
         onDrop(event)
       }}
     >
+      <input
+        type="checkbox"
+        id={ids.check}
+        className="notes-panel__row-check"
+        checked={checked}
+        aria-label={note.name}
+        onChange={(event) => onCheck(event.target.checked)}
+      />
+
       <button type="button" id={ids.main} className="notes-panel__row-main" onClick={onSelect}>
         <span className="notes-panel__row-icon" aria-hidden="true">
           <NoteRowIcon kind={note.kind} icon={note.icon} />

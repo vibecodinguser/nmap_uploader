@@ -351,6 +351,108 @@ describe('редьюсер панели: фильтры', () => {
   })
 })
 
+describe('редьюсер панели: отметки и массовые действия', () => {
+  const withNotes = () =>
+    ready(
+      snapshot({
+        manifest: {
+          version: 1,
+          updatedAt: 'x',
+          groups: [sampleGroup()],
+          notes: [
+            sampleNote({ id: 'a', name: 'Первая' }),
+            sampleNote({ id: 'b', name: 'Вторая' }),
+            sampleNote({ id: 'c', name: 'Третья' }),
+          ],
+        },
+      }),
+    )
+
+  it('отметка добавляет и снимает id', () => {
+    const marked = notesPanelReducer(initialNotesPanelState, {
+      type: 'noteChecked',
+      noteId: 'a',
+      checked: true,
+    })
+    expect(marked.checkedIds).toEqual(['a'])
+
+    const cleared = notesPanelReducer(marked, {
+      type: 'noteChecked',
+      noteId: 'a',
+      checked: false,
+    })
+    expect(cleared.checkedIds).toEqual([])
+  })
+
+  it('массовое удаление убирает строки и отметки', () => {
+    const marked = notesPanelReducer(withNotes(), {
+      type: 'checkedReplaced',
+      noteIds: ['a', 'c'],
+    })
+
+    const state = notesPanelReducer(marked, { type: 'notesRemoved', noteIds: ['a', 'c'] })
+
+    expect(selectNotes(state).map((note) => note.id)).toEqual(['b'])
+    expect(state.checkedIds).toEqual([])
+  })
+
+  it('массовое удаление снимает выбор, если выбранная заметка удалена', () => {
+    const marked = notesPanelReducer(withNotes(), { type: 'noteSelected', noteId: 'a' })
+
+    const state = notesPanelReducer(marked, { type: 'notesRemoved', noteIds: ['a'] })
+
+    expect(state.selectedId).toBeNull()
+    expect(state.mode).toBe('list')
+  })
+
+  it('удаление одной заметки убирает её из отметок', () => {
+    const marked = notesPanelReducer(withNotes(), {
+      type: 'checkedReplaced',
+      noteIds: ['a', 'b'],
+    })
+
+    const state = notesPanelReducer(marked, { type: 'noteRemoved', noteId: 'a' })
+
+    expect(state.checkedIds).toEqual(['b'])
+  })
+
+  it('массовый перенос ставит группу всем отмеченным', () => {
+    const state = notesPanelReducer(withNotes(), {
+      type: 'notesMoved',
+      noteIds: ['a', 'b'],
+      groupId: 'group-1',
+      updatedAt: '2026-11-17T10:00:00.000Z',
+    })
+
+    expect(selectNotes(state).filter((note) => note.groupId === 'group-1')).toHaveLength(2)
+    expect(selectNotes(state).find((note) => note.id === 'c')?.groupId).toBeNull()
+  })
+
+  it('каскадное удаление группы убирает её заметки из отметок', () => {
+    const marked = notesPanelReducer(
+      ready(
+        snapshot({
+          manifest: {
+            version: 1,
+            updatedAt: 'x',
+            groups: [sampleGroup()],
+            notes: [sampleNote({ id: 'a', groupId: 'group-1' }), sampleNote({ id: 'b' })],
+          },
+        }),
+      ),
+      { type: 'checkedReplaced', noteIds: ['a', 'b'] },
+    )
+
+    const state = notesPanelReducer(marked, {
+      type: 'groupRemoved',
+      groupId: 'group-1',
+      mode: 'cascade',
+    })
+
+    expect(state.checkedIds).toEqual(['b'])
+  })
+})
+
 describe('селекторы панели', () => {
   const filled = () =>
     ready(

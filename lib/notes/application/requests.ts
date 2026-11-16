@@ -53,6 +53,25 @@ export const parseDeleteGroupRequest = (
   return { ok: true, value: { groupId: message.groupId, mode } }
 }
 
+/** Список id для массового действия: пустой и мусорный наборы отклоняются. */
+export const parseNoteIds = (message: Record<string, unknown>): Parsed<string[]> => {
+  if (!Array.isArray(message.noteIds)) return invalid()
+  const noteIds = message.noteIds.filter((id): id is string => typeof id === 'string')
+  if (noteIds.length === 0) return invalid()
+  return { ok: true, value: noteIds }
+}
+
+export type MoveNotesRequest = { noteIds: string[]; groupId: string | null }
+
+export const parseMoveNotesRequest = (
+  message: Record<string, unknown>,
+): Parsed<MoveNotesRequest> => {
+  const noteIds = parseNoteIds(message)
+  if (!noteIds.ok) return noteIds
+  const groupId = typeof message.groupId === 'string' ? message.groupId : null
+  return { ok: true, value: { noteIds: noteIds.value, groupId } }
+}
+
 export type MoveNoteRequest = { noteId: string; groupId: string | null }
 
 export const parseMoveNoteRequest = (message: Record<string, unknown>): Parsed<MoveNoteRequest> => {
