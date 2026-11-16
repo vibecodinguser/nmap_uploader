@@ -227,6 +227,8 @@ export type Messages = {
     hideGroup: string
     showGroup: string
     groupColor: string
+    icon: string
+    iconNone: string
   }
   mapPointCounter: {
     points: string

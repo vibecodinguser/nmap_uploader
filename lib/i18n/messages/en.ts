@@ -226,6 +226,8 @@ export const enMessages = {
     hideGroup: 'Hide group',
     showGroup: 'Show group',
     groupColor: 'Group color',
+    icon: 'Icon',
+    iconNone: 'No icon',
   },
   mapPointCounter: {
     points: 'Vertices: {count}',

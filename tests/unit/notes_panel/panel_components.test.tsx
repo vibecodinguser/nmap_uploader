@@ -349,6 +349,29 @@ describe('NoteList', () => {
   })
 })
 
+describe('иконка в строке списка', () => {
+  it('показывает вид фигуры, если своей иконки нет', () => {
+    const { container } = wrap(<NoteList notes={[note()]} hiddenIds={[]} selectedId={null} />)
+
+    // Запасной вариант — глиф вида: у точки это капля с точкой внутри.
+    expect(container.querySelector('.notes-panel__row-icon svg path')).not.toBeNull()
+  })
+
+  it('показывает выбранную иконку заметки вместо вида', () => {
+    const { container } = wrap(
+      <NoteList
+        notes={[note({ icon: { kind: 'builtin', value: 'hospital' } })]}
+        hiddenIds={[]}
+        selectedId={null}
+      />,
+    )
+
+    // У глифа больницы пять контуров, у вида «точка» — один: видно, что
+    // рисуется иконка заметки, а не фигура.
+    expect(container.querySelectorAll('.notes-panel__row-icon svg path').length).toBeGreaterThan(1)
+  })
+})
+
 describe('ShapePicker', () => {
   it('предлагает все пять видов фигуры', () => {
     wrap(<ShapePicker onPick={vi.fn()} onCancel={vi.fn()} busy={false} />)

@@ -91,6 +91,53 @@
   box-shadow: 0 0 0 2px var(--background, #ffffff) inset;
 }
 
+/*
+ * Сетка иконок: 41 глиф, поэтому плитки компактные, а контейнер прокручивается
+ * по высоте — иначе свойства заметки растягиваются на весь экран.
+ */
+.notes-panel__icons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
+  gap: 4px;
+  max-height: 132px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.notes-panel__icon-choice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: var(--foreground, #1f1f1f);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.notes-panel__icon-choice:hover {
+  background: var(--muted, rgb(0 0 0 / 6%));
+}
+
+.notes-panel__icon-choice:focus-visible {
+  outline: 2px solid var(--foreground, #1f1f1f);
+  outline-offset: 1px;
+}
+
+.notes-panel__icon-choice[data-active='true'] {
+  border-color: var(--foreground, #1f1f1f);
+  background: var(--muted, rgb(0 0 0 / 6%));
+}
+
+.notes-panel__icon-choice--none {
+  font-size: 16px;
+  line-height: 1;
+  color: var(--muted-foreground, #6b6b6b);
+}
+
 .notes-panel__color--custom {
   position: relative;
   background: conic-gradient(#ff8c42, #ffdb4d, #5aa845, #1a8cff, #8a5cd6, #ff8c42);

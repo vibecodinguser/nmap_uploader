@@ -226,6 +226,8 @@ export const ruMessages = {
     hideGroup: 'Скрыть группу',
     showGroup: 'Показать группу',
     groupColor: 'Цвет группы',
+    icon: 'Иконка',
+    iconNone: 'Без иконки',
   },
   mapPointCounter: {
     points: 'Вершин: {count}',

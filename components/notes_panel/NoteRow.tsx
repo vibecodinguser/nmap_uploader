@@ -1,7 +1,7 @@
 import { useLocale } from '@/hooks/useLocale'
 import type { Note } from '@/lib/notes/model/types'
 import { NOTES_PANEL_BUTTON_IDS, rowButtonId } from './ids'
-import { NoteKindIcon } from './NoteKindIcon'
+import { NoteRowIcon } from './NoteKindIcon'
 import { DeleteIcon, LocateIcon, VisibilityIcon } from './RowIcons'
 
 /**
@@ -77,7 +77,7 @@ export const NoteRow = ({
     >
       <button type="button" id={ids.main} className="notes-panel__row-main" onClick={onSelect}>
         <span className="notes-panel__row-icon" aria-hidden="true">
-          <NoteKindIcon kind={note.kind} />
+          <NoteRowIcon kind={note.kind} icon={note.icon} />
         </span>
         <span className="notes-panel__row-text">
           <span className="notes-panel__row-name">{note.name}</span>

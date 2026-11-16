@@ -10,9 +10,11 @@ import { resolveNoteStyle } from '@/lib/notes/model/style_resolution'
 import { hasAdjustableStroke, isFilledKind, type Note } from '@/lib/notes/model/types'
 import { ColorPicker } from './ColorPicker'
 import { HatchPicker } from './HatchPicker'
+import { IconPicker } from './IconPicker'
 
 /**
- * Оформление заметки: цвет, заливка, штриховка, прозрачность, граница, подпись.
+ * Оформление заметки: иконка, цвет, заливка, штриховка, прозрачность,
+ * граница, подпись.
  *
  * Отдельных цветов у заливки и штриховки нет — обе рисуются цветом объекта.
  * Поэтому в `fillColor` хранится тот же цвет: по нему видно, включена ли
@@ -33,6 +35,12 @@ export const NoteAppearance = ({
 
   return (
     <>
+      <IconPicker
+        value={note.icon}
+        label={t('notesPanel.icon')}
+        onChange={(icon) => onPatch({ icon })}
+      />
+
       <ColorPicker
         value={note.style.color}
         label={t('notesPanel.color')}

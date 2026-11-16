@@ -1,4 +1,27 @@
-import type { NoteKind } from '@/lib/notes/model/types'
+import { findBuiltinIcon } from '@/lib/notes/icons'
+import type { NoteIcon, NoteKind } from '@/lib/notes/model/types'
+import { BuiltinIconGlyph } from './IconPicker'
+
+/**
+ * Иконка строки списка.
+ *
+ * Если у заметки выбрана своя иконка, показывается она — та же, что на карте:
+ * иначе список и карта говорили бы о разном. Вид фигуры остаётся запасным
+ * вариантом.
+ */
+export const NoteRowIcon = ({
+  kind,
+  icon,
+  size = 18,
+}: {
+  kind: NoteKind
+  icon: NoteIcon | null
+  size?: number
+}) => {
+  const builtin = icon?.kind === 'builtin' ? findBuiltinIcon(icon.value) : null
+  if (builtin) return <BuiltinIconGlyph icon={builtin} size={size} />
+  return <NoteKindIcon kind={kind} size={size} />
+}
 
 /**
  * Иконки видов заметки в списке.
