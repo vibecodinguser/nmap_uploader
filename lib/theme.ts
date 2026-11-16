@@ -28,7 +28,15 @@ export const setStoredExtensionThemeMode = async (mode: ThemeMode): Promise<void
   await browser.storage.local.set({ [THEME_STORAGE_KEY]: mode })
 }
 
-/** Копирует тему из localStorage панели в storage для content scripts. */
+/**
+ * Копирует тему из localStorage панели в storage для content scripts.
+ *
+ * Пишет только если в `localStorage` есть явный выбор: иначе страница, которая
+ * никогда не выбирала тему, затирала бы сохранённое значение на `system` и
+ * возвращала пользователя к системной теме каждый раз при открытии.
+ */
 export const syncThemeLocalToExtensionStorage = async (): Promise<void> => {
-  await setStoredExtensionThemeMode(getStoredThemeMode())
+  const raw = localStorage.getItem(THEME_STORAGE_KEY)
+  if (raw !== 'light' && raw !== 'dark' && raw !== 'system') return
+  await setStoredExtensionThemeMode(raw)
 }

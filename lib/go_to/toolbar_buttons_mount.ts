@@ -17,7 +17,7 @@ import { toggleSplitView } from '@/lib/go_to_split_view'
 import { GO_TO_BUTTON_HOVERED_CLASS } from '@/lib/go_to_styles'
 import type { TranslateFn } from '@/lib/i18n'
 import { createNotesButton } from '@/lib/notes_button'
-import { closeNotesPopup, toggleNotesPopup } from '@/lib/notes_popup'
+import { notifyToggleNotesPanel } from '@/lib/notes_panel/events'
 import { buildNspdMapUrl, createNspdButton } from '@/lib/nspd/nspd_button'
 import { createPolygonUploadButton } from '@/lib/polygon_upload_button'
 import { closePolygonUploadPopup, togglePolygonUploadPopup } from '@/lib/polygon_upload_popup'
@@ -48,7 +48,6 @@ export const mountSplitButtonView = ({ getTranslator, onHideMenu }: ToolbarActio
         e.stopPropagation()
         onHideMenu()
         closePolygonUploadPopup()
-        closeNotesPopup()
         toggleSplitView()
       })
       created.addEventListener('mouseover', (e) => {
@@ -74,7 +73,6 @@ export const mountSplitButtonView = ({ getTranslator, onHideMenu }: ToolbarActio
       e.stopPropagation()
       onHideMenu()
       closePolygonUploadPopup()
-      closeNotesPopup()
       toggleSplitView()
     })
   }
@@ -106,7 +104,6 @@ export const mountPolygonUploadButtonView = ({
       e.stopPropagation()
       e.stopImmediatePropagation()
       onHideMenu()
-      closeNotesPopup()
       togglePolygonUploadPopup(button)
     })
     button.addEventListener('mouseover', (e) => {
@@ -130,7 +127,6 @@ export const mountNotesButtonView = ({ getTranslator, onHideMenu }: ToolbarActio
 
   const existingButton = getNotesButton()
   if (existingButton && existingButton.previousElementSibling !== uploadButton) {
-    closeNotesPopup()
     existingButton.remove()
   }
 
@@ -144,7 +140,7 @@ export const mountNotesButtonView = ({ getTranslator, onHideMenu }: ToolbarActio
       e.stopImmediatePropagation()
       onHideMenu()
       closePolygonUploadPopup()
-      toggleNotesPopup(button)
+      notifyToggleNotesPanel()
     })
     button.addEventListener('mouseover', (e) => {
       if (isToolbarButtonHoverTarget(button, e.target)) {
@@ -182,7 +178,6 @@ export const mountNspdButtonView = ({ getTranslator, onHideMenu }: ToolbarAction
       e.stopImmediatePropagation()
       onHideMenu()
       closePolygonUploadPopup()
-      closeNotesPopup()
 
       const nspdUrl =
         buildNspdMapUrl(window.location.href) ??

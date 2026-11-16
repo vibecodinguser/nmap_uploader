@@ -12,7 +12,11 @@ export type RuntimeMessageSender = {
   }
 }
 
-const TRUSTED_EXTENSION_PAGE_PATHS = ['/panel.html', '/polygon-upload.html', '/notes.html'] as const
+const TRUSTED_EXTENSION_PAGE_PATHS = [
+  '/panel.html',
+  '/polygon-upload.html',
+  '/notes-panel.html',
+] as const
 
 const getExtensionPageUrl = (path: (typeof TRUSTED_EXTENSION_PAGE_PATHS)[number]): string => {
   const runtime = browser.runtime as typeof browser.runtime & {

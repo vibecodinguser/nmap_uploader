@@ -85,10 +85,27 @@ const getRegisteredNspdIds = async (): Promise<string[]> => {
 }
 
 /**
+ * Очередь синхронизаций.
+ *
+ * Регистрация — не атомарная операция: панель настроек и background могут
+ * синхронизировать состояние одновременно, и тогда оба вызова видят «скриптов
+ * нет» и оба пытаются их зарегистрировать. Внутри одного контекста очередь
+ * убирает гонку полностью; между контекстами страхует обработка дубликата.
+ */
+let syncQueue: Promise<void> = Promise.resolve()
+
+const enqueueSync = (task: () => Promise<void>): Promise<void> => {
+  const next = syncQueue.then(task, task)
+  syncQueue = next.catch(() => {})
+  return next
+}
+
+/**
  * Регистрирует недостающие скрипты НСПД.
  *
- * Идемпотентна и устойчива к гонке: панель настроек и background могут синхронизировать
- * состояние одновременно, и тогда один из вызовов получит «уже зарегистрирован».
+ * Идемпотентна и устойчива к гонке: панель настроек и background могут
+ * синхронизировать состояние одновременно. Если браузер отклонил пакет
+ * («Duplicate script ID»), перечитываем список и регистрируем только остаток.
  */
 export const registerNspdContentScripts = async (): Promise<void> => {
   const registeredIds = await getRegisteredNspdIds()
@@ -98,9 +115,16 @@ export const registerNspdContentScripts = async (): Promise<void> => {
   try {
     await browser.scripting.registerContentScripts(toRegister)
   } catch (error: unknown) {
+    // Гонка с другим контекстом: часть скриптов уже успели зарегистрировать,
+    // и браузер отклонил весь пакет. Перечитываем и досоздаём остаток —
+    // но только если он реально остался, иначе это настоящая ошибка.
     const idsAfterFailure = await getRegisteredNspdIds()
     const stillMissing = toRegister.filter((script) => !idsAfterFailure.includes(script.id))
-    if (stillMissing.length > 0) throw error
+
+    if (stillMissing.length === 0) return
+    if (stillMissing.length === toRegister.length) throw error
+
+    await browser.scripting.registerContentScripts(stillMissing)
   }
 }
 
@@ -121,14 +145,24 @@ export const unregisterNspdContentScripts = async (): Promise<void> => {
  * Приводит набор зарегистрированных скриптов в соответствие с настройкой и выдачей доступа.
  * Регистрация возможна только при выданном доступе к домену.
  */
-export const syncNspdContentScripts = async (enabled: boolean): Promise<void> => {
-  const shouldRegister = enabled && (await hasNspdHostAccess())
-  if (shouldRegister) {
-    await registerNspdContentScripts()
-    return
-  }
-  await unregisterNspdContentScripts()
-}
+export const syncNspdContentScripts = (enabled: boolean): Promise<void> =>
+  enqueueSync(async () => {
+    const shouldRegister = enabled && (await hasNspdHostAccess())
+    if (shouldRegister) {
+      await registerNspdContentScripts()
+      return
+    }
+    await unregisterNspdContentScripts()
+  })
+
+/**
+ * Дождаться, пока завершатся все запланированные синхронизации.
+ *
+ * Синхронизация запускается ещё и из слушателей (`storage.onChanged`,
+ * `permissions.onRemoved`), где её результат никто не ждёт. Тестам и
+ * диагностике нужна точка, в которой состояние уже устоялось.
+ */
+export const whenNspdSyncIdle = (): Promise<void> => syncQueue
 
 /**
  * Синхронизирует скрипты с сохранённой настройкой.
@@ -138,23 +172,24 @@ export const syncNspdContentScripts = async (enabled: boolean): Promise<void> =>
  * работающую кнопку, которой нет. При недоступном API состояние не трогаем: иначе
  * сбой чтения разрешений молча выключал бы функцию.
  */
-export const syncNspdContentScriptsFromStorage = async (): Promise<void> => {
-  const enabled = await getStoredNspdButtonEnabled()
-  if (!enabled) {
-    await unregisterNspdContentScripts()
-    return
-  }
+export const syncNspdContentScriptsFromStorage = (): Promise<void> =>
+  enqueueSync(async () => {
+    const enabled = await getStoredNspdButtonEnabled()
+    if (!enabled) {
+      await unregisterNspdContentScripts()
+      return
+    }
 
-  const access = await readNspdAccessState()
-  if (access === 'granted') {
-    await registerNspdContentScripts()
-    return
-  }
-  if (access === 'denied') {
-    await setStoredNspdButtonEnabled(false)
-    await unregisterNspdContentScripts()
-  }
-}
+    const access = await readNspdAccessState()
+    if (access === 'granted') {
+      await registerNspdContentScripts()
+      return
+    }
+    if (access === 'denied') {
+      await setStoredNspdButtonEnabled(false)
+      await unregisterNspdContentScripts()
+    }
+  })
 
 const runNspdSync = (enabled: boolean): void => {
   void syncNspdContentScripts(enabled).catch((error: unknown) => {
@@ -183,17 +218,41 @@ const handlePermissionsRemoved = (removed: { origins?: string[] }): void => {
 }
 
 /**
+ * Доступ выдали в панели настроек — доводим регистрацию до конца.
+ *
+ * Панель регистрирует скрипты сама, сразу после `permissions.request()`, но
+ * между контекстами возможна гонка. Повторная идемпотентная синхронизация
+ * закрывает случай, когда вызов из панели упал.
+ */
+const handlePermissionsAdded = (added: { origins?: string[] }): void => {
+  const origins = added.origins ?? []
+  const gainedNspdAccess = origins.some((origin) => NSPD_ORIGINS.includes(origin))
+  if (!gainedNspdAccess) return
+
+  void syncNspdContentScriptsFromStorage().catch((error: unknown) => {
+    console.warn('[nmap_uploader] sync nspd after access grant failed:', error)
+  })
+}
+
+/**
  * Подписывается на изменение настройки и отзыв доступа.
  *
  * Браузер очищает динамические content scripts при обновлении расширения,
  * поэтому `syncNspdContentScriptsFromStorage` дополнительно вызывается из
  * `runtime.onInstalled` и при старте background.
  */
-export const initNspdContentScriptSync = (): void => {
+export const initNspdContentScriptSync = (): (() => void) => {
   void syncNspdContentScriptsFromStorage().catch((error: unknown) => {
     console.warn('[nmap_uploader] syncNspdContentScriptsFromStorage failed:', error)
   })
 
   browser.storage.onChanged.addListener(handleStorageChange)
   browser.permissions.onRemoved.addListener(handlePermissionsRemoved)
+  browser.permissions.onAdded.addListener(handlePermissionsAdded)
+
+  return () => {
+    browser.storage.onChanged.removeListener(handleStorageChange)
+    browser.permissions.onRemoved.removeListener(handlePermissionsRemoved)
+    browser.permissions.onAdded.removeListener(handlePermissionsAdded)
+  }
 }

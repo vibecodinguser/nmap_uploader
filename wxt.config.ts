@@ -55,7 +55,7 @@ const baseManifest = {
   ],
   web_accessible_resources: [
     {
-      resources: ['panel.html', 'polygon-upload.html', 'notes.html', 'chunks/*', 'assets/*'],
+      resources: ['panel.html', 'polygon-upload.html', 'notes-panel.html', 'chunks/*', 'assets/*'],
       matches: [
         manifestHostPattern('n.maps.yandex.ru/*'),
         manifestHostPattern('nspd.gov.ru/*'),
@@ -104,8 +104,18 @@ function getFirefoxSettings(browser: string) {
 
 function getChromeDevKey(browser: string, command: string) {
   let keySettings = {}
-  if (browser === 'chrome' && command === 'serve' && process.env.CHROME_EXTENSION_KEY) {
-    keySettings = { key: process.env.CHROME_EXTENSION_KEY }
+  if (browser === 'chrome' && command === 'serve') {
+    if (process.env.CHROME_EXTENSION_KEY) {
+      keySettings = { key: process.env.CHROME_EXTENSION_KEY }
+    } else {
+      // Без ключа Chrome выдаёт расширению случайный id, и redirect_uri
+      // из browser.identity.getRedirectURL() перестаёт совпадать с тем,
+      // что зарегистрирован в oauth.yandex.ru — вход в Яндекс ломается.
+      console.warn(
+        '[nmap_uploader] CHROME_EXTENSION_KEY не задан: id расширения будет случайным, ' +
+          'авторизация Яндекса не сработает. Скопируйте .env из основного каталога репозитория.',
+      )
+    }
   }
   return keySettings
 }

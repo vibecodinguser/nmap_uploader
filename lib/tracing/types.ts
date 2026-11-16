@@ -1,6 +1,10 @@
-import type { PolygonSnapTarget } from '@/lib/nmaps_draw_objects'
-
 export type Coordinate = [number, number]
+
+/** Полигон заметки, к которому разрешено притягивать нативную трассировку. */
+export type PolygonSnapTarget = {
+  id: string
+  coordinates: Coordinate[]
+}
 export type Capability = 'pending' | 'active' | 'disabled'
 
 export type NativeProjection = {

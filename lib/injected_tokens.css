@@ -14,6 +14,9 @@
   --nmap-accent: #ffdb4d;
   --nmap-accent-strong: #ffcc00;
 
+  /* Поверхность панелей и попапов расширения на странице хоста. */
+  --nmap-surface: #ffffff;
+
   /* Текст, ссылки, ошибки. */
   --nmap-text-muted: #999999;
   --nmap-link: #0055cc;

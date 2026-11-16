@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { browser } from 'wxt/browser'
 import { NSPD_HOST_PATTERNS } from '@/lib/manifest/nspd_optional_hosts'
 import {
@@ -12,6 +12,7 @@ import {
   syncNspdContentScripts,
   syncNspdContentScriptsFromStorage,
   unregisterNspdContentScripts,
+  whenNspdSyncIdle,
 } from '@/lib/nspd/content_scripts'
 import {
   getStoredNspdButtonEnabled,
@@ -20,11 +21,35 @@ import {
 } from '@/lib/nspd/nspd_button'
 import { permissionsMock, resetBrowserMocks, scriptingMock } from '../../setup/browser_mock'
 
-const flush = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0))
+/**
+ * Дожидается событий хранилища и запущенных ими синхронизаций.
+ *
+ * Синхронизации из слушателей выполняются в очереди, поэтому одного тика
+ * недостаточно: очередь надо отдельно дождаться.
+ */
+const flush = async (): Promise<void> => {
+  // Слушатели могут запускать новую синхронизацию из записи в хранилище,
+  // поэтому дожидаемся не одного тика, а пока цепочка не успокоится.
+  for (let pass = 0; pass < 3; pass += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await whenNspdSyncIdle()
+  }
+}
 
 describe('NSPD content scripts', () => {
+  const disposers: Array<() => void> = []
+
+  /** Подписки слушателей живут в фейковом браузере между тестами — снимаем их. */
+  const initWithCleanup = (): void => {
+    disposers.push(initNspdContentScriptSync())
+  }
+
   beforeEach(async () => {
     await resetBrowserMocks()
+  })
+
+  afterEach(() => {
+    for (const dispose of disposers.splice(0)) dispose()
   })
 
   it('регистрирует перехватчик в MAIN world на document_start', () => {
@@ -127,7 +152,7 @@ describe('NSPD content scripts', () => {
     permissionsMock.grant(...NSPD_HOST_PATTERNS)
     await setStoredNspdButtonEnabled(true)
 
-    initNspdContentScriptSync()
+    initWithCleanup()
     await flush()
 
     expect(scriptingMock.registered.size).toBe(2)
@@ -136,7 +161,7 @@ describe('NSPD content scripts', () => {
   it('снимает скрипты и выключает настройку при отзыве доступа', async () => {
     permissionsMock.grant(...NSPD_HOST_PATTERNS)
     await setStoredNspdButtonEnabled(true)
-    initNspdContentScriptSync()
+    initWithCleanup()
     await flush()
     expect(scriptingMock.registered.size).toBe(2)
 
@@ -153,7 +178,7 @@ describe('NSPD content scripts', () => {
     // Браузер очищает динамические скрипты при обновлении расширения.
     scriptingMock.registered.clear()
 
-    initNspdContentScriptSync()
+    initWithCleanup()
     await flush()
 
     expect(scriptingMock.registered.size).toBe(2)
@@ -161,7 +186,7 @@ describe('NSPD content scripts', () => {
 
   it('следит за настройкой: включает и выключает регистрацию', async () => {
     permissionsMock.grant(...NSPD_HOST_PATTERNS)
-    initNspdContentScriptSync()
+    initWithCleanup()
     await flush()
     expect(scriptingMock.registered.size).toBe(0)
 
@@ -187,7 +212,7 @@ describe('NSPD content scripts', () => {
   it('не трогает настройку при отзыве чужого доступа', async () => {
     permissionsMock.grant(...NSPD_HOST_PATTERNS)
     await setStoredNspdButtonEnabled(true)
-    initNspdContentScriptSync()
+    initWithCleanup()
     await flush()
 
     permissionsMock.revoke('https://example.com/*')

@@ -1,16 +1,13 @@
 import { defineContentScript } from 'wxt/utils/define-content-script'
 import {
-  applyNoteVisibility,
   centerMapOnLocation,
   findActiveMap,
   hookYmapsModuleMap,
-  NmapsObjectDrawer,
   PointPickerOverlay,
   requestMapRepaint,
   subscribeToMapEvents,
   type YmapsMapLike,
 } from '@/lib/nmaps'
-import { parseDrawMapObjectsDetail } from '@/lib/nmaps_draw_objects'
 import { NMAPS_MAP_RESIZE_EVENT } from '@/lib/nmaps_map_resize_notify'
 import {
   createNativeTracingAdapter,
@@ -22,6 +19,16 @@ import {
   NMAPS_START_PICK_POINT_EVENT,
 } from '@/lib/nmaps_pick_point_notify'
 import { notifyNmapsUrlChange } from '@/lib/nmaps_url_notify'
+import {
+  collectPolygonTargets,
+  NMAPS_LOCATE_NOTE_EVENT,
+  NMAPS_RENDER_NOTES_EVENT,
+  NMAPS_SELECT_NOTE_EVENT,
+  NotesLayer,
+  parseGeometryDetail,
+  parseLayerInput,
+  parseNoteSelection,
+} from '@/lib/notes_layer'
 
 let globalActiveMapInstance: YmapsMapLike | null = null
 
@@ -187,33 +194,31 @@ export default defineContentScript({
 
     startMapDiscovery()
 
-    const drawer = new NmapsObjectDrawer()
+    const notesLayer = new NotesLayer(getActiveMap)
 
     document.addEventListener(NMAPS_MAP_RESIZE_EVENT, (e) => requestMapRepaint(e, getActiveMap))
 
-    const applyMapObjectsDetail = (rawDetail: unknown): void => {
-      const detail = parseDrawMapObjectsDetail(rawDetail)
-      if (!detail) return
+    document.addEventListener(NMAPS_RENDER_NOTES_EVENT, (event: Event) => {
+      const input = parseLayerInput((event as CustomEvent).detail)
+      if (!input) return
+      notesLayer.render(input)
 
-      tracingAdapter.setTargets(detail.snapTargets)
-      drawer.drawObjects(detail, getActiveMap)
-
-      // Нативный слой рисует сохранённые заметки сам: прячем их точечно.
-      // Перерисовка слоя может случиться позже, поэтому повторяем дважды.
-      applyNoteVisibility(detail, getActiveMap)
-      setTimeout(() => applyNoteVisibility(detail, getActiveMap), 300)
-      setTimeout(() => applyNoteVisibility(detail, getActiveMap), 1200)
-    }
-
-    document.addEventListener('nmaps:drawObjects', (event: Event) => {
-      applyMapObjectsDetail((event as CustomEvent).detail)
+      // Нативная трассировка умеет притягиваться только к полигонам: отдаём ей
+      // контуры заметок, чтобы инструмент редактора работал по ним.
+      tracingAdapter.setTargets(collectPolygonTargets(input))
     })
 
-    globalThis.addEventListener('message', (event: MessageEvent) => {
-      if (event.data?.action === 'DRAW_MAP_OBJECTS' && event.data.detail) {
-        applyMapObjectsDetail(event.data.detail)
-      }
+    document.addEventListener(NMAPS_SELECT_NOTE_EVENT, (event: Event) => {
+      const noteId = parseNoteSelection((event as CustomEvent).detail)
+      if (noteId !== undefined) notesLayer.select(noteId)
     })
+
+    document.addEventListener(NMAPS_LOCATE_NOTE_EVENT, (event: Event) => {
+      const geometry = parseGeometryDetail((event as CustomEvent).detail)
+      if (geometry) notesLayer.locate(geometry)
+    })
+
+    globalThis.addEventListener('pagehide', () => notesLayer.destroy(), { once: true })
 
     document.addEventListener('nmaps:centerMap', (event: Event) => {
       const customEvent = event as CustomEvent

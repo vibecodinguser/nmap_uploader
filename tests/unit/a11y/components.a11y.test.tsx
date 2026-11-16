@@ -1,13 +1,17 @@
 // @vitest-environment happy-dom
 
+import type { ComponentProps } from 'react'
 import { afterEach, describe, it, vi } from 'vitest'
 import { Header } from '@/components/Header'
-import { NotesTab } from '@/components/NotesTab'
+import { NoteList as NoteListBase } from '@/components/notes_panel/NoteList'
+import { NoteProperties } from '@/components/notes_panel/NoteProperties'
 import { PoligonTab } from '@/components/PoligonTab'
 import { SettingsTab } from '@/components/SettingsTab'
 import { TabBar } from '@/components/TabBar'
 import { UploadStatusMessage } from '@/components/UploadStatusMessage'
+import type { Note } from '@/lib/notes/types'
 import { cleanupA11y, expectNoA11yViolations, renderA11y } from '@/tests/setup/a11y'
+import { listProps, type NoteListProps } from '@/tests/unit/notes_panel/list_props'
 
 const noop = () => {}
 
@@ -71,6 +75,14 @@ const settingsTabProps = {
     moveItemDown: noop,
   },
 }
+
+/**
+ * Обёртка со значениями группировки по умолчанию.
+ *
+ * Почти все проверки списка — про строку заметки и её действия; группы нужны
+ * только в отдельных тестах, и там они передаются явно.
+ */
+const NoteList = (props: Partial<NoteListProps>) => <NoteListBase {...listProps(props)} />
 
 describe('a11y: TabBar', () => {
   it('без нарушений доступности', async () => {
@@ -179,9 +191,54 @@ describe('a11y: UploadStatusMessage', () => {
   })
 })
 
-describe('a11y: NotesTab', () => {
+const sampleNote: Note = {
+  id: 'note-1',
+  kind: 'Point',
+  name: '14.11.2026 Точка',
+  description: 'Описание',
+  date: '14-11-2026',
+  icon: null,
+  showLabel: false,
+  style: { color: '#1a8cff', fillColor: null, hatch: null, opacity: 1, strokeWidth: 3 },
+  groupId: null,
+  createdAt: '2026-11-14T10:00:00.000Z',
+  updatedAt: '2026-11-14T10:00:00.000Z',
+}
+
+describe('a11y: список заметок', () => {
+  it('без нарушений для списка', async () => {
+    const { container } = renderA11y(
+      <NoteList
+        notes={[sampleNote]}
+        hiddenIds={[]}
+        selectedId={null}
+        onSelect={noop}
+        onToggleHidden={noop}
+        onLocate={noop}
+        onDelete={noop}
+      />,
+    )
+
+    await expectNoA11yViolations(container)
+  })
+})
+
+describe('a11y: свойства заметки', () => {
   it('без нарушений в дефолтном состоянии', async () => {
-    const { container } = renderA11y(<NotesTab />)
+    const { container } = renderA11y(
+      <NoteProperties
+        note={sampleNote}
+        fallbackName="14.11.2026 Точка"
+        hidden={false}
+        onPatch={noop}
+        onDelete={noop}
+        onBack={noop}
+        onLocate={noop}
+        onToggleHidden={noop}
+        groups={[]}
+        onMoveToGroup={() => {}}
+      />,
+    )
 
     await expectNoA11yViolations(container)
   })

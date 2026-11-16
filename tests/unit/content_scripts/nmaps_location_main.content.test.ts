@@ -93,6 +93,29 @@ const installFakeNmapsModules = (): void => {
   }
 }
 
+const polygonNote = (id: string) => ({
+  id,
+  kind: 'Polygon' as const,
+  name: id,
+  description: '',
+  date: '14-11-2026',
+  icon: null,
+  showLabel: false,
+  style: { color: '#1a8cff', fillColor: '#1a8cff', hatch: null, opacity: 1, strokeWidth: 3 },
+  groupId: null,
+  createdAt: '2026-11-14T00:00:00.000Z',
+  updatedAt: '2026-11-14T00:00:00.000Z',
+})
+
+const renderNotesEvent = (
+  notes: unknown[],
+  geometries: Record<string, unknown>,
+  hiddenIds: string[] = [],
+): CustomEvent =>
+  new CustomEvent('nmap-uploader-render-notes', {
+    detail: JSON.stringify({ notes, geometries, groups: [], hiddenIds, iconUrls: {} }),
+  })
+
 describe('nmaps-location-main.content', () => {
   beforeEach(() => {
     vi.useFakeTimers()
@@ -206,40 +229,28 @@ describe('nmaps-location-main.content', () => {
     vi.runAllTimers()
     installFakeNmapsModules()
 
+    const leftRing = [
+      [0, 0],
+      [100, 0],
+      [100, 100],
+      [0, 0],
+    ]
+    const rightRing = [
+      [200, 0],
+      [300, 0],
+      [300, 100],
+      [200, 0],
+    ]
+
     document.dispatchEvent(
-      new CustomEvent('nmaps:drawObjects', {
-        detail: JSON.stringify({
-          points: [],
-          snapTargets: [
-            {
-              id: 'left',
-              coordinates: [
-                [0, 0],
-                [100, 0],
-                [100, 100],
-                [0, 0],
-              ],
-            },
-            {
-              id: 'right',
-              coordinates: [
-                [200, 0],
-                [300, 0],
-                [300, 100],
-                [200, 0],
-              ],
-            },
-          ],
-        }),
+      renderNotesEvent([polygonNote('left'), polygonNote('right')], {
+        left: { kind: 'Polygon', coords: leftRing },
+        right: { kind: 'Polygon', coords: rightRing },
       }),
     )
     const withTarget = await new FakeHotspot().getGeoObjectsByCoords([240, 6])
 
-    document.dispatchEvent(
-      new CustomEvent('nmaps:drawObjects', {
-        detail: JSON.stringify({ points: [], snapTargets: [] }),
-      }),
-    )
+    document.dispatchEvent(renderNotesEvent([], {}))
     const withoutTarget = await new FakeHotspot().getGeoObjectsByCoords([40, 6])
 
     expect(withTarget.map((item) => (item as { getId: () => string }).getId())).toContain(
@@ -292,21 +303,16 @@ describe('nmaps-location-main.content', () => {
     mapInstance.getZoom()
 
     document.dispatchEvent(
-      new CustomEvent('nmaps:drawObjects', {
-        detail: JSON.stringify({
-          points: [],
-          snapTargets: [
-            {
-              id: 'sample',
-              coordinates: [
-                [0, 0],
-                [100, 0],
-                [100, 100],
-                [0, 0],
-              ],
-            },
+      renderNotesEvent([polygonNote('sample')], {
+        sample: {
+          kind: 'Polygon',
+          coords: [
+            [0, 0],
+            [100, 0],
+            [100, 100],
+            [0, 0],
           ],
-        }),
+        },
       }),
     )
 

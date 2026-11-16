@@ -4,7 +4,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { browser } from 'wxt/browser'
 import panelSidebarScript from '@/entrypoints/panel-sidebar.content'
 import { NMAPS_POINT_PICKED_EVENT } from '@/lib/nmaps_pick_point_notify'
-import { NOTES_PICK_SOURCE } from '@/lib/notes_sidebar/core'
 import { CLOSE_PANEL_SIDEBAR_ACTION, PANEL_SIDEBAR_WRAPPER_ID } from '@/lib/panel_sidebar_notify'
 import { POINT_PICKED_ACTION, START_POINT_PICKING_ACTION } from '@/lib/pick_point_action'
 import { getURL } from '@/tests/setup/browser_mock'
@@ -70,49 +69,6 @@ describe('panel-sidebar.content', () => {
     expect(document.getElementById(PANEL_SIDEBAR_WRAPPER_ID)).toBeNull()
   })
 
-  it('запрашивает последний drawObjects при загрузке страницы карты', async () => {
-    vi.spyOn(browser.runtime, 'sendMessage').mockResolvedValue({
-      points: [{ id: 'polygon' }],
-      snapTargets: [
-        {
-          id: 'polygon',
-          coordinates: [
-            [0, 0],
-            [1, 0],
-            [1, 1],
-            [0, 0],
-          ],
-        },
-      ],
-    } as never)
-    const listener = vi.fn()
-    document.addEventListener('nmaps:drawObjects', listener)
-
-    panelSidebarScript.main?.(ctx)
-
-    await vi.waitFor(() =>
-      expect(browser.runtime.sendMessage).toHaveBeenCalledWith({
-        action: 'GET_DRAW_MAP_OBJECTS',
-      }),
-    )
-    await vi.waitFor(() => expect(listener).toHaveBeenCalledOnce())
-    const event = listener.mock.calls[0][0] as CustomEvent
-    expect(JSON.parse(event.detail)).toEqual({
-      points: [{ id: 'polygon' }],
-      snapTargets: [
-        {
-          id: 'polygon',
-          coordinates: [
-            [0, 0],
-            [1, 0],
-            [1, 1],
-            [0, 0],
-          ],
-        },
-      ],
-    })
-  })
-
   it('возвращает выбранные координаты в background вместе с меткой источника', () => {
     vi.spyOn(browser.runtime, 'sendMessage').mockResolvedValue(undefined as never)
     panelSidebarScript.main?.(ctx)
@@ -120,7 +76,7 @@ describe('panel-sidebar.content', () => {
     messageListener?.({
       action: START_POINT_PICKING_ACTION,
       geomType: 'Point',
-      source: NOTES_PICK_SOURCE,
+      source: 'notesPanel',
     } as never)
 
     document.dispatchEvent(
@@ -133,7 +89,7 @@ describe('panel-sidebar.content', () => {
       action: POINT_PICKED_ACTION,
       coords: [[55.7, 37.6]],
       geomType: 'Point',
-      source: NOTES_PICK_SOURCE,
+      source: 'notesPanel',
     })
   })
 
@@ -144,7 +100,7 @@ describe('panel-sidebar.content', () => {
     messageListener?.({
       action: START_POINT_PICKING_ACTION,
       geomType: 'LineString',
-      source: NOTES_PICK_SOURCE,
+      source: 'notesPanel',
     } as never)
 
     document.dispatchEvent(
@@ -157,7 +113,7 @@ describe('panel-sidebar.content', () => {
       action: POINT_PICKED_ACTION,
       coords: [],
       geomType: 'LineString',
-      source: NOTES_PICK_SOURCE,
+      source: 'notesPanel',
     })
   })
 })

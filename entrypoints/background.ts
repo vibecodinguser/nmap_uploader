@@ -11,22 +11,28 @@ import {
   handleCenterMap,
   handleCloseCurrentTab,
   handleClosePanel,
-  handleDrawMapObjects,
   handleEnsureAuth,
   handleGetAuth,
-  handleGetDrawMapObjects,
-  handleGetTrackerDate,
   handleGoToRefresh,
   handleListOccupiedDates,
   handleLogin,
   handleLogout,
+  handleNotesDeleteGroup,
+  handleNotesDeleteNote,
+  handleNotesDrawFinished,
+  handleNotesHiddenChanged,
+  handleNotesLoad,
+  handleNotesMoveNote,
+  handleNotesSaveGroup,
+  handleNotesSaveNote,
+  handleNotesSelect,
+  handleNotesStartDraw,
+  handleNotesUploadIcon,
   handlePointPicked,
   handleReloadEditor,
   handleSetTrackerDate,
   handleStartPointPicking,
-  handleTrackerDateChanged,
   handleUpload,
-  handleUploadNoteFromSidebar,
   handleUploadNspdGeoJson,
   type MessageHandler,
   openPanel,
@@ -37,7 +43,19 @@ import {
 import { GO_TO_REFRESH_ACTION } from '@/lib/go_to_notify'
 import { syncLocaleFromStorage } from '@/lib/i18n'
 import type { RuntimeMessageSender } from '@/lib/message_auth'
-import { NOTES_SIDEBAR_UPLOAD_ACTION } from '@/lib/notes_sidebar/upload_action'
+import {
+  NOTES_DELETE_GROUP_ACTION,
+  NOTES_DELETE_NOTE_ACTION,
+  NOTES_DRAW_FINISHED_ACTION,
+  NOTES_HIDDEN_CHANGED_ACTION,
+  NOTES_LOAD_ACTION,
+  NOTES_MOVE_NOTE_ACTION,
+  NOTES_SAVE_GROUP_ACTION,
+  NOTES_SAVE_NOTE_ACTION,
+  NOTES_SELECT_ACTION,
+  NOTES_START_DRAW_ACTION,
+  NOTES_UPLOAD_ICON_ACTION,
+} from '@/lib/notes/messages'
 import {
   initNspdContentScriptSync,
   syncNspdContentScriptsFromStorage,
@@ -48,6 +66,7 @@ import {
   POINT_PICKED_ACTION,
   START_POINT_PICKING_ACTION,
 } from '@/lib/pick_point_action'
+import { installWxtDevLogFilter } from '@/lib/wxt_dev_log_filter'
 
 const handleToolbarClick = (tab: Browser.tabs.Tab): void => {
   const panelTask = openPanel(tab)
@@ -76,7 +95,17 @@ const messageHandlers: Record<string, MessageHandler> = {
   logout: handleLogout,
   listOccupiedDates: handleListOccupiedDates,
   uploadProcessedFiles: handleUpload,
-  [NOTES_SIDEBAR_UPLOAD_ACTION]: handleUploadNoteFromSidebar,
+  [NOTES_LOAD_ACTION]: handleNotesLoad,
+  [NOTES_SAVE_NOTE_ACTION]: handleNotesSaveNote,
+  [NOTES_DELETE_NOTE_ACTION]: handleNotesDeleteNote,
+  [NOTES_SAVE_GROUP_ACTION]: handleNotesSaveGroup,
+  [NOTES_DELETE_GROUP_ACTION]: handleNotesDeleteGroup,
+  [NOTES_MOVE_NOTE_ACTION]: handleNotesMoveNote,
+  [NOTES_UPLOAD_ICON_ACTION]: handleNotesUploadIcon,
+  [NOTES_SELECT_ACTION]: handleNotesSelect,
+  [NOTES_START_DRAW_ACTION]: handleNotesStartDraw,
+  [NOTES_DRAW_FINISHED_ACTION]: handleNotesDrawFinished,
+  [NOTES_HIDDEN_CHANGED_ACTION]: handleNotesHiddenChanged,
   reloadEditorPage: handleReloadEditor,
   [GO_TO_REFRESH_ACTION]: handleGoToRefresh,
   [CLOSE_PANEL_SIDEBAR_ACTION]: handleClosePanel,
@@ -85,11 +114,7 @@ const messageHandlers: Record<string, MessageHandler> = {
   [POINT_PICKED_ACTION]: handlePointPicked,
   applyStrokeColor: handleApplyStrokeColor,
   centerMap: handleCenterMap,
-  getTrackerDate: handleGetTrackerDate,
-  DRAW_MAP_OBJECTS: handleDrawMapObjects,
-  GET_DRAW_MAP_OBJECTS: handleGetDrawMapObjects,
   SET_TRACKER_DATE: handleSetTrackerDate,
-  TRACKER_DATE_CHANGED: handleTrackerDateChanged,
   [UPLOAD_NSPD_GEOJSON_ACTION]: handleUploadNspdGeoJson,
   [CLOSE_CURRENT_TAB_ACTION]: handleCloseCurrentTab,
 }
@@ -128,6 +153,11 @@ const initBackground = (): void => {
 }
 
 // noinspection JSUnusedGlobalSymbols
+// На уровне модуля, а не внутри `main`: этот файл импортируется виртуальной
+// точкой входа WXT раньше, чем она поднимет websocket dev-сервера. Иначе первое
+// же сообщение о пересборке успело бы напечатать служебные строки.
+installWxtDevLogFilter()
+
 export default defineBackground({
   main() {
     initBackground()

@@ -4,12 +4,6 @@ body,
   min-height: 0;
 }
 
-html:has(.notes-popup-app),
-body:has(.notes-popup-app),
-.notes-popup-app {
-  overflow: auto;
-}
-
 html:has(.polygon-upload-popup-app),
 body:has(.polygon-upload-popup-app),
 .polygon-upload-popup-app {
@@ -23,9 +17,7 @@ body:has(.polygon-upload-popup-app),
 }
 
 .polygon-upload-popup-app .tab-panel,
-.polygon-upload-popup-app .upload-form,
-.notes-popup-app,
-.notes-popup-app .tab-panel {
+.polygon-upload-popup-app .upload-form {
   min-height: 0;
 }
 
@@ -56,9 +48,4 @@ body:has(.polygon-upload-popup-app),
 
 .polygon-upload-popup-app .upload-progress-status {
   margin: 0;
-}
-
-.notes-popup-app {
-  min-height: 100%;
-  padding: 16px;
 }

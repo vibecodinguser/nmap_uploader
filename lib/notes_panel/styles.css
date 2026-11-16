@@ -1,0 +1,86 @@
+/*
+ * Панель заметок поверх карты.
+ *
+ * Панель живёт в отдельной странице расширения, поэтому здесь только коробка:
+ * позиция по нижней кромке, высота, рамка и ручка изменения размера.
+ */
+#nmap-notes-panel {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2147483000;
+  display: none;
+  flex-direction: column;
+  min-height: 140px;
+  background: var(--nmap-surface, #ffffff);
+  border-top: 1px solid var(--nmap-border-subtle, #e6e6e6);
+  box-shadow: 0 -6px 24px rgb(0 0 0 / 18%);
+}
+
+#nmap-notes-panel[data-open='true'] {
+  display: flex;
+}
+
+#nmap-notes-panel-handle {
+  flex: 0 0 auto;
+  height: 8px;
+  margin-top: -4px;
+  background: transparent;
+  cursor: ns-resize;
+  touch-action: none;
+}
+
+#nmap-notes-panel-handle::after {
+  display: block;
+  width: 44px;
+  height: 4px;
+  margin: 2px auto 0;
+  background: var(--nmap-text-muted, #999999);
+  border-radius: 2px;
+  opacity: 0.45;
+  content: '';
+}
+
+#nmap-notes-panel-handle:hover::after,
+#nmap-notes-panel-handle:focus-visible::after {
+  opacity: 0.8;
+}
+
+#nmap-notes-panel-frame {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  background: var(--nmap-surface, #ffffff);
+}
+
+#nmap-notes-panel[data-layout='full'] #nmap-notes-panel-handle {
+  cursor: default;
+}
+
+/*
+ * Пока тянем, iframe не должен перехватывать указатель: он отдельный документ,
+ * и события протяжки до хоста не доходят, если курсор уходит на панель.
+ */
+#nmap-notes-panel[data-dragging='true'] #nmap-notes-panel-frame {
+  pointer-events: none;
+}
+
+/* Кнопка «Редактировать» живёт в разметке только при выбранной заметке. */
+.nmap-notes-edit-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nmap-notes-edit-button__icon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+}
+
+.nmap-notes-edit-button__icon svg {
+  width: 16px;
+  height: 16px;
+}
