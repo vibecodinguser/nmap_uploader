@@ -50,11 +50,15 @@ const deleteGroupNow = async ({
   const remoteManifest = (await ports.remote.readManifest()) ?? createEmptyManifest()
   const doomed = remoteManifest.notes.filter((note) => note.groupId === groupId)
 
+  // Метка меняется у перенесённых заметок: иначе на другом устройстве при
+  // равных `updatedAt` побеждала бы локальная копия со старой группой, и
+  // роспуск группы там бы не применился.
+  const timestamp = new Date().toISOString()
   const notes =
     mode === 'cascade'
       ? remoteManifest.notes.filter((note) => note.groupId !== groupId)
       : remoteManifest.notes.map((note) =>
-          note.groupId === groupId ? { ...note, groupId: null } : note,
+          note.groupId === groupId ? { ...note, groupId: null, updatedAt: timestamp } : note,
         )
 
   const manifest = await writeManifest(ports, {
@@ -80,7 +84,14 @@ const deleteGroupNow = async ({
   return { manifest, shards }
 }
 
-/** Переносит заметку в группу (или в корень при `groupId = null`). */
+/**
+ * Переносит заметку в группу (или в корень при `groupId = null`).
+ *
+ * Группы может уже не быть: её удалили на другом устройстве, или панель
+ * отправила id из устаревшего снимка. Висячая ссылка в манифесте не видна
+ * пользователю (такие заметки и так показываются в корне), но портит данные,
+ * поэтому несуществующая группа превращается в корень.
+ */
 const moveNoteToGroupNow = async ({
   ports,
   noteId,
@@ -94,11 +105,15 @@ const moveNoteToGroupNow = async ({
   const target = remoteManifest.notes.find((note) => note.id === noteId)
   if (!target) return { manifest: remoteManifest, shards: {} }
 
+  const known = groupId !== null && remoteManifest.groups.some((group) => group.id === groupId)
+  const nextGroupId = known ? groupId : null
+  const timestamp = new Date().toISOString()
+
   const manifest = mergeManifests(remoteManifest, {
     version: remoteManifest.version,
-    updatedAt: new Date().toISOString(),
+    updatedAt: timestamp,
     groups: [],
-    notes: [{ ...target, groupId, updatedAt: new Date().toISOString() }],
+    notes: [{ ...target, groupId: nextGroupId, updatedAt: timestamp }],
   })
 
   return { manifest: await writeManifest(ports, manifest), shards: {} }
