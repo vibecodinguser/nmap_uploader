@@ -31,6 +31,11 @@
   --notes-checkbox-border-hover: rgb(0 0 0 / 30%);
   --notes-checkbox-checked-bg: #fff6cc;
   --notes-checkbox-checked-border: #ffcc00;
+
+  /* Маска галочки из редактора (`7b25040ff7c9f14a396a.svg`). Один файл на две
+     роли: отметка чекбокса и отмеченный пункт выпадающего списка. */
+  --notes-tick-mask: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='16'%3E%3Cpath d='m13.5.5-8 12L1.7 8l-1 1.6L5.6 15l9.1-13.4z'/%3E%3C/svg%3E");
+  --notes-select-border-hover: rgb(0 0 0 / 30%);
 }
 
 .dark,
@@ -42,4 +47,5 @@
   --notes-checkbox-border-hover: rgb(255 255 255 / 70%);
   --notes-checkbox-checked-bg: #ffe680;
   --notes-checkbox-checked-border: #ffdb4d;
+  --notes-select-border-hover: rgb(255 255 255 / 40%);
 }

@@ -98,9 +98,8 @@ describe('панель массовых действий', () => {
     const onMoveToGroup = vi.fn()
     wrap(<SelectionBar count={1} {...base} onMoveToGroup={onMoveToGroup} />)
 
-    fireEvent.change(screen.getByLabelText('Перенести в группу'), {
-      target: { value: '__none__' },
-    })
+    fireEvent.click(screen.getByRole('combobox', { name: 'Перенести в группу' }))
+    fireEvent.click(screen.getByRole('option', { name: 'Без группы' }))
 
     expect(onMoveToGroup).toHaveBeenCalledWith(null)
   })
@@ -109,9 +108,8 @@ describe('панель массовых действий', () => {
     const onMoveToGroup = vi.fn()
     wrap(<SelectionBar count={1} {...base} onMoveToGroup={onMoveToGroup} />)
 
-    fireEvent.change(screen.getByLabelText('Перенести в группу'), {
-      target: { value: 'group-1' },
-    })
+    fireEvent.click(screen.getByRole('combobox', { name: 'Перенести в группу' }))
+    fireEvent.click(screen.getByRole('option', { name: 'Мосты' }))
 
     expect(onMoveToGroup).toHaveBeenCalledWith('group-1')
   })

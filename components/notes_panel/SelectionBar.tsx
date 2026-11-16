@@ -1,5 +1,6 @@
 import { useLocale } from '@/hooks/useLocale'
 import type { NoteGroup } from '@/lib/notes/model/types'
+import { NotesSelect } from './NotesSelect'
 
 /**
  * Панель массовых действий.
@@ -42,23 +43,19 @@ export const SelectionBar = ({
       </button>
 
       {groups.length > 0 && (
-        <select
-          className="notes-panel__filter-select"
-          aria-label={t('notesPanel.moveToGroup')}
+        <NotesSelect
+          label={t('notesPanel.moveToGroup')}
           value=""
-          onChange={(event) => {
-            if (event.target.value === '') return
-            onMoveToGroup(event.target.value === '__none__' ? null : event.target.value)
+          options={[
+            { value: '', label: t('notesPanel.moveToGroup') },
+            { value: '__none__', label: t('notesPanel.ungrouped') },
+            ...groups.map((group) => ({ value: group.id, label: group.name })),
+          ]}
+          onChange={(groupId) => {
+            if (groupId === '') return
+            onMoveToGroup(groupId === '__none__' ? null : groupId)
           }}
-        >
-          <option value="">{t('notesPanel.moveToGroup')}</option>
-          <option value="__none__">{t('notesPanel.ungrouped')}</option>
-          {groups.map((group) => (
-            <option key={group.id} value={group.id}>
-              {group.name}
-            </option>
-          ))}
-        </select>
+        />
       )}
 
       <button

@@ -11,7 +11,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { FilterBar } from '@/components/notes_panel/FilterBar'
 import { NOTES_PANEL_BUTTON_IDS, rowButtonId } from '@/components/notes_panel/ids'
 import { LocaleProvider } from '@/hooks/useLocale'
-import { DEFAULT_NOTES_FILTER, GROUP_FILTER_NONE } from '@/lib/notes/panel/filters'
+import { DEFAULT_NOTES_FILTER } from '@/lib/notes/panel/filters'
 import { sampleGroup } from '@/tests/unit/notes_panel/list_props'
 
 const renderBar = ({
@@ -84,22 +84,31 @@ describe('фильтр по группе', () => {
   it('с группами даёт «все», «без группы» и сами группы', () => {
     renderBar({ groups: [sampleGroup()] })
 
-    const select = document.getElementById(NOTES_PANEL_BUTTON_IDS.filterGroup) as HTMLSelectElement
-    expect([...select.options].map((option) => option.value)).toEqual([
-      'all',
-      GROUP_FILTER_NONE,
-      'group-1',
+    fireEvent.click(screen.getByRole('combobox', { name: 'Фильтр по группе' }))
+
+    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual([
+      'Все группы',
+      'Без группы',
+      'Мосты',
     ])
   })
 
   it('выбор группы уходит наверх', () => {
     const { onChange } = renderBar({ groups: [sampleGroup()] })
 
-    fireEvent.change(document.getElementById(NOTES_PANEL_BUTTON_IDS.filterGroup) as HTMLElement, {
-      target: { value: 'group-1' },
-    })
+    fireEvent.click(screen.getByRole('combobox', { name: 'Фильтр по группе' }))
+    fireEvent.click(screen.getByRole('option', { name: 'Мосты' }))
 
     expect(onChange).toHaveBeenCalledWith({ group: 'group-1' })
+  })
+
+  it('список закрывается после выбора', () => {
+    renderBar({ groups: [sampleGroup()] })
+
+    fireEvent.click(screen.getByRole('combobox', { name: 'Фильтр по группе' }))
+    fireEvent.click(screen.getByRole('option', { name: 'Мосты' }))
+
+    expect(screen.queryByRole('listbox')).toBeNull()
   })
 })
 
@@ -107,12 +116,8 @@ describe('видимость и порядок', () => {
   it('фильтр по видимости уходит наверх', () => {
     const { onChange } = renderBar()
 
-    fireEvent.change(
-      document.getElementById(NOTES_PANEL_BUTTON_IDS.filterVisibility) as HTMLElement,
-      {
-        target: { value: 'hidden' },
-      },
-    )
+    fireEvent.click(screen.getByRole('combobox', { name: 'Фильтр по видимости' }))
+    fireEvent.click(screen.getByRole('option', { name: 'Скрытые с карты' }))
 
     expect(onChange).toHaveBeenCalledWith({ visibility: 'hidden' })
   })
@@ -120,9 +125,8 @@ describe('видимость и порядок', () => {
   it('порядок уходит наверх', () => {
     const { onChange } = renderBar()
 
-    fireEvent.change(document.getElementById(NOTES_PANEL_BUTTON_IDS.filterSort) as HTMLElement, {
-      target: { value: 'dateDesc' },
-    })
+    fireEvent.click(screen.getByRole('combobox', { name: 'Порядок' }))
+    fireEvent.click(screen.getByRole('option', { name: 'Дата: сначала новые' }))
 
     expect(onChange).toHaveBeenCalledWith({ sort: 'dateDesc' })
   })

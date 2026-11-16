@@ -11,6 +11,7 @@ import {
 import { kindLabelKey } from '@/lib/notes/panel/labels'
 import { NOTES_PANEL_BUTTON_IDS, rowButtonId } from './ids'
 import { NoteKindIcon } from './NoteKindIcon'
+import { NotesSelect } from './NotesSelect'
 
 /**
  * Фильтры списка: вид фигуры, группа, видимость и порядок.
@@ -67,47 +68,43 @@ export const FilterBar = ({
       </fieldset>
 
       {groups.length > 0 && (
-        <select
+        <NotesSelect
           id={NOTES_PANEL_BUTTON_IDS.filterGroup}
-          className="notes-panel__filter-select"
-          aria-label={t('notesPanel.filterGroup')}
+          label={t('notesPanel.filterGroup')}
           value={filter.group}
-          onChange={(event) => onChange({ group: event.target.value })}
-        >
-          <option value={GROUP_FILTER_ALL}>{t('notesPanel.filterAllGroups')}</option>
-          <option value={GROUP_FILTER_NONE}>{t('notesPanel.ungrouped')}</option>
-          {groups.map((group) => (
-            <option key={group.id} value={group.id}>
-              {group.name}
-            </option>
-          ))}
-        </select>
+          options={[
+            { value: GROUP_FILTER_ALL, label: t('notesPanel.filterAllGroups') },
+            { value: GROUP_FILTER_NONE, label: t('notesPanel.ungrouped') },
+            ...groups.map((group) => ({ value: group.id, label: group.name })),
+          ]}
+          onChange={(group) => onChange({ group })}
+        />
       )}
 
-      <select
+      <NotesSelect
         id={NOTES_PANEL_BUTTON_IDS.filterVisibility}
-        className="notes-panel__filter-select"
-        aria-label={t('notesPanel.filterVisibility')}
+        label={t('notesPanel.filterVisibility')}
         value={filter.visibility}
-        onChange={(event) => onChange({ visibility: event.target.value as VisibilityFilter })}
-      >
-        <option value="all">{t('notesPanel.filterVisibilityAll')}</option>
-        <option value="visible">{t('notesPanel.filterVisible')}</option>
-        <option value="hidden">{t('notesPanel.filterHidden')}</option>
-      </select>
+        options={[
+          { value: 'all', label: t('notesPanel.filterVisibilityAll') },
+          { value: 'visible', label: t('notesPanel.filterVisible') },
+          { value: 'hidden', label: t('notesPanel.filterHidden') },
+        ]}
+        onChange={(visibility) => onChange({ visibility: visibility as VisibilityFilter })}
+      />
 
-      <select
+      <NotesSelect
         id={NOTES_PANEL_BUTTON_IDS.filterSort}
-        className="notes-panel__filter-select"
-        aria-label={t('notesPanel.sort')}
+        label={t('notesPanel.sort')}
         value={filter.sort}
-        onChange={(event) => onChange({ sort: event.target.value as NoteSort })}
-      >
-        <option value="name">{t('notesPanel.sortName')}</option>
-        <option value="nameDesc">{t('notesPanel.sortNameDesc')}</option>
-        <option value="date">{t('notesPanel.sortDate')}</option>
-        <option value="dateDesc">{t('notesPanel.sortDateDesc')}</option>
-      </select>
+        options={[
+          { value: 'name', label: t('notesPanel.sortName') },
+          { value: 'nameDesc', label: t('notesPanel.sortNameDesc') },
+          { value: 'date', label: t('notesPanel.sortDate') },
+          { value: 'dateDesc', label: t('notesPanel.sortDateDesc') },
+        ]}
+        onChange={(sort) => onChange({ sort: sort as NoteSort })}
+      />
 
       {hasActiveFilters(filter) && (
         <button

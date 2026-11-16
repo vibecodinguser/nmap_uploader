@@ -194,9 +194,8 @@ describe('группа в свойствах заметки', () => {
       </LocaleProvider>,
     )
 
-    fireEvent.change(document.getElementById('nmapUploaderNotesPanelSelectGroup') as HTMLElement, {
-      target: { value: 'group-1' },
-    })
+    fireEvent.click(screen.getByRole('combobox', { name: 'Группа' }))
+    fireEvent.click(screen.getByRole('option', { name: 'Мосты' }))
 
     expect(onMoveToGroup).toHaveBeenCalledWith('group-1')
     cleanup()
@@ -221,9 +220,8 @@ describe('группа в свойствах заметки', () => {
       </LocaleProvider>,
     )
 
-    fireEvent.change(document.getElementById('nmapUploaderNotesPanelSelectGroup') as HTMLElement, {
-      target: { value: '' },
-    })
+    fireEvent.click(screen.getByRole('combobox', { name: 'Группа' }))
+    fireEvent.click(screen.getByRole('option', { name: 'Без группы' }))
 
     expect(onMoveToGroup).toHaveBeenCalledWith(null)
     cleanup()

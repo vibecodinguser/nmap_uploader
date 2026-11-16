@@ -149,7 +149,7 @@ body {
   background: var(--check-tick, #000000);
   opacity: 0;
   pointer-events: none;
-  mask-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='16'%3E%3Cpath d='m13.5.5-8 12L1.7 8l-1 1.6L5.6 15l9.1-13.4z'/%3E%3C/svg%3E");
+  mask-image: var(--notes-tick-mask);
   mask-size: 100%;
   mask-repeat: no-repeat;
   transition: transform 0.05s ease-out, opacity 0.05s ease-out;
@@ -271,34 +271,210 @@ body {
   border-color: var(--notes-accent, #ffdb4d);
 }
 
-.notes-panel__filter-select {
+/*
+ * Выпадающий список в духе нативного `nk-select`.
+ *
+ * Панель живёт в отдельном iframe, поэтому классов `nk-*` в ней нет — рисунок
+ * повторён по боевому CSS редактора:
+ *
+ *   `.nk-select__tick:after`   стрелка-маска 11×6, `transform: rotate(-.5turn)`
+ *                              при открытии, `transition: transform .1s`
+ *   `.nk-popup_theme_islands`  тень `0 0 0 1px rgb(0 0 0 / 10%)` плюс
+ *                              `0 10px 20px -5px rgb(0 0 0 / 40%)`
+ *   `@keyframes …_bottom_visible`
+ *                              список выезжает снизу: `translateY(10px)` →
+ *                              `translateY(0)` за 0.1s ease-out
+ *   `.nk-button_size_m`        высота 32 px, текст с отступом 12 px
+ *   `.nk-menu_size_m`          13 px, отступ пункта 13 px
+ *
+ * Одно отличие, осознанное: пункты выше нативных 24 px. Панель считается под
+ * палец — как и чекбокс, рисунок сохранён, размер увеличен.
+ */
+.notes-panel__select {
+  position: relative;
   flex: 0 0 auto;
   max-width: 100%;
   min-width: 132px;
-  min-height: 38px;
-  padding: 0 8px;
+}
+
+/* Поле карточки объекта: список тянется на всю ширину сетки. */
+.notes-panel__select--block {
+  width: 100%;
+}
+
+.notes-panel__select-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: var(--notes-control, 40px);
+  padding: 0 12px;
+  margin: 0;
   font: inherit;
   font-size: 13px;
   color: inherit;
-
-  /* Фон панели, а не системный: прозрачный селект рисовал белое поле поверх
-     тёмной темы, и список выглядел чужим. */
+  text-align: left;
+  cursor: pointer;
   background: var(--background, #ffffff);
   border: 1px solid var(--border, #e6e6e6);
   border-radius: var(--notes-radius-sm, 6px);
   box-sizing: border-box;
+  transition: border-color 0.1s ease-out;
 }
 
-/* Раскрытый список: системный рендер красит пункты в белый независимо от
-   темы, поэтому цвета задаются явно. */
-.notes-panel__filter-select option {
-  color: var(--foreground, #1f1f1f);
-  background: var(--background, #ffffff);
+.notes-panel__select-button:hover {
+  border-color: var(--notes-select-border-hover, rgb(0 0 0 / 30%));
 }
 
-.notes-panel__filter-select:focus-visible {
+/*
+ * Открытый список рамку не меняет: у нативного `nk-select` подсвечивается только
+ * стрелка поворотом, а кнопка остаётся как была. Золотое кольцо здесь было бы
+ * выдумкой — оставляем его фокусу с клавиатуры.
+ */
+.notes-panel__select-button:focus-visible {
   outline: 2px solid var(--notes-accent, #ffdb4d);
   outline-offset: 1px;
+}
+
+.notes-panel__select-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Стрелка — маска из редактора, цвет берётся фоном. */
+.notes-panel__select-tick {
+  flex: 0 0 auto;
+  width: 11px;
+  height: 6px;
+  margin-left: auto;
+  background: var(--muted-foreground, #767676);
+  mask-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='6'%3E%3Cpath d='M10.3 0 5.5 4.7.7 0 0 .7 5.5 6 11 .7z'/%3E%3C/svg%3E");
+  mask-size: 100% 100%;
+  mask-repeat: no-repeat;
+  transition: transform 0.1s ease-out;
+}
+
+.notes-panel__select[data-open="true"] .notes-panel__select-tick {
+  transform: rotate(180deg);
+}
+
+/*
+ * Сам список. Появление повторяет нативное: сдвиг на 10 px и проявление за
+ * 0.1s ease-out. При нехватке места под кнопкой список раскрывается вверх —
+ * и выезжает уже снизу вверх.
+ *
+ * Положение задаётся из компонента: список живёт в портале на `body`, поэтому
+ * его не обрезает `overflow: hidden` панели и он не зависит от прокрутки
+ * предков. Отсюда `position: fixed`.
+ */
+.notes-panel__select-popup {
+  position: fixed;
+  z-index: 40;
+  max-height: 280px;
+  padding: 4px 0;
+  margin: 0;
+  overflow-y: auto;
+  background: var(--background, #ffffff);
+  border-radius: var(--notes-radius-sm, 6px);
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 10%),
+    0 10px 20px -5px rgb(0 0 0 / 40%);
+  animation: notesPanelSelectIn 0.1s ease-out;
+}
+
+.notes-panel__select-popup[data-placement="top"] {
+  animation-name: notesPanelSelectInTop;
+}
+
+@keyframes notesPanelSelectIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes notesPanelSelectInTop {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.notes-panel__select-option {
+  display: flex;
+  align-items: center;
+
+  /* Зазор 2 px: у нативного меню галочка стоит в жёлобе 13 px и текст
+     начинается на 30-м — 13 + 15 + 2. */
+  gap: 2px;
+  min-height: 36px;
+  padding: 0 13px;
+  font-size: 13px;
+  line-height: 20px;
+  cursor: pointer;
+}
+
+/* Подсветка наведённого и активного с клавиатуры — один и тот же фон. */
+.notes-panel__select-option[data-active="true"] {
+  background: var(--notes-hover, rgb(0 0 0 / 6%));
+}
+
+.notes-panel__select-option[data-selected="true"] {
+  font-weight: 500;
+}
+
+/*
+ * Место под галочку занято всегда, даже у невыбранных пунктов: иначе текст
+ * прыгал бы влево при смене выбора.
+ *
+ * Размер и положение — из нативного меню: маска 15×16 при `mask-position:
+ * 13px 50%`, поэтому текст начинается на 30 px (13 + 15 + 2). Отступ считается
+ * как 13 + 15 + gap, чтобы совпасть с редактором, а не подбирался на глаз.
+ */
+.notes-panel__select-check {
+  flex: 0 0 auto;
+  width: 15px;
+  height: 16px;
+  background: var(--foreground, #000000);
+  mask-image: var(--notes-tick-mask);
+  mask-size: 100% 100%;
+  mask-repeat: no-repeat;
+  opacity: 0;
+}
+
+.notes-panel__select-option[data-selected="true"] .notes-panel__select-check {
+  opacity: 1;
+}
+
+.notes-panel__select-option-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Плавность — украшение: при отключённой анимации список просто появляется. */
+@media (prefers-reduced-motion: reduce) {
+  .notes-panel__select-popup {
+    animation: none;
+  }
+
+  .notes-panel__select-tick {
+    transition: none;
+  }
 }
 
 /*

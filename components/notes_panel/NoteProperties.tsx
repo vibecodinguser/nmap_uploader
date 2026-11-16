@@ -4,6 +4,7 @@ import { kindLabelKey } from '@/lib/notes/panel/labels'
 import { NOTES_PANEL_BUTTON_IDS } from './ids'
 import { NoteAppearance } from './NoteAppearance'
 import { NoteDateField } from './NoteDateField'
+import { NotesSelect } from './NotesSelect'
 
 /** Свойства выбранной заметки. */
 export const NoteProperties = ({
@@ -79,22 +80,24 @@ export const NoteProperties = ({
           <NoteDateField date={note.date} onCommit={(date) => onPatch({ date })} />
 
           {groups.length > 0 && (
-            <label className="notes-panel__field">
+            /*
+             * Не `label`: внутри кнопка, и клик по любому месту подписи
+             * открывал бы список — включая клик по пункту.
+             */
+            <div className="notes-panel__field">
               <span className="notes-panel__field-label">{t('notesPanel.group')}</span>
-              <select
+              <NotesSelect
                 id={NOTES_PANEL_BUTTON_IDS.noteGroup}
-                className="notes-panel__input"
+                label={t('notesPanel.group')}
+                block
                 value={note.groupId ?? ''}
-                onChange={(event) => onMoveToGroup(event.target.value || null)}
-              >
-                <option value="">{t('notesPanel.ungrouped')}</option>
-                {groups.map((group) => (
-                  <option key={group.id} value={group.id}>
-                    {group.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+                options={[
+                  { value: '', label: t('notesPanel.ungrouped') },
+                  ...groups.map((group) => ({ value: group.id, label: group.name })),
+                ]}
+                onChange={(groupId) => onMoveToGroup(groupId || null)}
+              />
+            </div>
           )}
         </div>
       </section>
