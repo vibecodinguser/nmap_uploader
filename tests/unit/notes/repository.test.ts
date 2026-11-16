@@ -247,6 +247,62 @@ describe('loadRemoteSnapshot', () => {
   })
 })
 
+describe('запись проигравшей версии', () => {
+  it('не пишет геометрию, если на Диске уже есть более свежая версия заметки', async () => {
+    const remote = createMemoryRemote()
+    remote.files.set('manifest', {
+      version: 1,
+      updatedAt: '2026-11-14T12:00:00.000Z',
+      groups: [],
+      notes: [note({ id: 'note-1', name: 'Серверная', updatedAt: '2026-11-14T12:00:00.000Z' })],
+    })
+    remote.files.set('shard:2026-11', {
+      version: 1,
+      updatedAt: '2026-11-14T12:00:00.000Z',
+      notes: { 'note-1': { kind: 'Point', coords: [1, 2] } },
+    })
+
+    const result = await saveNote({
+      ports: ports(remote),
+      note: note({ id: 'note-1', name: 'Локальная', updatedAt: '2026-11-14T10:00:00.000Z' }),
+      geometry: { kind: 'Point', coords: [37, 55] },
+    })
+
+    // Ничего не записано: манифест и так новее, а геометрия проигравшей версии
+    // описывала бы объект, которого в манифесте нет.
+    expect(remote.writes).toEqual([])
+    expect(result.shards).toEqual({})
+    expect(result.manifest.notes[0]?.name).toBe('Серверная')
+    expect((remote.files.get('shard:2026-11') as GeometryShard).notes['note-1']).toEqual({
+      kind: 'Point',
+      coords: [1, 2],
+    })
+  })
+
+  it('пишет геометрию, когда версия клиента новее', async () => {
+    const remote = createMemoryRemote()
+    remote.files.set('manifest', {
+      version: 1,
+      updatedAt: '2026-11-14T10:00:00.000Z',
+      groups: [],
+      notes: [note({ id: 'note-1', name: 'Старая', updatedAt: '2026-11-14T10:00:00.000Z' })],
+    })
+
+    const result = await saveNote({
+      ports: ports(remote),
+      note: note({ id: 'note-1', name: 'Новая', updatedAt: '2026-11-14T12:00:00.000Z' }),
+      geometry: { kind: 'Point', coords: [37, 55] },
+    })
+
+    expect(result.manifest.notes[0]?.name).toBe('Новая')
+    expect(remote.writes).toContain('shard:2026-11')
+    expect((remote.files.get('shard:2026-11') as GeometryShard).notes['note-1']).toEqual({
+      kind: 'Point',
+      coords: [37, 55],
+    })
+  })
+})
+
 describe('сериализация записей', () => {
   it('параллельные сохранения не перемешивают записи одного шарда', async () => {
     const remote = createMemoryRemote()

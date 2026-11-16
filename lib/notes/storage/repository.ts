@@ -130,6 +130,14 @@ const saveNoteNow = async ({
     notes: [stamped],
   })
 
+  // Слияние могло оставить серверную версию: она новее по `updatedAt`.
+  // Тогда геометрию писать нельзя — она относилась бы к записи, которой в
+  // манифесте нет, и на карте объект оказался бы с чужими атрибутами.
+  const accepted = manifest.notes.find((item) => item.id === stamped.id) === stamped
+  if (!accepted) {
+    return { manifest: remoteManifest, shards: {} }
+  }
+
   const previous = remoteManifest.notes.find((item) => item.id === note.id)
   const previousShardId = previous ? shardIdForDate(previous.date) : null
   const movedBetweenShards = Boolean(previousShardId && previousShardId !== nextShardId)
