@@ -313,3 +313,94 @@ describe('иконка заметки', () => {
     expect(icon?.options.iconImageHref).toBe('data:image/png;base64,AAA')
   })
 })
+
+describe('детализация контуров по зуму', () => {
+  /** Ломаная из 200 вершин: на дальнем зуме её надо проредить. */
+  const wavyLine = Array.from({ length: 200 }, (_, index) => {
+    const t = index / 200
+    return [37.6 + t * 0.02, 55.7 + Math.sin(t * 40) * 0.0008] as [number, number]
+  })
+
+  it('на дальнем зуме линия отдаёт меньше вершин', () => {
+    const [far] = renderNote({
+      note: note({ id: 'line-1', kind: 'Line' }),
+      geometry: { kind: 'Line', coords: wavyLine },
+      group: null,
+      selected: false,
+      zoom: 8,
+    })
+
+    expect((far.coordinates as number[][]).length).toBeLessThan(wavyLine.length)
+  })
+
+  it('на крупном зуме линия отдаётся целиком', () => {
+    const [near] = renderNote({
+      note: note({ id: 'line-1', kind: 'Line' }),
+      geometry: { kind: 'Line', coords: wavyLine },
+      group: null,
+      selected: false,
+      zoom: 17,
+    })
+
+    expect((near.coordinates as number[][]).length).toBe(wavyLine.length)
+  })
+
+  it('без зума поведение прежнее: контур целиком', () => {
+    const [line] = renderNote({
+      note: note({ id: 'line-1', kind: 'Line' }),
+      geometry: { kind: 'Line', coords: wavyLine },
+      group: null,
+      selected: false,
+    })
+
+    expect((line.coordinates as number[][]).length).toBe(wavyLine.length)
+  })
+
+  it('полигон на дальнем зуме упрощается, но остаётся замкнутым', () => {
+    const dense: [number, number][] = []
+    for (let index = 0; index <= 400; index += 1) {
+      const angle = (2 * Math.PI * index) / 400
+      dense.push([37.6 + Math.cos(angle) * 0.01, 55.7 + Math.sin(angle) * 0.01])
+    }
+
+    const [polygon] = renderNote({
+      note: note({ id: 'poly-1', kind: 'Polygon' }),
+      geometry: { kind: 'Polygon', coords: dense },
+      group: null,
+      selected: false,
+      zoom: 8,
+    })
+
+    const ring = (polygon.coordinates as [number, number][][])[0]
+    expect(ring.length).toBeLessThan(dense.length)
+    expect(ring[0]).toEqual(ring[ring.length - 1])
+  })
+
+  it('большой круг на дальнем зуме сохраняет форму', () => {
+    const [circle] = renderNote({
+      note: note({ id: 'circle-1', kind: 'Circle' }),
+      geometry: { kind: 'Circle', center: [37.6, 55.7], radiusMeters: 20_000 },
+      group: null,
+      selected: false,
+      zoom: 8,
+    })
+
+    const ring = (circle.coordinates as [number, number][][])[0]
+    // Контур должен остаться многоугольником, а не превратиться в треугольник.
+    expect(ring.length).toBeGreaterThan(8)
+  })
+
+  it('крошечный круг на дальнем зуме схлопывается: он меньше пикселя', () => {
+    const [circle] = renderNote({
+      note: note({ id: 'circle-1', kind: 'Circle' }),
+      geometry: { kind: 'Circle', center: [37.6, 55.7], radiusMeters: 250 },
+      group: null,
+      selected: false,
+      zoom: 8,
+    })
+
+    const ring = (circle.coordinates as [number, number][][])[0]
+    // Это не потеря данных: 250 м на зуме 8 — доли пикселя, форма не видна.
+    expect(ring.length).toBeGreaterThanOrEqual(3)
+  })
+})

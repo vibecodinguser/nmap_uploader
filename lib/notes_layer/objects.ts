@@ -20,6 +20,7 @@ import {
   withOpacity,
 } from '@/lib/notes/model/style_resolution'
 import type { LonLat, Note, NoteGeometry, NoteGroup } from '@/lib/notes/model/types'
+import { SIMPLIFY_MAX_ZOOM, simplifyRing } from './simplify'
 
 export type RenderedKind = 'point' | 'line' | 'polygon' | 'label' | 'icon'
 
@@ -40,6 +41,11 @@ export type RenderNoteInput = {
   selected: boolean
   /** Готовые ссылки на файлы иконок: имя файла → data URL. */
   iconUrls?: Record<string, string>
+  /**
+   * Текущий зум карты: от него зависит, сколько вершин контура нужно рисовать.
+   * Без зума контур отдаётся целиком — так вызывают тесты и утилиты.
+   */
+  zoom?: number
 }
 
 export const SELECTED_STROKE_BONUS = 2
@@ -207,6 +213,7 @@ export const renderNote = ({
   group,
   selected,
   iconUrls = {},
+  zoom = SIMPLIFY_MAX_ZOOM + 1,
 }: RenderNoteInput): RenderedNote[] => {
   const style = resolveNoteStyle(note, group)
   const strokeColor = withOpacity(style.color, style.opacity)
@@ -241,20 +248,23 @@ export const renderNote = ({
     rendered.push({
       id: note.id,
       kind: 'line',
-      coordinates: geometry.coords,
+      coordinates: simplifyRing({ coordinates: geometry.coords, zoom }),
       options: { cursor: 'pointer', hintContent, strokeColor, strokeWidth },
       properties: { noteId: note.id, hintContent },
     })
   } else {
     const ring = polygonRing(geometry) ?? []
     if (ring.length === 0) return rendered
+    // На дальнем зуме вершины сливаются в пиксель: контур упрощается, чтобы
+    // редактор не считал тысячи невидимых точек.
+    const simplifiedRing = simplifyRing({ coordinates: ring, zoom })
 
     const hatchHref = buildHatchImageHref(style)
 
     rendered.push({
       id: note.id,
       kind: 'polygon',
-      coordinates: [ring],
+      coordinates: [simplifiedRing],
       options: {
         cursor: 'pointer',
         hintContent,
@@ -307,6 +317,7 @@ export const renderNotes = ({
   hiddenIds,
   selectedId,
   iconUrls,
+  zoom,
 }: {
   notes: readonly Note[]
   geometries: Record<string, NoteGeometry>
@@ -314,6 +325,8 @@ export const renderNotes = ({
   hiddenIds: readonly string[]
   selectedId: string | null
   iconUrls?: Record<string, string>
+  /** Текущий зум: от него зависит детализация контуров. */
+  zoom?: number
 }): RenderedNote[] => {
   const hidden = new Set(hiddenIds)
   const groupById = new Map(groups.map((group) => [group.id, group]))
@@ -331,6 +344,7 @@ export const renderNotes = ({
         group: note.groupId ? (groupById.get(note.groupId) ?? null) : null,
         selected: selectedId === note.id,
         iconUrls,
+        zoom,
       }),
     )
   }

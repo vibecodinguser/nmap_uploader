@@ -314,6 +314,7 @@ export class NotesLayer {
           hiddenIds: this.input.hiddenIds,
           selectedId: this.selectedId,
           iconUrls: this.input.iconUrls,
+          zoom,
         }),
         zoom,
       ),
