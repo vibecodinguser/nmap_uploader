@@ -1,0 +1,127 @@
+# План: рефакторинг заметок
+
+Ветка: `refactor/notes`. Исходное состояние — `master` после мержа переделки
+(`0d0e429`), ветка `feat/notes-rewrite` больше не используется: её содержимое уже
+в `master`.
+
+Предыдущая переделка описана в `docs/plans/notes-rewrite.md`; здесь — только
+приведение кода к структуре, без новых возможностей.
+
+## Что болит
+
+- `hooks/useNotesPanel.ts` — 740 строк логики, 33 поля наружу, 21 точка
+  `setSnapshot`, 17+ ответственностей. Отложенная правка живёт в одном слоте
+  (правка заметки A теряется при правке B), откатов четыре разных политики.
+- `lib/background/notes_handlers.ts` (408 строк) смешивает auth, валидацию,
+  запись на Диск, мерж шардов и рассылку. 0 тестов.
+- Три несовместимых типа снимка и три типа результата мутации;
+  `fromCache` пишется, но никем не читается.
+- `lib/notes/index.ts` реэкспортирует `storage/**` и `visibility`, из-за чего
+  `lib/notes_layer` (MAIN-мир карты) тянет Диск и `wxt/browser`.
+- Мёртвая, но сопровождаемая поверхность: icon-пайплайн без UI, locate-событие
+  без отправителя, 9 неимпортируемых типов сообщений, 6 неиспользуемых
+  i18n-ключей.
+
+## Граница работ
+
+Меняется только вертикальный срез заметок: домен, хранилище, background,
+слой карты, хост панели, UI, стили панели, тесты заметок. Смежное
+(`lib/yandex/disk_files.ts`, `relay_handlers.ts`, общие UI-примитивы) — только
+если без этого нельзя, отдельным коммитом.
+
+**Заморозка поведения**: UI, тексты, DOM-id, CSS-классы, имена событий между
+мирами и формат файлов на Диске не меняются. Найденные дефекты чинятся
+отдельными коммитами в конце, а не по ходу.
+
+## Целевой граф
+
+```
+lib/notes/
+  model/                чисто: ни I/O, ни браузера, ни React/ymaps
+    types.ts  palette.ts  autonames.ts  style_resolution.ts  grouping.ts
+    geometry/{bounds,circle,square}.ts
+    manifest/{schema,normalize,merge}.ts
+    shards.ts
+  protocol.ts           NotesSnapshot, NotesPatch, имена действий
+  storage/              порты и адаптеры: paths, remote, cache, repository, write_queue
+  application/          load, save_note, delete_note, save_group, delete_group,
+                        move_note, set_visibility, upload_icon
+  icons/                валидация, лимит 64 КБ, пути
+  panel/                state, reducer, selectors, rows (без React)
+  index.ts              фасад = model + protocol
+```
+
+`lib/notes_layer/`: `adapter.ts` (ymaps), `convert.ts` (снимок → вход слоя),
+`protocol.ts` (DOM-события и парсеры), `index.ts` — сборка.
+
+Правило: фасад `lib/notes/index.ts` не реэкспортирует `storage/**` и
+`application/**`. Их импортируют явными путями только background и панель.
+
+## Контракт
+
+- Один `NotesSnapshot` в `lib/notes/protocol.ts` для панели, background,
+  карты и слоя; ответы мутаций — `NotesPatch`
+  (`{ manifest, shards, removedShardKeys? }`).
+- Семантика мержа не меняется: аддитивное слияние по `updatedAt` остаётся,
+  надгробия для удалений — отдельная продуктовая задача.
+- JSON-ключи на Диске и `notes_hidden_ids` заморожены, включая `NoteStyle.fillColor`
+  (фактически флаг «заливка включена», а не цвет).
+
+## Коммиты
+
+Каждый коммит заканчивается зелёным `pnpm check` и собирается `pnpm build`.
+
+**A. Контракт**
+
+1. `test(notes)`: characterization — background и правка заметки.
+2. `refactor(notes)`: единый снимок и патч (`protocol.ts`).
+
+**B. Домен и транспорт**
+
+3. `refactor(notes)`: чистый домен (`model/**`) и тонкий фасад.
+4. `test(notes)`: тест границ импортов.
+5. `refactor(notes)`: use-case-слой background, хендлеры ~80 строк.
+
+**C. Состояние панели**
+
+6. `refactor(notes)`: редьюсер и селекторы (`panel/**`).
+7. `refactor(notes)`: разложить `useNotesPanel` на 5 хуков.
+8. `refactor(notes)`: компоненты панели (`App`, `NoteList`, `NoteProperties`,
+   `GroupHeader`).
+
+**D. Карта, мёртвое, стили**
+
+9. `refactor(notes_layer)`: адаптер, конверсия, протокол.
+10. `refactor(notes)`: иконки в `icons/**`, мёртвый код удалён.
+11. `refactor(styles)`: `notes_panel.css` разложен по блокам через `@import`.
+
+**E. Дефекты**
+
+12. `fix(notes)`: очередь правок по заметке вместо одного слота.
+13. `fix(notes)`: откаты через функциональное обновление.
+14. `fix(notes)`: undo привязан к своему удалению.
+15. `fix(notes)`: не писать геометрию отклонённой заметки.
+
+Порядок обязателен: фиксы пишутся уже по новым швам.
+
+## Критерии готовности
+
+- Ни один файл среза не больше 300 строк (исключение — `reducer.ts` с плоским
+  `switch`), функция ≤ 50, компонент и хук ≤ 150, пропсов ≤ 8.
+- `model/**` не импортирует `storage|application|panel|icons|wxt|react|ymaps`;
+  `protocol.ts` — только `model`; `panel/**` — только `model|protocol`.
+  Проверяется `tests/unit/notes/boundaries.test.ts`.
+- Фасад `lib/notes/index.ts` остаётся единственной точкой входа для остальных
+  слоёв и не тянет инфраструктуру.
+- Существующие тесты зелёные без переписывания ожиданий, кроме случаев, где
+  ожидание описывало дефект — тогда это видно в diff.
+- Поведение, тексты, id и классы совпадают: подтверждается ручным прогоном
+  `docs/checklists/notes-smoke.md`.
+
+## Тестовая стратегия
+
+Сначала characterization-тесты на текущем коде (коммит 1) для двух самых
+рискованных мест: background (load, broadcast, мутации, иконки, скрытие) и
+правка заметки в панели (дебаунс, очередь, откат, undo). Остальные швы
+тестируются уже после переноса. Плюс контрактный тест на имена протокола и
+тест границ из коммита 4.
