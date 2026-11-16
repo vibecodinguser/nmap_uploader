@@ -86,14 +86,18 @@ export const NoteRow = ({
         onDrop(event)
       }}
     >
-      <input
-        type="checkbox"
-        id={ids.check}
-        className="notes-panel__row-check"
-        checked={checked}
-        aria-label={note.name}
-        onChange={(event) => onCheck(event.target.checked)}
-      />
+      {/* Обёртка нужна ради галочки: у нативного чекбокса она выходит за
+          пределы квадрата, а у `input` нет псевдоэлементов. */}
+      <span className="notes-panel__check">
+        <input
+          type="checkbox"
+          id={ids.check}
+          className="notes-panel__row-check"
+          checked={checked}
+          aria-label={note.name}
+          onChange={(event) => onCheck(event.target.checked)}
+        />
+      </span>
 
       <button type="button" id={ids.main} className="notes-panel__row-main" onClick={onSelect}>
         <span className="notes-panel__row-icon" aria-hidden="true">

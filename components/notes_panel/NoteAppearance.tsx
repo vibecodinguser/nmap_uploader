@@ -61,34 +61,38 @@ export const NoteAppearance = ({
       {isFilledKind(note.kind) && (
         <>
           <label className="notes-panel__field notes-panel__field--checkbox">
-            <input
-              type="checkbox"
-              checked={resolved.hasFill}
-              onChange={(event) =>
-                onPatch({
-                  style: {
-                    ...note.style,
-                    fillColor: event.target.checked ? resolved.color : null,
-                  },
-                })
-              }
-            />
+            <span className="notes-panel__check">
+              <input
+                type="checkbox"
+                checked={resolved.hasFill}
+                onChange={(event) =>
+                  onPatch({
+                    style: {
+                      ...note.style,
+                      fillColor: event.target.checked ? resolved.color : null,
+                    },
+                  })
+                }
+              />
+            </span>
             <span>{t('notesPanel.fill')}</span>
           </label>
 
           <label className="notes-panel__field notes-panel__field--checkbox">
-            <input
-              type="checkbox"
-              checked={note.style.hatch !== null}
-              onChange={(event) =>
-                onPatch({
-                  style: {
-                    ...note.style,
-                    hatch: event.target.checked ? { ...DEFAULT_HATCH } : null,
-                  },
-                })
-              }
-            />
+            <span className="notes-panel__check">
+              <input
+                type="checkbox"
+                checked={note.style.hatch !== null}
+                onChange={(event) =>
+                  onPatch({
+                    style: {
+                      ...note.style,
+                      hatch: event.target.checked ? { ...DEFAULT_HATCH } : null,
+                    },
+                  })
+                }
+              />
+            </span>
             <span>{t('notesPanel.hatch')}</span>
           </label>
 
@@ -142,11 +146,13 @@ export const NoteAppearance = ({
       )}
 
       <label className="notes-panel__field notes-panel__field--checkbox">
-        <input
-          type="checkbox"
-          checked={note.showLabel}
-          onChange={(event) => onPatch({ showLabel: event.target.checked })}
-        />
+        <span className="notes-panel__check">
+          <input
+            type="checkbox"
+            checked={note.showLabel}
+            onChange={(event) => onPatch({ showLabel: event.target.checked })}
+          />
+        </span>
         <span>{t('notesPanel.showLabel')}</span>
       </label>
     </>

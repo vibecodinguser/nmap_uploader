@@ -29,7 +29,8 @@
      (`--control_theme_islands*`, `--checkbox_theme_islands__tick--color`). */
   --notes-checkbox-border: rgb(0 0 0 / 20%);
   --notes-checkbox-border-hover: rgb(0 0 0 / 30%);
-  --notes-checkbox-checked-bg: #ffeb99;
+  --notes-checkbox-checked-bg: #fff6cc;
+  --notes-checkbox-checked-border: #ffcc00;
 }
 
 .dark,
@@ -40,4 +41,5 @@
   --notes-checkbox-border: rgb(255 255 255 / 50%);
   --notes-checkbox-border-hover: rgb(255 255 255 / 70%);
   --notes-checkbox-checked-bg: #ffe680;
+  --notes-checkbox-checked-border: #ffdb4d;
 }

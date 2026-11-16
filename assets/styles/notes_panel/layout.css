@@ -66,25 +66,62 @@ body {
  * Чекбокс в стиле нативного `nk-checkbox__box`.
  *
  * Панель живёт в iframe, CSS редактора внутрь не протекает, поэтому нативный
- * класс взять неоткуда — вид повторён по значениям токенов самой карты
- * (`--control_theme_islands*` и `--checkbox_theme_islands__tick--color`),
- * снятым со страницы редактора. Токены объявлены в `tokens.css`.
+ * класс взять неоткуда. Вид повторён по скриншоту редактора и его токенам:
+ *
+ *   квадрат   18 px, радиус 4 px, рамка 2 px золотым (#e6b800 — токен
+ *             `--tag--border-color`);
+ *   заливка   #ffeb99 в светлой теме, #ffe680 в тёмной
+ *             (`--button_theme_islands_checked`);
+ *   галочка   серая, крупная, выходит за правый верхний угол квадрата —
+ *             это и есть узнаваемая черта нативного чекбокса.
+ *
+ * Галочка рисуется псевдоэлементом обёртки: у `input` псевдоэлементов нет, а
+ * выходить за границы элемент с `background-image` не может.
  */
+.notes-panel__check {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.notes-panel__check::after {
+  content: '';
+  position: absolute;
+  top: -10px;
+  right: -11px;
+  width: 26px;
+  height: 26px;
+  background: center / contain no-repeat;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.08s ease;
+}
+
+.notes-panel__check:has(input:checked)::after {
+  opacity: 1;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237f7f7f' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 14 9 19 21 3'/%3E%3C/svg%3E");
+}
+
+.dark .notes-panel__check:has(input:checked)::after,
+:root.dark .notes-panel__check:has(input:checked)::after {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13 10 18 20 5'/%3E%3C/svg%3E");
+}
+
 .notes-panel__row-check,
 .notes-panel__field--checkbox input {
   flex: 0 0 auto;
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   margin: 0;
   appearance: none;
   border: 1px solid var(--notes-checkbox-border);
-  border-radius: 3px;
+  border-radius: 4px;
   background-color: var(--background, #ffffff);
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: 12px 12px;
   cursor: pointer;
-  transition: border-color 0.1s ease;
+  box-sizing: border-box;
+  transition:
+    border-color 0.1s ease,
+    background-color 0.1s ease;
 }
 
 .notes-panel__row-check:hover,
@@ -92,22 +129,12 @@ body {
   border-color: var(--notes-checkbox-border-hover);
 }
 
-/*
- * Галочка — картинка, а не псевдоэлемент: у `input` его нет. Цвет зашит в
- * `data:`-URL, поэтому для тёмной темы картинка задаётся отдельно — ровно как
- * нативный токен `--checkbox_theme_islands__tick--color`.
- */
+/* Отмеченный: толстая золотая рамка и палевая заливка. Толщина входит в
+   размер (`border-box`), поэтому квадрат не «прыгает» при переключении. */
 .notes-panel__row-check:checked,
 .notes-panel__field--checkbox input:checked {
+  border: 3px solid var(--notes-checkbox-checked-border);
   background-color: var(--notes-checkbox-checked-bg);
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.3 4.9 8.7 9.5 3.6' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-}
-
-.dark .notes-panel__row-check:checked,
-.dark .notes-panel__field--checkbox input:checked,
-:root.dark .notes-panel__row-check:checked,
-:root.dark .notes-panel__field--checkbox input:checked {
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.3 4.9 8.7 9.5 3.6' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
 .notes-panel__row-check:focus-visible,
