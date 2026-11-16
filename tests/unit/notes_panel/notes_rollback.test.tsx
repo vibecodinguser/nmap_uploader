@@ -70,9 +70,15 @@ describe('откат неудачного создания', () => {
     await waitFor(() => expect(result.current.status).toBe('ready'))
 
     act(() => {
+      result.current.startDrawing('Point')
+    })
+    act(() => {
       for (const listener of listeners) {
         listener({ action: NOTES_DRAW_FINISHED_ACTION, kind: 'Point', coords: [[37.6, 55.7]] })
       }
+    })
+    act(() => {
+      result.current.startDrawing('Point')
     })
     act(() => {
       for (const listener of listeners) {

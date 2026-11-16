@@ -63,6 +63,11 @@ describe('useNotesPanel: создание', () => {
     const { result } = renderPanel()
     await waitFor(() => expect(result.current.status).toBe('ready'))
 
+    // Панель ждёт результат рисования только в режиме рисования: иначе одно
+    // сообщение, пришедшее по двум каналам, дало бы две заметки.
+    act(() => {
+      result.current.startDrawing('Point')
+    })
     act(() => {
       for (const listener of listeners) {
         listener({ action: NOTES_DRAW_FINISHED_ACTION, kind: 'Point', coords: [[37, 55]] })
@@ -91,6 +96,9 @@ describe('useNotesPanel: создание', () => {
     const { result } = renderPanel()
     await waitFor(() => expect(result.current.status).toBe('ready'))
 
+    act(() => {
+      result.current.startDrawing('Line')
+    })
     act(() => {
       for (const listener of listeners) {
         listener({

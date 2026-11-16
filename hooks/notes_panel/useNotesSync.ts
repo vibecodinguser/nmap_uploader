@@ -33,6 +33,19 @@ export const useNotesSync = (
     createNoteRef.current = createNote
   }, [createNote])
 
+  /**
+   * Режим рисования в изменяемой ссылке.
+   *
+   * `NOTES_DRAW_FINISHED` приходит в панель дважды: напрямую от content script
+   * (`runtime.sendMessage` из content script получают все страницы расширения,
+   * включая этот iframe) и ещё раз от background, который пересылает событие
+   * вкладкам и панели. Ссылка, а не состояние: гасить режим нужно в момент
+   * первого сообщения, иначе второе, пришедшее в той же пачке, успеет создать
+   * ещё одну заметку.
+   */
+  const drawingKindRef = useRef(store.state.drawingKind)
+  drawingKindRef.current = store.state.drawingKind
+
   // Загрузка: при монтировании, после входа и по кнопке «Повторить».
   const loadNotes = useCallback(
     (options: { silent?: boolean } = {}) => {
@@ -86,6 +99,11 @@ export const useNotesSync = (
           break
         }
         case NOTES_DRAW_FINISHED_ACTION: {
+          // Ждём результат только если действительно рисуем: без этой проверки
+          // одно нажатие давало две заметки — сообщение приходит по двум каналам.
+          if (!drawingKindRef.current) break
+          drawingKindRef.current = null
+
           const kind = message.kind
           const coords = message.coords
           dispatch({ type: 'drawingStopped' })
