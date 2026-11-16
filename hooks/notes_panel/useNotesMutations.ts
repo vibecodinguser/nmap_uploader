@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useLocale } from '@/hooks/useLocale'
 import { formatDateDisplay } from '@/lib/date_format'
 import { buildAutoNoteName } from '@/lib/notes/model/autonames'
@@ -29,6 +29,17 @@ export const useNotesMutations = (
 ) => {
   const { t } = useLocale()
   const geometries = useMemo(() => selectGeometries(state), [state])
+  /**
+   * Последнее состояние на момент ответа Диска.
+   *
+   * Ошибка записи приходит через секунды после вызова, и снимок из замыкания к
+   * этому времени устаревает: откат по нему унёс бы и то, что пользователь
+   * успел создать или изменить за это время.
+   */
+  const latest = useRef(state)
+  useEffect(() => {
+    latest.current = state
+  }, [state])
 
   const createNote = useCallback(
     (kind: DrawableNoteKind, geometry: NoteGeometry) => {
@@ -71,7 +82,8 @@ export const useNotesMutations = (
           onError: () => {
             // Не записалось — убираем заметку с карты и из списка, чтобы не
             // осталось призрака, которого нет на других устройствах.
-            if (state.snapshot) postPreview(withoutNote(state.snapshot, note.id))
+            const current = latest.current.snapshot
+            if (current) postPreview(withoutNote(current, note.id))
             dispatch({ type: 'noteRemoved', noteId: note.id })
             dispatch({ type: 'errorChanged', error: t('notesPanel.createFailed') })
           },

@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useLocale } from '@/hooks/useLocale'
 import type { NoteGeometry } from '@/lib/notes/model/types'
 import { withNote, withoutNote } from '@/lib/notes/panel/edits'
@@ -19,6 +19,11 @@ export const useNoteRemoval = (
 ) => {
   const { t } = useLocale()
   const geometries = useMemo(() => selectGeometries(state), [state])
+  /** Последнее состояние на момент ответа Диска — см. `useNotesMutations`. */
+  const latest = useRef(state)
+  useEffect(() => {
+    latest.current = state
+  }, [state])
 
   const removeNote = useCallback(
     (noteId: string) => {
@@ -45,7 +50,8 @@ export const useNoteRemoval = (
             if (response.ok) dispatch({ type: 'patchApplied', patch: response.patch })
           },
           onError: () => {
-            if (state.snapshot) postPreview(withNote(state.snapshot, note, geometry))
+            const current = latest.current.snapshot
+            if (current) postPreview(withNote(current, note, geometry))
             dispatch({ type: 'noteRestored', entry: { note, geometry } })
             dispatch({ type: 'errorChanged', error: t('notesPanel.saveError') })
           },
@@ -70,7 +76,8 @@ export const useNoteRemoval = (
           if (response.ok) dispatch({ type: 'patchApplied', patch: response.patch })
         },
         onError: () => {
-          if (state.snapshot) postPreview(withoutNote(state.snapshot, note.id))
+          const current = latest.current.snapshot
+          if (current) postPreview(withoutNote(current, note.id))
           dispatch({ type: 'noteRemoved', noteId: note.id })
           dispatch({ type: 'errorChanged', error: t('notesPanel.saveError') })
         },
