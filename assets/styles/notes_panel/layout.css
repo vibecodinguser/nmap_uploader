@@ -87,24 +87,29 @@ body {
 .notes-panel__check::after {
   content: '';
   position: absolute;
-  top: -10px;
-  right: -11px;
-  width: 26px;
-  height: 26px;
+
+  /* Центр галочки совпадает с центром квадрата: `translate(-50%, -50%)`
+     считается от собственных размеров, поэтому размер галочки можно менять,
+     не пересчитывая отступы. Галочка крупнее квадрата — она выходит за угол. */
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
   background: center / contain no-repeat;
   opacity: 0;
   pointer-events: none;
+  transform: translate(-50%, -50%);
   transition: opacity 0.08s ease;
 }
 
 .notes-panel__check:has(input:checked)::after {
   opacity: 1;
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237f7f7f' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 14 9 19 21 3'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237f7f7f' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 15 8.5 20 20.5 4'/%3E%3C/svg%3E");
 }
 
 .dark .notes-panel__check:has(input:checked)::after,
 :root.dark .notes-panel__check:has(input:checked)::after {
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13 10 18 20 5'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 15 8.5 20 20.5 4'/%3E%3C/svg%3E");
 }
 
 .notes-panel__row-check,
@@ -112,6 +117,8 @@ body {
   flex: 0 0 auto;
   width: 20px;
   height: 20px;
+
+  /* Отступы задаёт обёртка: у неё считается центр галочки. */
   margin: 0;
   appearance: none;
   border: 1px solid var(--notes-checkbox-border);
@@ -336,8 +343,8 @@ body {
 /* Значок внутри квадратной кнопки: стрелки и крестик заданы текстом, поэтому
    размер задаётся шрифтом, а не иконкой. */
 .notes-panel__icon-button svg {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
 }
 
 .notes-panel__icon-button:hover {
