@@ -23,3 +23,6 @@ export const notesIconPath = (fileName: string): string => `${NOTES_ICONS_FOLDER
  */
 export const isAllowedIconFileName = (fileName: string): boolean =>
   /^[0-9a-f-]{36}\.(png|svg|webp)$/i.test(fileName)
+
+export * from './builtin'
+export * from './svg'

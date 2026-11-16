@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { isAllowedIconFileName, NOTES_ICON_MAX_BYTES, notesIconPath } from '@/lib/notes/icons'
+import {
+  BUILTIN_ICON_VIEWBOX,
+  BUILTIN_ICONS,
+  buildBuiltinIconHref,
+  findBuiltinIcon,
+  isAllowedIconFileName,
+  isBuiltinIconId,
+  NOTES_ICON_MAX_BYTES,
+  notesIconPath,
+} from '@/lib/notes/icons'
 import { parseIconUploadRequest } from '@/lib/notes/icons/request'
 
 const fileName = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa.png'
@@ -68,5 +77,76 @@ describe('parseIconUploadRequest', () => {
     expect(parseIconUploadRequest({ fileName, contentType: 'image/png', data: exact }).ok).toBe(
       true,
     )
+  })
+})
+
+describe('встроенный набор', () => {
+  it('достаточно велик для реального выбора', () => {
+    expect(BUILTIN_ICONS.length).toBeGreaterThanOrEqual(30)
+  })
+
+  it('id уникальны и непустые', () => {
+    const ids = BUILTIN_ICONS.map((icon) => icon.id)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(ids.every((id) => id.trim().length > 0)).toBe(true)
+  })
+
+  it('у каждой иконки есть хотя бы одна фигура с атрибутами', () => {
+    for (const icon of BUILTIN_ICONS) {
+      expect(icon.shapes.length).toBeGreaterThan(0)
+      for (const shape of icon.shapes) {
+        expect(shape.tag.length).toBeGreaterThan(0)
+        expect(Object.keys(shape.attrs).length).toBeGreaterThan(0)
+      }
+    }
+  })
+
+  it('id годится для записи в манифест: латиница, цифры, дефис', () => {
+    for (const icon of BUILTIN_ICONS) {
+      expect(icon.id).toMatch(/^[a-z0-9-]+$/)
+    }
+  })
+
+  it('узнаёт только существующие id', () => {
+    expect(isBuiltinIconId('map-pin')).toBe(true)
+    expect(isBuiltinIconId('no-such-icon')).toBe(false)
+    expect(isBuiltinIconId(42)).toBe(false)
+    expect(findBuiltinIcon('no-such-icon')).toBeNull()
+    expect(findBuiltinIcon('map-pin')?.id).toBe('map-pin')
+  })
+})
+
+describe('иконка для карты', () => {
+  const icon = findBuiltinIcon('map-pin')
+
+  it('отдаёт data URL с цветом заметки', () => {
+    const href = buildBuiltinIconHref({ icon: icon!, color: '#e96b7c' })
+
+    expect(href.startsWith('data:image/svg+xml')).toBe(true)
+    const svg = decodeURIComponent(href)
+    expect(svg).toContain('stroke="#e96b7c"')
+  })
+
+  it('рисует глиф дважды: белая подложка и цвет', () => {
+    const svg = decodeURIComponent(buildBuiltinIconHref({ icon: icon!, color: '#1a8cff' }))
+
+    // Тонкие линии на спутниковом снимке без подложки теряются.
+    expect(svg).toContain('stroke="#ffffff"')
+    expect(svg.match(/<path/g)).toHaveLength(2)
+  })
+
+  it('холст совпадает с viewBox глифов', () => {
+    const svg = decodeURIComponent(buildBuiltinIconHref({ icon: icon!, color: '#1a8cff' }))
+
+    expect(svg).toContain(`width="${BUILTIN_ICON_VIEWBOX}"`)
+    expect(svg).toContain(`viewBox="0 0 ${BUILTIN_ICON_VIEWBOX} ${BUILTIN_ICON_VIEWBOX}"`)
+  })
+
+  it('каждая встроенная иконка превращается в картинку', () => {
+    for (const item of BUILTIN_ICONS) {
+      const href = buildBuiltinIconHref({ icon: item, color: '#000000' })
+      expect(href).toContain('data:image/svg+xml')
+      expect(decodeURIComponent(href)).toContain('<svg')
+    }
   })
 })
