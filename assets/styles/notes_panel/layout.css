@@ -65,89 +65,117 @@ body {
 /*
  * Чекбокс в стиле нативного `nk-checkbox__box`.
  *
- * Панель живёт в iframe, CSS редактора внутрь не протекает, поэтому нативный
- * класс взять неоткуда. Вид повторён по скриншоту редактора и его токенам:
+ * Значения сняты с боевого CSS редактора (`app-bundle.*.css` и маска галочки),
+ * а не подобраны на глаз:
  *
- *   квадрат   18 px, радиус 4 px, рамка 2 px золотым (#e6b800 — токен
- *             `--tag--border-color`);
- *   заливка   #ffeb99 в светлой теме, #ffe680 в тёмной
- *             (`--button_theme_islands_checked`);
- *   галочка   серая, крупная, выходит за правый верхний угол квадрата —
- *             это и есть узнаваемая черта нативного чекбокса.
+ *   .nk-checkbox__box            background: var(--control...border); radius 3px
+ *   .nk-checkbox__box::before    inset 1px, radius 2px, background: фон страницы
+ *   .nk-checkbox__box::after     маска галочки 15×15, left 2px, top -5px,
+ *                                background: --checkbox__tick--color
+ *   .nk-checkbox_checked __box   background: #e6b800
+ *   .nk-checkbox_checked ::before background: #ffeb99
+ *   размер m: 14px, размер l: 17px
  *
- * Галочка рисуется псевдоэлементом обёртки: у `input` псевдоэлементов нет, а
- * выходить за границы элемент с `background-image` не может.
+ * То есть рамка — это не `border`, а фон внешнего квадрата, а заливка —
+ * внутренний слой с отступом 1px. Такой рисунок даёт ровно 1px рамки с
+ * радиусом 3 снаружи и 2 внутри, как в редакторе.
+ *
+ * Галочка намеренно больше квадрата (15 при 14) и сдвинута вверх-вправо: она
+ * выходит за угол. Геометрия ниже выражена через размер квадрата, поэтому при
+ * изменении размера пропорции сохраняются.
+ *
+ * Цвета отмеченного состояния в редакторе заданы жёстко и одинаковы в обеих
+ * темах; цвет галочки приходит из токена: #000 в светлой, #999 в тёмной.
  */
 .notes-panel__check {
+  --check-size: 18px;
+  --check-border: rgb(0 0 0 / 20%);
+  --check-fill: var(--background, #ffffff);
+  --check-tick: #000000;
+
   position: relative;
   display: inline-flex;
   flex: 0 0 auto;
+  width: var(--check-size);
+  height: var(--check-size);
 }
 
+.dark .notes-panel__check,
+:root.dark .notes-panel__check {
+  --check-border: rgb(255 255 255 / 50%);
+  --check-tick: #999999;
+}
+
+/* Внешний квадрат — это и есть рамка. */
+.notes-panel__row-check,
+.notes-panel__field--checkbox input {
+  flex: 0 0 auto;
+  width: var(--check-size, 18px);
+  height: var(--check-size, 18px);
+  margin: 0;
+  appearance: none;
+  border: 0;
+  border-radius: 3px;
+  background: var(--check-border, rgb(0 0 0 / 20%));
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+/* Внутренняя заливка: отступ 1px — это толщина рамки. */
+.notes-panel__check::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: 2px;
+  background: var(--check-fill, #ffffff);
+  pointer-events: none;
+}
+
+/* Галочка: маска из редактора, цвет — фоном. */
 .notes-panel__check::after {
-  content: '';
+  content: "";
   position: absolute;
 
-  /* Центр галочки совпадает с центром квадрата: `translate(-50%, -50%)`
-     считается от собственных размеров, поэтому размер галочки можно менять,
-     не пересчитывая отступы. Галочка крупнее квадрата — она выходит за угол. */
-  top: 50%;
-  left: 50%;
-  width: 20px;
-  height: 20px;
-  background: center / contain no-repeat;
+  /* Галочка чуть крупнее квадрата и стоит по центру: `left`/`top` в
+     процентах считаются от обёртки, поэтому смещение — половина разницы
+     размеров. */
+  width: calc(var(--check-size) * 15 / 14);
+  height: calc(var(--check-size) * 15 / 14);
+  left: calc((var(--check-size) - var(--check-size) * 15 / 14) / 2);
+  top: calc((var(--check-size) - var(--check-size) * 15 / 14) / 2);
+  background: var(--check-tick, #000000);
   opacity: 0;
   pointer-events: none;
-  transform: translate(-50%, -50%);
-  transition: opacity 0.08s ease;
+  mask-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='16'%3E%3Cpath d='m13.5.5-8 12L1.7 8l-1 1.6L5.6 15l9.1-13.4z'/%3E%3C/svg%3E");
+  mask-size: 100%;
+  mask-repeat: no-repeat;
+  transition: transform 0.05s ease-out, opacity 0.05s ease-out;
+}
+
+/* Отмеченный: золотая рамка и палевая заливка, галочка проявляется. */
+.notes-panel__check:has(input:checked)::before {
+  background: #ffeb99;
 }
 
 .notes-panel__check:has(input:checked)::after {
   opacity: 1;
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237f7f7f' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 15 8.5 20 20.5 4'/%3E%3C/svg%3E");
 }
 
-.dark .notes-panel__check:has(input:checked)::after,
-:root.dark .notes-panel__check:has(input:checked)::after {
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 15 8.5 20 20.5 4'/%3E%3C/svg%3E");
-}
-
-.notes-panel__row-check,
-.notes-panel__field--checkbox input {
-  flex: 0 0 auto;
-  width: 20px;
-  height: 20px;
-
-  /* Отступы задаёт обёртка: у неё считается центр галочки. */
-  margin: 0;
-  appearance: none;
-  border: 1px solid var(--notes-checkbox-border);
-  border-radius: 4px;
-  background-color: var(--background, #ffffff);
-  cursor: pointer;
-  box-sizing: border-box;
-  transition:
-    border-color 0.1s ease,
-    background-color 0.1s ease;
-}
-
-.notes-panel__row-check:hover,
-.notes-panel__field--checkbox input:hover {
-  border-color: var(--notes-checkbox-border-hover);
-}
-
-/* Отмеченный: толстая золотая рамка и палевая заливка. Толщина входит в
-   размер (`border-box`), поэтому квадрат не «прыгает» при переключении. */
 .notes-panel__row-check:checked,
 .notes-panel__field--checkbox input:checked {
-  border: 3px solid var(--notes-checkbox-checked-border);
-  background-color: var(--notes-checkbox-checked-bg);
+  background: #e6b800;
 }
 
-.notes-panel__row-check:focus-visible,
-.notes-panel__field--checkbox input:focus-visible {
-  outline: 2px solid var(--notes-accent, #ffdb4d);
-  outline-offset: 1px;
+/* Фокус: как у редактора — золотое кольцо по внутреннему слою. */
+.notes-panel__check:has(input:focus-visible)::before {
+  box-shadow:
+    0 0 0 1px #ffcc00,
+    inset 0 0 0 1px #ffcc00;
+}
+
+/* Недоступный: приглушённая заливка и полупрозрачная галочка. */
+.notes-panel__check:has(input:disabled) {
+  opacity: 0.6;
 }
 
 /* Подпись, нужная только скринридеру. */
