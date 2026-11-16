@@ -65,9 +65,10 @@ body {
 /*
  * Чекбокс в стиле нативного `nk-checkbox__box`.
  *
- * В панели нет CSS редактора (она живёт в iframe), поэтому нативный класс
- * неоткуда взять — размер и вид повторены вручную: 16 px, радиус 3 px, жёлтая
- * заливка с тёмной галочкой. Совпадает с чекбоксами в настройках редактора.
+ * Панель живёт в iframe, CSS редактора внутрь не протекает, поэтому нативный
+ * класс взять неоткуда — вид повторён по значениям токенов самой карты
+ * (`--control_theme_islands*` и `--checkbox_theme_islands__tick--color`),
+ * снятым со страницы редактора. Токены объявлены в `tokens.css`.
  */
 .notes-panel__row-check,
 .notes-panel__field--checkbox input {
@@ -76,20 +77,37 @@ body {
   height: 16px;
   margin: 0;
   appearance: none;
-  border: 1px solid var(--border, #e6e6e6);
+  border: 1px solid var(--notes-checkbox-border);
   border-radius: 3px;
   background-color: var(--background, #ffffff);
   background-position: center;
   background-repeat: no-repeat;
   background-size: 12px 12px;
   cursor: pointer;
+  transition: border-color 0.1s ease;
 }
 
+.notes-panel__row-check:hover,
+.notes-panel__field--checkbox input:hover {
+  border-color: var(--notes-checkbox-border-hover);
+}
+
+/*
+ * Галочка — картинка, а не псевдоэлемент: у `input` его нет. Цвет зашит в
+ * `data:`-URL, поэтому для тёмной темы картинка задаётся отдельно — ровно как
+ * нативный токен `--checkbox_theme_islands__tick--color`.
+ */
 .notes-panel__row-check:checked,
 .notes-panel__field--checkbox input:checked {
-  border-color: var(--notes-accent, #ffdb4d);
-  background-color: var(--notes-accent, #ffdb4d);
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.3 4.9 8.7 9.5 3.6' fill='none' stroke='%231f1f1f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-color: var(--notes-checkbox-checked-bg);
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.3 4.9 8.7 9.5 3.6' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.dark .notes-panel__row-check:checked,
+.dark .notes-panel__field--checkbox input:checked,
+:root.dark .notes-panel__row-check:checked,
+:root.dark .notes-panel__field--checkbox input:checked {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.3 4.9 8.7 9.5 3.6' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
 .notes-panel__row-check:focus-visible,

@@ -24,6 +24,12 @@
 
   /* Один размер глифов вида: строка списка, фильтры, выбор фигуры. */
   --notes-icon-size: 22px;
+
+  /* Чекбокс: значения сняты с токенов самого редактора
+     (`--control_theme_islands*`, `--checkbox_theme_islands__tick--color`). */
+  --notes-checkbox-border: rgb(0 0 0 / 20%);
+  --notes-checkbox-border-hover: rgb(0 0 0 / 30%);
+  --notes-checkbox-checked-bg: #ffeb99;
 }
 
 .dark,
@@ -31,4 +37,7 @@
   --notes-link: #7fb2ff;
   --notes-hover: rgb(255 255 255 / 8%);
   --notes-hover-strong: rgb(255 255 255 / 14%);
+  --notes-checkbox-border: rgb(255 255 255 / 50%);
+  --notes-checkbox-border-hover: rgb(255 255 255 / 70%);
+  --notes-checkbox-checked-bg: #ffe680;
 }
