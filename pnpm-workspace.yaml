@@ -2,3 +2,22 @@ allowBuilds:
   esbuild: true
   msw: true
   spawn-sync: true
+
+# Закрытие Dependabot-алертов в инструментах сборки и тестов.
+#
+# Все уязвимые пакеты приходят транзитивно из `wxt`, `vitest` и `happy-dom` —
+# в рантайм расширения они не попадают. Тем не менее каждый запинен
+# минимальной исправленной версией, а не просто «последней»: у `fx-runner`
+# `shell-quote` зафиксирован точной версией 1.7.3, у `web-ext-run` так же
+# зафиксированы `tmp` и `firefox-profile`, поэтому без override исправление
+# не подхватывается.
+#
+# `firefox-profile` и `uuid` подняты целиком, а не принудительно:
+# firefox-profile 4.7.1 сам перешёл на исправленный `adm-zip ~0.6`, а uuid 11
+# сохраняет `require('uuid').v4`, которым пользуется `node-notifier`.
+overrides:
+  esbuild: ^0.28.1
+  firefox-profile: ^4.7.1
+  shell-quote: ^1.8.5
+  tmp: ^0.2.6
+  uuid: ^11.1.1
