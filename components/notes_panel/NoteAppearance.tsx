@@ -19,7 +19,9 @@ import { IconPicker } from './IconPicker'
  * Настройки собраны в две рамки, как блок узора штриховки: одиночные поля
  * рассыпались по сетке, и было не видно, что прозрачность с толщиной границы
  * относятся к одной вещи, а заливка со штриховкой и подписью — к другой.
- * Внутри рамки поля идут в столбик и занимают её ширину целиком.
+ *
+ * Рамки стоят рядом, в ширину (`notes-panel__field-groups`): на широкой панели
+ * они делят строку пополам, на узкой сами встают друг под другом.
  *
  * Отдельных цветов у заливки и штриховки нет — обе рисуются цветом объекта.
  * Поэтому в `fillColor` хранится тот же цвет: по нему видно, включена ли
@@ -61,109 +63,113 @@ export const NoteAppearance = ({
         }
       />
 
-      <fieldset className="notes-panel__field-group">
-        <legend className="notes-panel__field-group-title">{t('notesPanel.groupFill')}</legend>
-
-        {isFilledKind(note.kind) && (
-          <>
-            <label className="notes-panel__field notes-panel__field--checkbox">
-              <span className="notes-panel__check">
-                <input
-                  type="checkbox"
-                  checked={resolved.hasFill}
-                  onChange={(event) =>
-                    onPatch({
-                      style: {
-                        ...note.style,
-                        fillColor: event.target.checked ? resolved.color : null,
-                      },
-                    })
-                  }
-                />
-              </span>
-              <span>{t('notesPanel.fill')}</span>
-            </label>
-
-            <label className="notes-panel__field notes-panel__field--checkbox">
-              <span className="notes-panel__check">
-                <input
-                  type="checkbox"
-                  checked={note.style.hatch !== null}
-                  onChange={(event) =>
-                    onPatch({
-                      style: {
-                        ...note.style,
-                        hatch: event.target.checked ? { ...DEFAULT_HATCH } : null,
-                      },
-                    })
-                  }
-                />
-              </span>
-              <span>{t('notesPanel.hatch')}</span>
-            </label>
-
-            {note.style.hatch && (
-              <HatchPicker
-                hatch={note.style.hatch}
-                onChange={(hatch) => onPatch({ style: { ...note.style, hatch } })}
-              />
-            )}
-          </>
-        )}
-
-        <label className="notes-panel__field notes-panel__field--checkbox">
-          <span className="notes-panel__check">
-            <input
-              type="checkbox"
-              checked={note.showLabel}
-              onChange={(event) => onPatch({ showLabel: event.target.checked })}
-            />
-          </span>
-          <span>{t('notesPanel.showLabel')}</span>
-        </label>
-      </fieldset>
-
-      {hasAdjustableStroke(note.kind) && (
+      <div className="notes-panel__field-groups">
         <fieldset className="notes-panel__field-group">
-          <legend className="notes-panel__field-group-title">{t('notesPanel.groupStroke')}</legend>
+          <legend className="notes-panel__field-group-title">{t('notesPanel.groupFill')}</legend>
 
-          <label className="notes-panel__field">
-            <span className="notes-panel__field-label notes-panel__field-label--split">
-              {t('notesPanel.opacity')}
-              <span className="notes-panel__value">{Math.round(note.style.opacity * 100)}%</span>
-            </span>
-            <input
-              type="range"
-              className="notes-panel__range"
-              min={NOTE_OPACITY_MIN}
-              max={NOTE_OPACITY_MAX}
-              step={0.05}
-              value={note.style.opacity}
-              onChange={(event) =>
-                onPatch({ style: { ...note.style, opacity: Number(event.target.value) } })
-              }
-            />
-          </label>
+          {isFilledKind(note.kind) && (
+            <>
+              <label className="notes-panel__field notes-panel__field--checkbox">
+                <span className="notes-panel__check">
+                  <input
+                    type="checkbox"
+                    checked={resolved.hasFill}
+                    onChange={(event) =>
+                      onPatch({
+                        style: {
+                          ...note.style,
+                          fillColor: event.target.checked ? resolved.color : null,
+                        },
+                      })
+                    }
+                  />
+                </span>
+                <span>{t('notesPanel.fill')}</span>
+              </label>
 
-          <label className="notes-panel__field">
-            <span className="notes-panel__field-label notes-panel__field-label--split">
-              {t('notesPanel.strokeWidth')}
-              <span className="notes-panel__value">{note.style.strokeWidth}</span>
+              <label className="notes-panel__field notes-panel__field--checkbox">
+                <span className="notes-panel__check">
+                  <input
+                    type="checkbox"
+                    checked={note.style.hatch !== null}
+                    onChange={(event) =>
+                      onPatch({
+                        style: {
+                          ...note.style,
+                          hatch: event.target.checked ? { ...DEFAULT_HATCH } : null,
+                        },
+                      })
+                    }
+                  />
+                </span>
+                <span>{t('notesPanel.hatch')}</span>
+              </label>
+
+              {note.style.hatch && (
+                <HatchPicker
+                  hatch={note.style.hatch}
+                  onChange={(hatch) => onPatch({ style: { ...note.style, hatch } })}
+                />
+              )}
+            </>
+          )}
+
+          <label className="notes-panel__field notes-panel__field--checkbox">
+            <span className="notes-panel__check">
+              <input
+                type="checkbox"
+                checked={note.showLabel}
+                onChange={(event) => onPatch({ showLabel: event.target.checked })}
+              />
             </span>
-            <input
-              type="range"
-              className="notes-panel__range"
-              min={NOTE_STROKE_WIDTH_MIN}
-              max={NOTE_STROKE_WIDTH_MAX}
-              step={1}
-              value={note.style.strokeWidth}
-              onChange={(event) =>
-                onPatch({ style: { ...note.style, strokeWidth: Number(event.target.value) } })
-              }
-            />
+            <span>{t('notesPanel.showLabel')}</span>
           </label>
         </fieldset>
-      )}
+
+        {hasAdjustableStroke(note.kind) && (
+          <fieldset className="notes-panel__field-group">
+            <legend className="notes-panel__field-group-title">
+              {t('notesPanel.groupStroke')}
+            </legend>
+
+            <label className="notes-panel__field">
+              <span className="notes-panel__field-label notes-panel__field-label--split">
+                {t('notesPanel.opacity')}
+                <span className="notes-panel__value">{Math.round(note.style.opacity * 100)}%</span>
+              </span>
+              <input
+                type="range"
+                className="notes-panel__range"
+                min={NOTE_OPACITY_MIN}
+                max={NOTE_OPACITY_MAX}
+                step={0.05}
+                value={note.style.opacity}
+                onChange={(event) =>
+                  onPatch({ style: { ...note.style, opacity: Number(event.target.value) } })
+                }
+              />
+            </label>
+
+            <label className="notes-panel__field">
+              <span className="notes-panel__field-label notes-panel__field-label--split">
+                {t('notesPanel.strokeWidth')}
+                <span className="notes-panel__value">{note.style.strokeWidth}</span>
+              </span>
+              <input
+                type="range"
+                className="notes-panel__range"
+                min={NOTE_STROKE_WIDTH_MIN}
+                max={NOTE_STROKE_WIDTH_MAX}
+                step={1}
+                value={note.style.strokeWidth}
+                onChange={(event) =>
+                  onPatch({ style: { ...note.style, strokeWidth: Number(event.target.value) } })
+                }
+              />
+            </label>
+          </fieldset>
+        )}
+      </div>
     </>
   )
 }

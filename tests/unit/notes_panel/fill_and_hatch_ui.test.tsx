@@ -211,6 +211,18 @@ describe('группировка настроек', () => {
 
     expect(screen.queryByRole('group', { name: 'Прозрачность и граница' })).toBeNull()
   })
+
+  it('обе рамки лежат в общем ряду — значит стоят в ширину', () => {
+    renderProps(note())
+
+    const outer = screen.getByRole('group', { name: 'Прозрачность и граница' })
+    const fill = screen.getByRole('group', { name: 'Заливка, штриховка и подпись' })
+
+    // Ряд — общий родитель обеих рамок. Отдельные рамки в сетке карточки
+    // вставали бы друг под другом: каждая занимала бы всю строку.
+    expect(outer.parentElement).toBe(fill.parentElement)
+    expect(outer.parentElement?.className).toContain('notes-panel__field-groups')
+  })
 })
 
 describe('HatchPreview', () => {
