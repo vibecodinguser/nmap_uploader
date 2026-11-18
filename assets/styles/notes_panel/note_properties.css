@@ -183,20 +183,32 @@
   flex: 1 1 auto;
 }
 
+/*
+ * Блоки оформления держатся собственной высоты.
+ *
+ * У сетки `align-items: stretch`, поэтому каждый блок растягивался на высоту
+ * своей строки: потянули описание — вырос и блок иконки, хотя его содержимому
+ * это не нужно; у «Цвета» и «Границ» внутри оставалась пустота. Тянуться
+ * должна только сетка, а не рамки внутри неё.
+ */
 .notes-panel__field-group--color {
   grid-area: color;
+  align-self: start;
 }
 
 .notes-panel__field-group--pattern {
   grid-area: pattern;
+  align-self: start;
 }
 
 .notes-panel__field-group--icon {
   grid-area: icon;
+  align-self: start;
 }
 
 .notes-panel__field-group--stroke {
   grid-area: stroke;
+  align-self: start;
 }
 
 @media (width < 1200px) {
