@@ -13,7 +13,7 @@
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
   margin: 0;
   padding: 0;
   border: 0;
@@ -24,26 +24,28 @@
  *
  * Сетка с расширением плиток, а не свободный перенос: в колонке рамки ширины
  * хватает на три плитки, и две строки выходят ровными (3 + 2), а не рваными.
- * Минимум 44 px — палец; при более широкой панели плиток в строке становится
- * больше само собой.
+ * При более широкой панели плиток в строке становится больше само собой.
  */
 .notes-panel__hatch-patterns {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+  gap: 6px;
 }
 
 /*
  * Плитка узора: светлое поле и тёмные линии в светлой теме, наоборот — в
  * тёмной. Узор рисуется `currentColor`, поэтому цвет линий задаётся здесь.
+ *
+ * 40 px, а не 48: плитка — второстепенный контрол внутри рамки, а превью
+ * узора остаётся читаемым и в 32 px.
  */
 .notes-panel__hatch-pattern {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 48px;
-  min-height: 48px;
-  padding: 6px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 4px;
   border: 2px solid var(--border, #e6e6e6);
   border-radius: var(--notes-radius-sm, 6px);
   background: var(--background, #ffffff);

@@ -153,7 +153,7 @@
   display: grid;
   grid-column: 1 / -1;
   grid-template-columns: minmax(0, 2.8fr) repeat(3, minmax(0, 1fr));
-  gap: 14px 18px;
+  gap: 10px 12px;
 
   /* Рамки выравниваются по высоте самой высокой: иконка выше остальных на два
      ряда плиток, и без этого три блока повисали разной длины. */
@@ -183,9 +183,9 @@
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
   margin: 0;
-  padding: 12px 14px;
+  padding: 8px 10px;
   border: 1px solid var(--border, #e6e6e6);
   border-radius: var(--notes-radius, 8px);
 }
@@ -226,10 +226,35 @@
   font-size: 14px;
 }
 
+/*
+ * Плотность внутри рамок.
+ *
+ * Карточка занимала много места по вертикали: между рамками 14 px, внутри
+ * рамки 10 px, у флажков по 32 px высоты, ползунок — 28. При том что это
+ * компактные настройки, а не список.
+ *
+ * Значения уменьшены только здесь, внутри рамок: строки списка, шапка и
+ * фильтры остаются крупными. Флажки и ползунки — 28 и 24 px: палец по ним
+ * попадает, но запас меньше, чем в остальной панели, и это осознанный
+ * компромисс ради плотности карточки.
+ */
+.notes-panel__field-group .notes-panel__field {
+  gap: 4px;
+}
+
+.notes-panel__field-group .notes-panel__field--checkbox {
+  min-height: 28px;
+  gap: 8px;
+}
+
+.notes-panel__field-group .notes-panel__range {
+  height: 24px;
+}
+
 .notes-panel__colors {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .notes-panel__color {
