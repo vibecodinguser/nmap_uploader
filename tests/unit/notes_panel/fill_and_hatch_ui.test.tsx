@@ -212,6 +212,20 @@ describe('группировка настроек', () => {
     expect(screen.queryByRole('group', { name: 'Границы' })).toBeNull()
   })
 
+  it('иконка и цвет стоят в одном ряду с рамками', () => {
+    renderProps(note())
+
+    const icon = screen.getByRole('group', { name: 'Иконка' })
+    const color = screen.getByRole('group', { name: 'Цвет' })
+
+    expect(icon.parentElement).toBe(color.parentElement)
+    expect(icon.parentElement?.className).toContain('notes-panel__field-groups')
+    // Цвет и иконка — отдельный ряд от «Поверхности» и «Границ».
+    expect(color.parentElement).not.toBe(
+      screen.getByRole('group', { name: 'Границы' }).parentElement,
+    )
+  })
+
   it('обе рамки лежат в общем ряду — значит стоят в ширину', () => {
     renderProps(note())
 

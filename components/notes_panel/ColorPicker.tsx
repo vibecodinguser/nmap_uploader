@@ -20,8 +20,8 @@ export const ColorPicker = ({
   }, [value])
 
   return (
-    <div className="notes-panel__field notes-panel__field--wide">
-      <span className="notes-panel__field-label">{label}</span>
+    <fieldset className="notes-panel__field-group">
+      <legend className="notes-panel__field-group-title">{label}</legend>
       <div className="notes-panel__colors">
         {NOTE_PALETTE.map((color) => (
           <button
@@ -49,6 +49,6 @@ export const ColorPicker = ({
           />
         </label>
       </div>
-    </div>
+    </fieldset>
   )
 }

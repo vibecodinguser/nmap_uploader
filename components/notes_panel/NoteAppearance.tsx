@@ -43,25 +43,27 @@ export const NoteAppearance = ({
 
   return (
     <>
-      <IconPicker
-        value={note.icon}
-        label={t('notesPanel.icon')}
-        onChange={(icon) => onPatch({ icon })}
-      />
+      <div className="notes-panel__field-groups">
+        <IconPicker
+          value={note.icon}
+          label={t('notesPanel.icon')}
+          onChange={(icon) => onPatch({ icon })}
+        />
 
-      <ColorPicker
-        value={note.style.color}
-        label={t('notesPanel.color')}
-        onChange={(color) =>
-          onPatch({
-            style: {
-              ...note.style,
-              color,
-              fillColor: note.style.fillColor === null ? null : color,
-            },
-          })
-        }
-      />
+        <ColorPicker
+          value={note.style.color}
+          label={t('notesPanel.color')}
+          onChange={(color) =>
+            onPatch({
+              style: {
+                ...note.style,
+                color,
+                fillColor: note.style.fillColor === null ? null : color,
+              },
+            })
+          }
+        />
+      </div>
 
       <div className="notes-panel__field-groups">
         <fieldset className="notes-panel__field-group">
