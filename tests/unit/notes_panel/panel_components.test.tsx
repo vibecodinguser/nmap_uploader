@@ -153,7 +153,7 @@ describe('NoteProperties', () => {
     // Точка — иконка фиксированного размера: оба ползунка ничего не меняли.
     expect(screen.queryByRole('slider')).toBeNull()
     expect(screen.queryByText('Прозрачность')).toBeNull()
-    expect(screen.queryByText('Толщина границы')).toBeNull()
+    expect(screen.queryByText('Толщина')).toBeNull()
     // Подпись у точки остаётся.
     expect(screen.getByRole('checkbox', { name: 'Подпись на карте' })).toBeTruthy()
   })
@@ -176,7 +176,7 @@ describe('NoteProperties', () => {
 
     expect(screen.getAllByRole('slider')).toHaveLength(2)
     expect(screen.getByText('Прозрачность')).toBeTruthy()
-    expect(screen.getByText('Толщина границы')).toBeTruthy()
+    expect(screen.getByText('Толщина')).toBeTruthy()
   })
 
   it('вызывает удаление', () => {

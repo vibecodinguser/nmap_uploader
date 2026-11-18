@@ -184,7 +184,7 @@ describe('группировка настроек', () => {
       note({ style: { ...createDefaultStyle('Polygon'), hatch: { pattern: 'diagonal' } } }),
     )
 
-    const group = screen.getByRole('group', { name: 'Заливка, штриховка и подпись' })
+    const group = screen.getByRole('group', { name: 'Поверхность' })
     const inside = (name: string) => group.contains(screen.getByRole('checkbox', { name }))
 
     expect(inside('Заливка')).toBe(true)
@@ -197,7 +197,7 @@ describe('группировка настроек', () => {
   it('прозрачность и толщина границы стоят в другой рамке', () => {
     renderProps(note())
 
-    const group = screen.getByRole('group', { name: 'Прозрачность и граница' })
+    const group = screen.getByRole('group', { name: 'Границы' })
     const sliders = screen.getAllByRole('slider')
 
     expect(sliders).toHaveLength(2)
@@ -209,14 +209,14 @@ describe('группировка настроек', () => {
   it('у точки рамки с прозрачностью нет: ползунки там ничего не меняют', () => {
     renderProps(note({ kind: 'Point', style: createDefaultStyle('Point') }))
 
-    expect(screen.queryByRole('group', { name: 'Прозрачность и граница' })).toBeNull()
+    expect(screen.queryByRole('group', { name: 'Границы' })).toBeNull()
   })
 
   it('обе рамки лежат в общем ряду — значит стоят в ширину', () => {
     renderProps(note())
 
-    const outer = screen.getByRole('group', { name: 'Прозрачность и граница' })
-    const fill = screen.getByRole('group', { name: 'Заливка, штриховка и подпись' })
+    const outer = screen.getByRole('group', { name: 'Границы' })
+    const fill = screen.getByRole('group', { name: 'Поверхность' })
 
     // Ряд — общий родитель обеих рамок. Отдельные рамки в сетке карточки
     // вставали бы друг под другом: каждая занимала бы всю строку.
