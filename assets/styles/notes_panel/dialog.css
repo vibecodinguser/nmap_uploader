@@ -109,3 +109,81 @@
 .notes-panel__dialog-actions .notes-panel__button--danger:hover .nk-icon {
   color: #e00000;
 }
+
+/*
+ * Подтверждение удаления заметок.
+ *
+ * Повторяет нативное `nk-confirmation-view` из живого диалога редактора:
+ * компактная карточка на тени попапа, а не крупное модальное окно. Значения
+ * сняты замером — радиус 4 px, тень как у `nk-popup_theme_islands`, текст
+ * 13 px с отступом `12px 12px 0`, ряд кнопок `12px 16px` с прижатием вправо.
+ *
+ * Ширина по содержимому, но не больше панели: у нативного вопроса ширина
+ * задаётся текстом, и на коротком вопросе карточка не растягивается.
+ */
+.notes-panel__confirm {
+  width: fit-content;
+  min-width: 280px;
+  max-width: min(420px, calc(100% - 32px));
+  border-radius: 4px;
+  background: var(--background, #ffffff);
+  color: var(--foreground, #1f1f1f);
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 10%),
+    0 10px 20px -5px rgb(0 0 0 / 40%);
+}
+
+.notes-panel__confirm-text {
+  margin: 0;
+  padding: 12px 12px 0;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.notes-panel__confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+}
+
+/*
+ * Кнопки — как `nk-button_size_m`: высота 32 px, радиус 4 px, без жирности.
+ * Акцентная «Удалить» повторяет `nk-button_view_action`: жёлтый фон, тёмный
+ * текст.
+ */
+.notes-panel__confirm-button {
+  display: inline-flex;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border: 1px solid var(--border, #e6e6e6);
+  border-radius: 4px;
+  background: var(--background, #ffffff);
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.notes-panel__confirm-button:hover {
+  border-color: var(--muted-foreground, #6b6b6b);
+}
+
+.notes-panel__confirm-button:focus-visible {
+  outline: 2px solid var(--notes-accent, #ffdb4d);
+  outline-offset: 1px;
+}
+
+.notes-panel__confirm-button--action {
+  border-color: var(--notes-accent, #ffdb4d);
+  background: var(--notes-accent, #ffdb4d);
+  color: #1f1f1f;
+}
+
+.notes-panel__confirm-button--action:hover {
+  border-color: #f5d03f;
+  background: #f5d03f;
+}

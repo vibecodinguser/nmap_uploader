@@ -200,6 +200,7 @@ export type Messages = {
     visible: string
     hidden: string
     delete: string
+    cancelAction: string
     cancel: string
     undoDelete: string
     undo: string
@@ -249,6 +250,8 @@ export type Messages = {
     selectAll: string
     clearSelection: string
     deleteSelected: string
+    confirmDeleteNote: string
+    confirmDeleteSelected: string
     moveToGroup: string
     list: string
   }

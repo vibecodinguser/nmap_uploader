@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ConfirmDeleteDialog } from '@/components/notes_panel/ConfirmDeleteDialog'
 import { DeleteGroupDialog } from '@/components/notes_panel/DeleteGroupDialog'
 import { ListToolbar } from '@/components/notes_panel/ListToolbar'
 import { NoteList } from '@/components/notes_panel/NoteList'
@@ -22,6 +23,15 @@ export const NotesPanelApp = () => {
   const panel = useNotesPanel()
   const [layout, setLayout] = useState<PanelLayout>('compact')
   const [groupToDelete, setGroupToDelete] = useState<string | null>(null)
+  /**
+   * Что ждёт подтверждения: одна заметка или пачка отмеченных.
+   *
+   * Удаление спрашивает подтверждение, как нативный редактор: промах по
+   * иконке в строке иначе сразу уносил бы объект с карты.
+   */
+  const [pendingDelete, setPendingDelete] = useState<
+    { kind: 'note'; id: string } | { kind: 'bulk' } | null
+  >(null)
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -43,6 +53,16 @@ export const NotesPanelApp = () => {
       kindLabel: t(kindLabelKey(note.kind)),
       existingNames: panel.notes.filter((item) => item.id !== note.id).map((item) => item.name),
     })
+
+  /** Имя в вопросе об удалении: пустое название показываем автоименем. */
+  const pendingDeleteName =
+    pendingDelete?.kind === 'note'
+      ? (() => {
+          const target = panel.notes.find((note) => note.id === pendingDelete.id)
+          if (!target) return ''
+          return target.name.trim() || fallbackName(target)
+        })()
+      : ''
 
   return (
     <div className="notes-panel">
@@ -133,7 +153,7 @@ export const NotesPanelApp = () => {
               onSelect={panel.selectNote}
               onToggleHidden={panel.toggleHidden}
               onLocate={panel.locateNote}
-              onDelete={panel.removeNote}
+              onDelete={(noteId) => setPendingDelete({ kind: 'note', id: noteId })}
               onToggleGroup={panel.toggleGroupCollapsed}
               onRenameGroup={panel.renameGroup}
               onRecolorGroup={panel.recolorGroup}
@@ -143,6 +163,24 @@ export const NotesPanelApp = () => {
             />
           ))}
       </div>
+
+      {pendingDelete && (
+        <ConfirmDeleteDialog
+          message={
+            pendingDelete.kind === 'note'
+              ? t('notesPanel.confirmDeleteNote', {
+                  name: pendingDeleteName,
+                })
+              : t('notesPanel.confirmDeleteSelected', { count: panel.checkedIds.length })
+          }
+          onCancel={() => setPendingDelete(null)}
+          onConfirm={() => {
+            if (pendingDelete.kind === 'note') panel.removeNote(pendingDelete.id)
+            else panel.deleteChecked()
+            setPendingDelete(null)
+          }}
+        />
+      )}
 
       {groupToDelete && (
         <DeleteGroupDialog
