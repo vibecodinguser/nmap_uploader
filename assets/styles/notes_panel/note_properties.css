@@ -316,6 +316,11 @@
   border: 2px solid transparent;
   border-radius: 50%;
   cursor: pointer;
+
+  /* Без этого рамка прибавляется к 32 px (content-box), и кружок выходит
+     36 × 36 — заметно крупнее соседей. Особенно видно на «своём цвете»,
+     у которого рамка всегда нарисована. */
+  box-sizing: border-box;
 }
 
 .notes-panel__color[data-active='true'] {

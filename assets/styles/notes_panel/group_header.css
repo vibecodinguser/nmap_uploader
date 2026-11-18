@@ -95,6 +95,10 @@
   border-radius: 50%;
   background: conic-gradient(#ff8c42, #ffdb4d, #5aa845, #1a8cff, #8a5cd6, #ff8c42);
   cursor: pointer;
+
+  /* `label`, в отличие от `button`, по умолчанию считает размер без рамки —
+     без этого кружок выходит 30 × 30 вместо 28. */
+  box-sizing: border-box;
 }
 
 .notes-panel__group-color input {
