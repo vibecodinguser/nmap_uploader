@@ -1,9 +1,9 @@
 import { useLocale } from '@/hooks/useLocale'
+import { formatDateTimeDisplay } from '@/lib/date_format'
 import type { Note, NoteGroup } from '@/lib/notes/model/types'
 import { kindLabelKey } from '@/lib/notes/panel/labels'
 import { NOTES_PANEL_BUTTON_IDS } from './ids'
 import { NoteAppearance } from './NoteAppearance'
-import { NoteDateField } from './NoteDateField'
 import { NotesSelect } from './NotesSelect'
 
 /** Свойства выбранной заметки. */
@@ -40,19 +40,30 @@ export const NoteProperties = ({
         <button type="button" className="notes-panel__link-button" onClick={onBack}>
           ← {t('notesPanel.back')}
         </button>
-        <span className="notes-panel__properties-kind">{t(kindLabelKey(note.kind))}</span>
+
+        {/*
+         * Вид, дата и время создания — одной строкой и только для чтения.
+         * Дата больше не редактируется: она задавала шард геометрии на Диске,
+         * и правка молча переносила файлы между месяцами. Создание — факт,
+         * который не должен зависеть от набора в поле.
+         */}
+        <span className="notes-panel__properties-kind">
+          {t(kindLabelKey(note.kind))}
+          <time className="notes-panel__properties-time" dateTime={note.createdAt}>
+            {formatDateTimeDisplay(note.createdAt)}
+          </time>
+        </span>
       </div>
 
       <section className="notes-panel__section">
         <h2 className="notes-panel__section-title">{t('notesPanel.sectionMain')}</h2>
 
         {/*
-         * Поля в ширину, а не столбиком: в карточке много свободного места, и
-         * короткие поля (дата, группа) встают по два в ряд. На узкой панели
-         * сетка сама схлопывается в одну колонку.
+         * Название и группа стоят в одну линию: это две короткие подписи,
+         * которые задают заметку. Описание занимает строку целиком.
          */}
         <div className="notes-panel__fields">
-          <label className="notes-panel__field notes-panel__field--wide">
+          <label className="notes-panel__field">
             <span className="notes-panel__field-label">{t('notesPanel.namePlaceholder')}</span>
             <input
               className="notes-panel__input"
@@ -64,20 +75,6 @@ export const NoteProperties = ({
               placeholder={t('notesPanel.namePlaceholder')}
             />
           </label>
-
-          <label className="notes-panel__field notes-panel__field--wide">
-            <span className="notes-panel__field-label">
-              {t('notesPanel.descriptionPlaceholder')}
-            </span>
-            <textarea
-              className="notes-panel__input notes-panel__textarea"
-              value={note.description}
-              onChange={(event) => onPatch({ description: event.target.value })}
-              placeholder={t('notesPanel.descriptionPlaceholder')}
-            />
-          </label>
-
-          <NoteDateField date={note.date} onCommit={(date) => onPatch({ date })} />
 
           {groups.length > 0 && (
             /*
@@ -99,6 +96,18 @@ export const NoteProperties = ({
               />
             </div>
           )}
+
+          <label className="notes-panel__field notes-panel__field--wide">
+            <span className="notes-panel__field-label">
+              {t('notesPanel.descriptionPlaceholder')}
+            </span>
+            <textarea
+              className="notes-panel__input notes-panel__textarea"
+              value={note.description}
+              onChange={(event) => onPatch({ description: event.target.value })}
+              placeholder={t('notesPanel.descriptionPlaceholder')}
+            />
+          </label>
         </div>
       </section>
 

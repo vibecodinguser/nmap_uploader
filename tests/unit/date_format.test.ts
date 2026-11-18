@@ -4,6 +4,7 @@ import {
   formatDateDisplay,
   formatDateDisplayInput,
   formatDateIso,
+  formatDateTimeDisplay,
   isValidDisplayDate,
   normalizeDisplayTargetDate,
   parseDateDisplay,
@@ -51,5 +52,21 @@ describe('date_format', () => {
     expect(normalizeDisplayTargetDate('24-05-2026')).toBe('2026-05-24')
     expect(normalizeDisplayTargetDate('')).toBeUndefined()
     expect(() => normalizeDisplayTargetDate('32-01-2026')).toThrow('Неверный формат даты')
+  })
+
+  it('formatDateTimeDisplay: дата и время через точку', () => {
+    const date = new Date(2026, 10, 16, 14, 35)
+    expect(formatDateTimeDisplay(date.toISOString())).toBe('16.11.2026 14.35')
+  })
+
+  it('formatDateTimeDisplay: полночь и однозначные части дополняются нулями', () => {
+    const date = new Date(2026, 0, 5, 0, 0)
+    expect(formatDateTimeDisplay(date.toISOString())).toBe('05.01.2026 00.00')
+  })
+
+  it('formatDateTimeDisplay: испорченная метка даёт пустую строку', () => {
+    // Значение приходит из чужого JSON на Диске и может быть испорчено.
+    expect(formatDateTimeDisplay('не дата')).toBe('')
+    expect(formatDateTimeDisplay('')).toBe('')
   })
 })

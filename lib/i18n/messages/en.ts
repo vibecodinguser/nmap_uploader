@@ -184,8 +184,6 @@ export const enMessages = {
     drawHintClicksActive: 'Click vertices. Enter or double click to finish, Esc to cancel',
     namePlaceholder: 'Name',
     descriptionPlaceholder: 'Extended description',
-    date: 'Date',
-    dateInvalid: 'Date must be dd.mm.yyyy',
     color: 'Color',
     opacity: 'Opacity',
     strokeWidth: 'Width',

@@ -184,8 +184,6 @@ export const ruMessages = {
     drawHintClicksActive: 'Кликайте по вершинам. Enter или двойной клик — завершить, Esc — отмена',
     namePlaceholder: 'Название',
     descriptionPlaceholder: 'Расширенное описание',
-    date: 'Дата',
-    dateInvalid: 'Дата в формате дд.мм.гггг',
     color: 'Цвет',
     opacity: 'Прозрачность',
     strokeWidth: 'Толщина',

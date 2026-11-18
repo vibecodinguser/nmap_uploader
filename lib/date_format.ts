@@ -78,6 +78,27 @@ export const isValidDisplayDate = (value: string): boolean => {
   return parseDateDisplay(value) !== undefined
 }
 
+/**
+ * Форматирует отметку времени ISO в «дд.мм.гггг чч.мм» по местному времени.
+ *
+ * Точка между часами и минутами — как в дате: в карточке это одна строка
+ * «16.11.2026 14.35», и разные разделители в ней выглядели бы опечаткой.
+ *
+ * Невалидная или пустая отметка даёт пустую строку, а не «Invalid Date»:
+ * значение приходит из чужого JSON на Диске и может быть испорчено.
+ */
+export const formatDateTimeDisplay = (iso: string): string => {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return ''
+
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+
+  return `${day}.${month}.${date.getFullYear()} ${hours}.${minutes}`
+}
+
 /** Конвертирует DD-MM-YYYY в YYYY-MM-DD для API и папок на Диске. */
 export const displayToIso = (value: string): string | undefined => {
   const parsed = parseDateDisplay(value)

@@ -20,8 +20,24 @@
   margin-bottom: 16px;
 }
 
+/*
+ * Вид, дата и время создания. Это справка, а не поле: дата больше не
+ * редактируется, поэтому строка набрана тем же приглушённым цветом, что и
+ * служебные подписи, и не выглядит как контрол.
+ */
 .notes-panel__properties-kind {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
   color: var(--muted-foreground, #6b6b6b);
+}
+
+/* Время чуть светлее вида и с табличными цифрами: колонки не «прыгают». */
+.notes-panel__properties-time {
+  color: var(--muted-foreground, #6b6b6b);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Раздел карточки: подпись сверху, под ней сетка полей. */

@@ -185,8 +185,6 @@ export type Messages = {
     drawHintClicksActive: string
     namePlaceholder: string
     descriptionPlaceholder: string
-    date: string
-    dateInvalid: string
     color: string
     opacity: string
     strokeWidth: string

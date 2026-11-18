@@ -9,7 +9,7 @@ import { ShapePicker } from '@/components/notes_panel/ShapePicker'
 import { LocaleProvider } from '@/hooks/useLocale'
 import { createDefaultStyle } from '@/lib/notes/model/style_resolution'
 import type { Note } from '@/lib/notes/model/types'
-import { listProps, type NoteListProps } from './list_props'
+import { listProps, type NoteListProps, sampleGroup } from './list_props'
 
 const note = (overrides: Partial<Note> = {}): Note => ({
   id: 'note-1',
@@ -63,14 +63,13 @@ describe('NoteProperties', () => {
     expect(onPatch).toHaveBeenCalledWith({ name: 'Мост' })
   })
 
-  it('не отправляет невалидную дату', () => {
-    const onPatch = vi.fn()
+  it('дата и время создания показаны, но не редактируются', () => {
     wrap(
       <NoteProperties
-        note={note()}
+        note={note({ createdAt: '2026-11-16T14:35:00.000Z' })}
         fallbackName="14.11.2026 Точка"
         hidden={false}
-        onPatch={onPatch}
+        onPatch={vi.fn()}
         onDelete={vi.fn()}
         onBack={vi.fn()}
         onLocate={vi.fn()}
@@ -80,22 +79,22 @@ describe('NoteProperties', () => {
       />,
     )
 
-    const dateInput = screen.getByPlaceholderText('дд.мм.гггг')
-    fireEvent.change(dateInput, { target: { value: '32-13-2026' } })
-    fireEvent.blur(dateInput)
+    // Поля даты больше нет: её правка молча переносила геометрию между шардами.
+    expect(screen.queryByPlaceholderText('дд.мм.гггг')).toBeNull()
 
-    expect(onPatch).not.toHaveBeenCalled()
-    expect(screen.getByText('Дата в формате дд.мм.гггг')).toBeTruthy()
+    const time = document.querySelector('time')
+    expect(time?.getAttribute('dateTime')).toBe('2026-11-16T14:35:00.000Z')
+    // Точный час зависит от часового пояса машины, поэтому проверяется формат.
+    expect(time?.textContent?.trim()).toMatch(/^\d{2}\.\d{2}\.\d{4} \d{2}\.\d{2}$/)
   })
 
-  it('сохраняет валидную дату', () => {
-    const onPatch = vi.fn()
+  it('вид и время стоят в одной строке шапки', () => {
     wrap(
       <NoteProperties
         note={note()}
         fallbackName="14.11.2026 Точка"
         hidden={false}
-        onPatch={onPatch}
+        onPatch={vi.fn()}
         onDelete={vi.fn()}
         onBack={vi.fn()}
         onLocate={vi.fn()}
@@ -105,11 +104,35 @@ describe('NoteProperties', () => {
       />,
     )
 
-    const dateInput = screen.getByPlaceholderText('дд.мм.гггг')
-    fireEvent.change(dateInput, { target: { value: '01-12-2026' } })
-    fireEvent.blur(dateInput)
+    const head = document.querySelector('.notes-panel__properties-kind')
+    expect(head?.textContent).toContain('Точка')
+    expect(head?.querySelector('time')).not.toBeNull()
+  })
 
-    expect(onPatch).toHaveBeenCalledWith({ date: '01-12-2026' })
+  it('название и группа стоят в одной линии', () => {
+    wrap(
+      <NoteProperties
+        note={note()}
+        fallbackName="14.11.2026 Точка"
+        hidden={false}
+        onPatch={vi.fn()}
+        onDelete={vi.fn()}
+        onBack={vi.fn()}
+        onLocate={vi.fn()}
+        onToggleHidden={vi.fn()}
+        groups={[sampleGroup()]}
+        onMoveToGroup={() => {}}
+      />,
+    )
+
+    // Широкий класс растянул бы поле на строку целиком — именно он разводил
+    // название и группу по разным строкам.
+    const name = screen.getByPlaceholderText('Название').closest('.notes-panel__field')
+    const group = screen.getByRole('combobox', { name: 'Группа' }).closest('.notes-panel__field')
+
+    expect(name?.className).not.toContain('--wide')
+    expect(group?.className).not.toContain('--wide')
+    expect(name?.parentElement).toBe(group?.parentElement)
   })
 
   it('переключает подпись', () => {
