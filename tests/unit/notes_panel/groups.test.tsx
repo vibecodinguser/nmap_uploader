@@ -182,12 +182,8 @@ describe('группа в свойствах заметки', () => {
         <NoteProperties
           note={sampleNote({ groupId: null })}
           fallbackName="14.11.2026 Точка"
-          hidden={false}
           onPatch={vi.fn()}
-          onDelete={vi.fn()}
           onBack={vi.fn()}
-          onLocate={vi.fn()}
-          onToggleHidden={vi.fn()}
           groups={[sampleGroup()]}
           onMoveToGroup={onMoveToGroup}
         />
@@ -208,12 +204,8 @@ describe('группа в свойствах заметки', () => {
         <NoteProperties
           note={sampleNote({ groupId: 'group-1' })}
           fallbackName="14.11.2026 Точка"
-          hidden={false}
           onPatch={vi.fn()}
-          onDelete={vi.fn()}
           onBack={vi.fn()}
-          onLocate={vi.fn()}
-          onToggleHidden={vi.fn()}
           groups={[sampleGroup()]}
           onMoveToGroup={onMoveToGroup}
         />
@@ -233,12 +225,8 @@ describe('группа в свойствах заметки', () => {
         <NoteProperties
           note={sampleNote()}
           fallbackName="14.11.2026 Точка"
-          hidden={false}
           onPatch={vi.fn()}
-          onDelete={vi.fn()}
           onBack={vi.fn()}
-          onLocate={vi.fn()}
-          onToggleHidden={vi.fn()}
           groups={[]}
           onMoveToGroup={vi.fn()}
         />

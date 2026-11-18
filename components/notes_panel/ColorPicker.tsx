@@ -20,7 +20,7 @@ export const ColorPicker = ({
   }, [value])
 
   return (
-    <fieldset className="notes-panel__field-group">
+    <fieldset className="notes-panel__field-group notes-panel__field-group--color">
       <legend className="notes-panel__field-group-title">{label}</legend>
       <div className="notes-panel__colors">
         {NOTE_PALETTE.map((color) => (

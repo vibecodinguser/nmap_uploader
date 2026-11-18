@@ -42,7 +42,7 @@ export const NoteAppearance = ({
   const resolved = resolveNoteStyle(note)
 
   return (
-    <div className="notes-panel__field-groups">
+    <div className="notes-panel__appearance">
       <IconPicker
         value={note.icon}
         label={t('notesPanel.icon')}
@@ -63,7 +63,7 @@ export const NoteAppearance = ({
         }
       />
 
-      <fieldset className="notes-panel__field-group">
+      <fieldset className="notes-panel__field-group notes-panel__field-group--surface">
         <legend className="notes-panel__field-group-title">{t('notesPanel.groupFill')}</legend>
 
         {isFilledKind(note.kind) && (
@@ -126,7 +126,7 @@ export const NoteAppearance = ({
       </fieldset>
 
       {hasAdjustableStroke(note.kind) && (
-        <fieldset className="notes-panel__field-group">
+        <fieldset className="notes-panel__field-group notes-panel__field-group--stroke">
           <legend className="notes-panel__field-group-title">{t('notesPanel.groupStroke')}</legend>
 
           <label className="notes-panel__field">

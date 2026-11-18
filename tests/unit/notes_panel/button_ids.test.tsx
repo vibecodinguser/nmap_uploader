@@ -49,76 +49,24 @@ afterEach(() => {
  */
 const NoteList = (props: Partial<NoteListProps>) => <NoteListBase {...listProps(props)} />
 
-describe('id кнопок в свойствах заметки', () => {
-  it('использует стабильные id', () => {
+describe('кнопки действий', () => {
+  it('в карточке заметки их нет: действия живут в строке списка', () => {
     wrap(
       <NoteProperties
         note={note()}
         fallbackName="14.11.2026 Точка"
-        hidden={false}
         onPatch={noop}
-        onDelete={noop}
         onBack={noop}
-        onLocate={noop}
-        onToggleHidden={noop}
         groups={[]}
         onMoveToGroup={() => {}}
       />,
     )
 
-    expect(document.getElementById('nmapUploaderNotesPanelBtnVisible')).not.toBeNull()
-    expect(document.getElementById('nmapUploaderNotesPanelBtnFind')).not.toBeNull()
-    expect(document.getElementById('nmapUploaderNotesPanelBtnDelete')).not.toBeNull()
-  })
-
-  it('id ведут на нужные действия', () => {
-    const onLocate = vi.fn()
-    const onDelete = vi.fn()
-    const onToggleHidden = vi.fn()
-
-    wrap(
-      <NoteProperties
-        note={note()}
-        fallbackName="14.11.2026 Точка"
-        hidden={false}
-        onPatch={noop}
-        onDelete={onDelete}
-        onBack={noop}
-        onLocate={onLocate}
-        onToggleHidden={onToggleHidden}
-        groups={[]}
-        onMoveToGroup={() => {}}
-      />,
-    )
-
-    document.getElementById('nmapUploaderNotesPanelBtnFind')?.click()
-    document.getElementById('nmapUploaderNotesPanelBtnVisible')?.click()
-    document.getElementById('nmapUploaderNotesPanelBtnDelete')?.click()
-
-    expect(onLocate).toHaveBeenCalledOnce()
-    expect(onToggleHidden).toHaveBeenCalledOnce()
-    expect(onDelete).toHaveBeenCalledOnce()
-  })
-
-  it('подпись кнопки видимости соответствует состоянию', () => {
-    wrap(
-      <NoteProperties
-        note={note()}
-        fallbackName="14.11.2026 Точка"
-        hidden
-        onPatch={noop}
-        onDelete={noop}
-        onBack={noop}
-        onLocate={noop}
-        onToggleHidden={noop}
-        groups={[]}
-        onMoveToGroup={() => {}}
-      />,
-    )
-
-    expect(document.getElementById('nmapUploaderNotesPanelBtnVisible')?.textContent).toBe(
-      'Показать на карте',
-    )
+    // «Найти», «Скрыть» и «Удалить» продублированы кнопками каждой строки,
+    // поэтому из карточки убраны — дублировали друг друга и занимали место.
+    expect(document.getElementById('nmapUploaderNotesPanelBtnVisible')).toBeNull()
+    expect(document.getElementById('nmapUploaderNotesPanelBtnFind')).toBeNull()
+    expect(document.getElementById('nmapUploaderNotesPanelBtnDelete')).toBeNull()
   })
 })
 

@@ -14,6 +14,7 @@ import { NoteProperties } from '@/components/notes_panel/NoteProperties'
 import { LocaleProvider } from '@/hooks/useLocale'
 import { createDefaultStyle } from '@/lib/notes/model/style_resolution'
 import type { Note } from '@/lib/notes/model/types'
+import { sampleGroup } from './list_props'
 
 const note = (overrides: Partial<Note> = {}): Note => ({
   id: 'note-1',
@@ -30,19 +31,19 @@ const note = (overrides: Partial<Note> = {}): Note => ({
   ...overrides,
 })
 
-const renderProps = (target: Note, onPatch = vi.fn()) => {
+const renderProps = (
+  target: Note,
+  onPatch = vi.fn(),
+  groups: Array<ReturnType<typeof sampleGroup>> = [],
+) => {
   render(
     <LocaleProvider>
       <NoteProperties
         note={target}
         fallbackName="14.11.2026 Полигон"
-        hidden={false}
         onPatch={onPatch}
-        onDelete={vi.fn()}
         onBack={vi.fn()}
-        onLocate={vi.fn()}
-        onToggleHidden={vi.fn()}
-        groups={[]}
+        groups={groups}
         onMoveToGroup={() => {}}
       />
     </LocaleProvider>,
@@ -212,20 +213,36 @@ describe('группировка настроек', () => {
     expect(screen.queryByRole('group', { name: 'Границы' })).toBeNull()
   })
 
-  it('все четыре блока лежат в одном ряду — значит стоят в линию', () => {
+  it('все блоки лежат в одной сетке карточки', () => {
     renderProps(note())
 
-    const icon = screen.getByRole('group', { name: 'Иконка' })
-    const color = screen.getByRole('group', { name: 'Цвет' })
-    const surface = screen.getByRole('group', { name: 'Поверхность' })
-    const borders = screen.getByRole('group', { name: 'Границы' })
+    const grid = document.querySelector('.notes-panel__properties-grid')
+    expect(grid).not.toBeNull()
 
-    // Ряд — общий родитель всех четырёх. Отдельные рамки в сетке карточки
-    // вставали бы друг под другом: каждая занимала бы всю строку.
-    for (const group of [color, surface, borders]) {
-      expect(group.parentElement).toBe(icon.parentElement)
+    // Обёртка оформления прозрачна для сетки (`display: contents`), поэтому
+    // все четыре блока и поля карточки — её элементы, а не вложенные группы.
+    for (const name of ['Иконка', 'Цвет', 'Поверхность', 'Границы']) {
+      expect(screen.getByRole('group', { name }).closest('.notes-panel__properties-grid')).toBe(
+        grid,
+      )
     }
-    expect(icon.parentElement?.className).toContain('notes-panel__field-groups')
+    expect(screen.getByPlaceholderText('Название').closest('.notes-panel__properties-grid')).toBe(
+      grid,
+    )
+  })
+
+  it('места в сетке заданы линиями: название, группа и иконка — первая', () => {
+    renderProps(note({ groupId: null }), vi.fn(), [sampleGroup()])
+
+    // Места расставлены через grid-area, а не шириной: проверяем сами классы —
+    // именно они держат раскладку 3 / 1 / 4, 4 / 2 / 2, 2.
+    expect(document.querySelector('.notes-panel__field--name')).not.toBeNull()
+    expect(document.querySelector('.notes-panel__field--group')).not.toBeNull()
+    expect(document.querySelector('.notes-panel__field--description')).not.toBeNull()
+    expect(document.querySelector('.notes-panel__field-group--icon')).not.toBeNull()
+    expect(document.querySelector('.notes-panel__field-group--color')).not.toBeNull()
+    expect(document.querySelector('.notes-panel__field-group--stroke')).not.toBeNull()
+    expect(document.querySelector('.notes-panel__field-group--surface')).not.toBeNull()
   })
 })
 

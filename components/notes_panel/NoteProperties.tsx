@@ -10,24 +10,16 @@ import { NotesSelect } from './NotesSelect'
 export const NoteProperties = ({
   note,
   fallbackName,
-  hidden,
   onPatch,
-  onDelete,
   onBack,
-  onLocate,
-  onToggleHidden,
   groups,
   onMoveToGroup,
 }: {
   note: Note
   /** Автоимя «дд.мм.гггг + вид»: подставляется, если название стёрли. */
   fallbackName: string
-  hidden: boolean
   onPatch: (patch: Partial<Note>) => void
-  onDelete: () => void
   onBack: () => void
-  onLocate: () => void
-  onToggleHidden: () => void
   /** Группы для выбора принадлежности: клавиатурная замена перетаскиванию. */
   groups: readonly NoteGroup[]
   onMoveToGroup: (groupId: string | null) => void
@@ -55,94 +47,65 @@ export const NoteProperties = ({
         </span>
       </div>
 
-      <section className="notes-panel__section">
-        <h2 className="notes-panel__section-title">{t('notesPanel.sectionMain')}</h2>
+      {/*
+       * Одна сетка на восемь колонок — вся карточка целиком, без разделов
+       * «Основное» и «Оформление»: раскладка задана линиями, и заголовки
+       * разрывали бы её пополам.
+       *
+       *   линия 1: название 3 | группа 1 | иконка 4
+       *   линия 2: описание 4 | цвет 2 | границы 2
+       *   линия 3: поверхность 2
+       *
+       * Места задаются явно (`grid-area`), а не порядком в разметке: так
+       * описание стоит после названия в DOM — это даёт правильный порядок при
+       * переносе в одну колонку на узком экране.
+       */}
+      <div className="notes-panel__properties-grid">
+        <label className="notes-panel__field notes-panel__field--name">
+          <span className="notes-panel__field-label">{t('notesPanel.namePlaceholder')}</span>
+          <input
+            className="notes-panel__input"
+            value={note.name}
+            onChange={(event) => onPatch({ name: event.target.value })}
+            onBlur={() => {
+              if (!note.name.trim()) onPatch({ name: fallbackName })
+            }}
+            placeholder={t('notesPanel.namePlaceholder')}
+          />
+        </label>
 
-        {/*
-         * Название и группа стоят в одну линию: это две короткие подписи,
-         * которые задают заметку. Описание занимает строку целиком.
-         */}
-        <div className="notes-panel__fields">
-          <label className="notes-panel__field">
-            <span className="notes-panel__field-label">{t('notesPanel.namePlaceholder')}</span>
-            <input
-              className="notes-panel__input"
-              value={note.name}
-              onChange={(event) => onPatch({ name: event.target.value })}
-              onBlur={() => {
-                if (!note.name.trim()) onPatch({ name: fallbackName })
-              }}
-              placeholder={t('notesPanel.namePlaceholder')}
+        {groups.length > 0 && (
+          /*
+           * Не `label`: внутри кнопка, и клик по любому месту подписи
+           * открывал бы список — включая клик по пункту.
+           */
+          <div className="notes-panel__field notes-panel__field--group">
+            <span className="notes-panel__field-label">{t('notesPanel.group')}</span>
+            <NotesSelect
+              id={NOTES_PANEL_BUTTON_IDS.noteGroup}
+              label={t('notesPanel.group')}
+              block
+              value={note.groupId ?? ''}
+              options={[
+                { value: '', label: t('notesPanel.ungrouped') },
+                ...groups.map((group) => ({ value: group.id, label: group.name })),
+              ]}
+              onChange={(groupId) => onMoveToGroup(groupId || null)}
             />
-          </label>
+          </div>
+        )}
 
-          {groups.length > 0 && (
-            /*
-             * Не `label`: внутри кнопка, и клик по любому месту подписи
-             * открывал бы список — включая клик по пункту.
-             */
-            <div className="notes-panel__field">
-              <span className="notes-panel__field-label">{t('notesPanel.group')}</span>
-              <NotesSelect
-                id={NOTES_PANEL_BUTTON_IDS.noteGroup}
-                label={t('notesPanel.group')}
-                block
-                value={note.groupId ?? ''}
-                options={[
-                  { value: '', label: t('notesPanel.ungrouped') },
-                  ...groups.map((group) => ({ value: group.id, label: group.name })),
-                ]}
-                onChange={(groupId) => onMoveToGroup(groupId || null)}
-              />
-            </div>
-          )}
+        <label className="notes-panel__field notes-panel__field--description">
+          <span className="notes-panel__field-label">{t('notesPanel.descriptionPlaceholder')}</span>
+          <textarea
+            className="notes-panel__input notes-panel__textarea"
+            value={note.description}
+            onChange={(event) => onPatch({ description: event.target.value })}
+            placeholder={t('notesPanel.descriptionPlaceholder')}
+          />
+        </label>
 
-          <label className="notes-panel__field notes-panel__field--wide">
-            <span className="notes-panel__field-label">
-              {t('notesPanel.descriptionPlaceholder')}
-            </span>
-            <textarea
-              className="notes-panel__input notes-panel__textarea"
-              value={note.description}
-              onChange={(event) => onPatch({ description: event.target.value })}
-              placeholder={t('notesPanel.descriptionPlaceholder')}
-            />
-          </label>
-        </div>
-      </section>
-
-      <section className="notes-panel__section">
-        <h2 className="notes-panel__section-title">{t('notesPanel.sectionAppearance')}</h2>
-        <div className="notes-panel__fields">
-          <NoteAppearance note={note} onPatch={onPatch} />
-        </div>
-      </section>
-
-      <div className="notes-panel__actions">
-        <button
-          type="button"
-          id={NOTES_PANEL_BUTTON_IDS.find}
-          className="notes-panel__button"
-          onClick={onLocate}
-        >
-          {t('notesPanel.locate')}
-        </button>
-        <button
-          type="button"
-          id={NOTES_PANEL_BUTTON_IDS.visible}
-          className="notes-panel__button"
-          onClick={onToggleHidden}
-        >
-          {hidden ? t('notesPanel.visible') : t('notesPanel.hidden')}
-        </button>
-        <button
-          type="button"
-          id={NOTES_PANEL_BUTTON_IDS.delete}
-          className="notes-panel__button notes-panel__button--danger"
-          onClick={onDelete}
-        >
-          {t('notesPanel.delete')}
-        </button>
+        <NoteAppearance note={note} onPatch={onPatch} />
       </div>
     </div>
   )

@@ -62,7 +62,7 @@ export const IconPicker = ({
   const { t } = useLocale()
 
   return (
-    <fieldset className="notes-panel__field-group">
+    <fieldset className="notes-panel__field-group notes-panel__field-group--icon">
       <legend className="notes-panel__field-group-title">{label}</legend>
       <div className="notes-panel__icons">
         <button

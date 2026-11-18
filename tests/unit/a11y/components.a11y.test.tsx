@@ -208,15 +208,7 @@ const sampleNote: Note = {
 describe('a11y: список заметок', () => {
   it('без нарушений для списка', async () => {
     const { container } = renderA11y(
-      <NoteList
-        notes={[sampleNote]}
-        hiddenIds={[]}
-        selectedId={null}
-        onSelect={noop}
-        onToggleHidden={noop}
-        onLocate={noop}
-        onDelete={noop}
-      />,
+      <NoteList notes={[sampleNote]} hiddenIds={[]} selectedId={null} onSelect={noop} />,
     )
 
     await expectNoA11yViolations(container)
@@ -229,12 +221,8 @@ describe('a11y: свойства заметки', () => {
       <NoteProperties
         note={sampleNote}
         fallbackName="14.11.2026 Точка"
-        hidden={false}
         onPatch={noop}
-        onDelete={noop}
         onBack={noop}
-        onLocate={noop}
-        onToggleHidden={noop}
         groups={[]}
         onMoveToGroup={() => {}}
       />,

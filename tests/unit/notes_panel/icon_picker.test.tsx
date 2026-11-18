@@ -36,12 +36,8 @@ const renderProperties = (overrides: Partial<Note> = {}, onPatch = vi.fn()) => {
       <NoteProperties
         note={note(overrides)}
         fallbackName="14.11.2026 Точка"
-        hidden={false}
         onPatch={onPatch}
-        onDelete={vi.fn()}
         onBack={vi.fn()}
-        onLocate={vi.fn()}
-        onToggleHidden={vi.fn()}
         groups={[]}
         onMoveToGroup={() => {}}
       />

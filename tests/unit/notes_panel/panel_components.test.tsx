@@ -201,28 +201,6 @@ describe('NoteProperties', () => {
     expect(screen.getByText('Прозрачность')).toBeTruthy()
     expect(screen.getByText('Толщина')).toBeTruthy()
   })
-
-  it('вызывает удаление', () => {
-    const onDelete = vi.fn()
-    wrap(
-      <NoteProperties
-        note={note()}
-        fallbackName="14.11.2026 Точка"
-        hidden={false}
-        onPatch={vi.fn()}
-        onDelete={onDelete}
-        onBack={vi.fn()}
-        onLocate={vi.fn()}
-        onToggleHidden={vi.fn()}
-        groups={[]}
-        onMoveToGroup={() => {}}
-      />,
-    )
-
-    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }))
-
-    expect(onDelete).toHaveBeenCalledOnce()
-  })
 })
 
 describe('NoteList', () => {

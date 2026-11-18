@@ -108,12 +108,8 @@ export const NotesPanelApp = () => {
             key={panel.selectedNote.id}
             note={panel.selectedNote}
             fallbackName={fallbackName(panel.selectedNote)}
-            hidden={panel.hiddenIds.includes(panel.selectedNote.id)}
             onPatch={(patch) => panel.updateNote(selectedId, patch)}
-            onDelete={() => panel.removeNote(selectedId)}
             onBack={() => panel.selectNote(null)}
-            onLocate={() => panel.locateNote(selectedId)}
-            onToggleHidden={() => panel.toggleHidden(selectedId)}
             groups={panel.groups}
             onMoveToGroup={(groupId) => panel.moveNoteToGroup(selectedId, groupId)}
           />
