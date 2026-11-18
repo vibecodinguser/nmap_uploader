@@ -217,6 +217,7 @@ export const ruMessages = {
     renameGroup: 'Переименовать группу',
     deleteGroup: 'Удалить группу',
     deleteGroupNotesCount: 'Заметок в группе: {count}',
+    groupNotesCount: 'Заметок в группе: {count}',
     deleteGroupConfirm: 'Удалить группу «{name}»?',
     deleteGroupKeepNotes: 'Разгруппировать',
     deleteGroupCascade: 'Удалить',

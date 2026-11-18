@@ -90,9 +90,17 @@ export const GroupHeader = ({
         data-action="toggle-group"
         className="notes-panel__group-toggle"
         aria-expanded={!collapsed}
-        aria-label={collapsed ? t('notesPanel.expandGroup') : t('notesPanel.collapseGroup')}
         onClick={onToggle}
       >
+        {/*
+         * Подпись действия — скрытым текстом внутри кнопки, а не `aria-label`:
+         * `aria-label` перекрывает содержимое, и тогда скринридер не называл бы
+         * ни группу, ни количество. Так в имени кнопки звучит всё:
+         * «Раскрыть группу, Мосты, Заметок в группе: 12».
+         */}
+        <span className="notes-panel__visually-hidden">
+          {collapsed ? t('notesPanel.expandGroup') : t('notesPanel.collapseGroup')}
+        </span>
         <Chevron collapsed={collapsed} />
         {color && (
           <span
@@ -118,7 +126,21 @@ export const GroupHeader = ({
         ) : (
           <span className="notes-panel__group-name">{title}</span>
         )}
-        <span className="notes-panel__group-count">{notesCount}</span>
+        {/*
+         * Число-бейдж: справа, на подложке, полужирное. Для скринридера рядом
+         * лежит подпись словами — голая цифра в потоке читалась бы как часть
+         * названия группы («Мосты 12»).
+         */}
+        <span
+          className="notes-panel__group-count"
+          title={t('notesPanel.groupNotesCount', { count: notesCount })}
+          aria-hidden="true"
+        >
+          {notesCount}
+        </span>
+        <span className="notes-panel__visually-hidden">
+          {t('notesPanel.groupNotesCount', { count: notesCount })}
+        </span>
       </button>
 
       <GroupActions

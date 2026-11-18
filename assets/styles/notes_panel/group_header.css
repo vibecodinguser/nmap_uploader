@@ -21,7 +21,7 @@
   height: 100%;
   align-items: center;
   gap: 8px;
-  padding: 0 10px;
+  padding: 0 4px 0 10px;
   border: 0;
   background: transparent;
   color: inherit;
@@ -72,11 +72,33 @@
   font-weight: 600;
 }
 
+/*
+ * Количество заметок в группе.
+ *
+ * Раньше это было серое число вплотную к названию — его читали как часть
+ * названия («Мосты 12») или не замечали вовсе. Теперь это бейдж: стоит у
+ * правого края строки, на подложке, цифры табличные и полужирные.
+ *
+ * Справа, а не сразу за названием: так число не сливается с текстом, а
+ * выровненные по краю бейджи всех групп читаются столбцом — видно, где
+ * сколько объектов, не вчитываясь.
+ */
 .notes-panel__group-count {
+  display: inline-flex;
   flex: 0 0 auto;
+  min-width: 22px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 7px;
+  margin-left: auto;
   color: var(--muted-foreground, #6b6b6b);
   font-size: 12px;
-  font-weight: 400;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  background: color-mix(in srgb, var(--foreground, #1f1f1f) 8%, transparent);
+  border-radius: 10px;
+  box-sizing: border-box;
 }
 
 .notes-panel__group-actions {
@@ -84,6 +106,7 @@
   flex: 0 0 auto;
   align-items: center;
   gap: 2px;
+  margin-left: 6px;
 }
 
 .notes-panel__group-color {

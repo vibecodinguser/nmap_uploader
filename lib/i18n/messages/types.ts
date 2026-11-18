@@ -218,6 +218,7 @@ export type Messages = {
     renameGroup: string
     deleteGroup: string
     deleteGroupNotesCount: string
+    groupNotesCount: string
     deleteGroupConfirm: string
     deleteGroupKeepNotes: string
     deleteGroupCascade: string

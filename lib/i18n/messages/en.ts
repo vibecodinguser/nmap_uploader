@@ -217,6 +217,7 @@ export const enMessages = {
     renameGroup: 'Rename group',
     deleteGroup: 'Delete group',
     deleteGroupNotesCount: 'Notes in the group: {count}',
+    groupNotesCount: 'Notes in the group: {count}',
     deleteGroupConfirm: 'Delete group "{name}"?',
     deleteGroupKeepNotes: 'Ungroup',
     deleteGroupCascade: 'Delete',

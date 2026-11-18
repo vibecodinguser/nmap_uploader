@@ -470,6 +470,26 @@ describe('всплытие события drop', () => {
   })
 })
 
+describe('количество в группе', () => {
+  it('видно числом и озвучено словами, а не голой цифрой', () => {
+    renderList({
+      notes: [sampleNote({ groupId: 'group-1' })],
+      groups: [sampleGroup()],
+    })
+
+    // Одного числа рядом с названием мало: его читали как часть названия
+    // («Мосты 12»). Бейдж дополнен подписью для наведения и скринридера.
+    const badge = document.querySelector('.notes-panel__group-count') as HTMLElement
+    expect(badge.textContent).toBe('1')
+    expect(badge.getAttribute('title')).toBe('Заметок в группе: 1')
+    // Цифра скрыта от скринридера, а рядом лежит та же мысль словами: иначе
+    // в имени кнопки звучало бы «Мосты 1».
+    expect(badge.getAttribute('aria-hidden')).toBe('true')
+    expect(badge.nextElementSibling?.textContent).toBe('Заметок в группе: 1')
+    cleanup()
+  })
+})
+
 describe('диалог удаления группы', () => {
   const renderDialog = (onConfirm = vi.fn()) => {
     render(
