@@ -13,18 +13,21 @@ import { HatchPicker } from './HatchPicker'
 import { IconPicker } from './IconPicker'
 
 /**
- * Оформление заметки: иконка, цвет, заливка, штриховка, прозрачность,
- * граница, подпись.
+ * Оформление заметки: иконка, цвет, заливка со штриховкой и подписью,
+ * прозрачность с границей.
+ *
+ * Настройки собраны в две рамки, как блок узора штриховки: одиночные поля
+ * рассыпались по сетке, и было не видно, что прозрачность с толщиной границы
+ * относятся к одной вещи, а заливка со штриховкой и подписью — к другой.
+ * Внутри рамки поля идут в столбик и занимают её ширину целиком.
  *
  * Отдельных цветов у заливки и штриховки нет — обе рисуются цветом объекта.
  * Поэтому в `fillColor` хранится тот же цвет: по нему видно, включена ли
  * заливка, а сам цвет меняется вместе с общим.
  *
  * У точки прозрачности и толщины границы нет: это иконка фиксированного
- * размера, оба ползунка ничего не меняли на карте.
- *
- * Поля идут в общую сетку карточки (`notes-panel__fields`): широкие элементы
- * занимают всю строку, короткие встают по два в ряд, если места хватает.
+ * размера, оба ползунка ничего не меняли на карте. Поэтому рамка с ними
+ * показывается только там, где они что-то меняют.
  */
 export const NoteAppearance = ({
   note,
@@ -58,55 +61,72 @@ export const NoteAppearance = ({
         }
       />
 
-      {isFilledKind(note.kind) && (
-        <>
-          <label className="notes-panel__field notes-panel__field--checkbox">
-            <span className="notes-panel__check">
-              <input
-                type="checkbox"
-                checked={resolved.hasFill}
-                onChange={(event) =>
-                  onPatch({
-                    style: {
-                      ...note.style,
-                      fillColor: event.target.checked ? resolved.color : null,
-                    },
-                  })
-                }
-              />
-            </span>
-            <span>{t('notesPanel.fill')}</span>
-          </label>
+      <fieldset className="notes-panel__field-group">
+        <legend className="notes-panel__field-group-title">{t('notesPanel.groupFill')}</legend>
 
-          <label className="notes-panel__field notes-panel__field--checkbox">
-            <span className="notes-panel__check">
-              <input
-                type="checkbox"
-                checked={note.style.hatch !== null}
-                onChange={(event) =>
-                  onPatch({
-                    style: {
-                      ...note.style,
-                      hatch: event.target.checked ? { ...DEFAULT_HATCH } : null,
-                    },
-                  })
-                }
-              />
-            </span>
-            <span>{t('notesPanel.hatch')}</span>
-          </label>
+        {isFilledKind(note.kind) && (
+          <>
+            <label className="notes-panel__field notes-panel__field--checkbox">
+              <span className="notes-panel__check">
+                <input
+                  type="checkbox"
+                  checked={resolved.hasFill}
+                  onChange={(event) =>
+                    onPatch({
+                      style: {
+                        ...note.style,
+                        fillColor: event.target.checked ? resolved.color : null,
+                      },
+                    })
+                  }
+                />
+              </span>
+              <span>{t('notesPanel.fill')}</span>
+            </label>
 
-          {note.style.hatch && (
-            <HatchPicker
-              hatch={note.style.hatch}
-              onChange={(hatch) => onPatch({ style: { ...note.style, hatch } })}
+            <label className="notes-panel__field notes-panel__field--checkbox">
+              <span className="notes-panel__check">
+                <input
+                  type="checkbox"
+                  checked={note.style.hatch !== null}
+                  onChange={(event) =>
+                    onPatch({
+                      style: {
+                        ...note.style,
+                        hatch: event.target.checked ? { ...DEFAULT_HATCH } : null,
+                      },
+                    })
+                  }
+                />
+              </span>
+              <span>{t('notesPanel.hatch')}</span>
+            </label>
+
+            {note.style.hatch && (
+              <HatchPicker
+                hatch={note.style.hatch}
+                onChange={(hatch) => onPatch({ style: { ...note.style, hatch } })}
+              />
+            )}
+          </>
+        )}
+
+        <label className="notes-panel__field notes-panel__field--checkbox">
+          <span className="notes-panel__check">
+            <input
+              type="checkbox"
+              checked={note.showLabel}
+              onChange={(event) => onPatch({ showLabel: event.target.checked })}
             />
-          )}
-        </>
-      )}
+          </span>
+          <span>{t('notesPanel.showLabel')}</span>
+        </label>
+      </fieldset>
 
       {hasAdjustableStroke(note.kind) && (
-        <>
+        <fieldset className="notes-panel__field-group">
+          <legend className="notes-panel__field-group-title">{t('notesPanel.groupStroke')}</legend>
+
           <label className="notes-panel__field">
             <span className="notes-panel__field-label notes-panel__field-label--split">
               {t('notesPanel.opacity')}
@@ -142,19 +162,8 @@ export const NoteAppearance = ({
               }
             />
           </label>
-        </>
+        </fieldset>
       )}
-
-      <label className="notes-panel__field notes-panel__field--checkbox">
-        <span className="notes-panel__check">
-          <input
-            type="checkbox"
-            checked={note.showLabel}
-            onChange={(event) => onPatch({ showLabel: event.target.checked })}
-          />
-        </span>
-        <span>{t('notesPanel.showLabel')}</span>
-      </label>
     </>
   )
 }

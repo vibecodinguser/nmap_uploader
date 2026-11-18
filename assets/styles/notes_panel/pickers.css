@@ -2,15 +2,21 @@
  * Выбор узора штриховки.
  */
 
-/* Штриховка: узор, цвет и толщина линий. */
+/*
+ * Узор штриховки.
+ *
+ * Рамки здесь нет: блок вложен в общую рамку оформления
+ * (`.notes-panel__field-group`), и вторая рамка внутри первой выглядела бы как
+ * вложенная таблица. Остаются подпись и ряд плиток.
+ */
 .notes-panel__hatch {
   display: flex;
+  min-width: 0;
   flex-direction: column;
   gap: 10px;
   margin: 0;
-  padding: 12px 14px;
-  border: 1px solid var(--border, #e6e6e6);
-  border-radius: var(--notes-radius, 8px);
+  padding: 0;
+  border: 0;
 }
 
 .notes-panel__hatch-patterns {

@@ -178,6 +178,41 @@ describe('заливка по умолчанию', () => {
   })
 })
 
+describe('группировка настроек', () => {
+  it('заливка, штриховка и подпись стоят в одной рамке', () => {
+    renderProps(
+      note({ style: { ...createDefaultStyle('Polygon'), hatch: { pattern: 'diagonal' } } }),
+    )
+
+    const group = screen.getByRole('group', { name: 'Заливка, штриховка и подпись' })
+    const inside = (name: string) => group.contains(screen.getByRole('checkbox', { name }))
+
+    expect(inside('Заливка')).toBe(true)
+    expect(inside('Штриховка')).toBe(true)
+    expect(inside('Подпись на карте')).toBe(true)
+    // Узор — часть штриховки, поэтому он тоже внутри рамки.
+    expect(group.contains(screen.getByRole('button', { name: 'Диагональ' }))).toBe(true)
+  })
+
+  it('прозрачность и толщина границы стоят в другой рамке', () => {
+    renderProps(note())
+
+    const group = screen.getByRole('group', { name: 'Прозрачность и граница' })
+    const sliders = screen.getAllByRole('slider')
+
+    expect(sliders).toHaveLength(2)
+    for (const slider of sliders) {
+      expect(group.contains(slider)).toBe(true)
+    }
+  })
+
+  it('у точки рамки с прозрачностью нет: ползунки там ничего не меняют', () => {
+    renderProps(note({ kind: 'Point', style: createDefaultStyle('Point') }))
+
+    expect(screen.queryByRole('group', { name: 'Прозрачность и граница' })).toBeNull()
+  })
+})
+
 describe('HatchPreview', () => {
   const renderPattern = (pattern: Parameters<typeof HatchPreview>[0]['pattern']) => {
     const { container } = render(<HatchPreview pattern={pattern} />)

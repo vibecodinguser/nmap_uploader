@@ -129,6 +129,38 @@
   cursor: pointer;
 }
 
+/*
+ * Рамка группы настроек.
+ *
+ * Раньше так выглядел только блок штриховки. Теперь это общий приём карточки:
+ * настройки, которые относятся к одному и тому же, стоят вместе, а не
+ * рассыпаются по сетке полей. Внутри поля идут в столбик на всю ширину.
+ *
+ * `grid-column: 1 / -1` — рамка всегда занимает строку целиком: две колонки
+ * полей рядом с ней оставили бы пустое место.
+ */
+.notes-panel__field-group {
+  display: flex;
+  grid-column: 1 / -1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border, #e6e6e6);
+  border-radius: var(--notes-radius, 8px);
+}
+
+/*
+ * Подпись рамки. `legend` по умолчанию стоит на линии рамки, поэтому ему нужен
+ * горизонтальный отступ — иначе текст касается границы.
+ */
+.notes-panel__field-group-title {
+  padding: 0 6px;
+  color: var(--muted-foreground, #6b6b6b);
+  font-size: 12px;
+}
+
 .notes-panel__colors {
   display: flex;
   flex-wrap: wrap;

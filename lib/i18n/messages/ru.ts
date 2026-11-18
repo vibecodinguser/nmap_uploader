@@ -230,6 +230,8 @@ export const ruMessages = {
     iconNone: 'Без иконки',
     sectionMain: 'Основное',
     sectionAppearance: 'Оформление',
+    groupFill: 'Заливка, штриховка и подпись',
+    groupStroke: 'Прозрачность и граница',
     filterKind: 'Фильтр по виду',
     filterGroup: 'Фильтр по группе',
     filterAllGroups: 'Все группы',

@@ -231,6 +231,8 @@ export type Messages = {
     iconNone: string
     sectionMain: string
     sectionAppearance: string
+    groupFill: string
+    groupStroke: string
     filterKind: string
     filterGroup: string
     filterAllGroups: string
