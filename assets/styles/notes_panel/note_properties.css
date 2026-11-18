@@ -154,7 +154,10 @@
   grid-column: 1 / -1;
   grid-template-columns: minmax(0, 2.4fr) repeat(3, minmax(0, 1fr));
   gap: 14px 18px;
-  align-items: start;
+
+  /* Рамки выравниваются по высоте самой высокой: иконка выше остальных на два
+     ряда плиток, и без этого три блока повисали разной длины. */
+  align-items: stretch;
 }
 
 /*
