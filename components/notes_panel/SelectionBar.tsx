@@ -5,9 +5,9 @@ import { NotesSelect } from './NotesSelect'
 /**
  * Панель массовых действий.
  *
- * Появляется только когда что-то отмечено: постоянно висящая панель с
- * неактивными кнопками отнимает место у списка, который и так живёт в четверти
- * экрана.
+ * Появляется только когда что-то отмечено, и встаёт на место строки
+ * инструментов (`ListToolbar`): постоянно висящая панель с неактивными
+ * кнопками отнимает место у списка, который и так живёт в четверти экрана.
  *
  * Удаление пачки не имеет возврата — в отличие от одиночного удаления: тост
  * «Отменить» не может вернуть десятки геометрий. Поэтому рядом с кнопкой
@@ -66,7 +66,11 @@ export const SelectionBar = ({
         {t('notesPanel.deleteSelected')}
       </button>
 
-      <button type="button" className="notes-panel__link-button" onClick={onClear}>
+      <button
+        type="button"
+        className="notes-panel__link-button notes-panel__selection-exit"
+        onClick={onClear}
+      >
         {t('notesPanel.clearSelection')}
       </button>
     </section>

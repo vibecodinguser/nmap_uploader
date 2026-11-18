@@ -67,55 +67,57 @@ export const FilterBar = ({
         })}
       </fieldset>
 
-      {groups.length > 0 && (
+      <div className="notes-panel__filter-selects">
+        {groups.length > 0 && (
+          <NotesSelect
+            id={NOTES_PANEL_BUTTON_IDS.filterGroup}
+            label={t('notesPanel.filterGroup')}
+            value={filter.group}
+            options={[
+              { value: GROUP_FILTER_ALL, label: t('notesPanel.filterAllGroups') },
+              { value: GROUP_FILTER_NONE, label: t('notesPanel.ungrouped') },
+              ...groups.map((group) => ({ value: group.id, label: group.name })),
+            ]}
+            onChange={(group) => onChange({ group })}
+          />
+        )}
+
         <NotesSelect
-          id={NOTES_PANEL_BUTTON_IDS.filterGroup}
-          label={t('notesPanel.filterGroup')}
-          value={filter.group}
+          id={NOTES_PANEL_BUTTON_IDS.filterVisibility}
+          label={t('notesPanel.filterVisibility')}
+          value={filter.visibility}
           options={[
-            { value: GROUP_FILTER_ALL, label: t('notesPanel.filterAllGroups') },
-            { value: GROUP_FILTER_NONE, label: t('notesPanel.ungrouped') },
-            ...groups.map((group) => ({ value: group.id, label: group.name })),
+            { value: 'all', label: t('notesPanel.filterVisibilityAll') },
+            { value: 'visible', label: t('notesPanel.filterVisible') },
+            { value: 'hidden', label: t('notesPanel.filterHidden') },
           ]}
-          onChange={(group) => onChange({ group })}
+          onChange={(visibility) => onChange({ visibility: visibility as VisibilityFilter })}
         />
-      )}
 
-      <NotesSelect
-        id={NOTES_PANEL_BUTTON_IDS.filterVisibility}
-        label={t('notesPanel.filterVisibility')}
-        value={filter.visibility}
-        options={[
-          { value: 'all', label: t('notesPanel.filterVisibilityAll') },
-          { value: 'visible', label: t('notesPanel.filterVisible') },
-          { value: 'hidden', label: t('notesPanel.filterHidden') },
-        ]}
-        onChange={(visibility) => onChange({ visibility: visibility as VisibilityFilter })}
-      />
+        <NotesSelect
+          id={NOTES_PANEL_BUTTON_IDS.filterSort}
+          label={t('notesPanel.sort')}
+          value={filter.sort}
+          options={[
+            { value: 'name', label: t('notesPanel.sortName') },
+            { value: 'nameDesc', label: t('notesPanel.sortNameDesc') },
+            { value: 'date', label: t('notesPanel.sortDate') },
+            { value: 'dateDesc', label: t('notesPanel.sortDateDesc') },
+          ]}
+          onChange={(sort) => onChange({ sort: sort as NoteSort })}
+        />
 
-      <NotesSelect
-        id={NOTES_PANEL_BUTTON_IDS.filterSort}
-        label={t('notesPanel.sort')}
-        value={filter.sort}
-        options={[
-          { value: 'name', label: t('notesPanel.sortName') },
-          { value: 'nameDesc', label: t('notesPanel.sortNameDesc') },
-          { value: 'date', label: t('notesPanel.sortDate') },
-          { value: 'dateDesc', label: t('notesPanel.sortDateDesc') },
-        ]}
-        onChange={(sort) => onChange({ sort: sort as NoteSort })}
-      />
-
-      {hasActiveFilters(filter) && (
-        <button
-          type="button"
-          id={NOTES_PANEL_BUTTON_IDS.filterReset}
-          className="notes-panel__link-button"
-          onClick={onReset}
-        >
-          {t('notesPanel.filterReset')}
-        </button>
-      )}
+        {hasActiveFilters(filter) && (
+          <button
+            type="button"
+            id={NOTES_PANEL_BUTTON_IDS.filterReset}
+            className="notes-panel__link-button"
+            onClick={onReset}
+          >
+            {t('notesPanel.filterReset')}
+          </button>
+        )}
+      </div>
     </div>
   )
 }

@@ -165,7 +165,7 @@ export type Messages = {
   notesPanel: {
     title: string
     editButton: string
-    create: string
+    createNote: string
     searchPlaceholder: string
     loading: string
     authRequired: string

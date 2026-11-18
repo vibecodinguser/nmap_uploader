@@ -164,7 +164,7 @@ export const ruMessages = {
   notesPanel: {
     title: 'Заметки',
     editButton: 'Редактировать',
-    create: 'Создать',
+    createNote: 'Заметка',
     searchPlaceholder: 'Поиск по названию',
     loading: 'Загрузка заметок…',
     authRequired: 'Войдите в Яндекс, чтобы видеть заметки',

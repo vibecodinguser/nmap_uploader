@@ -46,7 +46,7 @@ body {
 .notes-panel__search {
   flex: 1 1 160px;
   min-width: 0;
-  max-width: 420px;
+  max-width: 640px;
   height: var(--notes-control, 40px);
   padding: 0 12px;
   border: 1px solid var(--border, #e6e6e6);
@@ -208,17 +208,62 @@ body {
 }
 
 /*
- * Фильтры списка: ряд кнопок видов и три селекта. Держим их в одну строку с
- * переносом — панель по умолчанию занимает четверть экрана.
+ * Строка инструментов списка: создание, разделитель, фильтры.
+ *
+ * Одна строка с переносом — панель по умолчанию занимает четверть экрана. На
+ * узкой панели создание и виды остаются первой строкой, списки уходят на
+ * вторую.
+ *
+ * Высота совпадает с панелью выбора, которая встаёт на это же место: при
+ * отметке список не сдвигается.
  */
-.notes-panel__filters {
+.notes-panel__toolbar,
+.notes-panel__selection {
   display: flex;
+  min-height: var(--notes-toolbar-height, 56px);
   flex: 0 0 auto;
   flex-wrap: wrap;
-  gap: 8px;
   align-items: center;
+  gap: 8px;
   padding: 8px 14px;
   border-bottom: 1px solid var(--border, #e6e6e6);
+  box-sizing: border-box;
+}
+
+.notes-panel__create-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.notes-panel__toolbar-divider {
+  width: 1px;
+  height: 28px;
+  margin: 0 4px;
+  background: var(--border, #e6e6e6);
+}
+
+/* Фильтры — элементы строки инструментов, отдельной коробки у них нет:
+   иначе перенос шёл бы целым блоком, а не по одному контролу. */
+.notes-panel__filters,
+.notes-panel__filter-selects {
+  display: contents;
+}
+
+/* Узкая панель: списки фильтров целиком уходят на вторую строку, а не
+   разрываются между строками по одному. */
+@media (width < 700px) {
+  .notes-panel__toolbar-divider {
+    display: none;
+  }
+
+  .notes-panel__filter-selects {
+    display: flex;
+    flex: 1 0 100%;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
 }
 
 .notes-panel__filter-kinds {
@@ -478,28 +523,28 @@ body {
     animation: none;
   }
 
-  .notes-panel__select-tick {
+  .notes-panel__select-tick,
+  .notes-panel__button-tick {
     transition: none;
   }
 }
 
 /*
- * Панель массовых действий: появляется только при отметках, поэтому живёт
- * между фильтрами и списком и не занимает места впустую.
+ * Панель массовых действий: появляется только при отметках и встаёт на место
+ * строки инструментов. Акцентный фон говорит, что панель в режиме выбора, а
+ * не просто сменила кнопки.
  */
 .notes-panel__selection {
-  display: flex;
-  flex: 0 0 auto;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  padding: 8px 14px;
-  background: var(--notes-hover, rgb(0 0 0 / 6%));
-  border-bottom: 1px solid var(--border, #e6e6e6);
+  background: color-mix(in srgb, var(--notes-accent, #ffdb4d) 18%, transparent);
 }
 
 .notes-panel__selection-count {
   font-weight: 600;
+}
+
+/* «Снять отметки» — выход из режима, поэтому стоит отдельно справа. */
+.notes-panel__selection-exit {
+  margin-left: auto;
 }
 
 .notes-panel__head-actions {
@@ -512,6 +557,30 @@ body {
 
 .notes-panel__create {
   position: relative;
+}
+
+.notes-panel__create .notes-panel__button {
+  gap: 8px;
+}
+
+/* Стрелка «откроется список» — та же маска, что у выпадающих списков. */
+.notes-panel__button-tick {
+  width: 11px;
+  height: 6px;
+  background: currentcolor;
+  mask-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='6'%3E%3Cpath d='M10.3 0 5.5 4.7.7 0 0 .7 5.5 6 11 .7z'/%3E%3C/svg%3E");
+  mask-size: 100% 100%;
+  mask-repeat: no-repeat;
+  transition: transform 0.1s ease-out;
+}
+
+[aria-expanded="true"] > .notes-panel__button-tick {
+  transform: rotate(180deg);
+}
+
+.notes-panel__button:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .notes-panel__button {

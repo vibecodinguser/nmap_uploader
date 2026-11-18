@@ -164,7 +164,7 @@ export const enMessages = {
   notesPanel: {
     title: 'Notes',
     editButton: 'Edit',
-    create: 'Create',
+    createNote: 'Note',
     searchPlaceholder: 'Search by name',
     loading: 'Loading notes…',
     authRequired: 'Sign in to Yandex to see your notes',

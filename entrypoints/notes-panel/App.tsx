@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import { DeleteGroupDialog } from '@/components/notes_panel/DeleteGroupDialog'
-import { FilterBar } from '@/components/notes_panel/FilterBar'
+import { ListToolbar } from '@/components/notes_panel/ListToolbar'
 import { NoteList } from '@/components/notes_panel/NoteList'
 import { NoteProperties } from '@/components/notes_panel/NoteProperties'
 import { PanelHeader, type PanelLayout } from '@/components/notes_panel/PanelHeader'
 import { PanelStatus } from '@/components/notes_panel/PanelStatus'
 import { PanelToasts } from '@/components/notes_panel/PanelToasts'
-import { SelectionBar } from '@/components/notes_panel/SelectionBar'
 import { useLocale } from '@/hooks/useLocale'
 import { useNotesPanel } from '@/hooks/useNotesPanel'
 import { buildAutoNoteName } from '@/lib/notes/model/autonames'
@@ -50,9 +49,6 @@ export const NotesPanelApp = () => {
       <PanelHeader
         mode={panel.mode}
         search={{ value: panel.query, onChange: panel.setQuery }}
-        drawingKind={panel.drawingKind}
-        onCreateGroup={() => panel.createGroup(t('notesPanel.newGroupName'))}
-        onStartDrawing={panel.startDrawing}
         layout={layout}
         onToggleLayout={setLayout}
       />
@@ -65,22 +61,26 @@ export const NotesPanelApp = () => {
         />
 
         {panel.status === 'ready' && panel.mode === 'list' && (
-          <FilterBar
-            filter={panel.filters}
-            groups={panel.groups}
-            onChange={panel.setFilters}
-            onReset={panel.resetFilters}
-          />
-        )}
-
-        {panel.status === 'ready' && panel.mode === 'list' && (
-          <SelectionBar
-            count={panel.checkedIds.length}
-            groups={panel.groups}
-            onSelectAll={() => panel.checkAllVisible(panel.notes.map((note) => note.id))}
-            onClear={panel.clearChecked}
-            onDelete={panel.deleteChecked}
-            onMoveToGroup={panel.moveCheckedToGroup}
+          <ListToolbar
+            create={{
+              drawing: Boolean(panel.drawingKind),
+              onCreateGroup: () => panel.createGroup(t('notesPanel.newGroupName')),
+              onStartDrawing: panel.startDrawing,
+            }}
+            filters={{
+              filter: panel.filters,
+              groups: panel.groups,
+              onChange: panel.setFilters,
+              onReset: panel.resetFilters,
+            }}
+            selection={{
+              count: panel.checkedIds.length,
+              groups: panel.groups,
+              onSelectAll: () => panel.checkAllVisible(panel.notes.map((note) => note.id)),
+              onClear: panel.clearChecked,
+              onDelete: panel.deleteChecked,
+              onMoveToGroup: panel.moveCheckedToGroup,
+            }}
           />
         )}
 
