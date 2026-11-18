@@ -1,9 +1,8 @@
 /*
  * Свойства заметки: разделы, поля, палитра, действия.
  *
- * Поля идут сеткой в ширину: в карточке объекта много свободного места, и
- * короткие поля встают по два в ряд. На узкой панели сетка сама схлопывается
- * в одну колонку, поэтому отдельного медиа-запроса не нужно.
+ * Поля идут сеткой на всю ширину панели: три колонки на широкой, две на
+ * средней, одна на узкой.
  */
 
 .notes-panel__properties {
@@ -110,25 +109,37 @@
 }
 
 /*
- * Сетка карточки: восемь колонок на всю страницу заметки.
+ * Сетка карточки: именованные области, у каждой ширины своя схема.
  *
- * Раскладка задана линиями, а не шириной блоков:
+ *   ≥ 1200 px     name  color   icon
+ *                 desc  pattern icon
+ *                 desc  stroke  icon
  *
- *   линия 1: название 3 | группа 1 | цвет 4
- *   линия 2: описание 2 | иконка 3 | границы 3
- *   линия 3: поверхность 2
+ *   700–1199 px   name  color
+ *                 desc  pattern
+ *                 desc  stroke
+ *                 icon  icon
  *
- * Места расставлены явно через `grid-area`. Порядок в разметке другой (описание
- * идёт раньше блоков оформления) — это нужно для узкого экрана: там сетка
- * схлопывается в одну колонку, и естественный порядок «название, группа,
- * описание, оформление» читается правильно.
+ *   < 700 px      один столбец в порядке разметки
  *
- * Восемь долей `1fr` без `minmax` нельзя: иконки и плитки узоров задают
- * минимальную ширину содержимого, и колонки разъехались бы шире панели.
+ * Сетка иконок — самый высокий блок (42 плитки). В одной строке с названием
+ * она растягивала строку, и под полями оставалась пустота. Поэтому на широкой
+ * панели иконки занимают свою колонку на всю высоту, а на средней уходят вниз
+ * во всю ширину — там плиток в ряду больше и рядов меньше.
+ *
+ * У вида может не быть блока (у точки — узора и границ, у линии — узора):
+ * его область остаётся пустой, а соседи не съезжают на чужие места.
+ *
+ * `minmax(0, …)` обязателен: иконки и плитки узоров задают минимальную ширину
+ * содержимого, и без него колонки разъехались бы шире панели.
  */
 .notes-panel__properties-grid {
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template:
+    "name color icon" auto
+    "desc pattern icon" auto
+    "desc stroke icon" 1fr
+    / minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
   gap: 14px 18px;
   align-items: stretch;
 }
@@ -138,54 +149,79 @@
   display: contents;
 }
 
-.notes-panel__field--name {
-  grid-area: 1 / 1 / 2 / 4;
-  align-self: center;
+/*
+ * Название, группа и флажок подписи. Название с группой стоят в ряд; когда
+ * места мало, группа переносится под название.
+ */
+.notes-panel__identity {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-content: start;
+  gap: 10px 18px;
+  grid-area: name;
 }
 
-.notes-panel__field--group {
-  grid-area: 1 / 4 / 2 / 5;
-  align-self: center;
+.notes-panel__identity .notes-panel__field--name {
+  flex: 2 1 220px;
+}
+
+.notes-panel__identity .notes-panel__field--group {
+  flex: 1 1 160px;
+}
+
+.notes-panel__field--show-label {
+  flex: 1 0 100%;
+}
+
+/* Описание тянется на высоту строки: рядом с высоким блоком нет дыры. */
+.notes-panel__field--description {
+  grid-area: desc;
+}
+
+.notes-panel__field--description .notes-panel__textarea {
+  flex: 1 1 auto;
 }
 
 .notes-panel__field-group--color {
-  grid-area: 1 / 5 / 2 / 9;
+  grid-area: color;
 }
 
-.notes-panel__field--description {
-  grid-area: 2 / 1 / 3 / 3;
+.notes-panel__field-group--pattern {
+  grid-area: pattern;
 }
 
 .notes-panel__field-group--icon {
-  grid-area: 2 / 3 / 3 / 6;
+  grid-area: icon;
 }
 
 .notes-panel__field-group--stroke {
-  grid-area: 2 / 6 / 3 / 9;
+  grid-area: stroke;
 }
 
-.notes-panel__field-group--surface {
-  grid-area: 3 / 1 / 4 / 3;
+@media (width < 1200px) {
+  .notes-panel__properties-grid {
+    grid-template:
+      "name color"
+      "desc pattern"
+      "desc stroke"
+      "icon icon"
+      / minmax(0, 1fr) minmax(0, 1fr);
+  }
 }
 
 /*
- * Узкая панель: восемь колонок превращаются в кашу, поэтому всё встаёт в один
- * столбец. Явные `grid-area` приходится сбрасывать — иначе блоки остались бы на
- * своих местах и наложились друг на друга.
+ * Узкая панель: один столбец. Сетка здесь не нужна — пустые области дали бы
+ * двойные зазоры, а колонка в порядке разметки читается сама.
  */
-
-@media (width <= 900px) {
+@media (width < 700px) {
   .notes-panel__properties-grid {
-    grid-template-columns: minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
   }
 
-  .notes-panel__properties-grid > .notes-panel__field,
-  .notes-panel__properties-grid .notes-panel__field-group {
-    grid-area: auto;
-  }
-
-  /* На узком экране блок во всю ширину — сетку иконок выравниваем по левому
-     краю, как остальные подписи карточки. */
+  /* Блок во всю ширину — сетку иконок выравниваем по левому краю, как
+     остальные подписи карточки. */
   .notes-panel__icons {
     justify-content: start;
   }

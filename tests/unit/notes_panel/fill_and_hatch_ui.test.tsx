@@ -105,19 +105,36 @@ describe('заливка', () => {
     })
   })
 
-  it('у линии заливки и штриховки нет', () => {
-    renderProps(note({ kind: 'Line', style: createDefaultStyle('Line') }))
+  it.each([
+    ['Line', 'линии'],
+    ['Point', 'точки'],
+  ] as const)('у %s (%s) заливки и узора нет', (kind) => {
+    renderProps(note({ kind, style: createDefaultStyle(kind) }))
 
     expect(screen.queryByRole('checkbox', { name: 'Заливка' })).toBeNull()
-    expect(screen.queryByRole('checkbox', { name: 'Штриховка' })).toBeNull()
+    expect(screen.queryByRole('group', { name: 'Узор' })).toBeNull()
   })
 })
 
 describe('штриховка', () => {
-  it('по умолчанию выключена, при включении получает узор', () => {
+  it('по умолчанию выключена: нажата плитка «Без узора»', () => {
+    renderProps(note({ style: createDefaultStyle('Polygon') }))
+
+    expect(screen.getByRole('button', { name: 'Без узора' }).getAttribute('aria-pressed')).toBe(
+      'true',
+    )
+  })
+
+  it.each(['Polygon', 'Square', 'Circle'] as const)('блок «Узор» есть у %s', (kind) => {
+    renderProps(note({ kind, style: createDefaultStyle(kind) }))
+
+    expect(screen.getByRole('group', { name: 'Узор' })).toBeTruthy()
+  })
+
+  it('включается выбором узора', () => {
     const onPatch = renderProps(note({ style: createDefaultStyle('Polygon') }))
 
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Штриховка' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Диагональ' }))
 
     expect(onPatch).toHaveBeenCalledWith({
       style: expect.objectContaining({ hatch: { pattern: 'diagonal' } }),
@@ -157,12 +174,15 @@ describe('штриховка', () => {
     })
   })
 
-  it('выключается обратно', () => {
+  it('выключается плиткой «Без узора»', () => {
     const onPatch = renderProps(
       note({ style: { ...createDefaultStyle('Polygon'), hatch: { pattern: 'grid' } } }),
     )
 
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Штриховка' }))
+    expect(screen.getByRole('button', { name: 'Без узора' }).getAttribute('aria-pressed')).toBe(
+      'false',
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Без узора' }))
 
     expect(onPatch).toHaveBeenCalledWith({
       style: expect.objectContaining({ hatch: null }),
@@ -180,19 +200,36 @@ describe('заливка по умолчанию', () => {
 })
 
 describe('группировка настроек', () => {
-  it('заливка, штриховка и подпись стоят в одной рамке', () => {
-    renderProps(
-      note({ style: { ...createDefaultStyle('Polygon'), hatch: { pattern: 'diagonal' } } }),
+  it('заливка стоит в рамке цвета: она рисуется этим же цветом', () => {
+    renderProps(note())
+
+    const group = screen.getByRole('group', { name: 'Цвет' })
+
+    expect(group.contains(screen.getByRole('checkbox', { name: 'Заливка' }))).toBe(true)
+  })
+
+  it.each(['Point', 'Line', 'Polygon'] as const)('подпись стоит при названии у %s', (kind) => {
+    renderProps(note({ kind, style: createDefaultStyle(kind) }))
+
+    const identity = screen.getByPlaceholderText('Название').closest('.notes-panel__identity')
+
+    expect(identity?.contains(screen.getByRole('checkbox', { name: 'Подпись на карте' }))).toBe(
+      true,
     )
+  })
 
-    const group = screen.getByRole('group', { name: 'Поверхность' })
-    const inside = (name: string) => group.contains(screen.getByRole('checkbox', { name }))
+  it('флажок подписи меняет showLabel', () => {
+    const onPatch = renderProps(note({ showLabel: false }))
 
-    expect(inside('Заливка')).toBe(true)
-    expect(inside('Штриховка')).toBe(true)
-    expect(inside('Подпись на карте')).toBe(true)
-    // Узор — часть штриховки, поэтому он тоже внутри рамки.
-    expect(group.contains(screen.getByRole('button', { name: 'Диагональ' }))).toBe(true)
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Подпись на карте' }))
+
+    expect(onPatch).toHaveBeenCalledWith({ showLabel: true })
+  })
+
+  it('блока «Поверхность» больше нет', () => {
+    renderProps(note())
+
+    expect(screen.queryByRole('group', { name: 'Поверхность' })).toBeNull()
   })
 
   it('прозрачность и толщина границы стоят в другой рамке', () => {
@@ -221,7 +258,7 @@ describe('группировка настроек', () => {
 
     // Обёртка оформления прозрачна для сетки (`display: contents`), поэтому
     // все четыре блока и поля карточки — её элементы, а не вложенные группы.
-    for (const name of ['Иконка', 'Цвет', 'Поверхность', 'Границы']) {
+    for (const name of ['Цвет', 'Узор', 'Иконка', 'Границы']) {
       expect(screen.getByRole('group', { name }).closest('.notes-panel__properties-grid')).toBe(
         grid,
       )
@@ -231,18 +268,24 @@ describe('группировка настроек', () => {
     )
   })
 
-  it('места в сетке заданы линиями: название, группа и иконка — первая', () => {
+  it('у каждой области сетки есть свой блок', () => {
     renderProps(note({ groupId: null }), vi.fn(), [sampleGroup()])
 
-    // Места расставлены через grid-area, а не шириной: проверяем сами классы —
-    // именно они держат раскладку 3 / 1 / 4, 4 / 2 / 2, 2.
-    expect(document.querySelector('.notes-panel__field--name')).not.toBeNull()
-    expect(document.querySelector('.notes-panel__field--group')).not.toBeNull()
-    expect(document.querySelector('.notes-panel__field--description')).not.toBeNull()
-    expect(document.querySelector('.notes-panel__field-group--icon')).not.toBeNull()
-    expect(document.querySelector('.notes-panel__field-group--color')).not.toBeNull()
-    expect(document.querySelector('.notes-panel__field-group--stroke')).not.toBeNull()
-    expect(document.querySelector('.notes-panel__field-group--surface')).not.toBeNull()
+    // Области задаются в CSS по этим классам (`grid-area: name` и т. д.).
+    const grid = document.querySelector('.notes-panel__properties-grid')
+    for (const selector of [
+      '.notes-panel__identity',
+      '.notes-panel__field--description',
+      '.notes-panel__field-group--color',
+      '.notes-panel__field-group--pattern',
+      '.notes-panel__field-group--icon',
+      '.notes-panel__field-group--stroke',
+    ]) {
+      expect(grid?.querySelector(selector)).not.toBeNull()
+    }
+    const identity = document.querySelector('.notes-panel__identity')
+    expect(identity?.querySelector('.notes-panel__field--name')).not.toBeNull()
+    expect(identity?.querySelector('.notes-panel__field--group')).not.toBeNull()
   })
 })
 

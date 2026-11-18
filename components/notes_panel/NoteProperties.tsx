@@ -48,52 +48,58 @@ export const NoteProperties = ({
       </div>
 
       {/*
-       * Одна сетка на восемь колонок — вся карточка целиком, без разделов
-       * «Основное» и «Оформление»: раскладка задана линиями, и заголовки
-       * разрывали бы её пополам.
-       *
-       *   линия 1: название 3 | группа 1 | иконка 4
-       *   линия 2: описание 4 | цвет 2 | границы 2
-       *   линия 3: поверхность 2
-       *
-       * Места задаются явно (`grid-area`), а не порядком в разметке: так
-       * описание стоит после названия в DOM — это даёт правильный порядок при
-       * переносе в одну колонку на узком экране.
+       * Одна сетка на всю карточку; места блоков — именованные области,
+       * раскладка по ширине описана в `note_properties.css`. Порядок в разметке
+       * — порядок чтения в одну колонку на узкой панели.
        */}
       <div className="notes-panel__properties-grid">
-        <label className="notes-panel__field notes-panel__field--name">
-          <span className="notes-panel__field-label">{t('notesPanel.namePlaceholder')}</span>
-          <input
-            className="notes-panel__input"
-            value={note.name}
-            onChange={(event) => onPatch({ name: event.target.value })}
-            onBlur={() => {
-              if (!note.name.trim()) onPatch({ name: fallbackName })
-            }}
-            placeholder={t('notesPanel.namePlaceholder')}
-          />
-        </label>
-
-        {groups.length > 0 && (
-          /*
-           * Не `label`: внутри кнопка, и клик по любому месту подписи
-           * открывал бы список — включая клик по пункту.
-           */
-          <div className="notes-panel__field notes-panel__field--group">
-            <span className="notes-panel__field-label">{t('notesPanel.group')}</span>
-            <NotesSelect
-              id={NOTES_PANEL_BUTTON_IDS.noteGroup}
-              label={t('notesPanel.group')}
-              block
-              value={note.groupId ?? ''}
-              options={[
-                { value: '', label: t('notesPanel.ungrouped') },
-                ...groups.map((group) => ({ value: group.id, label: group.name })),
-              ]}
-              onChange={(groupId) => onMoveToGroup(groupId || null)}
+        <div className="notes-panel__identity">
+          <label className="notes-panel__field notes-panel__field--name">
+            <span className="notes-panel__field-label">{t('notesPanel.namePlaceholder')}</span>
+            <input
+              className="notes-panel__input"
+              value={note.name}
+              onChange={(event) => onPatch({ name: event.target.value })}
+              onBlur={() => {
+                if (!note.name.trim()) onPatch({ name: fallbackName })
+              }}
+              placeholder={t('notesPanel.namePlaceholder')}
             />
-          </div>
-        )}
+          </label>
+
+          {groups.length > 0 && (
+            /*
+             * Не `label`: внутри кнопка, и клик по любому месту подписи
+             * открывал бы список — включая клик по пункту.
+             */
+            <div className="notes-panel__field notes-panel__field--group">
+              <span className="notes-panel__field-label">{t('notesPanel.group')}</span>
+              <NotesSelect
+                id={NOTES_PANEL_BUTTON_IDS.noteGroup}
+                label={t('notesPanel.group')}
+                block
+                value={note.groupId ?? ''}
+                options={[
+                  { value: '', label: t('notesPanel.ungrouped') },
+                  ...groups.map((group) => ({ value: group.id, label: group.name })),
+                ]}
+                onChange={(groupId) => onMoveToGroup(groupId || null)}
+              />
+            </div>
+          )}
+
+          {/* Подпись — это название на карте, поэтому флажок стоит при нём. */}
+          <label className="notes-panel__field notes-panel__field--checkbox notes-panel__field--show-label">
+            <span className="notes-panel__check">
+              <input
+                type="checkbox"
+                checked={note.showLabel}
+                onChange={(event) => onPatch({ showLabel: event.target.checked })}
+              />
+            </span>
+            <span>{t('notesPanel.showLabel')}</span>
+          </label>
+        </div>
 
         <label className="notes-panel__field notes-panel__field--description">
           <span className="notes-panel__field-label">{t('notesPanel.descriptionPlaceholder')}</span>

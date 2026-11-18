@@ -189,8 +189,8 @@ export type Messages = {
     opacity: string
     strokeWidth: string
     fill: string
-    hatch: string
     hatchPattern: string
+    hatchNone: string
     hatchDiagonal: string
     hatchBackDiagonal: string
     hatchGrid: string
@@ -229,7 +229,6 @@ export type Messages = {
     iconNone: string
     sectionMain: string
     sectionAppearance: string
-    groupFill: string
     groupStroke: string
     filterKind: string
     filterGroup: string

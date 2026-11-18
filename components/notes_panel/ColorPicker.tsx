@@ -1,16 +1,23 @@
-import { useEffect, useState } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 import { useLocale } from '@/hooks/useLocale'
 import { NOTE_PALETTE } from '@/lib/notes/model/palette'
 
-/** Выбор цвета заметки: фиксированная палитра плюс свой цвет. */
+/**
+ * Выбор цвета заметки: фиксированная палитра плюс свой цвет.
+ *
+ * `children` рисуются под палитрой в той же рамке — сюда встают настройки,
+ * которые берут этот же цвет (заливка).
+ */
 export const ColorPicker = ({
   value,
   onChange,
   label,
+  children,
 }: {
   value: string | null
   onChange: (color: string) => void
   label: string
+  children?: ReactNode
 }) => {
   const { t } = useLocale()
   const [custom, setCustom] = useState(value ?? NOTE_PALETTE[0])
@@ -49,6 +56,7 @@ export const ColorPicker = ({
           />
         </label>
       </div>
+      {children}
     </fieldset>
   )
 }

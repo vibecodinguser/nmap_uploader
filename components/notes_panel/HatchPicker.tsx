@@ -105,29 +105,45 @@ const patternLabelKey = (pattern: HatchPattern) =>
     | 'notesPanel.hatchDots'
     | 'notesPanel.hatchHorizontal'
 
-/** Выбор узора штриховки. Цвет и толщина линий не настраиваются. */
+/**
+ * Выбор узора штриховки. Цвет и толщина линий не настраиваются.
+ *
+ * Отдельного флажка «Штриховка» нет: выключенная штриховка — это плитка «без
+ * узора», как «без иконки» в выборе иконки.
+ */
 export const HatchPicker = ({
-  hatch,
+  value,
   onChange,
 }: {
-  hatch: NoteHatch
-  onChange: (hatch: NoteHatch) => void
+  value: NoteHatch | null
+  onChange: (hatch: NoteHatch | null) => void
 }) => {
   const { t } = useLocale()
 
   return (
-    <fieldset className="notes-panel__hatch">
-      <legend className="notes-panel__field-label">{t('notesPanel.hatchPattern')}</legend>
+    <fieldset className="notes-panel__field-group notes-panel__field-group--pattern">
+      <legend className="notes-panel__field-group-title">{t('notesPanel.hatchPattern')}</legend>
 
       <div className="notes-panel__hatch-patterns">
+        <button
+          type="button"
+          className="notes-panel__hatch-pattern notes-panel__hatch-pattern--none"
+          data-active={value === null}
+          aria-label={t('notesPanel.hatchNone')}
+          aria-pressed={value === null}
+          title={t('notesPanel.hatchNone')}
+          onClick={() => onChange(null)}
+        >
+          ×
+        </button>
         {PATTERN_ORDER.map((pattern) => (
           <button
             key={pattern}
             type="button"
             className="notes-panel__hatch-pattern"
-            data-active={hatch.pattern === pattern}
+            data-active={value?.pattern === pattern}
             aria-label={t(patternLabelKey(pattern))}
-            aria-pressed={hatch.pattern === pattern}
+            aria-pressed={value?.pattern === pattern}
             title={t(patternLabelKey(pattern))}
             onClick={() => onChange({ pattern })}
           >
