@@ -358,8 +358,8 @@ describe('иконка в строке списка', () => {
     expect(container.querySelector('.notes-panel__row-icon svg path')).not.toBeNull()
   })
 
-  it('показывает выбранную иконку заметки вместо вида', () => {
-    const { container } = wrap(
+  it('своя иконка заметки в строке не рисуется — остаётся глиф вида', () => {
+    const withIcon = wrap(
       <NoteList
         notes={[note({ icon: { kind: 'builtin', value: 'hospital' } })]}
         hiddenIds={[]}
@@ -367,9 +367,9 @@ describe('иконка в строке списка', () => {
       />,
     )
 
-    // У глифа больницы пять контуров, у вида «точка» — один: видно, что
-    // рисуется иконка заметки, а не фигура.
-    expect(container.querySelectorAll('.notes-panel__row-icon svg path').length).toBeGreaterThan(1)
+    // В строке важен вид фигуры: по нему видно, точка это, линия или полигон.
+    // Своя иконка эту роль не выполняет и остаётся только на карте.
+    expect(withIcon.container.querySelectorAll('.notes-panel__row-icon svg path').length).toBe(1)
   })
 })
 

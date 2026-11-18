@@ -1,6 +1,4 @@
-import { findBuiltinIcon } from '@/lib/notes/icons'
-import type { NoteIcon, NoteKind } from '@/lib/notes/model/types'
-import { BuiltinIconGlyph } from './IconPicker'
+import type { NoteKind } from '@/lib/notes/model/types'
 
 /**
  * Размер глифа вида заметки.
@@ -14,23 +12,18 @@ export const NOTE_KIND_ICON_SIZE = 22
 /**
  * Иконка строки списка.
  *
- * Если у заметки выбрана своя иконка, показывается она — та же, что на карте:
- * иначе список и карта говорили бы о разном. Вид фигуры остаётся запасным
- * вариантом.
+ * В списке всегда рисуется глиф вида фигуры, даже если у заметки выбрана своя
+ * иконка: в строке важно быстро понять, точка это, линия или полигон, а
+ * собственная иконка эту роль не выполняет — у неё нет связи с видом. На карте
+ * своя иконка остаётся, там она и нужна.
  */
 export const NoteRowIcon = ({
   kind,
-  icon,
   size = NOTE_KIND_ICON_SIZE,
 }: {
   kind: NoteKind
-  icon: NoteIcon | null
   size?: number
-}) => {
-  const builtin = icon?.kind === 'builtin' ? findBuiltinIcon(icon.value) : null
-  if (builtin) return <BuiltinIconGlyph icon={builtin} size={size} />
-  return <NoteKindIcon kind={kind} size={size} />
-}
+}) => <NoteKindIcon kind={kind} size={size} />
 
 /**
  * Иконки видов заметки в списке.

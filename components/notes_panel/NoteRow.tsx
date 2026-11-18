@@ -101,7 +101,7 @@ export const NoteRow = ({
 
       <button type="button" id={ids.main} className="notes-panel__row-main" onClick={onSelect}>
         <span className="notes-panel__row-icon" aria-hidden="true">
-          <NoteRowIcon kind={note.kind} icon={note.icon} />
+          <NoteRowIcon kind={note.kind} />
         </span>
         <span className="notes-panel__row-text">
           <span className="notes-panel__row-name">{note.name}</span>
