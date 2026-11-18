@@ -152,6 +152,30 @@ export const buildHatchImageHref = (style: ResolvedNoteStyle): string | undefine
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
 }
 
+/**
+ * Разметка подписи на карте.
+ *
+ * `iconContent` у `default#imageWithContent` попадает внутрь контейнера
+ * `ymaps-…-image-with-content-content`, у которого жёстко заданы `width: 10px`
+ * и `text-align: center` — из-за этого длинное название переносилось на
+ * несколько строк и наезжало на объект.
+ *
+ * Проверено на живом API: чтобы текст шёл одной строкой и оставался
+ * отцентрованным по объекту, содержимое нужно вывести из потока —
+ *
+ *   position: absolute; left: 50%; margin-left: -50%; transform: translateX(-50%)
+ *
+ * `margin-left: -50%` считается от ширины контейнера, а не от текста, поэтому
+ * привязки к «магическому» 10 px нет: сдвиг сам равен половине контейнера.
+ * Замер на API: «Очень длинное название подписи объекта» — одна строка 258 px,
+ * центр совпадает с объектом (расхождение 1 px от округления).
+ */
+const LABEL_CONTENT_STYLE =
+  'position:absolute;left:50%;top:0;margin-left:-50%;transform:translateX(-50%);white-space:nowrap'
+
+const labelContent = (name: string): string =>
+  `<span style="${LABEL_CONTENT_STYLE}">${escapeXml(name)}</span>`
+
 const buildLabel = ({
   note,
   geometry,
@@ -177,7 +201,7 @@ const buildLabel = ({
       iconContentOffset: [0, -offset],
       cursor: 'pointer',
     },
-    properties: { noteId: note.id, iconContent: escapeXml(name) },
+    properties: { noteId: note.id, iconContent: labelContent(name) },
   }
 }
 

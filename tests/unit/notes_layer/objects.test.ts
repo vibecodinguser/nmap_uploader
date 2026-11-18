@@ -68,7 +68,39 @@ describe('renderNote', () => {
 
     expect(rendered).toHaveLength(2)
     expect(rendered[1].kind).toBe('label')
-    expect(rendered[1].properties.iconContent).toBe('Мост')
+    expect(String(rendered[1].properties.iconContent)).toContain('Мост')
+  })
+
+  it('подпись выводится одной строкой и центрируется по объекту', () => {
+    const rendered = renderNote({
+      note: note({ name: 'Очень длинное название подписи объекта', showLabel: true }),
+      geometry: { kind: 'Point', coords: [37, 55] },
+      group: null,
+      selected: false,
+    })
+
+    // Контейнер iconContent у API шириной 10 px, и текст переносился по словам.
+    // Проверяем именно вывод из потока: без него длинное название снова
+    // развалится на строки.
+    const content = String(rendered[1].properties.iconContent)
+    expect(content).toContain('white-space:nowrap')
+    expect(content).toContain('position:absolute')
+    expect(content).toContain('translateX(-50%)')
+  })
+
+  it('название в подписи экранируется', () => {
+    const rendered = renderNote({
+      note: note({ name: 'Мост <b>"Кама"</b> & дамба', showLabel: true }),
+      geometry: { kind: 'Point', coords: [37, 55] },
+      group: null,
+      selected: false,
+    })
+
+    const content = String(rendered[1].properties.iconContent)
+    expect(content).not.toContain('<b>')
+    expect(content).toContain('&lt;b&gt;')
+    expect(content).toContain('&amp;')
+    expect(content).toContain('&quot;')
   })
 
   it('без названия подпись не создаётся', () => {
