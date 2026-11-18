@@ -63,9 +63,7 @@ export const NoteAppearance = ({
             })
           }
         />
-      </div>
 
-      <div className="notes-panel__field-groups">
         <fieldset className="notes-panel__field-group">
           <legend className="notes-panel__field-group-title">{t('notesPanel.groupFill')}</legend>
 
