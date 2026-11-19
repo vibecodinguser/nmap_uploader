@@ -93,6 +93,7 @@ export const NotesPanelApp = () => {
               onChange: panel.setFilters,
               onReset: panel.resetFilters,
             }}
+            hasNotes={panel.notes.length > 0}
             selection={{
               count: panel.checkedIds.length,
               groups: panel.groups,

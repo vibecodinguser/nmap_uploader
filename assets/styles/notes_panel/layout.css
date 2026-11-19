@@ -236,6 +236,14 @@ body {
   gap: 8px;
 }
 
+/* Вход в режим выбора: без него «Отметить все» была недоступна до первой
+   отметки, и отметить всё разом было нечем. */
+.notes-panel__toolbar-select-all {
+  flex: 0 0 auto;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
 .notes-panel__toolbar-divider {
   width: 1px;
   height: 28px;
@@ -253,7 +261,15 @@ body {
 /* Узкая панель: списки фильтров целиком уходят на вторую строку, а не
    разрываются между строками по одному. */
 @media (width < 700px) {
-  .notes-panel__toolbar-divider {
+  /* Вход в режим выбора: без него «Отметить все» была недоступна до первой
+   отметки, и отметить всё разом было нечем. */
+.notes-panel__toolbar-select-all {
+  flex: 0 0 auto;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.notes-panel__toolbar-divider {
     display: none;
   }
 

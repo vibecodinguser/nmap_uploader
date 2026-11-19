@@ -22,7 +22,9 @@ const wrap = (ui: ReactElement) => render(<LocaleProvider>{ui}</LocaleProvider>)
 const toolbarProps = (
   count: number,
   create: Partial<ComponentProps<typeof CreateActions>> = {},
+  hasNotes = true,
 ): ComponentProps<typeof ListToolbar> => ({
+  hasNotes,
   create: { drawing: false, onCreateGroup: vi.fn(), onStartDrawing: vi.fn(), ...create },
   filters: { filter: DEFAULT_NOTES_FILTER, groups: [], onChange: vi.fn(), onReset: vi.fn() },
   selection: {
@@ -47,6 +49,23 @@ describe('ListToolbar', () => {
     expect(screen.getByRole('button', { name: /Группа/ })).toBeTruthy()
     expect(screen.getByRole('group', { name: 'Фильтр по виду' })).toBeTruthy()
     expect(document.querySelector('.notes-panel__selection')).toBeNull()
+  })
+
+  it('без отметок даёт войти в режим выбора кнопкой «Отметить все»', () => {
+    // Раньше кнопка жила только в панели выбора, а та появляется при первой
+    // отметке: отметить всё разом было нечем.
+    const props = toolbarProps(0)
+    wrap(<ListToolbar {...props} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Отметить все' }))
+
+    expect(props.selection.onSelectAll).toHaveBeenCalledOnce()
+  })
+
+  it('при пустом списке кнопки «Отметить все» нет', () => {
+    wrap(<ListToolbar {...toolbarProps(0, {}, false)} />)
+
+    expect(screen.queryByRole('button', { name: 'Отметить все' })).toBeNull()
   })
 
   it('при отметке панель выбора встаёт на место создания и фильтров', () => {
