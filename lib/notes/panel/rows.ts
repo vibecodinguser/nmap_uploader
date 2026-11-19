@@ -47,6 +47,23 @@ export const NOTE_ROW_HEIGHT = 64
  */
 export const collapseKey = (groupId: string | null): string => groupId ?? ''
 
+/**
+ * Оставить только ключи существующих групп.
+ *
+ * Свёрнутость живёт в `storage.local` и переживает удаление групп, поэтому при
+ * записи список чистится: иначе после роспуска десятка групп в настройках
+ * оставались бы их id навсегда. Ключ корня (`''`) сохраняется всегда — он не
+ * привязан к группе.
+ */
+export const pruneCollapsedKeys = (
+  keys: readonly string[],
+  groupIds: readonly string[],
+): string[] => {
+  const alive = new Set(groupIds)
+  const kept = keys.filter((key) => key === collapseKey(null) || alive.has(key))
+  return [...new Set(kept)]
+}
+
 /** Заголовок «Без группы» всегда последний: корень идёт после групп. */
 export const isUngroupedHeader = (row: GroupHeaderRow): boolean => row.groupId === null
 

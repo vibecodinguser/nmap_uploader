@@ -47,6 +47,7 @@ export type NotesPanelAction =
   | { type: 'undoSet'; entry: UndoEntry }
   | { type: 'undoCleared' }
   | { type: 'groupCollapsedToggled'; key: string }
+  | { type: 'collapsedKeysRestored'; keys: string[] }
   | { type: 'snapshotCleared' }
 
 /**
@@ -264,6 +265,14 @@ export const notesPanelReducer = (
 
     case 'undoCleared':
       return { ...state, undo: null }
+
+    /*
+     * Замена списка целиком, а не добавление: сохранённое состояние уже
+     * прочитано с диска, и наложение на пустой список дало бы то же самое, но
+     * в обратном порядке и без защиты от дублей.
+     */
+    case 'collapsedKeysRestored':
+      return { ...state, collapsedGroupIds: action.keys }
 
     case 'groupCollapsedToggled':
       return {

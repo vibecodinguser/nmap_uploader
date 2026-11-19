@@ -1,5 +1,6 @@
 import { useLocale } from '@/hooks/useLocale'
 import type { DrawableNoteKind } from '@/lib/notes/protocol'
+import { useCollapsedGroupsPersistence } from './notes_panel/useCollapsedGroupsPersistence'
 import { useNoteGroups } from './notes_panel/useNoteGroups'
 import { useNoteRemoval } from './notes_panel/useNoteRemoval'
 import { useNoteSelection } from './notes_panel/useNoteSelection'
@@ -21,7 +22,8 @@ export type DrawableKind = DrawableNoteKind
  *
  * Хук собирает пять частей: состояние (редьюсер), запись (очередь и дебаунс),
  * вид (список, поиск, навигация), мутации (заметки и группы) и синхронизацию
- * (загрузка, подписки, вход). Порядок сборки важен: синхронизации нужен
+ * (загрузка, подписки, вход). Свёрнутость групп сохраняется отдельно от вида:
+ * это единственная часть состояния вида, которая переживает перезапуск. Порядок сборки важен: синхронизации нужен
  * `createNote`, группам — `loadNotes`.
  */
 export const useNotesPanel = () => {
@@ -35,6 +37,8 @@ export const useNotesPanel = () => {
   const sync = useNotesSync(store, mutations.createNote)
   const groups = useNoteGroups(store, writes, () => sync.loadNotes({ silent: true }))
   const drawing = useNotesDrawing(store)
+  // Свёрнутость групп — состояние вида: живёт рядом с ним, но с сохранением.
+  useCollapsedGroupsPersistence(store)
 
   return {
     t,

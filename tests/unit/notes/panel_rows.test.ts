@@ -6,6 +6,7 @@ import {
   GROUP_HEADER_HEIGHT,
   NOTE_ROW_HEIGHT,
   positionRows,
+  pruneCollapsedKeys,
   totalHeight,
   visibleSlice,
 } from '@/lib/notes/panel/rows'
@@ -169,5 +170,24 @@ describe('раскладка', () => {
     // Окно 400 px при строке 56 px — около 8 строк плюс запас.
     expect(items.length).toBeLessThan(30)
     expect(items[0].top).toBeLessThanOrEqual(2000)
+  })
+})
+
+describe('pruneCollapsedKeys', () => {
+  it('оставляет ключи существующих групп и корень', () => {
+    expect(pruneCollapsedKeys(['', 'g1'], ['g1', 'g2'])).toEqual(['', 'g1'])
+  })
+
+  it('выбрасывает id удалённой группы', () => {
+    // Иначе после роспуска групп их id висели бы в настройках навсегда.
+    expect(pruneCollapsedKeys(['g1', 'g9'], ['g1'])).toEqual(['g1'])
+  })
+
+  it('корень сохраняется всегда: он не привязан к группе', () => {
+    expect(pruneCollapsedKeys([''], [])).toEqual([''])
+  })
+
+  it('убирает повторы', () => {
+    expect(pruneCollapsedKeys(['g1', 'g1'], ['g1'])).toEqual(['g1'])
   })
 })
