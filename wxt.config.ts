@@ -108,9 +108,6 @@ function getChromeDevKey(browser: string, command: string) {
     if (process.env.CHROME_EXTENSION_KEY) {
       keySettings = { key: process.env.CHROME_EXTENSION_KEY }
     } else {
-      // Без ключа Chrome выдаёт расширению случайный id, и redirect_uri
-      // из browser.identity.getRedirectURL() перестаёт совпадать с тем,
-      // что зарегистрирован в oauth.yandex.ru — вход в Яндекс ломается.
       console.warn(
         '[nmap_uploader] CHROME_EXTENSION_KEY не задан: id расширения будет случайным, ' +
           'авторизация Яндекса не сработает. Скопируйте .env из основного каталога репозитория.',
@@ -125,8 +122,6 @@ function buildManifest({ browser, command }: { browser: string; command: string 
     ...baseManifest,
     permissions: getPermissions(browser),
     ...getFirefoxSettings(browser),
-    // key только для `pnpm dev`: стабильный extension id и OAuth redirect в Chrome.
-    // В production ZIP для магазина key не включаем — иначе CWS отклоняет загрузку.
     ...getChromeDevKey(browser, command),
   }
 }
@@ -159,10 +154,6 @@ export default defineConfig({
   modules: ['@wxt-dev/module-react'],
   vite: configureVite,
   hooks: {
-    // Доступ к nspd.gov.ru объявляется необязательным: иначе каждое обновление
-    // с новым доменом отключало бы расширение у пользователей.
-    // Хук нужен после генерации content scripts, поэтому `host_permissions`
-    // вычищается здесь, а не в `manifest`.
     'build:manifestGenerated': (_wxt, manifest) => {
       moveNspdHostPermissionsToOptional(manifest as ManifestWithPermissions)
     },
@@ -170,6 +161,7 @@ export default defineConfig({
   webExt: {
     startUrls: [MAPS_START_URL],
     binaries: {
+      firefox: '/Applications/Firefox.app/Contents/MacOS/firefox',
       chrome: '/Applications/Yandex.app/Contents/MacOS/Yandex',
     },
   },

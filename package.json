@@ -5,8 +5,8 @@
   "version": "2.4",
   "type": "module",
   "scripts": {
-    "dev": "wxt",
-    "dev:firefox": "wxt -b firefox",
+    "dev": "wxt -b firefox",
+    "dev:chrome": "wxt",
     "build": "wxt build",
     "build:firefox": "wxt build -b firefox",
     "zip": "wxt zip",
