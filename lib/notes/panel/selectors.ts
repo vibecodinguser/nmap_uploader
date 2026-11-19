@@ -1,3 +1,4 @@
+import { sortGroups } from '../model/grouping'
 import type { Note, NoteGeometry, NoteGroup } from '../model/types'
 import { filterNotes, hasActiveFilters } from './filters'
 import type { NotesPanelState } from './state'
@@ -11,8 +12,18 @@ import type { NotesPanelState } from './state'
 
 export const selectNotes = (state: NotesPanelState): Note[] => state.snapshot?.manifest.notes ?? []
 
+/**
+ * Группы в порядке показа.
+ *
+ * Порядок массива в манифесте произвольный: он складывается из истории создания
+ * и слияний между устройствами, а `order` у групп из разных устройств может
+ * совпадать. Поэтому сортировка здесь одна на всех — список, фильтры и обе
+ * формы выбора группы читают одно и то же. Иначе дропдаун фильтра показывал бы
+ * группы в одном порядке, а список в другом, и выбор «третьей сверху» уходил бы
+ * не в ту группу.
+ */
 export const selectGroups = (state: NotesPanelState): NoteGroup[] =>
-  state.snapshot?.manifest.groups ?? []
+  sortGroups(state.snapshot?.manifest.groups ?? [])
 
 export const selectHiddenIds = (state: NotesPanelState): string[] => state.snapshot?.hiddenIds ?? []
 

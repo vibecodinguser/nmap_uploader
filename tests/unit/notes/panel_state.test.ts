@@ -5,6 +5,7 @@ import {
   selectFilteredNotes,
   selectGeometries,
   selectGeometry,
+  selectGroups,
   selectHasNarrowing,
   selectHiddenIds,
   selectNotes,
@@ -582,5 +583,105 @@ describe('селекторы панели', () => {
 
     expect(selectSelectedNote(state)?.name).toBe('Яблоко')
     expect(selectSelectedNote(filled())).toBeNull()
+  })
+})
+
+describe('selectGroups', () => {
+  const group = (id: string, name: string, order: number) => ({
+    ...sampleGroup({ id, name }),
+    order,
+  })
+
+  it('отдаёт группы в порядке показа, а не в порядке массива', () => {
+    // Манифест складывается из истории создания и слияний между устройствами,
+    // поэтому порядок массива произвольный. Список и дропдаун фильтра должны
+    // читать один и тот же порядок, иначе выбор «третьей сверху» уйдёт не в ту
+    // группу.
+    const state = ready(
+      snapshot({
+        manifest: {
+          ...snapshot().manifest,
+          groups: [group('c', 'Причалы', 2), group('a', 'Мосты', 0), group('b', 'Дамбы', 1)],
+        },
+      }),
+    )
+
+    expect(selectGroups(state).map((item) => item.name)).toEqual(['Мосты', 'Дамбы', 'Причалы'])
+  })
+
+  it('при совпадении order сортирует по имени', () => {
+    // `order` может совпасть у групп с разных устройств: обе получили 0.
+    const state = ready(
+      snapshot({
+        manifest: {
+          ...snapshot().manifest,
+          groups: [group('b', 'Яхты', 0), group('a', 'Ангары', 0)],
+        },
+      }),
+    )
+
+    expect(selectGroups(state).map((item) => item.name)).toEqual(['Ангары', 'Яхты'])
+  })
+})
+
+describe('фильтр на исчезнувшую группу', () => {
+  it('не оставляет пустой список при подписи «Все группы»', () => {
+    // Так бывает после удаления группы на другом устройстве: снимок пришёл
+    // слиянием, локального действия не было, и фильтр остался на её id.
+    // В дропдауне показывалось «Все группы», а список был пуст.
+    const state = ready(
+      snapshot({
+        manifest: {
+          ...snapshot().manifest,
+          groups: [sampleGroup({ id: 'g1', name: 'Мосты' })],
+          notes: [sampleNote({ id: 'n1', groupId: 'g1' })],
+        },
+      }),
+    )
+
+    const filtered = selectFilteredNotes({
+      ...state,
+      filters: { ...state.filters, group: 'g9' },
+    })
+
+    expect(filtered.map((note) => note.id)).toEqual(['n1'])
+  })
+
+  it('удаление группы сбрасывает фильтр на неё', () => {
+    const groups = [
+      sampleGroup({ id: 'g1', name: 'Мосты' }),
+      sampleGroup({ id: 'g2', name: 'Дамбы' }),
+    ]
+    const withGroups = ready(
+      snapshot({
+        manifest: { ...snapshot().manifest, groups, notes: [sampleNote({ groupId: 'g1' })] },
+      }),
+    )
+
+    const filtered = { ...withGroups, filters: { ...withGroups.filters, group: 'g1' } }
+    const after = notesPanelReducer(filtered, {
+      type: 'groupRemoved',
+      groupId: 'g1',
+      mode: 'keepNotes',
+    })
+
+    expect(after.filters.group).toBe('all')
+  })
+
+  it('удаление другой группы фильтр не трогает', () => {
+    const groups = [
+      sampleGroup({ id: 'g1', name: 'Мосты' }),
+      sampleGroup({ id: 'g2', name: 'Дамбы' }),
+    ]
+    const withGroups = ready(snapshot({ manifest: { ...snapshot().manifest, groups, notes: [] } }))
+
+    const filtered = { ...withGroups, filters: { ...withGroups.filters, group: 'g1' } }
+    const after = notesPanelReducer(filtered, {
+      type: 'groupRemoved',
+      groupId: 'g2',
+      mode: 'keepNotes',
+    })
+
+    expect(after.filters.group).toBe('g1')
   })
 })

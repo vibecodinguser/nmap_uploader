@@ -2,7 +2,7 @@ import { mergeManifests } from '../model/manifest'
 import type { Note, NoteGeometry, NoteGroup, NoteKind } from '../model/types'
 import type { NotesPatch, NotesSnapshot } from '../protocol'
 import { replaceNote, withGroup, withNote, withNoteGroup, withoutGroup, withoutNote } from './edits'
-import type { NotesFilter } from './filters'
+import { GROUP_FILTER_ALL, type NotesFilter } from './filters'
 import type {
   GroupDeleteMode,
   NotesPanelMode,
@@ -226,6 +226,15 @@ export const notesPanelReducer = (
             snapshot: withoutGroup(state.snapshot, action.groupId, action.mode),
             selectedId: null,
             mode: 'list',
+            /*
+             * Фильтр на удалённую группу больше ничего не значит, а в дропдауне
+             * выглядел как «Все группы» — при пустом списке. Сбрасываем его,
+             * чтобы подпись фильтра и содержимое списка говорили одно и то же.
+             */
+            filters:
+              state.filters.group === action.groupId
+                ? { ...state.filters, group: GROUP_FILTER_ALL }
+                : state.filters,
             // Отметки могли относиться к удалённым каскадом заметкам.
             checkedIds: state.checkedIds.filter((id) =>
               state.snapshot?.manifest.notes.some(
