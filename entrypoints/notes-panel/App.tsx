@@ -98,7 +98,12 @@ export const NotesPanelApp = () => {
               groups: panel.groups,
               onSelectAll: () => panel.checkAllVisible(panel.notes.map((note) => note.id)),
               onClear: panel.clearChecked,
-              onDelete: panel.deleteChecked,
+              /*
+               * Как и удаление одной заметки — через подтверждение, а не
+               * сразу: пачка необратима, а тост «Отменить» возвращает только
+               * одну заметку.
+               */
+              onDelete: () => setPendingDelete({ kind: 'bulk' }),
               onMoveToGroup: panel.moveCheckedToGroup,
             }}
           />
