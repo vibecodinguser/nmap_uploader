@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { useLocale } from '@/hooks/useLocale'
+import { buildAutoGroupName } from '@/lib/notes/model/autonames'
 import { NOTE_PALETTE } from '@/lib/notes/model/palette'
 import type { NoteGroup } from '@/lib/notes/model/types'
 import { withGroup, withNoteGroup, withoutGroup } from '@/lib/notes/panel/edits'
@@ -46,14 +47,25 @@ export const useNoteGroups = (
     [dispatch, enqueueSaveMessage, reload, state.snapshot, t],
   )
 
+  /**
+   * Создать группу.
+   *
+   * Имя приходит подписью из интерфейса («Новая группа»), а номер добавляется
+   * здесь: две группы с одинаковым названием в списке не отличить друг от
+   * друга. Расчёт в самой функции, а не у вызывающего, — иначе следующая точка
+   * вызова снова создала бы дубль.
+   */
   const createGroup = useCallback(
-    (name: string): NoteGroup => {
+    (baseName: string): NoteGroup => {
       const timestamp = new Date().toISOString()
       const groups = state.snapshot?.manifest.groups ?? []
       const order = groups.reduce((max, group) => Math.max(max, group.order), -1)
       const group: NoteGroup = {
         id: crypto.randomUUID(),
-        name: name.trim(),
+        name: buildAutoGroupName({
+          baseName,
+          existingNames: groups.map((item) => item.name),
+        }),
         // Цвет по кругу палитры: соседние группы не должны сливаться.
         color: NOTE_PALETTE[groups.length % NOTE_PALETTE.length],
         order: order + 1,
