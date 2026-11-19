@@ -160,6 +160,28 @@ export default defineConfig({
   },
   webExt: {
     startUrls: [MAPS_START_URL],
+    /*
+     * Local Network Access: без этого панель не грузится в Firefox.
+     *
+     * Панель заметок — страница расширения в iframe внутри n.maps.yandex.ru,
+     * то есть публичный сайт верхнего уровня. Firefox 160+ применяет к такому
+     * запросу LNA (Local Network Access) и блокирует обращение к dev-серверу
+     * http://localhost:3000 с вердиктом auto_deny: в консоли видно «Обнаружен
+     * доступ к локальной сети… немедленное действие: auto_deny», и модули
+     * @vite/client и main.tsx не загружаются — панель остаётся пустой.
+     *
+     * Для разработки это ровно наш случай и он безвреден: профиль временный на
+     * один запуск, dev-сервер слушает только loopback. Поэтому фича выключена
+     * в профиле разработки. Пользовательской сборки это не касается:
+     * firefoxPref попадает только в профиль, который поднимает `pnpm dev`.
+     *
+     * network.lna.enabled — общий выключатель фичи
+     * (modules/libpref/init/StaticPrefList.yaml). Одного blocking: false мало:
+     * он снимает отказ, но проверки и запросы разрешений остаются.
+     */
+    firefoxPref: {
+      'network.lna.enabled': false,
+    },
     binaries: {
       firefox: '/Applications/Firefox.app/Contents/MacOS/firefox',
       chrome: '/Applications/Yandex.app/Contents/MacOS/Yandex',
