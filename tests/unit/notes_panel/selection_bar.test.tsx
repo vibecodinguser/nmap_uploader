@@ -120,6 +120,24 @@ describe('панель массовых действий', () => {
     expect(screen.queryByLabelText('Перенести в группу')).toBeNull()
   })
 
+  it('когда отмечено всё, «Отметить все» превращается в «Снять отметки»', () => {
+    // Кнопка, которая при полном выборе ничего не меняет, читается как
+    // сломанная. Она же и снимает отметки — отдельная кнопка тогда не нужна.
+    wrap(<SelectionBar count={3} allSelected {...base} />)
+
+    expect(screen.getByRole('button', { name: 'Снять отметки' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Отметить все' })).toBeNull()
+    // Вторая «Снять отметки» не дублируется.
+    expect(screen.getAllByRole('button', { name: 'Снять отметки' })).toHaveLength(1)
+  })
+
+  it('когда отмечено не всё, обе кнопки на месте', () => {
+    wrap(<SelectionBar count={1} {...base} />)
+
+    expect(screen.getByRole('button', { name: 'Отметить все' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Снять отметки' })).toBeTruthy()
+  })
+
   it('снятие отметок и «отметить все» доступны', () => {
     const onClear = vi.fn()
     const onSelectAll = vi.fn()

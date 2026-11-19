@@ -107,6 +107,35 @@ describe('отметки заметок', () => {
     expect(result.current.checkedIds.sort()).toEqual(['note-1', 'note-3'])
   })
 
+  it('повторное «отметить все» снимает отметки', async () => {
+    const result = await ready()
+    const visible = ['note-1', 'note-2', 'note-3']
+
+    act(() => {
+      result.current.toggleSelectAll(visible)
+    })
+    expect(result.current.checkedIds.sort()).toEqual([...visible].sort())
+
+    act(() => {
+      result.current.toggleSelectAll(visible)
+    })
+    expect(result.current.checkedIds).toEqual([])
+  })
+
+  it('«отметить все» при частичном выборе добирает остальные', async () => {
+    const result = await ready()
+    const visible = ['note-1', 'note-2', 'note-3']
+
+    act(() => {
+      result.current.toggleChecked('note-2', true)
+    })
+    act(() => {
+      result.current.toggleSelectAll(visible)
+    })
+
+    expect(result.current.checkedIds.sort()).toEqual([...visible].sort())
+  })
+
   it('снятие отметок очищает список', async () => {
     const result = await ready()
 

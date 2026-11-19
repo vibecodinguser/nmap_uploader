@@ -96,8 +96,11 @@ export const NotesPanelApp = () => {
             hasNotes={panel.notes.length > 0}
             selection={{
               count: panel.checkedIds.length,
+              allSelected:
+                panel.notes.length > 0 &&
+                panel.notes.every((note) => panel.checkedIds.includes(note.id)),
               groups: panel.groups,
-              onSelectAll: () => panel.checkAllVisible(panel.notes.map((note) => note.id)),
+              onSelectAll: () => panel.toggleSelectAll(panel.notes.map((note) => note.id)),
               onClear: panel.clearChecked,
               /*
                * Как и удаление одной заметки — через подтверждение, а не

@@ -40,6 +40,30 @@ export const useNoteSelection = (
     [dispatch],
   )
 
+  /**
+   * «Отметить все» — переключатель.
+   *
+   * Если отмечено уже всё видимое, повторное нажатие снимает отметки: кнопка
+   * стоит на месте, и второе нажатие читается как «вернуть как было», а не как
+   * «ничего не произошло». Проверяется именно видимый набор, а не весь
+   * `checkedIds`: под фильтром отмеченными могут быть только его результаты.
+   *
+   * Снимаются все отметки, а не только видимые: кнопка называется «Отметить
+   * все», и обратное действие для неё — пустой выбор.
+   */
+  const toggleSelectAll = useCallback(
+    (noteIds: readonly string[]) => {
+      if (noteIds.length === 0) return
+      const allChecked = noteIds.every((noteId) => checked.has(noteId))
+      dispatch(
+        allChecked
+          ? { type: 'checkedCleared' }
+          : { type: 'checkedReplaced', noteIds: [...noteIds] },
+      )
+    },
+    [checked, dispatch],
+  )
+
   const deleteChecked = useCallback(() => {
     const noteIds = checkedIds
     if (noteIds.length === 0 || !state.snapshot) return
@@ -104,6 +128,7 @@ export const useNoteSelection = (
     toggleChecked,
     clearChecked,
     checkAllVisible,
+    toggleSelectAll,
     deleteChecked,
     moveCheckedToGroup,
   }

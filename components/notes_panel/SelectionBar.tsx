@@ -15,6 +15,7 @@ import { NotesSelect } from './NotesSelect'
  */
 export const SelectionBar = ({
   count,
+  allSelected = false,
   groups,
   onSelectAll,
   onClear,
@@ -22,6 +23,8 @@ export const SelectionBar = ({
   onMoveToGroup,
 }: {
   count: number
+  /** Отмечено всё видимое: тогда «Отметить все» работает наоборот — снимает. */
+  allSelected?: boolean
   groups: readonly NoteGroup[]
   onSelectAll: () => void
   onClear: () => void
@@ -38,8 +41,19 @@ export const SelectionBar = ({
         {t('notesPanel.selectedCount', { count })}
       </span>
 
-      <button type="button" className="notes-panel__link-button" onClick={onSelectAll}>
-        {t('notesPanel.selectAll')}
+      {/*
+       * Одна кнопка вместо двух: когда отмечено всё видимое, «Отметить все»
+       * означала бы «ничего не изменить», поэтому она меняет подпись и снимает
+       * отметки. Отдельная «Снять отметки» в этом состоянии не нужна — она
+       * делала бы то же самое.
+       */}
+      <button
+        type="button"
+        className="notes-panel__link-button"
+        aria-pressed={allSelected}
+        onClick={onSelectAll}
+      >
+        {allSelected ? t('notesPanel.clearSelection') : t('notesPanel.selectAll')}
       </button>
 
       {groups.length > 0 && (
@@ -66,13 +80,15 @@ export const SelectionBar = ({
         {t('notesPanel.deleteSelected')}
       </button>
 
-      <button
-        type="button"
-        className="notes-panel__link-button notes-panel__selection-exit"
-        onClick={onClear}
-      >
-        {t('notesPanel.clearSelection')}
-      </button>
+      {!allSelected && (
+        <button
+          type="button"
+          className="notes-panel__link-button notes-panel__selection-exit"
+          onClick={onClear}
+        >
+          {t('notesPanel.clearSelection')}
+        </button>
+      )}
     </section>
   )
 }
