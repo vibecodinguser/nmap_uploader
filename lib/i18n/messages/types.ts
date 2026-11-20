@@ -26,6 +26,7 @@ export type Messages = {
     login: string
     loggingIn: string
     loginAria: string
+    closeSidebar: string
   }
   tabs: {
     polygons: string

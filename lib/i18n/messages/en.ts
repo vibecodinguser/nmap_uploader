@@ -22,6 +22,7 @@ export const enMessages = {
     login: 'Sign in',
     loggingIn: 'Signing in…',
     loginAria: 'Sign in with Yandex ID',
+    closeSidebar: 'Close panel',
   },
   tabs: {
     polygons: 'Polygons',

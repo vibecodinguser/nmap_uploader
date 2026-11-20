@@ -22,6 +22,7 @@ export const ruMessages = {
     login: 'Войти',
     loggingIn: 'Вход…',
     loginAria: 'Войти через Яндекс ID',
+    closeSidebar: 'Закрыть панель',
   },
   tabs: {
     polygons: 'Полигоны',

@@ -191,6 +191,45 @@ body {
   height: 3.5rem;
   justify-content: flex-start;
   padding: 0 1rem;
+  gap: 0.5rem;
+}
+
+/*
+ * Закрытие панели: прижато к правому краю шапки.
+ *
+ * `margin-left: auto` — потому что слева стоит пользователь (`flex: 1`), и без
+ * него кнопка прилипала бы к аватару вместо края.
+ *
+ * Размер 32 px, а не 40 как у кнопки входа: это второстепенное действие окна, а
+ * не основное в панели, и крупная кнопка спорила бы с «Войти».
+ */
+.header-close-btn {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted-foreground, #6b6b6b);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color var(--transition-ui), color var(--transition-ui);
+}
+
+.header-close-btn:hover {
+  background-color: var(--muted);
+  color: var(--foreground);
+}
+
+.header-close-btn:focus-visible {
+  outline: 2px solid var(--ring, #ffdb4d);
+  outline-offset: 1px;
 }
 
 .header-login-btn {
