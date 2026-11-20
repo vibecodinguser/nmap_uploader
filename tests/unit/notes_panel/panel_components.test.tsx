@@ -40,23 +40,22 @@ afterEach(() => {
  */
 const NoteList = (props: Partial<NoteListProps>) => <NoteListBase {...listProps(props)} />
 
+const notePropertiesProps = (
+  overrides: Partial<ComponentProps<typeof NoteProperties>> = {},
+): ComponentProps<typeof NoteProperties> => ({
+  note: note(),
+  fallbackName: '14.11.2026 Точка',
+  onPatch: vi.fn(),
+  onBack: vi.fn(),
+  groups: [],
+  onMoveToGroup: () => {},
+  ...overrides,
+})
+
 describe('NoteProperties', () => {
   it('передаёт правку названия наверх', () => {
     const onPatch = vi.fn()
-    wrap(
-      <NoteProperties
-        note={note()}
-        fallbackName="14.11.2026 Точка"
-        hidden={false}
-        onPatch={onPatch}
-        onDelete={vi.fn()}
-        onBack={vi.fn()}
-        onLocate={vi.fn()}
-        onToggleHidden={vi.fn()}
-        groups={[]}
-        onMoveToGroup={() => {}}
-      />,
-    )
+    wrap(<NoteProperties {...notePropertiesProps({ onPatch })} />)
 
     fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'Мост' } })
 
@@ -66,16 +65,7 @@ describe('NoteProperties', () => {
   it('дата и время создания показаны, но не редактируются', () => {
     wrap(
       <NoteProperties
-        note={note({ createdAt: '2026-11-16T14:35:00.000Z' })}
-        fallbackName="14.11.2026 Точка"
-        hidden={false}
-        onPatch={vi.fn()}
-        onDelete={vi.fn()}
-        onBack={vi.fn()}
-        onLocate={vi.fn()}
-        onToggleHidden={vi.fn()}
-        groups={[]}
-        onMoveToGroup={() => {}}
+        {...notePropertiesProps({ note: note({ createdAt: '2026-11-16T14:35:00.000Z' }) })}
       />,
     )
 
@@ -89,20 +79,7 @@ describe('NoteProperties', () => {
   })
 
   it('вид и время стоят в одной строке шапки', () => {
-    wrap(
-      <NoteProperties
-        note={note()}
-        fallbackName="14.11.2026 Точка"
-        hidden={false}
-        onPatch={vi.fn()}
-        onDelete={vi.fn()}
-        onBack={vi.fn()}
-        onLocate={vi.fn()}
-        onToggleHidden={vi.fn()}
-        groups={[]}
-        onMoveToGroup={() => {}}
-      />,
-    )
+    wrap(<NoteProperties {...notePropertiesProps()} />)
 
     const head = document.querySelector('.notes-panel__properties-kind')
     expect(head?.textContent).toContain('Точка')
@@ -110,20 +87,7 @@ describe('NoteProperties', () => {
   })
 
   it('название и группа стоят в одной линии', () => {
-    wrap(
-      <NoteProperties
-        note={note()}
-        fallbackName="14.11.2026 Точка"
-        hidden={false}
-        onPatch={vi.fn()}
-        onDelete={vi.fn()}
-        onBack={vi.fn()}
-        onLocate={vi.fn()}
-        onToggleHidden={vi.fn()}
-        groups={[sampleGroup()]}
-        onMoveToGroup={() => {}}
-      />,
-    )
+    wrap(<NoteProperties {...notePropertiesProps({ groups: [sampleGroup()] })} />)
 
     // Широкий класс растянул бы поле на строку целиком — именно он разводил
     // название и группу по разным строкам.
@@ -137,20 +101,7 @@ describe('NoteProperties', () => {
 
   it('переключает подпись', () => {
     const onPatch = vi.fn()
-    wrap(
-      <NoteProperties
-        note={note()}
-        fallbackName="14.11.2026 Точка"
-        hidden={false}
-        onPatch={onPatch}
-        onDelete={vi.fn()}
-        onBack={vi.fn()}
-        onLocate={vi.fn()}
-        onToggleHidden={vi.fn()}
-        groups={[]}
-        onMoveToGroup={() => {}}
-      />,
-    )
+    wrap(<NoteProperties {...notePropertiesProps({ onPatch })} />)
 
     fireEvent.click(screen.getByRole('checkbox'))
 
@@ -158,20 +109,7 @@ describe('NoteProperties', () => {
   })
 
   it('у точки нет прозрачности и толщины границы', () => {
-    wrap(
-      <NoteProperties
-        note={note({ kind: 'Point' })}
-        fallbackName="14.11.2026 Точка"
-        hidden={false}
-        onPatch={vi.fn()}
-        onDelete={vi.fn()}
-        onBack={vi.fn()}
-        onLocate={vi.fn()}
-        onToggleHidden={vi.fn()}
-        groups={[]}
-        onMoveToGroup={() => {}}
-      />,
-    )
+    wrap(<NoteProperties {...notePropertiesProps({ note: note({ kind: 'Point' }) })} />)
 
     // Точка — иконка фиксированного размера: оба ползунка ничего не меняли.
     expect(screen.queryByRole('slider')).toBeNull()
@@ -184,16 +122,10 @@ describe('NoteProperties', () => {
   it('у линии прозрачность и толщина границы есть', () => {
     wrap(
       <NoteProperties
-        note={note({ kind: 'Line' })}
-        fallbackName="14.11.2026 Линия"
-        hidden={false}
-        onPatch={vi.fn()}
-        onDelete={vi.fn()}
-        onBack={vi.fn()}
-        onLocate={vi.fn()}
-        onToggleHidden={vi.fn()}
-        groups={[]}
-        onMoveToGroup={() => {}}
+        {...notePropertiesProps({
+          note: note({ kind: 'Line' }),
+          fallbackName: '14.11.2026 Линия',
+        })}
       />,
     )
 

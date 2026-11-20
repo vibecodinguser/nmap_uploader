@@ -108,7 +108,7 @@ describe('заливка', () => {
   it.each([
     ['Line', 'линии'],
     ['Point', 'точки'],
-  ] as const)('у %s (%s) заливки и узора нет', (kind) => {
+  ] as const)('у %s (%s) заливки и узора нет', (kind, _label) => {
     renderProps(note({ kind, style: createDefaultStyle(kind) }))
 
     expect(screen.queryByRole('checkbox', { name: 'Заливка' })).toBeNull()
