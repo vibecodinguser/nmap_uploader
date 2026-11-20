@@ -105,10 +105,12 @@
   height: 14px;
 }
 
-/* Как у нативного `nk-tracker-settings-view__delete`: удаление краснеет. */
-.notes-panel__dialog-actions .notes-panel__button--danger:hover .nk-icon {
-  color: #e00000;
-}
+/*
+ * Иконка удаления в кнопке — цвета текста, как `nk-button_view_action .nk-icon`
+ * в редакторе. Прежде она краснела при наведении по образцу
+ * `nk-tracker-settings-view__delete`, но то иконка в списке слоёв, а не кнопка:
+ * на акцентном фоне красный значок читается как ошибка.
+ */
 
 /*
  * Подтверждение удаления заметок.

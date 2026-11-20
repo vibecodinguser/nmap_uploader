@@ -144,6 +144,7 @@ export const ruMessages = {
   map: {
     splitView: 'Раздельный вид',
     uploadPolygons: 'Загрузить полигоны',
+    uploadPolygonsTooltip: 'Загрузка полигонов',
     notes: 'Заметки',
     openNspd: 'Открыть в НСПД',
     externalGeoservices: 'Внешние геосервисы',
@@ -162,12 +163,12 @@ export const ruMessages = {
     tabNotFound: 'Не удалось найти вкладку для панели',
   },
   notesPanel: {
-    title: 'Заметки',
+    title: 'Мои заметки',
     editButton: 'Редактировать',
     createNote: 'Заметка',
     searchPlaceholder: 'Поиск по названию',
     loading: 'Загрузка заметок…',
-    authRequired: 'Войдите в Яндекс, чтобы видеть заметки',
+    authRequired: 'Войдите в Яндекс, чтобы видеть свои заметки',
     login: 'Войти',
     retry: 'Повторить',
     loadError: 'Не удалось загрузить заметки',

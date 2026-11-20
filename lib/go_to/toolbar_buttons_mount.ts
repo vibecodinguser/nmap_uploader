@@ -109,7 +109,7 @@ export const mountPolygonUploadButtonView = ({
     button.addEventListener('mouseover', (e) => {
       if (isToolbarButtonHoverTarget(button, e.target)) {
         button.classList.add(GO_TO_BUTTON_HOVERED_CLASS)
-        showGoToTooltip(getTranslator()('map.uploadPolygons'), button, 'top')
+        showGoToTooltip(getTranslator()('map.uploadPolygonsTooltip'), button, 'top')
       }
     })
     button.addEventListener('mouseout', (e) => {

@@ -634,9 +634,40 @@ body {
   background: #f5d03f;
 }
 
+/*
+ * Разрушающее действие — в стиле нативного редактора.
+ *
+ * Красной кнопки в редакторе нет: я проверил его CSS — ни `view_danger`, ни
+ * `#e00000` в кнопках. Подтверждение удаления там рисуется обычной акцентной
+ * кнопкой (`nk-button_view_action`):
+ *
+ *   ::before      background #ffdb4d, border 0, border-radius 4px
+ *   текст         #000, отступ 8px 12px (высота 32px)
+ *   наведение     #ffd633
+ *   нажатие       #fc0
+ *
+ * Наша красная рамка с красным текстом выглядела как ошибка ввода, а не как
+ * действие, и выбивалась из остальных кнопок панели. Заодно уходит
+ * единственный случай, когда в интерфейсе появлялся чужой цвет.
+ *
+ * Рамка оставлена, но в цвет фона: у нативного её нет вовсе, а нам она нужна,
+ * чтобы кнопка не была на 2 px ниже соседней «Отменить» в диалоге.
+ */
 .notes-panel__button--danger {
-  border-color: var(--notes-danger, #e00000);
-  color: var(--notes-danger, #e00000);
+  border-color: var(--notes-accent, #ffdb4d);
+  border-radius: 4px;
+  background: var(--notes-accent, #ffdb4d);
+  color: #000000;
+}
+
+.notes-panel__button--danger:hover {
+  border-color: #ffd633;
+  background: #ffd633;
+}
+
+/* Иконка внутри — цвета текста, как `nk-button_view_action .nk-icon`. */
+.notes-panel__button--danger .nk-icon {
+  color: inherit;
 }
 
 .notes-panel__icon-button {

@@ -144,6 +144,7 @@ export const enMessages = {
   map: {
     splitView: 'Split view',
     uploadPolygons: 'Upload polygons',
+    uploadPolygonsTooltip: 'Polygon upload',
     notes: 'Notes',
     openNspd: 'Open in NSPD',
     externalGeoservices: 'External geoservices',
@@ -162,12 +163,12 @@ export const enMessages = {
     tabNotFound: 'Could not find a tab for the panel',
   },
   notesPanel: {
-    title: 'Notes',
+    title: 'My notes',
     editButton: 'Edit',
     createNote: 'Note',
     searchPlaceholder: 'Search by name',
     loading: 'Loading notes…',
-    authRequired: 'Sign in to Yandex to see your notes',
+    authRequired: 'Sign in to Yandex to see your own notes',
     login: 'Sign in',
     retry: 'Retry',
     loadError: 'Failed to load notes',

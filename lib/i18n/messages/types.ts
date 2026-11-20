@@ -145,6 +145,7 @@ export type Messages = {
   map: {
     splitView: string
     uploadPolygons: string
+    uploadPolygonsTooltip: string
     notes: string
     openNspd: string
     externalGeoservices: string
