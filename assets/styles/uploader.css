@@ -203,6 +203,18 @@ body {
  * Размер 32 px, а не 40 как у кнопки входа: это второстепенное действие окна, а
  * не основное в панели, и крупная кнопка спорила бы с «Войти».
  */
+
+/*
+ * Закрытие панели.
+ *
+ * Прежде кнопка была серой иконкой на прозрачном фоне — в светлой теме на
+ * полупрозрачной шапке её почти не было видно. Теперь у неё есть собственный
+ * фон и рамка, как у кнопок-иконок редактора (`nk-button_view_dark`): кнопка
+ * читается как действие, а не как случайный крестик.
+ *
+ * Цвета взяты из токенов темы, а не жёсткие: в тёмной теме фон и рамка
+ * становятся тёмными сами.
+ */
 .header-close-btn {
   display: inline-flex;
   flex: 0 0 auto;
@@ -212,19 +224,22 @@ body {
   justify-content: center;
   margin-left: auto;
   padding: 0;
-  border: 0;
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: transparent;
-  color: var(--muted-foreground, #6b6b6b);
-  font-size: 20px;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 18px;
   line-height: 1;
   cursor: pointer;
-  transition: background-color var(--transition-ui), color var(--transition-ui);
+  transition:
+    background-color var(--transition-ui),
+    border-color var(--transition-ui),
+    color var(--transition-ui);
 }
 
 .header-close-btn:hover {
+  border-color: var(--muted-foreground, #64748b);
   background-color: var(--muted);
-  color: var(--foreground);
 }
 
 .header-close-btn:focus-visible {
