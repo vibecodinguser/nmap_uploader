@@ -12,6 +12,7 @@ import {
   setTrackerEnabled,
 } from '@/lib/object_tracker/storage'
 import { ObjectTrackerController } from '@/lib/object_tracker/tracker_controller'
+import { MAX_TRACKED_OBJECTS } from '@/lib/object_tracker/types'
 import { TRACKER_PANEL_ID } from '@/lib/object_tracker/ui/dom'
 import { resetBrowserMocks } from '../../setup/browser_mock'
 
@@ -351,5 +352,85 @@ describe('object_tracker: появление CSRF-токена', () => {
 
     controller.stop()
     stopListener()
+  })
+
+  describe('addObjectFromMenu', () => {
+    it('добавляет объект из меню без CSRF-токена и без запроса к API', async () => {
+      await setTrackerEnabled(true)
+      const transport = vi.fn(async () => [])
+      const controller = new ObjectTrackerController({ transport, getToken: () => '' })
+      await controller.start()
+
+      const result = await controller.addObjectFromMenu('123', 'Участок дороги')
+
+      expect(result).toEqual({ ok: true })
+      const settings = await getTrackerSettings()
+      expect(settings.objects).toEqual([
+        { id: '123', title: 'Участок дороги', addedAt: expect.any(Number) },
+      ])
+      expect(transport).not.toHaveBeenCalled()
+
+      controller.stop()
+    })
+
+    it('подставляет id вместо пустого названия', async () => {
+      await setTrackerEnabled(true)
+      const controller = new ObjectTrackerController({
+        transport: vi.fn(async () => []),
+        getToken: () => '',
+      })
+      await controller.start()
+
+      await controller.addObjectFromMenu('123', '   ')
+
+      const settings = await getTrackerSettings()
+      expect(settings.objects[0]?.title).toBe('123')
+
+      controller.stop()
+    })
+
+    it('отклоняет повторное добавление и некорректный id', async () => {
+      await setTrackerEnabled(true)
+      await setTrackedObjects([{ id: '123', title: 'Хутор', addedAt: 0 }])
+      const controller = new ObjectTrackerController({
+        transport: vi.fn(async () => []),
+        getToken: () => '',
+      })
+      await controller.start()
+
+      expect(await controller.addObjectFromMenu('123', 'Хутор')).toEqual({
+        ok: false,
+        error: 'DUPLICATE',
+      })
+      expect(await controller.addObjectFromMenu('не-id', '')).toEqual({
+        ok: false,
+        error: 'INVALID_ID',
+      })
+
+      controller.stop()
+    })
+
+    it('не добавляет объект сверх лимита наблюдения', async () => {
+      await setTrackerEnabled(true)
+      await setTrackedObjects(
+        Array.from({ length: MAX_TRACKED_OBJECTS }, (_, index) => ({
+          id: String(index + 1),
+          title: `Объект ${index + 1}`,
+          addedAt: 0,
+        })),
+      )
+      const controller = new ObjectTrackerController({
+        transport: vi.fn(async () => []),
+        getToken: () => '',
+      })
+      await controller.start()
+
+      expect(await controller.addObjectFromMenu('999', 'Новый')).toEqual({
+        ok: false,
+        error: 'LIMIT_REACHED',
+      })
+
+      controller.stop()
+    })
   })
 })

@@ -265,6 +265,15 @@ export type Messages = {
     limitReached: string
     limitExceeded: string
   }
+  objectTracker: {
+    menuTrack: string
+    menuTracked: string
+    menuLimit: string
+    errorDuplicate: string
+    errorLimit: string
+    errorInvalidId: string
+    errorUnknown: string
+  }
 }
 
 export type MessageKey = {

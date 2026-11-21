@@ -9,6 +9,7 @@ import {
   parseGeoObjectResult,
 } from './batch_api'
 import { getCsrfToken, hasCsrfToken, onCsrfTokenAvailable, resetCsrfToken } from './csrf_token'
+import { ObjectTrackerNativeMenu } from './native_menu'
 import { buildReadMarks, mergeCachedCommits, pollTrackedObjects } from './poller'
 import {
   forgetObjectLocalState,
@@ -31,6 +32,7 @@ import {
 import { renderPanel, type TrackerViewMode, type TrackerViewModel } from './ui/dom'
 import { ObjectTrackerSidebar } from './ui/mount'
 import { removeTrackerStyles } from './ui/styles'
+import { hideTrackerToast } from './ui/toast'
 
 export interface TrackerControllerOptions {
   /** Транспорт подменяется в тестах. */
@@ -80,6 +82,7 @@ export class ObjectTrackerController {
   private readonly transport: BatchTransport
   private readonly getToken: () => string
   private readonly sidebar: ObjectTrackerSidebar
+  private readonly nativeMenu: ObjectTrackerNativeMenu
 
   private settingsEnabled = false
   private objects: TrackedObject[] = []
@@ -87,6 +90,8 @@ export class ObjectTrackerController {
   private readMarks: Record<string, string> = {}
   private errors: Record<string, string> = {}
   private newCommitIds = new Set<string>()
+  /** Объекты, добавленные из меню: их текущая история не считается новой. */
+  private readonly pendingReadMarkIds = new Set<string>()
   private isRefreshing = false
   private mode: TrackerViewMode = 'feed'
   private timer: ReturnType<typeof setInterval> | null = null
@@ -102,6 +107,11 @@ export class ObjectTrackerController {
       onActivate: () => {
         void this.handleTabOpened()
       },
+    })
+    this.nativeMenu = new ObjectTrackerNativeMenu({
+      isTracked: (objectId) => this.objects.some((object) => object.id === objectId),
+      canAdd: () => this.objects.length < MAX_TRACKED_OBJECTS,
+      onAdd: (objectId, title) => this.addObjectFromMenu(objectId, title),
     })
   }
 
@@ -126,6 +136,8 @@ export class ObjectTrackerController {
     this.clearHeartbeat()
     this.detachTokenListener()
     this.detachStorageListener()
+    this.nativeMenu.stop()
+    hideTrackerToast()
     this.sidebar.unmount()
     removeTrackerStyles()
     void setTrackerBadge(0)
@@ -149,6 +161,12 @@ export class ObjectTrackerController {
     } else if (!this.settingsEnabled && wasEnabled) {
       this.sidebar.unmount()
       void setTrackerBadge(0)
+    }
+
+    if (this.settingsEnabled) {
+      this.nativeMenu.start()
+    } else {
+      this.nativeMenu.stop()
     }
 
     this.scheduleTimer()
@@ -187,7 +205,26 @@ export class ObjectTrackerController {
 
       this.errors = result.errors
       this.commitsByObject = mergeCachedCommits(this.commitsByObject, result.commitsByObject)
-      this.newCommitIds = new Set(result.newCommits.map((commit) => commit.id))
+
+      // Объекты, добавленные из меню, стартуют с текущей истории: старые
+      // правки не должны всплывать как новые.
+      if (this.pendingReadMarkIds.size > 0) {
+        for (const objectId of this.pendingReadMarkIds) {
+          const latest = this.commitsByObject[objectId]?.[0]
+          if (latest) {
+            this.readMarks = { ...this.readMarks, [objectId]: latest.id }
+          }
+        }
+        await setReadMarks(this.readMarks)
+      }
+      const pendingIds = new Set(this.pendingReadMarkIds)
+      this.pendingReadMarkIds.clear()
+
+      this.newCommitIds = new Set(
+        result.newCommits
+          .filter((commit) => !pendingIds.has(commit.objectId))
+          .map((commit) => commit.id),
+      )
 
       // Дотягиваем название и категорию: без категории в карточке серый placeholder.
       if (Object.keys(result.enrichedObjects).length > 0) {
@@ -207,7 +244,7 @@ export class ObjectTrackerController {
       }
 
       await setCachedCommits(this.commitsByObject)
-      await setTrackerBadge(result.newCommits.length)
+      await setTrackerBadge(this.newCommitIds.size)
 
       // Названия могли не сохраниться при добавлении — подтягиваем из истории.
       this.render()
@@ -281,6 +318,42 @@ export class ObjectTrackerController {
     }
   }
 
+  /**
+   * Добавляет объект из нативного меню.
+   *
+   * id пришёл из редактора, поэтому проверку существования через API не
+   * повторяем: добавление не должно зависеть от CSRF-токена и сети. Название
+   * берём из шапки карточки, категорию дотянет ближайший опрос.
+   */
+  public async addObjectFromMenu(
+    rawId: string,
+    title: string,
+  ): Promise<{ ok: boolean; error?: string }> {
+    const id = normalizeObjectId(rawId)
+
+    if (!isValidObjectId(id)) {
+      return { ok: false, error: 'INVALID_ID' }
+    }
+    if (this.objects.some((object) => object.id === id)) {
+      return { ok: false, error: 'DUPLICATE' }
+    }
+    if (this.objects.length >= MAX_TRACKED_OBJECTS) {
+      return { ok: false, error: 'LIMIT_REACHED' }
+    }
+
+    const trimmedTitle = title.trim()
+    this.objects = [...this.objects, { id, title: trimmedTitle || id, addedAt: Date.now() }]
+    await setTrackedObjects(this.objects)
+
+    this.pendingReadMarkIds.add(id)
+    this.render()
+
+    if (this.getToken()) {
+      void this.refresh()
+    }
+    return { ok: true }
+  }
+
   /** Убирает объект из наблюдения и чистит локальные данные. */
   public async removeObject(objectId: string): Promise<void> {
     this.objects = this.objects.filter((object) => object.id !== objectId)
@@ -314,6 +387,7 @@ export class ObjectTrackerController {
   /** Перерисовывает панель, если она смонтирована. */
   public render(): void {
     this.sidebar.setHasUnread(this.newCommitIds.size > 0)
+    this.nativeMenu.sync()
 
     const panel = this.sidebar.getPanel()
     if (!panel) {

@@ -264,4 +264,13 @@ export const enMessages = {
     keyPressed: 'Key pressed: {key}',
     doubleClick: 'Double click',
   },
+  objectTracker: {
+    menuTrack: 'Track',
+    menuTracked: 'Tracked',
+    menuLimit: 'Tracking limit reached',
+    errorDuplicate: 'The object is already in “My objects”',
+    errorLimit: 'Tracking limit reached: no more than 30 objects',
+    errorInvalidId: 'Could not determine the object id',
+    errorUnknown: 'Could not add the object to “My objects”',
+  },
 }

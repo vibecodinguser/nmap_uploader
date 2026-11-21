@@ -264,4 +264,13 @@ export const ruMessages = {
     keyPressed: 'Нажата клавиша {key}',
     doubleClick: 'Двойной клик',
   },
+  objectTracker: {
+    menuTrack: 'Отслеживать',
+    menuTracked: 'Отслеживается',
+    menuLimit: 'Достигнут лимит наблюдения',
+    errorDuplicate: 'Объект уже добавлен в «Мои объекты»',
+    errorLimit: 'Достигнут лимит наблюдения: не больше 30 объектов',
+    errorInvalidId: 'Не удалось определить идентификатор объекта',
+    errorUnknown: 'Не удалось добавить объект в «Мои объекты»',
+  },
 }

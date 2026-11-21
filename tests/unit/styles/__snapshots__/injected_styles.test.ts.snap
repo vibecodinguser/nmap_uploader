@@ -175,7 +175,10 @@ exports[`инжектируемые стили > object-tracker: текст не
 .nk-page_color-scheme_dark .nmap-ot-modes .nmap-ot-mode{color:var(--nmap-text-muted);}
 .nk-page_color-scheme_dark .nmap-ot-modes .nmap-ot-mode:hover,.nk-page_color-scheme_dark .nmap-ot-modes .nmap-ot-mode.nmap-ot-mode_active{color:#ffffff;}
 @media (prefers-color-scheme:dark){.nk-page:not(.nk-page_color-scheme_light) .nmap-ot-object__title{color:var(--nmap-link-dark);}
-}"
+}
+.nmap-ot-menu-item_disabled{opacity:0.5;cursor:default;pointer-events:none;}
+#nmap-uploader-object-tracker-toast,.nmap-ot-toast{position:fixed;right:16px;bottom:16px;z-index:2147483000;max-width:320px;padding:10px 14px;border-radius:var(--nmap-radius-sm);background:rgba(32,33,36,0.92);color:#ffffff;font-family:var(--nk-user-bar-font-family,"Yandex Sans Text","YS Text",-apple-system,BlinkMacSystemFont,Arial,sans-serif);font-size:13px;line-height:1.35;text-align:left;box-shadow:0 4px 16px rgba(0,0,0,0.24);pointer-events:none;opacity:0;transition:opacity 0.15s ease;}
+.nmap-ot-toast_visible{opacity:1;}"
 `;
 
 exports[`инжектируемые стили > stroke-recolor: текст не менялся 1`] = `"ymaps svg [stroke="#ff00ff" i],ymaps svg [stroke="#f0f" i],ymaps svg [stroke="magenta" i],ymaps svg [stroke="rgb(255,0,255)" i],ymaps svg [stroke="rgba(255,0,255,1)" i],.nk-app-view svg [stroke="#ff00ff" i],.nk-app-view svg [stroke="#f0f" i],.nk-app-view svg [stroke="magenta" i],.nk-app-view svg [stroke="rgb(255,0,255)" i],svg [stroke="#ff00ff" i],svg [stroke="#f0f" i],svg [stroke="magenta" i],svg [stroke="rgb(255,0,255)" i]{stroke:#00ff00 !important;}"`;
