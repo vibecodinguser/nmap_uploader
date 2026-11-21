@@ -37,6 +37,7 @@ web-ext.config.ts
 # Редактор и IDE
 .agents/
 .cursor/
+.opencode/
 .vscode/*
 skills-lock.json
 !.vscode/extensions.json
