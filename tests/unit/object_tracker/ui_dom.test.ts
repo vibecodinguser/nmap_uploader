@@ -174,6 +174,70 @@ describe('object_tracker: строки', () => {
     row.querySelector<HTMLButtonElement>('.nmap-ot-object__remove')?.click()
     expect(onRemove).toHaveBeenCalledWith('4465652155')
   })
+
+  it('повторяет разметку карточки ленты событий', () => {
+    const row = createObjectRow(object, [commit()], vi.fn())
+
+    // Те же классы, что у нативной карточки в «Моих правках»: вид целиком
+    // приходит из CSS редактора.
+    expect(row.classList.contains('nk-list-item-view')).toBe(true)
+    expect(row.querySelector('.nk-event-view__event.nk-section.nk-section_level_2')).not.toBeNull()
+    expect(row.querySelector('.nk-event-view__icon .nk-geoobject-icon')).not.toBeNull()
+    expect(row.querySelector('.nk-event-view__date')?.textContent).toBeTruthy()
+    expect(row.querySelector('.nk-event-view__title a')?.getAttribute('href')).toBe(
+      buildObjectHistoryUrl('4465652155'),
+    )
+    expect(row.querySelector('.nk-geoobject-preview-opener-view')?.getAttribute('data-id')).toBe(
+      '4465652155',
+    )
+    expect(row.querySelector('.nk-commit-edit-notes-view__edit-note')?.textContent).toBe(
+      'id 4465652155 · правок: 1',
+    )
+  })
+
+  it('показывает дату последней правки и число правок', () => {
+    const row = createObjectRow(object, [commit(), commit({ id: '2' })], vi.fn())
+
+    const date = row.querySelector<HTMLElement>('.nk-event-view__date')
+    expect(date?.textContent).toBeTruthy()
+    expect(date?.title).toBe(formatCommitDate('2026-11-05T11:22:11+03:00'))
+    expect(row.querySelector('.nk-commit-edit-notes-view__edit-note')?.textContent).toBe(
+      'id 4465652155 · правок: 2',
+    )
+  })
+
+  it('подписывает кнопку удаления и не уводит по карточке при клике', () => {
+    const onRemove = vi.fn()
+    const assign = vi.fn()
+    vi.spyOn(window, 'location', 'get').mockReturnValue({
+      ...window.location,
+      assign,
+    } as unknown as Location)
+
+    const row = createObjectRow(object, [commit()], onRemove)
+    const remove = row.querySelector<HTMLButtonElement>('.nmap-ot-object__remove')
+    expect(remove?.getAttribute('aria-label')).toBe('Убрать хутор Захаров из наблюдения')
+
+    remove?.click()
+
+    expect(onRemove).toHaveBeenCalledWith('4465652155')
+    expect(assign).not.toHaveBeenCalled()
+    vi.restoreAllMocks()
+  })
+
+  it('ведёт на историю объекта по клику на карточку объекта', () => {
+    const assign = vi.fn()
+    vi.spyOn(window, 'location', 'get').mockReturnValue({
+      ...window.location,
+      assign,
+    } as unknown as Location)
+
+    const row = createObjectRow(object, [commit()], vi.fn())
+    row.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+    expect(assign).toHaveBeenCalledWith(buildObjectHistoryUrl('4465652155'))
+    vi.restoreAllMocks()
+  })
 })
 
 describe('object_tracker: renderPanel', () => {
@@ -229,6 +293,28 @@ describe('object_tracker: renderPanel', () => {
 
     expect(container.querySelectorAll('.nmap-ot-object')).toHaveLength(1)
     expect(container.textContent).toContain('Объект не найден')
+  })
+
+  it('рисует объекты карточками нативной ленты, как и события', () => {
+    const container = document.createElement('div')
+
+    renderPanel(container, { ...baseView, mode: 'objects' }, callbacks)
+
+    const body = container.querySelector('.nmap-ot-body')
+    expect(body?.classList.contains('nmap-ot-body_cards')).toBe(true)
+
+    const card = container.querySelector('.nmap-ot-object')
+    expect(card?.classList.contains('nk-list-item-view')).toBe(true)
+    expect(card?.querySelector('.nk-event-view__event')).not.toBeNull()
+  })
+
+  it('не растягивает пустое состояние карточками', () => {
+    const container = document.createElement('div')
+
+    renderPanel(container, { ...baseView, objects: [], commitsByObject: {} }, callbacks)
+
+    const body = container.querySelector('.nmap-ot-body')
+    expect(body?.classList.contains('nmap-ot-body_cards')).toBe(false)
   })
 
   it('не использует классы нативных вкладок у режимов', () => {

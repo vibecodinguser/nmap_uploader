@@ -195,9 +195,9 @@ export const renderPanel = (
 
   const body = document.createElement('div')
   body.className = 'nmap-ot-body'
-  const isFeed = view.objects.length > 0 && view.mode === 'feed'
-  if (isFeed) {
-    body.classList.add('nmap-ot-body_feed')
+  // Оба режима рисуют карточки нативной ленты: они идут от края до края панели.
+  if (view.objects.length > 0) {
+    body.classList.add('nmap-ot-body_cards')
   }
 
   if (view.objects.length === 0) {

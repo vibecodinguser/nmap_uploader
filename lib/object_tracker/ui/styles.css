@@ -190,29 +190,28 @@
     }
 
     /*
-     * Лента событий как в редакторе: карточки идут от края до края панели,
-     * без зазоров и внешних отступов — их задаёт сам nk-event-view__event.
+     * Карточки как в редакторе: лента событий и объекты идут от края до края
+     * панели, без зазоров и внешних отступов — их задаёт сам nk-event-view__event.
      */
-    .nmap-ot-body_feed {
+    .nmap-ot-body_cards {
       margin: 0 -12px;
       gap: 0;
     }
-    .nmap-ot-body_feed .nmap-ot-commit .nk-event-view__event {
+    .nmap-ot-body_cards .nk-event-view__event {
       padding-left: 16px;
       padding-right: 16px;
     }
 
     /*
-     * Пустое состояние в ленте живёт внутри сдвинутого на -12px тела, поэтому
-     * боковые отступы задаём такие же, как у карточки: иначе текст прилипает
-     * к краю панели.
+     * Пустое состояние внутри сдвинутого на -12px тела: боковые отступы такие
+     * же, как у карточки, иначе текст прилипает к краю панели.
      */
     .nmap-ot-empty {
       padding: 8px 0 12px;
       color: var(--nmap-text-muted);
       text-align: left;
     }
-    .nmap-ot-body_feed .nmap-ot-empty {
+    .nmap-ot-body_cards .nmap-ot-empty {
       padding-left: 16px;
       padding-right: 16px;
     }
@@ -255,45 +254,62 @@
       background: rgba(255, 219, 77, 0.1);
     }
 
+    /*
+     * Карточка объекта — та же карточка ленты, только вместо автора правки
+     * строка с id и числом правок. Кликабельна целиком, как в ленте.
+     */
     .nmap-ot-object {
+      position: relative;
+      cursor: pointer;
+    }
+    .nmap-ot-object .nk-event-view__event {
       display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 12px;
-      border: 1px solid var(--border-color, var(--nmap-border-subtle));
-      border-radius: var(--nmap-radius-sm);
-      padding: 8px 10px;
     }
-    .nmap-ot-object__info {
-      min-width: 0;
-      flex: 1 1 auto;
-    }
-    .nmap-ot-object__title {
+    .nmap-ot-object .nk-event-view__title a {
+      display: block;
       color: var(--nmap-link);
       text-decoration: none;
-      font-weight: 500;
-      display: block;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
     }
-    .nmap-ot-object__title:hover {
+    .nmap-ot-object .nk-event-view__title a:hover {
       text-decoration: underline;
     }
-    .nmap-ot-object__meta {
-      color: var(--nmap-text-muted);
-      font-size: 12px;
-      margin-top: 2px;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .nmap-ot-object .nk-geoobject-preview-opener-view {
+      cursor: pointer;
     }
+
+    /*
+     * Кнопка удаления стоит в правом верхнем углу карточки, как нативное
+     * действие строки: иконка редактора, без своей рамки и фона.
+     */
     .nmap-ot-object__remove {
-      flex: 0 0 auto;
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: var(--nmap-text-muted);
+      cursor: pointer;
     }
+    .nmap-ot-object__remove:hover,
+    .nmap-ot-object__remove:focus-visible {
+      color: var(--nmap-error);
+    }
+
+    /* Дата и заголовок не заезжают под кнопку удаления. */
+    .nmap-ot-object .nmap-ot-object__content {
+      padding-right: 32px;
+    }
+
     .nmap-ot-object__error {
       color: var(--nmap-error);
       font-size: 12px;
-      margin: -4px 0 4px;
+      padding: 0 16px 8px;
     }
 
     /*
@@ -315,16 +331,12 @@
 
     /* Тёмная тема: редактор помечает её классом на .nk-page. */
     .nk-page_color-scheme_dark .nmap-ot-empty,
-    .nk-page_color-scheme_dark .nmap-ot-object__meta,
     .nk-page_color-scheme_dark .nmap-ot-add__label {
       color: var(--nmap-text-muted);
     }
-    .nk-page_color-scheme_dark .nmap-ot-object__title,
+    .nk-page_color-scheme_dark .nmap-ot-object .nk-event-view__title a,
     .nk-page_color-scheme_dark .nmap-ot-commit .nk-event-view__title a {
       color: var(--nmap-link-dark);
-    }
-    .nk-page_color-scheme_dark .nmap-ot-object {
-      border-color: rgba(255, 255, 255, 0.18);
     }
     .nk-page_color-scheme_dark .nmap-ot-commit_new {
       background: rgba(255, 219, 77, 0.1);
@@ -349,7 +361,8 @@
     }
 
     @media (prefers-color-scheme: dark) {
-      .nk-page:not(.nk-page_color-scheme_light) .nmap-ot-object__title {
+      .nk-page:not(.nk-page_color-scheme_light) .nmap-ot-object .nk-event-view__title a,
+      .nk-page:not(.nk-page_color-scheme_light) .nmap-ot-commit .nk-event-view__title a {
         color: var(--nmap-link-dark);
       }
     }
