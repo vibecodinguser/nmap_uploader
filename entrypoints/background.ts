@@ -37,6 +37,7 @@ import {
   handleUpload,
   handleUploadNspdGeoJson,
   type MessageHandler,
+  migrateLegacyNotesFolderOnStartup,
   openPanel,
   persistYandexBrowserFlag,
   runBackgroundTask,
@@ -144,6 +145,11 @@ const initBackground = (): void => {
 
   const localeTask = syncLocaleFromStorage()
   runBackgroundTask(localeTask, 'syncLocaleFromStorage')
+
+  // Перенос заметок из папки Блокнота не должен ждать, пока откроют панель:
+  // пока папка `notes` лежит внутри Блокнота, трекер редактора падает на её
+  // манифесте, который принимает за данные трека.
+  runBackgroundTask(migrateLegacyNotesFolderOnStartup(), 'notes migration')
 
   initNspdContentScriptSync()
 

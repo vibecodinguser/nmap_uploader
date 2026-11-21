@@ -14,6 +14,7 @@ import { NOTES_RENDER_ACTION, NOTES_SNAPSHOT_ACTION } from '@/lib/notes/protocol
 import { createIndexedDbNotesCache } from '@/lib/notes/storage/cache'
 import { createCachingNotesRemote } from '@/lib/notes/storage/caching_remote'
 import { readHiddenNoteIds, writeHiddenNoteIds } from '@/lib/notes/storage/hidden_ids'
+import { migrateLegacyNotesFolder } from '@/lib/notes/storage/migration'
 import { createDiskNotesRemote } from '@/lib/notes/storage/remote'
 import type { NotesPorts } from '@/lib/notes/storage/repository'
 import { getStoredAuth } from '@/lib/yandex/client'
@@ -68,6 +69,17 @@ export const createPorts = async (): Promise<NotesPorts | null> => {
     // Другой токен — другой диск. Очистку делаем до новой сессии, чтобы
     // снимок прошлого пользователя не успел уехать в панель.
     await resetNotesSession()
+  }
+
+  // Заметки из папки Блокнота нужно перенести до первого чтения: иначе
+  // панель прочитает пустой новый путь, а трекер редактора продолжит падать
+  // на манифесте заметок, который он принимает за трек.
+  try {
+    await migrateLegacyNotesFolder({ token: auth.token, userId: auth.user.id })
+  } catch (error: unknown) {
+    // Миграция уже переключила сессию на прежнее место: заметки останутся
+    // доступны, а перенос повторится при следующем запуске background.
+    logBackgroundTaskFailure('notes migration', error)
   }
 
   const remote = createCachingNotesRemote(createDiskNotesRemote({ token: auth.token }))

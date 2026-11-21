@@ -1,4 +1,4 @@
-import { YANDEX_DISK_FOLDER } from '@/lib/yandex/constants'
+import { notesIconsFolder } from '../storage/paths'
 
 /**
  * Иконки заметок на Диске.
@@ -6,14 +6,13 @@ import { YANDEX_DISK_FOLDER } from '@/lib/yandex/constants'
  * Пользовательская иконка лежит рядом с геометрией, но отдельным файлом:
  * маленькая картинка не должна переписываться вместе с манифестом.
  */
-export const NOTES_ICONS_FOLDER = `${YANDEX_DISK_FOLDER}/notes/icons`
 
 /** Лимит файла: иконка показывается на карте размером 64×64. */
 export const NOTES_ICON_MAX_BYTES = 64 * 1024
 
 export const NOTES_ICON_ALLOWED_TYPES = ['image/png', 'image/svg+xml', 'image/webp'] as const
 
-export const notesIconPath = (fileName: string): string => `${NOTES_ICONS_FOLDER}/${fileName}`
+export const notesIconPath = (fileName: string): string => `${notesIconsFolder()}/${fileName}`
 
 /**
  * Имя файла иконки: uuid и расширение.

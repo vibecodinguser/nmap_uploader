@@ -5,6 +5,8 @@
  * загрузка, мутации, иконки, рисование, скрытие. Общая обвязка (проверка
  * отправителя, порты, рассылка) — в `notes/guard.ts`.
  */
+
+export { migrateLegacyNotesFolderOnStartup } from '@/lib/notes/storage/migration'
 export { handleNotesDrawFinished, handleNotesSelect, handleNotesStartDraw } from './notes/drawing'
 export { handleNotesUploadIcon } from './notes/icons'
 export { handleNotesLoad } from './notes/load'
