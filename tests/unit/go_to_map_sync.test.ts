@@ -4,6 +4,7 @@ import {
   buildNakarteUrl,
   buildNmapsUrlFromLocation,
   getMapLocationFromNakarteUrl,
+  getNakarteSettingsFromHash,
   locationsEqual,
   normalizeMapLocation,
   normalizeMapZoom,
@@ -32,6 +33,14 @@ describe('buildNakarteUrl', () => {
     const url = buildNakarteUrl({ longitude: 37.6, latitude: 55.7, zoom: 12 })
     expect(url).toBe('https://nakarte.me/#m=12/55.7000000/37.6000000&l=S/K')
   })
+
+  it('подставляет сохранённые настройки Nakarte вместо слоя по умолчанию', () => {
+    const url = buildNakarteUrl(
+      { longitude: 37.6, latitude: 55.7, zoom: 12 },
+      'l=Otm/Y&nktp=55.7/37.6',
+    )
+    expect(url).toBe('https://nakarte.me/#m=12/55.7000000/37.6000000&l=Otm/Y&nktp=55.7/37.6')
+  })
 })
 
 describe('buildNakarteHash', () => {
@@ -50,6 +59,19 @@ describe('buildNakarteHash', () => {
     )
 
     expect(nextHash).toBe('m=15/55.7000000/37.6000000&l=Otm/Y&n=track123&q=searchPoint')
+  })
+})
+
+describe('getNakarteSettingsFromHash', () => {
+  it('отбрасывает положение карты и сохраняет остальные параметры', () => {
+    expect(getNakarteSettingsFromHash('#m=10/50.0/30.0&l=Otm/Y&nktp=55.7/37.6')).toBe(
+      'l=Otm/Y&nktp=55.7/37.6',
+    )
+  })
+
+  it('возвращает пустую строку, если настроек нет', () => {
+    expect(getNakarteSettingsFromHash('#m=10/50.0/30.0')).toBe('')
+    expect(getNakarteSettingsFromHash('')).toBe('')
   })
 })
 

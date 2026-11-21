@@ -1,15 +1,22 @@
 import { NMAPS_ORIGIN } from '@/lib/extension_origins'
 import { mouseToLatLng } from '@/lib/go_to_geo_projection'
 import type { MapLocation } from '@/lib/go_to_link'
-import { getMapLocationFromNakarteUrl, NAKARTE_SYNC_MSG_SOURCE } from '@/lib/go_to_map_sync'
+import {
+  getMapLocationFromNakarteUrl,
+  getNakarteSettingsFromHash,
+  NAKARTE_SYNC_MSG_SOURCE,
+} from '@/lib/go_to_map_sync'
+import { saveNakarteViewSettings } from './nakarte_settings'
 
 export const MAP_ELEMENT_ID = 'map'
 
 export class NakarteSyncService {
   private restorePushState?: () => void
   private restoreReplaceState?: () => void
+  private lastSavedViewSettings: string | null = null
 
   public start(): () => void {
+    this.lastSavedViewSettings = this.readViewSettings()
     this.restorePushState = this.wrapHistoryMethod('pushState', this.notifyLocation)
     this.restoreReplaceState = this.wrapHistoryMethod('replaceState', this.notifyLocation)
 
@@ -62,7 +69,21 @@ export class NakarteSyncService {
     return typeof window !== 'undefined' ? getMapLocationFromNakarteUrl(window.location.href) : null
   }
 
+  private readViewSettings(): string {
+    return typeof window !== 'undefined' ? getNakarteSettingsFromHash(window.location.hash) : ''
+  }
+
+  /** Настройки Nakarte живут в hash: сохраняем их, чтобы вернуть при следующем открытии. */
+  private persistViewSettings(): void {
+    const settings = this.readViewSettings()
+    if (settings === this.lastSavedViewSettings) return
+
+    this.lastSavedViewSettings = settings
+    void saveNakarteViewSettings(settings)
+  }
+
   public notifyLocation = (): void => {
+    this.persistViewSettings()
     const location = this.readLocation()
     if (location) {
       this.postToParent({ type: 'location', location })

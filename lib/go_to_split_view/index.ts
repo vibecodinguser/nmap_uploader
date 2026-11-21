@@ -3,5 +3,6 @@
  */
 export * from '@/lib/go_to_split_view/core'
 export * from '@/lib/go_to_split_view/dom'
+export * from '@/lib/go_to_split_view/nakarte_settings'
 export * from '@/lib/go_to_split_view/nakarte_sync_service'
 export * from '@/lib/go_to_split_view/sync_manager'

@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import nakarteSyncScript from '@/entrypoints/nakarte-sync.content'
 import { NMAPS_ORIGIN } from '@/lib/extension_origins'
 import { NAKARTE_SYNC_MSG_SOURCE } from '@/lib/go_to_map_sync'
+import { getStoredNakarteViewSettings } from '@/lib/go_to_split_view'
 import {
   createContentScriptContext,
   mockIframeWindow,
@@ -137,6 +138,22 @@ describe('nakarte-sync.content', () => {
       source: NAKARTE_SYNC_MSG_SOURCE,
       type: 'cursor',
       location: null,
+    })
+  })
+
+  it('сохраняет настройки Nakarte при изменении hash', async () => {
+    restoreIframe = mockIframeWindow()
+    const parentSpy = spyParentPostMessage()
+    restoreParent = parentSpy.restore
+
+    nakarteSyncScript.main?.(ctx)
+    await vi.waitFor(() => expect(parentSpy.messages.length).toBeGreaterThan(0))
+
+    window.location.hash = '#m=15/45.0/40.0&l=Otm/Y&nktp=55.7/37.6'
+    window.dispatchEvent(new HashChangeEvent('hashchange'))
+
+    await vi.waitFor(async () => {
+      expect(await getStoredNakarteViewSettings()).toBe('l=Otm/Y&nktp=55.7/37.6')
     })
   })
 

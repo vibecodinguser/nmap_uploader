@@ -9,6 +9,7 @@ import { buildNakarteUrl } from '@/lib/go_to_map_sync'
 import {
   applySplitLayout,
   clearSplitLayout,
+  getStoredNakarteViewSettings,
   LEFT_CURSOR_OVERLAY_CLASS,
   mountSplitDomElements,
   mountSplitNoticeBanner,
@@ -65,7 +66,7 @@ const cleanupDomAndSync = (): void => {
   layoutState = null
 }
 
-const mountSplitView = (): boolean => {
+const mountSplitView = async (): Promise<boolean> => {
   if (status !== 'closed') return false
   status = 'opening'
 
@@ -76,10 +77,13 @@ const mountSplitView = (): boolean => {
   }
 
   try {
+    const savedSettings = await getStoredNakarteViewSettings()
+    if (status !== 'opening') return false
+
     requestClosePanelSidebar()
 
     layoutState = applySplitLayout()
-    domElements = mountSplitDomElements(buildNakarteUrl(location), () => {
+    domElements = mountSplitDomElements(buildNakarteUrl(location, savedSettings), () => {
       syncManager?.postInitialLocation()
     })
 
@@ -130,7 +134,7 @@ export const teardownSplitView = (): void => {
   }
 }
 
-export const toggleSplitView = (): boolean => {
+export const toggleSplitView = async (): Promise<boolean> => {
   if (status === 'opening' || status === 'closing') {
     // Защита от дребезга и параллельных вызовов
     return false

@@ -42,10 +42,10 @@ export const mapNmapsLayerToNakarte = (layer?: string): string => {
   return 'S/K'
 }
 
-/** Собирает URL nakarte для текущего вида карты. */
-export const buildNakarteUrl = (location: MapLocation): string => {
+/** Собирает URL nakarte для текущего вида карты с сохранёнными настройками. */
+export const buildNakarteUrl = (location: MapLocation, savedSettings = ''): string => {
   const nakarteLayer = mapNmapsLayerToNakarte(location.layer)
-  const hash = buildNakarteHash(location, nakarteLayer)
+  const hash = buildNakarteHash(location, nakarteLayer, savedSettings)
   return `${NAKARTE_DEFAULT_URL}#${hash}`
 }
 
@@ -116,4 +116,14 @@ export const buildNakarteHash = (
   }
 
   return [newMapPart, ...nonMapParts].join('&')
+}
+
+/** Возвращает настройки Nakarte из hash без положения карты (`m`). */
+export const getNakarteSettingsFromHash = (hash: string): string => {
+  const cleanHash = hash.replace(/^#+/u, '')
+  return cleanHash
+    .split('&')
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0 && !part.startsWith('m='))
+    .join('&')
 }
