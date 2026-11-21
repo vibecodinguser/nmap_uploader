@@ -17,6 +17,7 @@ import {
   describeObject,
   formatCommitDate,
 } from './format'
+import { openNmapsRoute } from './navigation'
 import { formatRelativeDate } from './relative_date'
 
 /**
@@ -155,7 +156,7 @@ export const createCommitRow = (
   row.addEventListener('click', (event) => {
     event.preventDefault()
     event.stopPropagation()
-    window.location.assign(historyUrl)
+    openNmapsRoute(historyUrl)
   })
 
   return row

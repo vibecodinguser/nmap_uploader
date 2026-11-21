@@ -10,7 +10,8 @@
 import { parseStaticSvg } from '@/lib/parse_static_svg'
 import type { ObjectCommit, TrackedObject } from '../types'
 import { resolveCategoryIconClass } from './category_icons'
-import { buildObjectHistoryUrl, describeObject, formatCommitDate } from './format'
+import { buildObjectUrl, describeObject, formatCommitDate } from './format'
+import { openNmapsRoute } from './navigation'
 import { formatRelativeDate } from './relative_date'
 
 /**
@@ -47,7 +48,10 @@ export const createObjectRow = (
   commits: ObjectCommit[],
   onRemove: (objectId: string) => void,
 ): HTMLElement => {
-  const historyUrl = buildObjectHistoryUrl(object.id)
+  const objectUrl = buildObjectUrl(
+    object.id,
+    typeof window === 'undefined' ? '' : window.location.href,
+  )
 
   const row = document.createElement('div')
   row.className = 'nmap-ot-object nk-list-item-view nk-list-item-view_interactive'
@@ -91,7 +95,7 @@ export const createObjectRow = (
   titleRow.className = 'nk-event-view__title'
   const titleLink = document.createElement('a')
   titleLink.className = 'nk-link nk-link_theme_islands nk-link_view_text'
-  titleLink.href = historyUrl
+  titleLink.href = objectUrl
   const titleText = document.createElement('span')
   titleText.className = 'nk-geoobject-preview-opener-view'
   titleText.dataset.id = object.id
@@ -111,11 +115,11 @@ export const createObjectRow = (
   grid.appendChild(content)
   row.appendChild(createRemoveButton(object, onRemove))
 
-  // Кликабельна вся карточка: ведём на историю объекта, как в ленте.
+  // Кликабельна вся карточка: открываем карточку объекта, как в ленте.
   row.addEventListener('click', (event) => {
     event.preventDefault()
     event.stopPropagation()
-    window.location.assign(historyUrl)
+    openNmapsRoute(objectUrl)
   })
 
   return row

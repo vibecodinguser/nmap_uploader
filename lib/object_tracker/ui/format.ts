@@ -24,6 +24,25 @@ export const formatCommitDate = (iso: string): string => {
 export const buildObjectHistoryUrl = (objectId: string): string =>
   `https://n.maps.yandex.ru/#!/objects/${objectId}/history/commits`
 
+/**
+ * Ссылка на карточку объекта с текущим видом карты.
+ *
+ * Как в нативной ленте: маршрут объекта плюс `z`, `ll` и `l` из адреса
+ * редактора, чтобы карта открылась на том же месте.
+ */
+export const buildObjectUrl = (objectId: string, currentHref: string = ''): string => {
+  const fallback = `https://n.maps.yandex.ru/#!/objects/${objectId}`
+  const href = typeof currentHref === 'string' ? currentHref : ''
+  const hashIndex = href.indexOf('#!')
+  if (hashIndex === -1) return fallback
+
+  const base = href.slice(0, hashIndex)
+  const afterHash = href.slice(hashIndex + 2)
+  const queryIndex = afterHash.indexOf('?')
+  const query = queryIndex === -1 ? '' : afterHash.slice(queryIndex)
+  return `${base}#!/objects/${objectId}${query}`
+}
+
 /** Подпись объекта: имя, а если его нет — id. */
 export const describeObject = (object: TrackedObject): string =>
   object.title && object.title !== object.id ? object.title : `Объект ${object.id}`

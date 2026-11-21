@@ -152,17 +152,21 @@ describe('object_tracker: строки', () => {
     expect(row.querySelector('.nk-user-name-view__icon svg')).not.toBeNull()
   })
 
-  it('ведёт на историю объекта по клику на карточку', () => {
+  it('ведёт на историю объекта полной загрузкой маршрута', () => {
     const row = createCommitRow(commit(), object, false)
     const assign = vi.fn()
+    const reload = vi.fn()
     vi.spyOn(window, 'location', 'get').mockReturnValue({
       ...window.location,
+      href: 'https://n.maps.yandex.ru/#!/users/stylesvoboda/feeds/edits',
       assign,
+      reload,
     } as unknown as Location)
 
     row.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 
     expect(assign).toHaveBeenCalledWith(buildObjectHistoryUrl('4465652155'))
+    expect(reload).toHaveBeenCalledTimes(1)
     vi.restoreAllMocks()
   })
 
@@ -184,8 +188,8 @@ describe('object_tracker: строки', () => {
     expect(row.querySelector('.nk-event-view__event.nk-section.nk-section_level_2')).not.toBeNull()
     expect(row.querySelector('.nk-event-view__icon .nk-geoobject-icon')).not.toBeNull()
     expect(row.querySelector('.nk-event-view__date')?.textContent).toBeTruthy()
-    expect(row.querySelector('.nk-event-view__title a')?.getAttribute('href')).toBe(
-      buildObjectHistoryUrl('4465652155'),
+    expect(row.querySelector('.nk-event-view__title a')?.getAttribute('href')).toContain(
+      '#!/objects/4465652155',
     )
     expect(row.querySelector('.nk-geoobject-preview-opener-view')?.getAttribute('data-id')).toBe(
       '4465652155',
@@ -209,9 +213,11 @@ describe('object_tracker: строки', () => {
   it('подписывает кнопку удаления и не уводит по карточке при клике', () => {
     const onRemove = vi.fn()
     const assign = vi.fn()
+    const reload = vi.fn()
     vi.spyOn(window, 'location', 'get').mockReturnValue({
       ...window.location,
       assign,
+      reload,
     } as unknown as Location)
 
     const row = createObjectRow(object, [commit()], onRemove)
@@ -225,18 +231,34 @@ describe('object_tracker: строки', () => {
     vi.restoreAllMocks()
   })
 
-  it('ведёт на историю объекта по клику на карточку объекта', () => {
+  it('открывает карточку объекта полной загрузкой маршрута', () => {
+    // Роутер редактора не реагирует на смену hash извне: без перезагрузки
+    // адрес меняется, а вид остаётся прежним — ссылка выглядела нерабочей.
     const assign = vi.fn()
+    const reload = vi.fn()
     vi.spyOn(window, 'location', 'get').mockReturnValue({
       ...window.location,
+      href: 'https://n.maps.yandex.ru/#!/users/stylesvoboda/feeds/edits?z=18&ll=38.9%2C45.0&l=nk%23sat',
       assign,
+      reload,
     } as unknown as Location)
 
     const row = createObjectRow(object, [commit()], vi.fn())
     row.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 
-    expect(assign).toHaveBeenCalledWith(buildObjectHistoryUrl('4465652155'))
+    expect(assign).toHaveBeenCalledWith(
+      'https://n.maps.yandex.ru/#!/objects/4465652155?z=18&ll=38.9%2C45.0&l=nk%23sat',
+    )
+    expect(reload).toHaveBeenCalled()
     vi.restoreAllMocks()
+  })
+
+  it('ставит ссылку на карточку объекта в заголовок карточки', () => {
+    const row = createObjectRow(object, [commit()], vi.fn())
+    const link = row.querySelector<HTMLAnchorElement>('.nk-event-view__title a')
+
+    expect(link?.getAttribute('href')).toContain('#!/objects/4465652155')
+    expect(link?.getAttribute('href')).not.toContain('/history/commits')
   })
 })
 
