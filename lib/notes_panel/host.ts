@@ -23,6 +23,14 @@ export const NOTES_PANEL_STATE_MESSAGE = 'NOTES_PANEL_STATE'
 export const NOTES_PANEL_SHOW_NOTE_MESSAGE = 'NOTES_PANEL_SHOW_NOTE'
 /** iframe → хост: показать снимок сразу, не дожидаясь ответа Диска. */
 export const NOTES_PANEL_PREVIEW_MESSAGE = 'NOTES_PANEL_PREVIEW'
+/**
+ * iframe → хост: подогнать высоту под содержимое.
+ *
+ * Число — желаемая высота панели в пикселях, `null` — вернуть прежнюю
+ * (пользовательскую) высоту. Карточка свойств выше списка, и открывать её в
+ * четверть экрана значило бы прятать нижние блоки под прокруткой.
+ */
+export const NOTES_PANEL_FIT_HEIGHT_MESSAGE = 'NOTES_PANEL_FIT_HEIGHT'
 
 export type NotesPanelLayout = 'compact' | 'full'
 
@@ -64,7 +72,19 @@ export const createNotesPanelHost = ({
   let frame: HTMLIFrameElement | null = null
   let layout: NotesPanelLayout = 'compact'
   let compactHeight = Math.round(window.innerHeight * DEFAULT_RATIO)
+  /**
+   * Высота под содержимое, запрошенная iframe. Пока она задана, она важнее
+   * пользовательской: карточка свойств должна открываться целиком. Протяжка
+   * ручки и закрытие панели сбрасывают её — ручное управление главнее.
+   */
+  let fittedHeight: number | null = null
   let dragging = false
+  /**
+   * Заметка, которую просили показать. iframe может быть ещё не загружен —
+   * сообщение, отправленное в этот момент, теряется при навигации, поэтому
+   * запоминаем просьбу и повторяем её после `load`.
+   */
+  let pendingNoteId: string | null = null
   /** Геометрия на момент начала протяжки: высота считается от неё, а не от курсора. */
   let dragStartY = 0
   let dragStartHeight = 0
@@ -76,6 +96,28 @@ export const createNotesPanelHost = ({
     target.postMessage({ action: NOTES_PANEL_STATE_MESSAGE, layout }, '*')
   }
 
+  const postShowNote = (noteId: string): void => {
+    frame?.contentWindow?.postMessage({ action: NOTES_PANEL_SHOW_NOTE_MESSAGE, noteId }, '*')
+  }
+
+  /**
+   * Сколько высоты контейнера занимает ручка.
+   *
+   * iframe тянется на остаток, поэтому высота карточки, измеренная внутри
+   * iframe, — это ещё не высота контейнера: без ручки содержимое обрезалось бы
+   * на её высоту.
+   */
+  const panelChromeHeight = (): number => {
+    const handle = container?.querySelector<HTMLElement>(`#${NOTES_PANEL_HANDLE_ID}`)
+    if (!handle) return 0
+    const styles = getComputedStyle(handle)
+    return (
+      handle.offsetHeight +
+      (Number.parseFloat(styles.marginTop) || 0) +
+      (Number.parseFloat(styles.marginBottom) || 0)
+    )
+  }
+
   const applyHeight = (): void => {
     if (!container) return
     container.dataset.layout = layout
@@ -83,7 +125,8 @@ export const createNotesPanelHost = ({
       container.style.height = '100vh'
       return
     }
-    container.style.height = `${clampHeight(compactHeight)}px`
+    const height = fittedHeight === null ? compactHeight : fittedHeight + panelChromeHeight()
+    container.style.height = `${clampHeight(height)}px`
   }
 
   const setLayout = (next: NotesPanelLayout): void => {
@@ -146,6 +189,11 @@ export const createNotesPanelHost = ({
     dragStartHeight = layout === 'full' ? window.innerHeight : visibleHeight
     dragPointerId = event.pointerId
     dragging = true
+    // Протяжка — ручное управление высотой: подгонка под содержимое отступает.
+    // Текущая высота становится пользовательской, иначе клик по ручке без
+    // движения возвращал бы панель к старой высоте.
+    if (fittedHeight !== null) compactHeight = clampHeight(visibleHeight)
+    fittedHeight = null
 
     // Захват указателя обязателен: если тянуть вниз, курсор уходит на iframe,
     // а это отдельный документ — без захвата события до хоста не доходят и
@@ -167,9 +215,15 @@ export const createNotesPanelHost = ({
   const handleWindowMessage = (event: MessageEvent): void => {
     if (!frame || event.source !== frame.contentWindow) return
 
-    const data = event.data as { action?: string; layout?: string } | null
+    const data = event.data as { action?: string; layout?: string; height?: number } | null
     if (data?.action === NOTES_PANEL_LAYOUT_MESSAGE) {
       setLayout(data.layout === 'full' ? 'full' : 'compact')
+      return
+    }
+    if (data?.action === NOTES_PANEL_FIT_HEIGHT_MESSAGE) {
+      fittedHeight =
+        typeof data.height === 'number' && Number.isFinite(data.height) ? data.height : null
+      applyHeight()
       return
     }
     if (data?.action === NOTES_PANEL_CLOSE_MESSAGE) {
@@ -194,7 +248,15 @@ export const createNotesPanelHost = ({
     frame.id = NOTES_PANEL_FRAME_ID
     frame.title = 'Заметки'
     frame.src = browser.runtime.getURL('/notes-panel.html')
-    frame.addEventListener('load', postState)
+    frame.addEventListener('load', () => {
+      postState()
+      // Просьба показать заметку могла прийти до загрузки документа — тогда
+      // сообщение потерялось, и повторяем его сейчас.
+      if (pendingNoteId) {
+        postShowNote(pendingNoteId)
+        pendingNoteId = null
+      }
+    })
 
     container.append(handle, frame)
     document.body.appendChild(container)
@@ -208,6 +270,9 @@ export const createNotesPanelHost = ({
   const open = (): void => {
     build()
     if (!container) return
+    // Панель, открытая кнопкой в тулбаре, показывает список: просьба из
+    // прошлого сеанса к новой карточке не относится.
+    pendingNoteId = null
     applyHeight()
     container.dataset.open = 'true'
     postState()
@@ -217,6 +282,10 @@ export const createNotesPanelHost = ({
   const close = (): void => {
     if (container?.dataset.open !== 'true') return
     container.dataset.open = 'false'
+    // Следующее открытие начинается с пользовательской высоты: подгонка была
+    // привязана к конкретной карточке, а не к панели вообще.
+    fittedHeight = null
+    pendingNoteId = null
     onVisibilityChange?.(false)
   }
 
@@ -256,7 +325,10 @@ export const createNotesPanelHost = ({
     isOpen: () => container?.dataset.open === 'true',
     showNote: (noteId: string) => {
       open()
-      frame?.contentWindow?.postMessage({ action: NOTES_PANEL_SHOW_NOTE_MESSAGE, noteId }, '*')
+      // iframe мог только что создаться: сообщение до `load` не дойдёт,
+      // поэтому просьбу запоминаем и повторяем в обработчике загрузки.
+      pendingNoteId = noteId
+      postShowNote(noteId)
     },
     destroy,
   }

@@ -7,6 +7,7 @@ import { NoteProperties } from '@/components/notes_panel/NoteProperties'
 import { PanelHeader, type PanelLayout } from '@/components/notes_panel/PanelHeader'
 import { PanelStatus } from '@/components/notes_panel/PanelStatus'
 import { PanelToasts } from '@/components/notes_panel/PanelToasts'
+import { usePanelFitHeight } from '@/hooks/notes_panel/usePanelFitHeight'
 import { useLocale } from '@/hooks/useLocale'
 import { useNotesPanel } from '@/hooks/useNotesPanel'
 import { buildAutoNoteName } from '@/lib/notes/model/autonames'
@@ -46,6 +47,10 @@ export const NotesPanelApp = () => {
   }, [])
 
   const selectedId = panel.selectedNote?.id ?? ''
+
+  // Карточка свойств выше списка: панель подстраивает высоту, чтобы блоки
+  // оформления не прятались под прокруткой.
+  usePanelFitHeight(panel.mode, panel.selectedNote?.id ?? null)
 
   const fallbackName = (note: Note): string =>
     buildAutoNoteName({
