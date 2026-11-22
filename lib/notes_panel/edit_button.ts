@@ -15,8 +15,13 @@ export const BOTTOM_CONTROLS_SELECTOR = '.nk-map-bottom-controls-view'
 export const NOTES_EDIT_BUTTON_ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M14 6.5 17.5 10" stroke="currentColor" stroke-width="2"/></svg>'
 
+/**
+ * Классы — как у кнопок нижнего ряда карты: `nk-button_size_xl` даёт высоту
+ * 38 px, а `nk-button_theme_air` + `nk-button_view_dark` — тёмную
+ * полупрозрачную подложку со скруглением под пилюлю.
+ */
 const BUTTON_CLASS =
-  'nk-button nk-button_theme_air nk-button_size_m nk-button_view_dark nmap-notes-edit-button'
+  'nk-button nk-button_theme_air nk-button_size_xl nk-button_view_dark nmap-notes-edit-button'
 
 export const findBottomControls = (): HTMLElement | null =>
   document.querySelector<HTMLElement>(BOTTOM_CONTROLS_SELECTOR)

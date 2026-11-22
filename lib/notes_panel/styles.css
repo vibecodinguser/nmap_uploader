@@ -67,20 +67,76 @@
   pointer-events: none;
 }
 
-/* Кнопка «Редактировать» живёт в разметке только при выбранной заметке. */
-.nmap-notes-edit-button {
+/*
+ * Кнопка «Редактировать» живёт в разметке только при выбранной заметке.
+ *
+ * Ряд нижних контролов карты прижат к левому краю (`left: 78px`), поэтому
+ * кнопка не может центрироваться внутри него. Она вынимается из потока ряда
+ * и ставится по центру окна на той же высоте, что и остальные контролы.
+ */
+.nmap-notes-edit-button-wrapper {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateX(-50%);
+}
+
+/*
+ * Размер и подложку дают хостовые классы `nk-button_size_xl` и
+ * `nk-button_view_dark` (тёмная пилюля 38 px), здесь — только раскладка
+ * содержимого. Селектор по id перебивает правила хоста без повышения
+ * специфичности флагами.
+ */
+#nmap-notes-edit-button {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  height: 38px;
+  padding: 0 14px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 38px;
+  color: #fff;
+  cursor: pointer;
+}
+
+/* Подложка хоста рисуется в `:before`, содержимое должно быть выше неё. */
+#nmap-notes-edit-button:hover::before {
+  box-shadow: 0 3px 4px 1px rgb(0 0 0 / 30%);
+}
+
+#nmap-notes-edit-button:focus-visible::before {
+  box-shadow: 0 0 0 2px #ffdb4d;
 }
 
 .nmap-notes-edit-button__icon {
+  position: relative;
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: #fff;
+  opacity: 0.65;
+  transition: opacity 0.2s ease-in-out;
+}
+
+#nmap-notes-edit-button:hover .nmap-notes-edit-button__icon,
+#nmap-notes-edit-button:focus-visible .nmap-notes-edit-button__icon {
+  opacity: 1;
+}
+
+.nmap-notes-edit-button__icon svg {
+  display: block;
   width: 16px;
   height: 16px;
 }
 
-.nmap-notes-edit-button__icon svg {
-  width: 16px;
-  height: 16px;
+.nmap-notes-edit-button__text {
+  position: relative;
 }

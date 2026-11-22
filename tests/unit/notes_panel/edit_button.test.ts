@@ -9,6 +9,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   BOTTOM_CONTROLS_SELECTOR,
+  createNotesEditButton,
   ensureNotesEditButton,
   findBottomControls,
   NOTES_EDIT_BUTTON_ID,
@@ -83,5 +84,17 @@ describe('кнопка «Редактировать»', () => {
     ensureNotesEditButton({ label: 'Редактировать', onClick: vi.fn() })
 
     expect(document.getElementById(NOTES_EDIT_BUTTON_WRAPPER_ID)).toBeNull()
+  })
+
+  /*
+   * Регрессия: кнопка собиралась на `nk-button_size_m` (28 px) и выпадала из
+   * ряда нижних контролов, где соседи — `nk-button_size_xl` высотой 38 px.
+   */
+  it('использует размер и вид соседних кнопок нижнего ряда', () => {
+    const button = createNotesEditButton({ label: 'Редактировать', onClick: vi.fn() })
+
+    expect(button.classList.contains('nk-button_size_xl')).toBe(true)
+    expect(button.classList.contains('nk-button_view_dark')).toBe(true)
+    expect(button.classList.contains('nk-button_size_m')).toBe(false)
   })
 })
