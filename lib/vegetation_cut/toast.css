@@ -1,0 +1,22 @@
+#nmap-vegetation-cut-toast {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 10px 16px;
+  border-radius: var(--nmap-radius-sm, 4px);
+  background: var(--nmap-popup-bg, #333333);
+  color: var(--nmap-popup-text-strong, #ffffff);
+  font-family: var(--nmap-font-stack, "Yandex Sans Text", Arial, Helvetica, sans-serif);
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+#nmap-vegetation-cut-toast[hidden] {
+  display: none;
+}

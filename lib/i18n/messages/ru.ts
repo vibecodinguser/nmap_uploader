@@ -264,6 +264,12 @@ export const ruMessages = {
     keyPressed: 'Нажата клавиша {key}',
     doubleClick: 'Двойной клик',
   },
+  vegetationCut: {
+    button: 'Разрезать растительность',
+    tooShort: 'Слишком короткая часть — разрез не сделан',
+    unsupported: 'Не удалось разрезать — редактор не принял изменение',
+    notVegetation: 'Разрез доступен только для линии растительности',
+  },
   objectTracker: {
     menuTrack: 'Отслеживать',
     menuTracked: 'Отслеживается',

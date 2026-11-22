@@ -67,6 +67,20 @@ export const observeWebpackModules = (
     },
   })
 
+  /*
+   * Бандлы страницы регистрируют чанки раньше, чем исполняется content script:
+   * `<script>` в `<head>` успевает выполниться до `document_start`. Поэтому
+   * недостаточно обернуть `push` — нужно обойти и уже накопленные чанки.
+   *
+   * Фабрики модулей выполняются лениво, при первом `require`, поэтому обёртка
+   * на уже зарегистрированном чанке всё равно сработает: когда редактор
+   * запросит свой модуль, мы получим его exports.
+   */
+  const existing = Array.from(chunks as ArrayLike<unknown>)
+  for (const chunk of existing) {
+    instrument(chunk)
+  }
+
   return () => {
     active = false
     if (originalDescriptor) {

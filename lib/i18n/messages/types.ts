@@ -265,6 +265,12 @@ export type Messages = {
     limitReached: string
     limitExceeded: string
   }
+  vegetationCut: {
+    button: string
+    tooShort: string
+    unsupported: string
+    notVegetation: string
+  }
   objectTracker: {
     menuTrack: string
     menuTracked: string

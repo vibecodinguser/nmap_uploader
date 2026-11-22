@@ -264,6 +264,12 @@ export const enMessages = {
     keyPressed: 'Key pressed: {key}',
     doubleClick: 'Double click',
   },
+  vegetationCut: {
+    button: 'Cut vegetation',
+    tooShort: 'The part is too short — nothing was cut',
+    unsupported: 'Could not cut — the editor rejected the change',
+    notVegetation: 'Cutting is available only for a vegetation line',
+  },
   objectTracker: {
     menuTrack: 'Track',
     menuTracked: 'Tracked',
