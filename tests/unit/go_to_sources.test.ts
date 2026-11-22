@@ -30,6 +30,12 @@ describe('getGoToSourceIconUrl', () => {
     expect(getGoToSourceIconUrl('Etomesto')).toBe(
       'https://favicon.yandex.net/favicon/etomesto.com?stub=1',
     )
+    expect(getGoToSourceIconUrl('Strava')).toBe(
+      'https://favicon.yandex.net/favicon/www.strava.com?stub=1',
+    )
+    expect(getGoToSourceIconUrl('GoogleEarth')).toBe(
+      'https://favicon.yandex.net/favicon/earth.google.com?stub=1',
+    )
   })
 
   it('возвращает пустую строку для неизвестного источника', () => {

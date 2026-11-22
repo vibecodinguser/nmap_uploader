@@ -103,4 +103,24 @@ describe('buildGoToLink', () => {
 
     expect(link).toBe('https://etomesto.com/map-index/?x=37.6&y=55.7')
   })
+
+  it('подставляет координаты в шаблон Strava Heatmap', () => {
+    const link = buildGoToLink(
+      GO_TO_SOURCES.Strava,
+      { longitude: 37.6, latitude: 55.7, zoom: 12 },
+      new Date('2026-06-08T12:00:00Z'),
+    )
+
+    expect(link).toBe('https://www.strava.com/maps/global-heatmap#12/55.7/37.6')
+  })
+
+  it('подставляет координаты в шаблон Google Earth', () => {
+    const link = buildGoToLink(
+      GO_TO_SOURCES.GoogleEarth,
+      { longitude: 37.6, latitude: 55.7, zoom: 12 },
+      new Date('2026-06-08T12:00:00Z'),
+    )
+
+    expect(link).toBe('https://earth.google.com/web/@55.7,37.6,0a,1500d,35y,0h,0t,0r')
+  })
 })

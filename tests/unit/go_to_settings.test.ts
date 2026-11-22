@@ -51,18 +51,20 @@ describe('getDefaultGoToItems', () => {
   it('сохраняет порядок источников по умолчанию', () => {
     const items = getDefaultGoToItems().map((item) => item.name)
     expect(items).toEqual([
+      'Rosreestr',
+      '2GIS',
+      'Google',
       'OpenStreetMap',
       'Nakarte',
       'Wikimapia',
       'Retromap',
-      'Rosreestr',
-      '2GIS',
-      'Google',
+      'GoogleEarth',
       'Bing',
       'Mapillary',
       'Copernicus',
       'Here',
       'Etomesto',
+      'Strava',
     ])
   })
 })

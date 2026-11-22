@@ -11,7 +11,26 @@ export type GoToSource = {
   displayName?: string
 }
 
+/**
+ * Порядок ключей задаёт порядок источников по умолчанию в меню и настройках.
+ */
 export const GO_TO_SOURCES: Record<string, GoToSource> = {
+  Rosreestr: {
+    linkTemplate:
+      'https://nspd.gov.ru/map?thematic=PKK&coordinate_x={lon}&coordinate_y={lat}&zoom={zoom}&theme_id=1&baseLayerId=235&is_copy_url=true&active_layers=875831',
+    maxZoom: 20,
+    convert: true,
+    displayName: 'Портал НСПД',
+  },
+  '2GIS': {
+    linkTemplate: 'https://2gis.ru/center?m={lon}%2C{lat}%2F{zoom}',
+    displayName: '2GIS',
+  },
+  Google: {
+    linkTemplate: 'https://www.google.ru/maps/@{lat},{lon},{zoom}z/data=!3m1!1e3?hl=ru',
+    iconUrl: '//favicon.yandex.net/favicon/maps.google.ru?size=32&stub=1',
+    displayName: 'Google Maps',
+  },
   OpenStreetMap: {
     linkTemplate: 'https://www.openstreetmap.org/#map={zoom}/{lat}/{lon}',
     displayName: 'OpenStreetMap',
@@ -28,21 +47,10 @@ export const GO_TO_SOURCES: Record<string, GoToSource> = {
     linkTemplate: 'https://retromap.ru/m.html#l=0120090&z={zoom}&y={lat}&x={lon}',
     displayName: 'Retromap',
   },
-  Rosreestr: {
-    linkTemplate:
-      'https://nspd.gov.ru/map?thematic=PKK&coordinate_x={lon}&coordinate_y={lat}&zoom={zoom}&theme_id=1&baseLayerId=235&is_copy_url=true&active_layers=875831',
-    maxZoom: 20,
-    convert: true,
-    displayName: 'Портал НСПД',
-  },
-  '2GIS': {
-    linkTemplate: 'https://2gis.ru/center?m={lon}%2C{lat}%2F{zoom}',
-    displayName: '2GIS',
-  },
-  Google: {
-    linkTemplate: 'https://www.google.ru/maps/@{lat},{lon},{zoom}z/data=!3m1!1e3?hl=ru',
-    iconUrl: '//favicon.yandex.net/favicon/maps.google.ru?size=32&stub=1',
-    displayName: 'Google Maps',
+  GoogleEarth: {
+    linkTemplate: 'https://earth.google.com/web/@{lat},{lon},0a,1500d,35y,0h,0t,0r',
+    displayName: 'Google Earth',
+    maxZoom: 21,
   },
   Bing: {
     linkTemplate: 'https://www.bing.com/maps?cp={lat}~{lon}&style=h&lvl={zoom}',
@@ -63,6 +71,10 @@ export const GO_TO_SOURCES: Record<string, GoToSource> = {
   Etomesto: {
     linkTemplate: 'https://etomesto.com/map-index/?x={lon}&y={lat}',
     displayName: 'ЭтоМесто',
+  },
+  Strava: {
+    linkTemplate: 'https://www.strava.com/maps/global-heatmap#{zoom}/{lat}/{lon}',
+    displayName: 'Strava Heatmap',
   },
 }
 
