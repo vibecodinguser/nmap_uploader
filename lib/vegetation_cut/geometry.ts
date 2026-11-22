@@ -71,16 +71,16 @@ export const lineLengthMeters = (coords: LineCoordinates): number => {
  * Ищет ближайшую к `target` точку ломаной.
  *
  * Вход и выход — в одной плоскости (глобальные пиксели карты), чтобы допуск
- * клика можно было задать в пикселях. Для замкнутого кольца последний отрезок
- * не рассматривается: он дублирует первый.
+ * клика можно было задать в пикселях. У замкнутого кольца просматриваются все
+ * отрезки, включая замыкающий: с началом совпадает только последняя точка, а
+ * сам отрезок к ней — обычная сторона кольца.
  */
 export const findNearestPointOnPolyline = (line: Point2[], target: Point2): LineCut | null => {
   if (line.length < 2) return null
 
-  const lastSegment = isClosedLine(line as LineCoordinates) ? line.length - 2 : line.length - 1
   let best: LineCut | null = null
 
-  for (let index = 0; index < lastSegment; index += 1) {
+  for (let index = 0; index < line.length - 1; index += 1) {
     const start = line[index]
     const end = line[index + 1]
     const deltaX = end[0] - start[0]

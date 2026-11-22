@@ -74,12 +74,13 @@ describe('findNearestPointOnPolyline', () => {
     expect(nearest?.distance).toBeCloseTo(6, 5)
   })
 
-  it('не рассматривает замыкающий отрезок кольца', () => {
-    // Точка лежит ровно на замыкающем отрезке (левый край квадрата).
-    // Если бы он участвовал в поиске, расстояние было бы нулевым.
+  it('находит клик на замыкающем отрезке кольца', () => {
+    // Левый край квадрата — отрезок от последней вершины к первой. Он такая же
+    // сторона кольца, как остальные: совпадает с началом только последняя точка.
     const nearest = findNearestPointOnPolyline(square, [0, 50])
-    expect(nearest).not.toBeNull()
-    expect(nearest?.distance).toBeGreaterThan(40)
+    expect(nearest?.segmentIndex).toBe(3)
+    expect(nearest?.ratio).toBeCloseTo(0.5, 5)
+    expect(nearest?.distance).toBeCloseTo(0, 5)
   })
 
   it('возвращает null для вырожденной линии', () => {
