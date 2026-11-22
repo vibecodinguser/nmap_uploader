@@ -57,12 +57,12 @@ export const ruMessages = {
     pointsCount: '{file}: {count} точек',
   },
   dateField: {
-    label: 'Дата заметки',
+    label: 'Дата блокнота',
     placeholder: 'дд-мм-гггг',
     openCalendarAria: 'Открыть календарь',
     calendarAria: 'Календарь',
     loadingDates: 'Загрузка дат…',
-    occupiedLegend: 'Уже есть заметка с этой датой',
+    occupiedLegend: 'В блокноте уже есть запись на эту дату',
   },
   upload: {
     dropzoneAria: 'Зона загрузки файлов',

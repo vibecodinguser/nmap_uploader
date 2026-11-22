@@ -56,12 +56,12 @@ export const enMessages = {
     pointsCount: '{file}: {count} points',
   },
   dateField: {
-    label: 'Note date',
+    label: 'Notebook date',
     placeholder: 'dd-mm-yyyy',
     openCalendarAria: 'Open calendar',
     calendarAria: 'Calendar',
     loadingDates: 'Loading dates…',
-    occupiedLegend: "Date with a note in the Cartographer's Notebook",
+    occupiedLegend: 'The notebook already has an entry on this date',
   },
   upload: {
     dropzoneAria: 'File upload drop zone',
