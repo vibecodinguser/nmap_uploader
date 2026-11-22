@@ -56,17 +56,26 @@ const readMapEvents = (map: CutMapLike): MapEventsLike | null => {
  *
  * Значения:
  * - `loaded` — скрипт исполнился, хук ещё не поставлен;
- * - `hooked` — хук активностей установлен;
+ * - `hooked:<N>` — хук активностей установлен, перехвачено N классов;
+ * - `idle` — редактор закрыт;
  * - `other:<категория>` — открыт редактор не растительности;
  * - `wait:<категория>` — растительность открыта, но редактор ещё не готов резать;
  * - `unsupported:commands` — у редактора не нашёлся менеджер команд, разрез
  *   нельзя было бы отменить, поэтому инструмент выключен;
  * - `ready:<категория>:<элементов>` — кнопка доступна.
+ *
+ * Атрибут живёт, пока работает скрипт, и снимается при остановке.
  */
 export const VEGETATION_CUT_STATE_ATTR = 'data-nmap-veg-cut'
 
-/** Журнал запусков активностей для разбора проблем: последние 50 записей. */
+/**
+ * Журнал запусков активностей для разбора проблем: последние 50 записей.
+ * Ведётся только при включённой отладке (`VEGETATION_CUT_DEBUG_FLAG`).
+ */
 export const VEGETATION_CUT_LOG_KEY = '__nmapVegCutLog'
+
+/** Ключ `localStorage`: значение `'1'` включает журнал и подробный лог. */
+export const VEGETATION_CUT_DEBUG_FLAG = 'nmap-veg-cut-debug'
 
 export type VegetationCutLogEntry = {
   categoryId: string | null
@@ -84,6 +93,25 @@ export const setVegetationCutState = (state: string): void => {
     document.documentElement.setAttribute(VEGETATION_CUT_STATE_ATTR, state)
   } catch {
     // Документ мог быть уже выгружен
+  }
+}
+
+const clearVegetationCutState = (): void => {
+  try {
+    document.documentElement.removeAttribute(VEGETATION_CUT_STATE_ATTR)
+  } catch {
+    // Документ мог быть уже выгружен
+  }
+}
+
+const isDebugEnabled = (): boolean => {
+  try {
+    return (
+      typeof localStorage !== 'undefined' && localStorage.getItem(VEGETATION_CUT_DEBUG_FLAG) === '1'
+    )
+  } catch {
+    // Хранилище может быть недоступно (настройки приватности)
+    return false
   }
 }
 
@@ -163,6 +191,7 @@ export class VegetationCutController {
     this.cleanupHook?.()
     this.cleanupHook = null
     removeVegetationCutButton()
+    clearVegetationCutState()
   }
 
   /**
@@ -225,16 +254,20 @@ export class VegetationCutController {
     const categoryId = bridge.getCategoryId()
     const elementCategoryId = bridge.getElementCategoryId()
 
-    const entry: VegetationCutLogEntry = {
-      categoryId,
-      elementCategoryId,
-      elementRoleId: bridge.getElementRoleId(),
-      elements: bridge.getElements().length,
-      canCut: bridge.canCut(),
-      attrsKeys: this.readAttrsKeys(activity),
+    // Хук срабатывает на каждую активность приложения, поэтому подробности
+    // собираем только по запросу.
+    if (isDebugEnabled()) {
+      const entry: VegetationCutLogEntry = {
+        categoryId,
+        elementCategoryId,
+        elementRoleId: bridge.getElementRoleId(),
+        elements: bridge.getElements().length,
+        canCut: bridge.canCut(),
+        attrsKeys: this.readAttrsKeys(activity),
+      }
+      appendLogEntry(entry)
+      console.debug('[nmap_vegetation_cut] activity started', entry)
     }
-    appendLogEntry(entry)
-    this.debugLog(entry)
 
     if (!isVegetationCategory(categoryId) && !isVegetationCategory(elementCategoryId)) {
       if (!this.editor) {
@@ -263,17 +296,6 @@ export class VegetationCutController {
     } catch {
       return null
     }
-  }
-
-  /** Подробный лог включается флагом `localStorage['nmap-veg-cut-debug'] = '1'`. */
-  private debugLog(entry: VegetationCutLogEntry): void {
-    if (typeof localStorage === 'undefined') return
-    try {
-      if (localStorage.getItem('nmap-veg-cut-debug') !== '1') return
-    } catch {
-      return
-    }
-    console.debug('[nmap_vegetation_cut] activity started', entry)
   }
 
   /**

@@ -36,6 +36,7 @@ import {
 import { createFakeActivity, type FakeActivityParams, OPEN_LINE, RING } from './fake_editor'
 
 const STATE_ATTR = 'data-nmap-veg-cut'
+const DEBUG_FLAG = 'nmap-veg-cut-debug'
 
 /** Точка на втором отрезке `OPEN_LINE`, не совпадающая с вершиной. */
 const CUT_POINT: number[] = [41.4215, 44.84]
@@ -47,6 +48,8 @@ const mountToolbar = (): HTMLElement => {
   return toolbar
 }
 
+const readActivityLog = (): unknown => (globalThis as Record<string, unknown>).__nmapVegCutLog
+
 const translator = createTranslator('ru')
 
 beforeEach(() => {
@@ -57,6 +60,8 @@ afterEach(() => {
   removeVegetationCutButton()
   document.body.innerHTML = ''
   document.documentElement.removeAttribute(STATE_ATTR)
+  localStorage.removeItem(DEBUG_FLAG)
+  Reflect.deleteProperty(globalThis, '__nmapVegCutLog')
   vi.restoreAllMocks()
 })
 
@@ -683,6 +688,41 @@ describe('режим разреза', () => {
 
     controller.detachActivity(activity)
     expect(document.documentElement.getAttribute(STATE_ATTR)).toBe('idle')
+  })
+
+  it('убирает метку состояния со страницы при остановке', () => {
+    const { controller } = createController()
+
+    const stop = controller.start()
+    expect(document.documentElement.hasAttribute(STATE_ATTR)).toBe(true)
+
+    stop()
+    expect(document.documentElement.hasAttribute(STATE_ATTR)).toBe(false)
+  })
+
+  it('не ведёт журнал активностей, пока отладка выключена', () => {
+    const { controller, activity } = createController()
+
+    controller.attachActivity(activity)
+
+    expect(readActivityLog()).toBeUndefined()
+  })
+
+  it('ведёт журнал активностей при включённой отладке', () => {
+    vi.spyOn(console, 'debug').mockImplementation(() => {})
+    localStorage.setItem(DEBUG_FLAG, '1')
+    const { controller, activity } = createController()
+
+    controller.attachActivity(activity)
+
+    expect(readActivityLog()).toEqual([
+      expect.objectContaining({
+        categoryId: 'vegetation_fc',
+        elementCategoryId: 'vegetation_el',
+        elements: 1,
+        canCut: true,
+      }),
+    ])
   })
 
   it('показывает, сколько классов активностей перехвачено', () => {
