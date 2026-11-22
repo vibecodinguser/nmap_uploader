@@ -11,6 +11,7 @@ import {
   lineLengthMeters,
   segmentLengthMeters,
   splitLineAtCut,
+  splitRingInTwo,
 } from '@/lib/vegetation_cut/geometry'
 
 // Квадрат примерно 100 × 100 м около Краснодарского края.
@@ -136,5 +137,49 @@ describe('splitLineAtCut', () => {
 
   it('не режет вне границ линии', () => {
     expect(splitLineAtCut(OPEN_LINE, { segmentIndex: 9, ratio: 0.5, distance: 0 })).toBeNull()
+  })
+})
+
+describe('splitRingInTwo', () => {
+  it('делит кольцо на две части между его началом и точкой разреза', () => {
+    const parts = splitRingInTwo(RING, { segmentIndex: 1, ratio: 0.5, distance: 0 })
+
+    expect(parts).toHaveLength(2)
+    const [first, second] = parts ?? []
+    expect(first[0]).toEqual(RING[0])
+    expect(first).toHaveLength(3)
+    expect(first[2][1]).toBeCloseTo(44.8405, 6)
+    // Части стыкуются в точке разреза и в начале кольца: контур остаётся замкнутым.
+    expect(second[0]).toEqual(first[2])
+    expect(second.at(-1)).toEqual(RING[0])
+    expect(second).toHaveLength(4)
+  })
+
+  it('режет кольцо по существующей вершине, не добавляя точку', () => {
+    const parts = splitRingInTwo(RING, { segmentIndex: 1, ratio: 1, distance: 0 })
+
+    expect(parts).toEqual([
+      [RING[0], RING[1], RING[2]],
+      [RING[2], RING[3], RING[4]],
+    ])
+  })
+
+  it('делит и по замыкающему отрезку', () => {
+    const parts = splitRingInTwo(RING, { segmentIndex: 3, ratio: 0.5, distance: 0 })
+
+    expect(parts).toHaveLength(2)
+    const [first, second] = parts ?? []
+    expect(first).toHaveLength(5)
+    expect(second).toHaveLength(2)
+    expect(second.at(-1)).toEqual(RING[0])
+  })
+
+  it('отказывает, если точка разреза совпала с началом кольца', () => {
+    expect(splitRingInTwo(RING, { segmentIndex: 0, ratio: 0, distance: 0 })).toBeNull()
+    expect(splitRingInTwo(RING, { segmentIndex: 3, ratio: 1, distance: 0 })).toBeNull()
+  })
+
+  it('не берётся за открытую линию', () => {
+    expect(splitRingInTwo(OPEN_LINE, { segmentIndex: 1, ratio: 0.5, distance: 0 })).toBeNull()
   })
 })

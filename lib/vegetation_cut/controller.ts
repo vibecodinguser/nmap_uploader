@@ -218,6 +218,7 @@ export class VegetationCutController {
   public detachEditor(): void {
     this.tracked = null
     this.editor = null
+    this.mode.forgetRingSeams()
     this.setActive(false)
     this.removeKeyHandler()
     removeVegetationCutButton()
@@ -443,11 +444,13 @@ export class VegetationCutController {
 
     const translate = this.options.getTranslator()
     const message =
-      outcome === 'too-short'
-        ? translate('vegetationCut.tooShort')
-        : outcome === 'not-vegetation'
-          ? translate('vegetationCut.notVegetation')
-          : translate('vegetationCut.unsupported')
+      outcome === 'opened'
+        ? translate('vegetationCut.ringOpened')
+        : outcome === 'too-short'
+          ? translate('vegetationCut.tooShort')
+          : outcome === 'not-vegetation'
+            ? translate('vegetationCut.notVegetation')
+            : translate('vegetationCut.unsupported')
 
     this.options.onMessage?.(message)
   }

@@ -39,7 +39,8 @@ export const VERTEX_SNAP_RATIO = 0.02
 const SAME_POINT_EPS = 1e-12
 const EARTH_RADIUS_METERS = 6_371_008.8
 
-const isSamePoint = (left: number[], right: number[], eps = SAME_POINT_EPS): boolean =>
+/** Две координаты — одна и та же точка (с поправкой на погрешность чисел). */
+export const isSamePoint = (left: number[], right: number[], eps = SAME_POINT_EPS): boolean =>
   Math.abs(left[0] - right[0]) <= eps && Math.abs(left[1] - right[1]) <= eps
 
 /** Кольцо замкнуто: первая и последняя точки совпадают. */
@@ -149,10 +150,26 @@ export type SplitLineOptions = {
   minPartLengthMeters?: number
 }
 
+/** Делит линию от начала до конца на две части с общей точкой разреза. */
+const splitOpenLine = (
+  coords: LineCoordinates,
+  cut: LineCut,
+  point: number[],
+  atVertex: number | null,
+): LineCoordinates[] =>
+  atVertex !== null
+    ? [coords.slice(0, atVertex + 1), coords.slice(atVertex)]
+    : [
+        [...coords.slice(0, cut.segmentIndex + 1), point],
+        [point, ...coords.slice(cut.segmentIndex + 1)],
+      ]
+
 /**
  * Разрезает линию в указанной точке.
  *
- * - Замкнутое кольцо размыкается в одну линию с совпадающими концами.
+ * - Замкнутое кольцо остаётся одной линией, но теперь начинается и
+ *   заканчивается в точке разреза: это первая граница будущих частей.
+ *   Вторую ставит `splitRingInTwo`.
  * - Открытая линия делится на две части с общей точкой разреза.
  *
  * Возвращает `null`, если разрез невозможен: точка вне линии, получилась
@@ -186,14 +203,38 @@ export const splitLineAtCut = (
       const rotated = [...ring.slice(vertexIndex), ...ring.slice(0, vertexIndex)]
       parts = [[...rotated, rotated[0].slice()]]
     }
-  } else if (atVertex !== null) {
-    parts = [coords.slice(0, atVertex + 1), coords.slice(atVertex)]
   } else {
-    parts = [
-      [...coords.slice(0, cut.segmentIndex + 1), point],
-      [point, ...coords.slice(cut.segmentIndex + 1)],
-    ]
+    parts = splitOpenLine(coords, cut, point, atVertex)
   }
+
+  if (!parts.every((part) => isValidPart(part, minPoints, minLengthMeters))) {
+    return null
+  }
+
+  return parts
+}
+
+/**
+ * Делит замкнутое кольцо на две части: от его начала до точки разреза и от
+ * неё обратно к началу.
+ *
+ * Начало кольца считается уже поставленной границей, поэтому части стыкуются
+ * в двух точках и контур остаётся замкнутым. Возвращает `null`, если линия не
+ * замкнута, точка разреза совпала с началом или часть вышла слишком короткой.
+ */
+export const splitRingInTwo = (
+  coords: LineCoordinates,
+  cut: LineCut,
+  options: SplitLineOptions = {},
+): LineCoordinates[] | null => {
+  const minPoints = options.minPartPoints ?? MIN_PART_POINTS
+  const minLengthMeters = options.minPartLengthMeters ?? MIN_PART_LENGTH_METERS
+
+  if (!isClosedLine(coords)) return null
+  if (cut.segmentIndex < 0 || cut.segmentIndex >= coords.length - 1) return null
+
+  const { point, atVertex } = resolveCutPoint(coords, cut)
+  const parts = splitOpenLine(coords, cut, point, atVertex)
 
   if (!parts.every((part) => isValidPart(part, minPoints, minLengthMeters))) {
     return null

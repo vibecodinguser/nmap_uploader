@@ -3,8 +3,12 @@
  *
  * Инструмент включается кнопкой в нативном тулбаре и живёт, пока пользователь
  * не выключит его повторным нажатием или клавишей Esc. Каждый клик по линии —
- * один разрез: элемент контура делится на две части (кольцо размыкается).
- * Клик мимо линии молча игнорируется.
+ * один разрез: элемент контура делится на две части. Клик мимо линии молча
+ * игнорируется.
+ *
+ * У замкнутой линии границ частей ещё нет, поэтому ей нужны два клика: первый
+ * ставит первую границу (линия начинается и заканчивается в этой точке),
+ * второй делит линию на две части между двумя кликами.
  *
  * Логика отделена от DOM: сюда передаются редактор и способ получить карту,
  * поэтому поведение проверяется без живого НЯК.
@@ -14,11 +18,13 @@ import type { CutElement, VegetationCutEditor } from './editor_bridge'
 import {
   findNearestPointOnPolyline,
   isClosedLine,
+  isSamePoint,
   type LineCoordinates,
   type Point2,
   resolveCutCoordinates,
   segmentLengthMeters,
   splitLineAtCut,
+  splitRingInTwo,
 } from './geometry'
 import { isVegetationLineCategory } from './vegetation'
 
@@ -28,8 +34,16 @@ export const CUT_TOLERANCE_PX = 10
 /** Минимальное расстояние от точки разреза до конца линии, метры. */
 export const MIN_CUT_GAP_METERS = 1
 
+/**
+ * Допуск при сверке начала линии с запомненной первой границей, градусы
+ * (доли миллиметра): редактор мог пересчитать координаты при записи.
+ */
+const SEAM_MATCH_EPS = 1e-9
+
 export type CutOutcome =
   | 'cut'
+  /** На замкнутой линии поставлена первая граница; делить её будет следующий клик. */
+  | 'opened'
   | 'miss'
   | 'too-short'
   | 'unsupported'
@@ -90,6 +104,15 @@ const projectLine = (line: LineCoordinates, projection: ProjectionLike, zoom: nu
 export class VegetationCutMode {
   private active = false
   private readonly options: VegetationCutModeOptions
+  /**
+   * Первые границы, поставленные на замкнутых линиях: id элемента → точка.
+   *
+   * Линия с первой границей по координатам неотличима от нетронутого кольца,
+   * поэтому точку приходится помнить. Запись действует, только пока линия
+   * начинается в этой точке: после отмены в редакторе начало другое, и
+   * следующий клик снова ставит первую границу.
+   */
+  private readonly ringSeams = new Map<string, number[]>()
 
   constructor(options: VegetationCutModeOptions) {
     this.options = options
@@ -111,6 +134,11 @@ export class VegetationCutMode {
 
   public stop(): void {
     this.active = false
+  }
+
+  /** Забывает первые границы замкнутых линий: редактор закрыт, объекты уже другие. */
+  public forgetRingSeams(): void {
+    this.ringSeams.clear()
   }
 
   /**
@@ -150,6 +178,10 @@ export class VegetationCutMode {
     const { element, segmentIndex, ratio } = nearest
     const cut = { segmentIndex, ratio, distance: 0 }
 
+    if (isClosedLine(element.coordinates)) {
+      return this.cutRing(editor, element, cut)
+    }
+
     const parts = splitLineAtCut(element.coordinates, cut)
     if (!parts) return 'too-short'
 
@@ -158,6 +190,40 @@ export class VegetationCutMode {
     }
 
     return editor.applyCut(element.id, parts) ? 'cut' : 'unsupported'
+  }
+
+  /** Замкнутая линия: первый клик ставит первую границу, второй делит надвое. */
+  private cutRing(
+    editor: VegetationCutEditor,
+    element: CutElement,
+    cut: { segmentIndex: number; ratio: number; distance: number },
+  ): CutOutcome {
+    const seam = this.ringSeams.get(element.id)
+    const hasFirstBoundary =
+      seam !== undefined && isSamePoint(seam, element.coordinates[0], SEAM_MATCH_EPS)
+
+    if (hasFirstBoundary) {
+      const parts = splitRingInTwo(element.coordinates, cut)
+      if (!parts) return 'too-short'
+
+      const point = resolveCutCoordinates(element.coordinates, cut)
+      if (segmentLengthMeters(seam, point) < MIN_CUT_GAP_METERS) return 'too-short'
+
+      // Запись о первой границе остаётся: после отмены деления линия снова
+      // начинается в этой точке, и её можно разделить одним кликом.
+      return editor.applyCut(element.id, parts) ? 'cut' : 'unsupported'
+    }
+
+    const parts = splitLineAtCut(element.coordinates, cut)
+    if (!parts) return 'too-short'
+
+    // Клик по началу линии ничего в ней не меняет: границей становится само
+    // начало, а пустой шаг в истории редактора не нужен.
+    const alreadyStartsHere = isSamePoint(parts[0][0], element.coordinates[0], SEAM_MATCH_EPS)
+    if (!alreadyStartsHere && !editor.applyCut(element.id, parts)) return 'unsupported'
+
+    this.ringSeams.set(element.id, parts[0][0].slice())
+    return 'opened'
   }
 }
 
@@ -192,7 +258,6 @@ const findNearestElement = (
 
 /** Разрез у самого конца линии даёт обрубок, который нельзя редактировать. */
 const isTooCloseToEnds = (element: CutElement, point: number[]): boolean => {
-  if (element.closed || isClosedLine(element.coordinates)) return false
   const start = element.coordinates[0]
   const end = element.coordinates[element.coordinates.length - 1]
   return (

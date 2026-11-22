@@ -268,6 +268,7 @@ export type Messages = {
   vegetationCut: {
     button: string
     tooShort: string
+    ringOpened: string
     unsupported: string
     notVegetation: string
   }

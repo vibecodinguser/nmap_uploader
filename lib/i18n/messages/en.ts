@@ -267,6 +267,7 @@ export const enMessages = {
   vegetationCut: {
     button: 'Cut vegetation',
     tooShort: 'The part is too short — nothing was cut',
+    ringOpened: 'First boundary set — the next click will split the line',
     unsupported: 'Could not cut — the editor rejected the change',
     notVegetation: 'Cutting is available only for a vegetation line',
   },

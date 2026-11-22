@@ -583,23 +583,110 @@ describe('режим разреза', () => {
     expect(Object.keys(drawnParts())).toEqual(['el-1', 'new-1', 'new-2'])
   })
 
-  it('размыкает кольцо одной правкой, не добавляя элемент', () => {
-    mountToolbar()
-    const { controller, activity, drawnParts, partsToCreate } = createController({
-      activity: { elements: [{ id: 'ring', coordinates: RING }] },
+  describe('замкнутая линия', () => {
+    /** Точки на нижней и на правой стороне квадрата `RING`. */
+    const FIRST_CLICK: number[] = [41.4205, 44.84]
+    const SECOND_CLICK: number[] = [41.421, 44.8405]
+
+    const openRingEditor = (onMessage?: (text: string) => void) => {
+      mountToolbar()
+      const context = createController({
+        onMessage,
+        activity: { elements: [{ id: 'ring', coordinates: RING }] },
+      })
+      context.controller.attachActivity(context.activity)
+      context.controller.toggle()
+      return context
+    }
+
+    it('первым кликом ставит первую границу и подсказывает, что делать дальше', () => {
+      const onMessage = vi.fn()
+      const { controller, drawnParts, partsToCreate } = openRingEditor(onMessage)
+
+      expect(clickAt(controller, FIRST_CLICK)).toBe('opened')
+
+      // Кольцо остаётся одной линией, которая начинается и кончается в точке клика.
+      const parts = drawnParts()
+      expect(Object.keys(parts)).toEqual(['ring'])
+      expect(parts.ring).toHaveLength(RING.length + 1)
+      expect(parts.ring[0][0]).toBeCloseTo(FIRST_CLICK[0], 6)
+      expect(parts.ring.at(-1)).toEqual(parts.ring[0])
+      expect(partsToCreate()).toEqual([])
+      expect(onMessage).toHaveBeenCalledWith(
+        'Первая граница поставлена — следующий клик разделит линию',
+      )
     })
-    controller.attachActivity(activity)
-    controller.toggle()
 
-    expect(clickAt(controller, [41.4205, 44.84])).toBe('cut')
+    it('вторым кликом делит кольцо на две части между двумя кликами', () => {
+      const { controller, drawnParts, partsToCreate } = openRingEditor()
+      clickAt(controller, FIRST_CLICK)
 
-    // Кольцо остаётся одной линией, которая начинается и кончается в точке разреза.
-    const parts = drawnParts()
-    expect(Object.keys(parts)).toEqual(['ring'])
-    expect(parts.ring).toHaveLength(RING.length + 1)
-    expect(parts.ring[0][0]).toBeCloseTo(41.4205, 6)
-    expect(parts.ring.at(-1)).toEqual(parts.ring[0])
-    expect(partsToCreate()).toEqual([])
+      expect(clickAt(controller, SECOND_CLICK)).toBe('cut')
+
+      const parts = drawnParts()
+      expect(Object.keys(parts)).toEqual(['ring', 'new-1'])
+      expect(parts.ring[0][0]).toBeCloseTo(FIRST_CLICK[0], 6)
+      expect(parts.ring.at(-1)?.[1]).toBeCloseTo(SECOND_CLICK[1], 6)
+      // Части стыкуются в обеих точках: контур остаётся замкнутым.
+      expect(parts['new-1'][0]).toEqual(parts.ring.at(-1))
+      expect(parts['new-1'].at(-1)).toEqual(parts.ring[0])
+      expect(partsToCreate()).toEqual([{ id: 'new-1', categoryId: 'vegetation_el' }])
+    })
+
+    it('клик по началу линии ставит первую границу без пустого шага в истории', () => {
+      const { controller, commands, drawnParts } = openRingEditor()
+
+      expect(clickAt(controller, RING[0])).toBe('opened')
+
+      expect(drawnParts()).toEqual({ ring: RING })
+      expect(commands.canUndo()).toBe(false)
+      expect(clickAt(controller, SECOND_CLICK)).toBe('cut')
+      expect(Object.keys(drawnParts())).toEqual(['ring', 'new-1'])
+    })
+
+    it('после отмены первой границы следующий клик снова ставит первую границу', () => {
+      const { controller, commands, drawnParts } = openRingEditor()
+      clickAt(controller, FIRST_CLICK)
+      commands.undo()
+
+      expect(clickAt(controller, SECOND_CLICK)).toBe('opened')
+
+      expect(Object.keys(drawnParts())).toEqual(['ring'])
+    })
+
+    it('после отмены деления кольцо снова делится одним кликом', () => {
+      const { controller, commands, drawnParts } = openRingEditor()
+      clickAt(controller, FIRST_CLICK)
+      clickAt(controller, SECOND_CLICK)
+      commands.undo()
+
+      expect(clickAt(controller, [41.4205, 44.841])).toBe('cut')
+
+      expect(Object.keys(drawnParts())).toEqual(['ring', 'new-2'])
+    })
+
+    it('не делит кольцо вплотную к первой границе', () => {
+      const onMessage = vi.fn()
+      const { controller, drawnParts } = openRingEditor(onMessage)
+      clickAt(controller, FIRST_CLICK)
+      const afterFirstClick = drawnParts()
+
+      expect(clickAt(controller, [41.420501, 44.84])).toBe('too-short')
+
+      expect(drawnParts()).toEqual(afterFirstClick)
+      expect(onMessage).toHaveBeenLastCalledWith('Слишком короткая часть — разрез не сделан')
+    })
+
+    it('забывает первую границу, когда редактор закрыт', () => {
+      const { controller, activity } = openRingEditor()
+      clickAt(controller, FIRST_CLICK)
+
+      controller.detachActivity(activity)
+      controller.attachActivity(activity)
+      controller.toggle()
+
+      expect(clickAt(controller, SECOND_CLICK)).toBe('opened')
+    })
   })
 
   it('игнорирует клик мимо линии', () => {
