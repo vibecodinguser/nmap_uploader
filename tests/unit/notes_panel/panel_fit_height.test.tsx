@@ -64,9 +64,10 @@ const stubLayout = (): void => {
 const postedHeights = (postMessage: ReturnType<typeof vi.spyOn>): unknown[] =>
   postMessage.mock.calls
     .filter(
-      ([message]) => (message as { action?: string }).action === NOTES_PANEL_FIT_HEIGHT_MESSAGE,
+      ([message]: unknown[]) =>
+        (message as { action?: string }).action === NOTES_PANEL_FIT_HEIGHT_MESSAGE,
     )
-    .map(([message]) => (message as { height: number | null }).height)
+    .map(([message]: unknown[]) => (message as { height: number | null }).height)
 
 afterEach(() => {
   cleanup()
