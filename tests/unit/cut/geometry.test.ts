@@ -12,7 +12,7 @@ import {
   segmentLengthMeters,
   splitLineAtCut,
   splitRingInTwo,
-} from '@/lib/vegetation_cut/geometry'
+} from '@/lib/cut/geometry'
 
 // Квадрат примерно 100 × 100 м около Краснодарского края.
 const RING: number[][] = [

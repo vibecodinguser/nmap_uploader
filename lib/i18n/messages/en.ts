@@ -264,12 +264,13 @@ export const enMessages = {
     keyPressed: 'Key pressed: {key}',
     doubleClick: 'Double click',
   },
-  vegetationCut: {
-    button: 'Cut vegetation',
+  cut: {
+    vegetationButton: 'Cut vegetation',
+    hydroButton: 'Cut water body',
     tooShort: 'The part is too short — nothing was cut',
     ringOpened: 'First boundary set — the next click will split the line',
     unsupported: 'Could not cut — the editor rejected the change',
-    notVegetation: 'Cutting is available only for a vegetation line',
+    notTarget: 'Cutting is available only for a vegetation or water line',
   },
   objectTracker: {
     menuTrack: 'Track',

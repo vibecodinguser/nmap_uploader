@@ -11,6 +11,7 @@
 
 import type { LineCoordinates } from './geometry'
 import type { CutMapLike } from './mode'
+import { type CutTarget, resolveCutTarget } from './targets'
 
 type GeometryLike = {
   getType?: () => string
@@ -106,7 +107,9 @@ export type CutElement = {
 }
 
 /** Что инструменту нужно от открытого редактора. */
-export type VegetationCutEditor = {
+export type CutEditor = {
+  /** Цель разреза: растительность или водоём. */
+  getTarget: () => CutTarget | null
   /** Категория объекта, открытого в редакторе (`vegetation_fc`). */
   getCategoryId: () => string | null
   /** Категория элементов контура (`vegetation_el`). */
@@ -238,12 +241,20 @@ const readMap = (attrs: ViewAttrsLike | null): CutMapLike | null => {
 }
 
 /** Собирает мост к активности редактора; `null`, если это не редактор. */
-export const createEditorBridge = (activity: unknown): VegetationCutEditor | null => {
+export const createEditorBridge = (activity: unknown): CutEditor | null => {
   if (!activity || typeof activity !== 'object') return null
   const candidate = activity as ActivityLike
   if (typeof candidate.onViewAttrsRequest !== 'function') return null
 
   return {
+    getTarget: () => {
+      const attrs = readAttrs(candidate)
+      return (
+        resolveCutTarget(readGeoObject(candidate, attrs)?.getCategoryId?.() ?? null) ??
+        resolveCutTarget(attrs?.elementCategoryId ?? null)
+      )
+    },
+
     getCategoryId: () => {
       try {
         const attrs = readAttrs(candidate)

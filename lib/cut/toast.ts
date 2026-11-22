@@ -9,8 +9,8 @@
 import { ensureInjectedStyle, removeInjectedStyle } from '@/lib/injected_styles'
 import toastCss from './toast.css?inline'
 
-export const VEGETATION_CUT_TOAST_ID = 'nmap-vegetation-cut-toast'
-export const VEGETATION_CUT_TOAST_STYLE_ID = 'nmap-vegetation-cut-toast-style'
+export const CUT_TOAST_ID = 'nmap-cut-toast'
+export const CUT_TOAST_STYLE_ID = 'nmap-cut-toast-style'
 
 /** Сколько сообщение висит на экране, мс. */
 export const TOAST_VISIBLE_MS = 2500
@@ -20,13 +20,13 @@ let hideTimer: ReturnType<typeof setTimeout> | null = null
 const ensureToast = (): HTMLElement | null => {
   if (typeof document === 'undefined') return null
 
-  ensureInjectedStyle(VEGETATION_CUT_TOAST_STYLE_ID, toastCss)
+  ensureInjectedStyle(CUT_TOAST_STYLE_ID, toastCss)
 
-  const existing = document.getElementById(VEGETATION_CUT_TOAST_ID)
+  const existing = document.getElementById(CUT_TOAST_ID)
   if (existing) return existing
 
   const toast = document.createElement('div')
-  toast.id = VEGETATION_CUT_TOAST_ID
+  toast.id = CUT_TOAST_ID
   toast.setAttribute('role', 'status')
   toast.setAttribute('aria-live', 'polite')
   toast.hidden = true
@@ -35,7 +35,7 @@ const ensureToast = (): HTMLElement | null => {
 }
 
 /** Показывает сообщение и прячет его через `TOAST_VISIBLE_MS`. */
-export const showVegetationCutMessage = (text: string): void => {
+export const showCutMessage = (text: string): void => {
   const toast = ensureToast()
   if (!toast) return
 
@@ -52,12 +52,12 @@ export const showVegetationCutMessage = (text: string): void => {
 }
 
 /** Убирает сообщение, таймер и вставленный стиль. */
-export const removeVegetationCutMessage = (): void => {
+export const removeCutMessage = (): void => {
   if (hideTimer !== null) {
     clearTimeout(hideTimer)
     hideTimer = null
   }
   if (typeof document === 'undefined') return
-  document.getElementById(VEGETATION_CUT_TOAST_ID)?.remove()
-  removeInjectedStyle(VEGETATION_CUT_TOAST_STYLE_ID)
+  document.getElementById(CUT_TOAST_ID)?.remove()
+  removeInjectedStyle(CUT_TOAST_STYLE_ID)
 }

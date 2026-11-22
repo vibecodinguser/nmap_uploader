@@ -18,18 +18,19 @@
 import type { TranslateFn } from '@/lib/i18n'
 import { observeWebpackModules } from '@/lib/nmaps_webpack_module_observer'
 import {
-  ensureVegetationCutButton,
+  ensureCutButton,
   findOnMapToolbar,
-  getVegetationCutButton,
-  removeVegetationCutButton,
-  setVegetationCutButtonActive,
+  getCutButton,
+  removeAllCutButtons,
+  removeCutButton,
+  setCutButtonActive,
 } from './button'
 import { installActivityHook } from './editor_access'
-import { createEditorBridge, type VegetationCutEditor } from './editor_bridge'
-import { type CutMapLike, type CutOutcome, readPageGlobalPixels, VegetationCutMode } from './mode'
-import { isVegetationCategory, isVegetationLineCategory } from './vegetation'
+import { type CutEditor, createEditorBridge } from './editor_bridge'
+import { type CutMapLike, CutMode, type CutOutcome, readPageGlobalPixels } from './mode'
+import { CUT_TARGETS, type CutTarget, isCutTargetCategory, isLineCategory } from './targets'
 
-export type VegetationCutControllerOptions = {
+export type CutControllerOptions = {
   getTranslator: () => TranslateFn
   /** Показ сообщения пользователю; подменяется в тестах. */
   onMessage?: (text: string) => void
@@ -93,18 +94,18 @@ const isMapSurfaceTarget = (target: EventTarget | null, map: CutMapLike): boolea
  *
  * Атрибут живёт, пока работает скрипт, и снимается при остановке.
  */
-export const VEGETATION_CUT_STATE_ATTR = 'data-nmap-veg-cut'
+export const CUT_STATE_ATTR = 'data-nmap-veg-cut'
 
 /**
  * Журнал запусков активностей для разбора проблем: последние 50 записей.
- * Ведётся только при включённой отладке (`VEGETATION_CUT_DEBUG_FLAG`).
+ * Ведётся только при включённой отладке (`CUT_DEBUG_FLAG`).
  */
-export const VEGETATION_CUT_LOG_KEY = '__nmapVegCutLog'
+export const CUT_LOG_KEY = '__nmapVegCutLog'
 
 /** Ключ `localStorage`: значение `'1'` включает журнал и подробный лог. */
-export const VEGETATION_CUT_DEBUG_FLAG = 'nmap-veg-cut-debug'
+export const CUT_DEBUG_FLAG = 'nmap-veg-cut-debug'
 
-export type VegetationCutLogEntry = {
+export type CutLogEntry = {
   categoryId: string | null
   elementCategoryId: string | null
   elementRoleId: string | null
@@ -115,17 +116,17 @@ export type VegetationCutLogEntry = {
 
 const MAX_LOG_ENTRIES = 50
 
-export const setVegetationCutState = (state: string): void => {
+export const setCutState = (state: string): void => {
   try {
-    document.documentElement.setAttribute(VEGETATION_CUT_STATE_ATTR, state)
+    document.documentElement.setAttribute(CUT_STATE_ATTR, state)
   } catch {
     // Документ мог быть уже выгружен
   }
 }
 
-const clearVegetationCutState = (): void => {
+const clearCutState = (): void => {
   try {
-    document.documentElement.removeAttribute(VEGETATION_CUT_STATE_ATTR)
+    document.documentElement.removeAttribute(CUT_STATE_ATTR)
   } catch {
     // Документ мог быть уже выгружен
   }
@@ -133,37 +134,35 @@ const clearVegetationCutState = (): void => {
 
 const isDebugEnabled = (): boolean => {
   try {
-    return (
-      typeof localStorage !== 'undefined' && localStorage.getItem(VEGETATION_CUT_DEBUG_FLAG) === '1'
-    )
+    return typeof localStorage !== 'undefined' && localStorage.getItem(CUT_DEBUG_FLAG) === '1'
   } catch {
     // Хранилище может быть недоступно (настройки приватности)
     return false
   }
 }
 
-const appendLogEntry = (entry: VegetationCutLogEntry): void => {
+const appendLogEntry = (entry: CutLogEntry): void => {
   try {
     const target = globalThis as Record<string, unknown>
-    const log = Array.isArray(target[VEGETATION_CUT_LOG_KEY])
-      ? (target[VEGETATION_CUT_LOG_KEY] as VegetationCutLogEntry[])
-      : []
+    const log = Array.isArray(target[CUT_LOG_KEY]) ? (target[CUT_LOG_KEY] as CutLogEntry[]) : []
     log.push(entry)
     if (log.length > MAX_LOG_ENTRIES) {
       log.splice(0, log.length - MAX_LOG_ENTRIES)
     }
-    target[VEGETATION_CUT_LOG_KEY] = log
+    target[CUT_LOG_KEY] = log
   } catch {
     // Журнал не должен ломать инструмент
   }
 }
 
-export class VegetationCutController {
-  private readonly options: VegetationCutControllerOptions
-  private readonly mode: VegetationCutMode
+export class CutController {
+  private readonly options: CutControllerOptions
+  private readonly mode: CutMode
   /** Активность редактора растительности, запущенная сейчас. */
   private tracked: unknown = null
-  private editor: VegetationCutEditor | null = null
+  private editor: CutEditor | null = null
+  /** Цель разреза для открытого объекта: растительность или водоём. */
+  private target: CutTarget | null = null
   private clickHandler: ((event: MouseEvent) => void) | null = null
   private pressHandler: ((event: MouseEvent) => void) | null = null
   /** Где была нажата кнопка мыши: по сдвигу отличаем клик от перетаскивания. */
@@ -172,9 +171,9 @@ export class VegetationCutController {
   private observer: MutationObserver | null = null
   private cleanupHook: (() => void) | null = null
 
-  constructor(options: VegetationCutControllerOptions) {
+  constructor(options: CutControllerOptions) {
     this.options = options
-    this.mode = new VegetationCutMode({
+    this.mode = new CutMode({
       getEditor: () => this.editor,
       onOutcome: (outcome) => this.handleOutcome(outcome),
     })
@@ -184,11 +183,11 @@ export class VegetationCutController {
   public start(): () => void {
     this.stop()
 
-    setVegetationCutState('loaded')
+    setCutState('loaded')
 
     // Состояние ставится до установки хука: если модули придут синхронно,
     // `onWrapped` уже не будет перезаписан нулём.
-    setVegetationCutState('hooked:0')
+    setCutState('hooked:0')
 
     this.cleanupHook = installActivityHook(
       {
@@ -201,7 +200,7 @@ export class VegetationCutController {
           // Пока не обёрнут ни один класс, редактор откроется мимо хука.
           // Это видно в состоянии: `hooked:0` — наблюдатель стоит, но модули
           // ещё не приходили; `hooked:N` — классы перехвачены.
-          if (!this.tracked) setVegetationCutState(`hooked:${count}`)
+          if (!this.tracked) setCutState(`hooked:${count}`)
         },
       },
     )
@@ -219,8 +218,8 @@ export class VegetationCutController {
     this.observer = null
     this.cleanupHook?.()
     this.cleanupHook = null
-    removeVegetationCutButton()
-    clearVegetationCutState()
+    removeAllCutButtons(CUT_TARGETS)
+    clearCutState()
   }
 
   /**
@@ -241,16 +240,17 @@ export class VegetationCutController {
     if (this.tracked === null) return
     if (activity !== this.tracked) return
     this.detachEditor()
-    setVegetationCutState('idle')
+    setCutState('idle')
   }
 
   public detachEditor(): void {
     this.tracked = null
     this.editor = null
+    this.target = null
     this.mode.forgetRingSeams()
     this.setActive(false)
     this.removeKeyHandler()
-    removeVegetationCutButton()
+    removeAllCutButtons(CUT_TARGETS)
   }
 
   /** Переключает режим разреза. */
@@ -287,7 +287,7 @@ export class VegetationCutController {
     // Хук срабатывает на каждую активность приложения, поэтому подробности
     // собираем только по запросу.
     if (isDebugEnabled()) {
-      const entry: VegetationCutLogEntry = {
+      const entry: CutLogEntry = {
         categoryId,
         elementCategoryId,
         elementRoleId: bridge.getElementRoleId(),
@@ -296,12 +296,12 @@ export class VegetationCutController {
         attrsKeys: this.readAttrsKeys(activity),
       }
       appendLogEntry(entry)
-      console.debug('[nmap_vegetation_cut] activity started', entry)
+      console.debug('[nmap_cut] activity started', entry)
     }
 
-    if (!isVegetationCategory(categoryId) && !isVegetationCategory(elementCategoryId)) {
+    if (!isCutTargetCategory(categoryId) && !isCutTargetCategory(elementCategoryId)) {
       if (!this.editor) {
-        setVegetationCutState(`other:${String(categoryId)}`)
+        setCutState(`other:${String(categoryId)}`)
       }
       return
     }
@@ -348,29 +348,37 @@ export class VegetationCutController {
 
     const elementCategoryId = bridge.getElementCategoryId()
     const categoryId = bridge.getCategoryId()
+    const target = bridge.getTarget()
 
-    if (!isVegetationLineCategory(elementCategoryId) && !isVegetationLineCategory(categoryId)) {
+    if (
+      !target ||
+      (!isLineCategory(target, elementCategoryId) && !isLineCategory(target, categoryId))
+    ) {
       this.editor = null
-      setVegetationCutState(`wait:${String(categoryId)}`)
+      this.target = null
+      setCutState(`wait:${String(categoryId)}`)
       return
     }
 
     const elements = bridge.getElements()
     if (!bridge.canEditElements() || elements.length === 0) {
       this.editor = null
-      setVegetationCutState(`wait:${String(elementCategoryId ?? categoryId)}`)
+      this.target = null
+      setCutState(`wait:${String(elementCategoryId ?? categoryId)}`)
       return
     }
 
     // Резать есть что, но отменить разрез было бы нечем: кнопку не показываем.
     if (!bridge.hasCommandManager()) {
       this.editor = null
-      setVegetationCutState('unsupported:commands')
+      this.target = null
+      setCutState('unsupported:commands')
       return
     }
 
     this.editor = bridge
-    setVegetationCutState(`ready:${String(elementCategoryId ?? categoryId)}:${elements.length}`)
+    this.target = target
+    setCutState(`ready:${String(elementCategoryId ?? categoryId)}:${elements.length}`)
   }
 
   private installKeyHandler(): void {
@@ -405,8 +413,10 @@ export class VegetationCutController {
       this.unsubscribeMapClicks()
     }
 
-    const button = getVegetationCutButton()
-    if (button) setVegetationCutButtonActive(button, active)
+    if (this.target) {
+      const button = getCutButton(this.target)
+      if (button) setCutButtonActive(button, active)
+    }
   }
 
   private subscribeMapClicks(): void {
@@ -478,7 +488,7 @@ export class VegetationCutController {
   private logClick(result: string, event: MouseEvent): void {
     if (!isDebugEnabled()) return
     const target = event.target instanceof Element ? event.target : null
-    console.debug('[nmap_vegetation_cut] click', {
+    console.debug('[nmap_cut] click', {
       result,
       target: target ? `${target.tagName.toLowerCase()}.${String(target.className)}` : null,
       point: [event.clientX, event.clientY],
@@ -489,10 +499,9 @@ export class VegetationCutController {
     // Элементы контура могли догрузиться после запуска активности.
     this.promote()
 
-    if (!this.editor) {
-      if (getVegetationCutButton()) {
-        removeVegetationCutButton()
-      }
+    const target = this.target
+    if (!this.editor || !target) {
+      removeAllCutButtons(CUT_TARGETS)
       if (this.mode.isActive()) {
         this.setActive(false)
       }
@@ -502,14 +511,20 @@ export class VegetationCutController {
       return
     }
 
+    // Кнопка другой цели могла остаться от предыдущего объекта.
+    for (const other of CUT_TARGETS) {
+      if (other.id !== target.id) removeCutButton(other)
+    }
+
     const translate = this.options.getTranslator()
-    ensureVegetationCutButton({
-      label: translate('vegetationCut.button'),
+    ensureCutButton({
+      target,
+      label: translate(target.labelKey),
       onClick: () => this.toggle(),
     })
 
-    const button = getVegetationCutButton()
-    if (button) setVegetationCutButtonActive(button, this.mode.isActive())
+    const button = getCutButton(target)
+    if (button) setCutButtonActive(button, this.mode.isActive())
   }
 
   private handleOutcome(outcome: CutOutcome): void {
@@ -520,12 +535,12 @@ export class VegetationCutController {
     const translate = this.options.getTranslator()
     const message =
       outcome === 'opened'
-        ? translate('vegetationCut.ringOpened')
+        ? translate('cut.ringOpened')
         : outcome === 'too-short'
-          ? translate('vegetationCut.tooShort')
-          : outcome === 'not-vegetation'
-            ? translate('vegetationCut.notVegetation')
-            : translate('vegetationCut.unsupported')
+          ? translate('cut.tooShort')
+          : outcome === 'not-target'
+            ? translate('cut.notTarget')
+            : translate('cut.unsupported')
 
     this.options.onMessage?.(message)
   }

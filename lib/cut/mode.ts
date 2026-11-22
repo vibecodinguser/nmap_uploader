@@ -14,7 +14,7 @@
  * поэтому поведение проверяется без живого НЯК.
  */
 
-import type { CutElement, VegetationCutEditor } from './editor_bridge'
+import type { CutEditor, CutElement } from './editor_bridge'
 import {
   findNearestPointOnPolyline,
   isClosedLine,
@@ -26,7 +26,7 @@ import {
   splitLineAtCut,
   splitRingInTwo,
 } from './geometry'
-import { isVegetationLineCategory } from './vegetation'
+import { isLineCategory } from './targets'
 
 /** Допуск попадания клика по линии, пиксели. */
 export const CUT_TOLERANCE_PX = 10
@@ -49,7 +49,7 @@ export type CutOutcome =
   | 'unsupported'
   | 'no-editor'
   | 'inactive'
-  | 'not-vegetation'
+  | 'not-target'
 
 export type CutMapLike = {
   getZoom?: () => number
@@ -62,9 +62,9 @@ type ProjectionLike = {
   toGlobalPixels: (coords: number[], zoom: number) => number[]
 }
 
-export type VegetationCutModeOptions = {
+export type CutModeOptions = {
   /** Текущий редактор; `null`, когда редактор закрыт. */
-  getEditor: () => VegetationCutEditor | null
+  getEditor: () => CutEditor | null
   /** Допуск попадания в пикселях; по умолчанию `CUT_TOLERANCE_PX`. */
   tolerancePx?: number
   /** Сообщение о результате для интерфейса. */
@@ -102,9 +102,9 @@ const projectLine = (line: LineCoordinates, projection: ProjectionLike, zoom: nu
   return result
 }
 
-export class VegetationCutMode {
+export class CutMode {
   private active = false
-  private readonly options: VegetationCutModeOptions
+  private readonly options: CutModeOptions
   /**
    * Первые границы, поставленные на замкнутых линиях: id элемента → точка.
    *
@@ -115,7 +115,7 @@ export class VegetationCutMode {
    */
   private readonly ringSeams = new Map<string, number[]>()
 
-  constructor(options: VegetationCutModeOptions) {
+  constructor(options: CutModeOptions) {
     this.options = options
   }
 
@@ -158,10 +158,11 @@ export class VegetationCutMode {
     const editor = this.options.getEditor()
     if (!editor) return 'no-editor'
 
-    if (!isVegetationLineCategory(editor.getElementCategoryId())) return 'not-vegetation'
+    const target = editor.getTarget()
+    if (!target || !isLineCategory(target, editor.getElementCategoryId())) return 'not-target'
 
     const elements = editor.getElements()
-    if (elements.length === 0) return 'not-vegetation'
+    if (elements.length === 0) return 'not-target'
 
     const map = editor.getMap()
     if (!map) return 'no-editor'
@@ -186,7 +187,8 @@ export class VegetationCutMode {
     const parts = splitLineAtCut(element.coordinates, cut)
     if (!parts) return 'too-short'
 
-    if (isTooCloseToEnds(element, resolveCutCoordinates(element.coordinates, cut))) {
+    const point = resolveCutCoordinates(element.coordinates, cut)
+    if (isTooCloseToEnds(element, point)) {
       return 'too-short'
     }
 
@@ -195,7 +197,7 @@ export class VegetationCutMode {
 
   /** Замкнутая линия: первый клик ставит первую границу, второй делит надвое. */
   private cutRing(
-    editor: VegetationCutEditor,
+    editor: CutEditor,
     element: CutElement,
     cut: { segmentIndex: number; ratio: number; distance: number },
   ): CutOutcome {

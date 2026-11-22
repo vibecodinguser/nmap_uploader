@@ -8,26 +8,26 @@
  * проверяется поведение инструмента, а не внутренности бандла.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createTranslator } from '@/lib/i18n'
-import { observeWebpackModules } from '@/lib/nmaps_webpack_module_observer'
 import {
-  createVegetationCutButton,
-  ensureVegetationCutButton,
+  CUT_ICON_SVG,
+  createCutButton,
+  ensureCutButton,
   findOnMapToolbar,
-  getVegetationCutButton,
-  removeVegetationCutButton,
-  setVegetationCutButtonActive,
-  VEGETATION_CUT_BUTTON_ID,
-  VEGETATION_CUT_ICON_SVG,
-} from '@/lib/vegetation_cut/button'
-import { VegetationCutController } from '@/lib/vegetation_cut/controller'
+  getCutButton,
+  removeCutButton,
+  setCutButtonActive,
+} from '@/lib/cut/button'
+import { CutController } from '@/lib/cut/controller'
 import {
   hookModuleExports,
   installActivityHook,
   isActivityClass,
   subscribeActivityClass,
-} from '@/lib/vegetation_cut/editor_access'
-import { createEditorBridge } from '@/lib/vegetation_cut/editor_bridge'
+} from '@/lib/cut/editor_access'
+import { createEditorBridge } from '@/lib/cut/editor_bridge'
+import { HYDRO_TARGET, VEGETATION_TARGET } from '@/lib/cut/targets'
+import { createTranslator } from '@/lib/i18n'
+import { observeWebpackModules } from '@/lib/nmaps_webpack_module_observer'
 import {
   installWebpackRuntime,
   pushWebpackChunk,
@@ -57,7 +57,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  removeVegetationCutButton()
+  removeCutButton(VEGETATION_TARGET)
   document.body.innerHTML = ''
   document.documentElement.removeAttribute(STATE_ATTR)
   localStorage.removeItem(DEBUG_FLAG)
@@ -67,7 +67,7 @@ afterEach(() => {
 
 describe('кнопка разреза растительности', () => {
   it('одевается в нативные классы тулбара и получает доступное имя', () => {
-    const button = createVegetationCutButton('Разрезать растительность')
+    const button = createCutButton(VEGETATION_TARGET, 'Разрезать растительность')
 
     expect(button.classList.contains('nk-button')).toBe(true)
     expect(button.classList.contains('nk-button_theme_air')).toBe(true)
@@ -79,8 +79,8 @@ describe('кнопка разреза растительности', () => {
   })
 
   it('рисует ножницы, а не копирует чужую иконку', () => {
-    expect(VEGETATION_CUT_ICON_SVG).toContain('<circle')
-    expect(VEGETATION_CUT_ICON_SVG).toContain('stroke="currentColor"')
+    expect(CUT_ICON_SVG).toContain('<circle')
+    expect(CUT_ICON_SVG).toContain('stroke="currentColor"')
   })
 
   it('ставится после нативной кнопки разрезания, если она есть', () => {
@@ -92,14 +92,22 @@ describe('кнопка разреза растительности', () => {
     nativeButton.appendChild(nativeIcon)
     toolbar.appendChild(nativeButton)
 
-    const button = ensureVegetationCutButton({ label: 'Разрезать', onClick: vi.fn() })
+    const button = ensureCutButton({
+      target: VEGETATION_TARGET,
+      label: 'Разрезать',
+      onClick: vi.fn(),
+    })
 
     expect(button?.previousElementSibling).toBe(nativeButton)
   })
 
   it('добавляется в конец тулбара, если нативной кнопки нет', () => {
     const toolbar = mountToolbar()
-    const button = ensureVegetationCutButton({ label: 'Разрезать', onClick: vi.fn() })
+    const button = ensureCutButton({
+      target: VEGETATION_TARGET,
+      label: 'Разрезать',
+      onClick: vi.fn(),
+    })
 
     expect(toolbar.lastElementChild).toBe(button)
     expect(findOnMapToolbar()).toBe(toolbar)
@@ -109,32 +117,32 @@ describe('кнопка разреза растительности', () => {
     mountToolbar()
     const onClick = vi.fn()
 
-    const first = ensureVegetationCutButton({ label: 'Разрезать', onClick })
-    ensureVegetationCutButton({ label: 'Разрезать', onClick })
+    const first = ensureCutButton({ target: VEGETATION_TARGET, label: 'Разрезать', onClick })
+    ensureCutButton({ target: VEGETATION_TARGET, label: 'Разрезать', onClick })
     first?.click()
 
     expect(onClick).toHaveBeenCalledTimes(1)
   })
 
   it('показывает нажатое состояние через нативный класс и aria-pressed', () => {
-    const button = createVegetationCutButton('Разрезать')
+    const button = createCutButton(VEGETATION_TARGET, 'Разрезать')
 
-    setVegetationCutButtonActive(button, true)
+    setCutButtonActive(button, true)
     expect(button.classList.contains('nk-button_checked')).toBe(true)
     expect(button.getAttribute('aria-pressed')).toBe('true')
 
-    setVegetationCutButtonActive(button, false)
+    setCutButtonActive(button, false)
     expect(button.classList.contains('nk-button_checked')).toBe(false)
     expect(button.getAttribute('aria-pressed')).toBe('false')
   })
 
   it('убирается из документа', () => {
     const toolbar = mountToolbar()
-    toolbar.appendChild(createVegetationCutButton('Разрезать'))
-    expect(document.getElementById(VEGETATION_CUT_BUTTON_ID)).not.toBeNull()
+    toolbar.appendChild(createCutButton(VEGETATION_TARGET, 'Разрезать'))
+    expect(document.getElementById(VEGETATION_TARGET.buttonId)).not.toBeNull()
 
-    removeVegetationCutButton()
-    expect(document.getElementById(VEGETATION_CUT_BUTTON_ID)).toBeNull()
+    removeCutButton(VEGETATION_TARGET)
+    expect(document.getElementById(VEGETATION_TARGET.buttonId)).toBeNull()
   })
 })
 
@@ -488,7 +496,7 @@ describe('режим разреза', () => {
     options: { onMessage?: (text: string) => void; activity?: FakeActivityParams } = {},
   ) => {
     const fake = createFakeActivity(options.activity)
-    const controller = new VegetationCutController({
+    const controller = new CutController({
       getTranslator: () => translator,
       onMessage: options.onMessage,
       observe: () => () => {},
@@ -519,7 +527,7 @@ describe('режим разреза', () => {
 
   /** Кликает по карте и возвращает исход разреза; `null` — инструмент клик не взял. */
   const clickAt = (
-    controller: VegetationCutController,
+    controller: CutController,
     point: number[],
     init: PointerInit = {},
   ): string | null => {
@@ -535,7 +543,7 @@ describe('режим разреза', () => {
     const { controller, activity } = createController()
 
     expect(controller.attachActivity(activity)).toBe(true)
-    expect(getVegetationCutButton()).not.toBeNull()
+    expect(getCutButton(VEGETATION_TARGET)).not.toBeNull()
   })
 
   it('не показывает кнопку для чужой категории', () => {
@@ -545,7 +553,7 @@ describe('режим разреза', () => {
     })
 
     expect(controller.attachActivity(activity)).toBe(false)
-    expect(getVegetationCutButton()).toBeNull()
+    expect(getCutButton(VEGETATION_TARGET)).toBeNull()
   })
 
   it('не показывает кнопку, если редактор не умеет делить элемент', () => {
@@ -566,7 +574,7 @@ describe('режим разреза', () => {
     })
 
     expect(controller.attachActivity(activity)).toBe(false)
-    expect(getVegetationCutButton()).toBeNull()
+    expect(getCutButton(VEGETATION_TARGET)).toBeNull()
     expect(document.documentElement.getAttribute(STATE_ATTR)).toBe('unsupported:commands')
   })
 
@@ -848,10 +856,10 @@ describe('режим разреза', () => {
     mountToolbar()
     const { controller, activity } = createController()
     controller.attachActivity(activity)
-    expect(getVegetationCutButton()).not.toBeNull()
+    expect(getCutButton(VEGETATION_TARGET)).not.toBeNull()
 
     controller.detachActivity(activity)
-    expect(getVegetationCutButton()).toBeNull()
+    expect(getCutButton(VEGETATION_TARGET)).toBeNull()
   })
 
   it('не реагирует на остановку чужой активности', () => {
@@ -860,7 +868,7 @@ describe('режим разреза', () => {
     controller.attachActivity(activity)
 
     controller.detachActivity({})
-    expect(getVegetationCutButton()).not.toBeNull()
+    expect(getCutButton(VEGETATION_TARGET)).not.toBeNull()
   })
 
   it('помечает состояние на <html> для диагностики', () => {
@@ -911,7 +919,7 @@ describe('режим разреза', () => {
 
   it('показывает, сколько классов активностей перехвачено', () => {
     const setAttribute = vi.spyOn(document.documentElement, 'setAttribute')
-    const controller = new VegetationCutController({
+    const controller = new CutController({
       getTranslator: () => translator,
       observe: (_global, _chunk, onModule) => {
         // Модуль с классом активности приходит уже после установки хука.
@@ -949,13 +957,13 @@ describe('режим разреза', () => {
 
     // Редактор топологии стартует раньше, чем приходит топология контура.
     expect(controller.attachActivity(activity)).toBe(false)
-    expect(getVegetationCutButton()).toBeNull()
+    expect(getCutButton(VEGETATION_TARGET)).toBeNull()
 
     addElement({ id: 'el-1', coordinates: OPEN_LINE })
     document.body.appendChild(document.createElement('div'))
     await new Promise((resolve) => setTimeout(resolve, 0))
 
-    expect(getVegetationCutButton()).not.toBeNull()
+    expect(getCutButton(VEGETATION_TARGET)).not.toBeNull()
     expect(document.documentElement.getAttribute(STATE_ATTR)).toBe('ready:vegetation_el:1')
 
     stop()
@@ -972,7 +980,82 @@ describe('режим разреза', () => {
     expect(controller.attachActivity(activity)).toBe(true)
     expect(controller.attachActivity(master)).toBe(true)
 
-    expect(getVegetationCutButton()).not.toBeNull()
+    expect(getCutButton(VEGETATION_TARGET)).not.toBeNull()
     expect(document.documentElement.getAttribute(STATE_ATTR)).toBe('ready:vegetation_el:1')
+  })
+  it('водоём: показывает свою кнопку с подписью и id', () => {
+    mountToolbar()
+    const { controller, activity } = createController({
+      activity: {
+        categoryId: 'hydro_fc',
+        elementCategoryId: 'hydro_fc_el',
+        elements: [{ id: 'hydro-1', coordinates: RING }],
+      },
+    })
+
+    expect(controller.attachActivity(activity)).toBe(true)
+
+    const button = getCutButton(HYDRO_TARGET)
+    expect(button).not.toBeNull()
+    expect(button?.getAttribute('aria-label')).toBe('Разрезать водоём')
+    expect(button?.id).toBe(HYDRO_TARGET.buttonId)
+    expect(getCutButton(VEGETATION_TARGET)).toBeNull()
+    expect(document.documentElement.getAttribute(STATE_ATTR)).toBe('ready:hydro_fc_el:1')
+  })
+
+  it('водоём: размыкает кольцо контура первым кликом', () => {
+    mountToolbar()
+    const { controller, activity, commands } = createController({
+      activity: {
+        categoryId: 'hydro_fc',
+        elementCategoryId: 'hydro_fc_el',
+        elements: [{ id: 'hydro-1', coordinates: RING }],
+      },
+    })
+    controller.attachActivity(activity)
+    controller.toggle()
+
+    const outcome = clickAt(controller, [41.4205, 44.84])
+
+    expect(outcome).toBe('opened')
+    expect(commands.canUndo()).toBe(true)
+  })
+
+  it('водоём: делит кольцо на две части вторым кликом', () => {
+    mountToolbar()
+    const { controller, activity, commands } = createController({
+      activity: {
+        categoryId: 'hydro_fc',
+        elementCategoryId: 'hydro_fc_el',
+        elements: [{ id: 'hydro-1', coordinates: RING }],
+      },
+    })
+    controller.attachActivity(activity)
+    controller.toggle()
+
+    clickAt(controller, [41.4205, 44.84])
+    const outcome = clickAt(controller, [41.421, 44.8405])
+
+    expect(outcome).toBe('cut')
+    expect(commands.canUndo()).toBe(true)
+  })
+
+  it('при смене объекта кнопка прошлой цели исчезает', () => {
+    mountToolbar()
+    const { controller, activity } = createController()
+    controller.attachActivity(activity)
+    expect(getCutButton(VEGETATION_TARGET)).not.toBeNull()
+
+    const { activity: hydro } = createController({
+      activity: {
+        categoryId: 'hydro_fc',
+        elementCategoryId: 'hydro_fc_el',
+        elements: [{ id: 'hydro-1', coordinates: RING }],
+      },
+    })
+    controller.attachActivity(hydro)
+
+    expect(getCutButton(VEGETATION_TARGET)).toBeNull()
+    expect(getCutButton(HYDRO_TARGET)).not.toBeNull()
   })
 })

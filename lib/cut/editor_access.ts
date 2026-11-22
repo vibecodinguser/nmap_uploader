@@ -15,7 +15,7 @@
 
 export const WEBPACK_CHUNK_NAME = 'webpackChunknmaps'
 
-const HOOK_MARKER = '__nmapVegetationCutActivityHooked__'
+const HOOK_MARKER = '__nmapCutActivityHooked__'
 
 /**
  * Реестр подписок живёт на прототипе в мире страницы, а не в замыкании скрипта.
