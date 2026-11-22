@@ -1058,4 +1058,22 @@ describe('режим разреза', () => {
     expect(getCutButton(VEGETATION_TARGET)).toBeNull()
     expect(getCutButton(HYDRO_TARGET)).not.toBeNull()
   })
+  it('отмечает точки разрезов маркерами и снимает их при выключении режима', () => {
+    mountToolbar()
+    const { controller, activity } = createController({
+      activity: {
+        categoryId: 'hydro_fc',
+        elementCategoryId: 'hydro_fc_el',
+        elements: [{ id: 'hydro-1', coordinates: RING }],
+      },
+    })
+    controller.attachActivity(activity)
+    controller.toggle()
+
+    clickAt(controller, [41.4205, 44.84])
+    expect(controller.getCutPoints()).toHaveLength(1)
+
+    controller.toggle()
+    expect(controller.getCutPoints()).toHaveLength(0)
+  })
 })

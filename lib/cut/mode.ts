@@ -114,6 +114,13 @@ export class CutMode {
    * следующий клик снова ставит первую границу.
    */
   private readonly ringSeams = new Map<string, number[]>()
+  /**
+   * Точки разрезов этой сессии: их показывает слой маркеров.
+   *
+   * Копятся, потому что нативный редактор тоже отмечает каждую точку разреза,
+   * а не только последнюю. Живут до выключения режима или закрытия редактора.
+   */
+  private readonly cutPoints: number[][] = []
 
   constructor(options: CutModeOptions) {
     this.options = options
@@ -140,6 +147,27 @@ export class CutMode {
   /** Забывает первые границы замкнутых линий: редактор закрыт, объекты уже другие. */
   public forgetRingSeams(): void {
     this.ringSeams.clear()
+    this.cutPoints.length = 0
+  }
+
+  /** Точки разрезов этой сессии — для маркеров на карте. */
+  public getCutPoints(): number[][] {
+    return this.cutPoints.map((point) => point.slice())
+  }
+
+  /**
+   * Забывает точки разрезов, не трогая первые границы колец.
+   *
+   * Маркеры — наша подсветка, а не часть документа: при выключении режима они
+   * снимаются. Первые границы при этом остаются, иначе после повторного
+   * включения второй клик снова ставил бы границу вместо деления.
+   */
+  public forgetCutPoints(): void {
+    this.cutPoints.length = 0
+  }
+
+  private rememberCutPoint(point: number[]): void {
+    this.cutPoints.push(point.slice())
   }
 
   /**
@@ -192,7 +220,9 @@ export class CutMode {
       return 'too-short'
     }
 
-    return editor.applyCut(element.id, parts) ? 'cut' : 'unsupported'
+    if (!editor.applyCut(element.id, parts)) return 'unsupported'
+    this.rememberCutPoint(point)
+    return 'cut'
   }
 
   /** Замкнутая линия: первый клик ставит первую границу, второй делит надвое. */
@@ -214,7 +244,9 @@ export class CutMode {
 
       // Запись о первой границе остаётся: после отмены деления линия снова
       // начинается в этой точке, и её можно разделить одним кликом.
-      return editor.applyCut(element.id, parts) ? 'cut' : 'unsupported'
+      if (!editor.applyCut(element.id, parts)) return 'unsupported'
+      this.rememberCutPoint(point)
+      return 'cut'
     }
 
     const parts = splitLineAtCut(element.coordinates, cut)
@@ -226,6 +258,7 @@ export class CutMode {
     if (!alreadyStartsHere && !editor.applyCut(element.id, parts)) return 'unsupported'
 
     this.ringSeams.set(element.id, parts[0][0].slice())
+    this.rememberCutPoint(parts[0][0])
     return 'opened'
   }
 }

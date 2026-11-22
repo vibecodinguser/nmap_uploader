@@ -684,6 +684,18 @@ onSplitPointsChange(points) {
 }
 ```
 
+**[код]** Маркеры точек разрезов — обычные `ymaps.Placemark` с нативным пресетом:
+
+```js
+const pinStyle = { preset: 'nk#splitRedPinIcon' }        // маркер точки разреза
+const cursorStyle = { preset: 'nk#splitRedPinIcon', interactive: false }  // курсор-подсказка
+```
+
+**[живой]** Пресет доступен на странице через
+`ymaps.option.presetStorage.get('nk#splitRedPinIcon')` (ключи `iconLayout` и
+`iconShape`) и рисует красную каплю с ножницами. Инструмент разрезов ставит
+маркеры этим же пресетом (`lib/cut/pins.ts`), чтобы вид совпадал с нативным.
+
 **[код]** `insertSplitCoords` (нативный алгоритм, `1e-4` — допуск):
 
 ```js

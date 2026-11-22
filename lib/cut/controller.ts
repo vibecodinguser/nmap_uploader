@@ -28,6 +28,7 @@ import {
 import { installActivityHook } from './editor_access'
 import { type CutEditor, createEditorBridge } from './editor_bridge'
 import { type CutMapLike, CutMode, type CutOutcome, readPageGlobalPixels } from './mode'
+import { type CutPins, createCutPins } from './pins'
 import { CUT_TARGETS, type CutTarget, isCutTargetCategory, isLineCategory } from './targets'
 
 export type CutControllerOptions = {
@@ -170,6 +171,8 @@ export class CutController {
   private keyHandler: ((event: KeyboardEvent) => void) | null = null
   private observer: MutationObserver | null = null
   private cleanupHook: (() => void) | null = null
+  /** Маркеры разрезов на карте: тот же вид, что у нативных точек разреза. */
+  private readonly pins: CutPins
 
   constructor(options: CutControllerOptions) {
     this.options = options
@@ -177,6 +180,7 @@ export class CutController {
       getEditor: () => this.editor,
       onOutcome: (outcome) => this.handleOutcome(outcome),
     })
+    this.pins = createCutPins(() => this.editor?.getMap() ?? null)
   }
 
   /** Подписывается на активности редактора и следит за тулбаром. Возвращает очистку. */
@@ -248,6 +252,7 @@ export class CutController {
     this.editor = null
     this.target = null
     this.mode.forgetRingSeams()
+    this.pins.clear()
     this.setActive(false)
     this.removeKeyHandler()
     removeAllCutButtons(CUT_TARGETS)
@@ -256,6 +261,11 @@ export class CutController {
   /** Переключает режим разреза. */
   public toggle(): void {
     this.setActive(!this.mode.isActive())
+  }
+
+  /** Точки разрезов текущей сессии: их же показывают маркеры на карте. */
+  public getCutPoints(): number[][] {
+    return this.mode.getCutPoints()
   }
 
   /** Обрабатывает клик по карте в глобальных пикселях. */
@@ -410,7 +420,9 @@ export class CutController {
       this.subscribeMapClicks()
     } else {
       this.mode.stop()
+      this.mode.forgetCutPoints()
       this.unsubscribeMapClicks()
+      this.pins.clear()
     }
 
     if (this.target) {
@@ -478,6 +490,9 @@ export class CutController {
     }
 
     const outcome = this.handleMapClick(pixels)
+    if (outcome === 'cut' || outcome === 'opened') {
+      this.pins.show(this.mode.getCutPoints())
+    }
     this.logClick(outcome, event)
     if (LINE_HIT_OUTCOMES.has(outcome)) {
       event.stopPropagation()
