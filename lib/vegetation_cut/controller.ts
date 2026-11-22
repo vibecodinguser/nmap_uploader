@@ -3,7 +3,11 @@
  *
  * Контроллер — единственное место, где инструмент знает про DOM и карту:
  * ставит кнопку в нативный тулбар, ловит запуск активности редактора,
- * подписывается на клики карты на время работы режима и убирает всё за собой.
+ * слушает клики мышью по карте на время работы режима и убирает всё за собой.
+ *
+ * Клики берутся из DOM, а не из событий `ymaps.Map`: событие `click` карты
+ * срабатывает только на пустом месте, а клик по линии или вершине достаётся
+ * геообъекту и до карты не доходит. Резать же нужно именно по линии.
  *
  * Важная особенность редактора НЯК: у объекта с несколькими контурами
  * открывается сначала экран выбора контура, а редактор топологии стартует
@@ -22,7 +26,7 @@ import {
 } from './button'
 import { installActivityHook } from './editor_access'
 import { createEditorBridge, type VegetationCutEditor } from './editor_bridge'
-import { type CutMapLike, type CutOutcome, readClickGlobalPixels, VegetationCutMode } from './mode'
+import { type CutMapLike, type CutOutcome, readPageGlobalPixels, VegetationCutMode } from './mode'
 import { isVegetationCategory, isVegetationLineCategory } from './vegetation'
 
 export type VegetationCutControllerOptions = {
@@ -37,16 +41,39 @@ export type VegetationCutControllerOptions = {
   ) => () => void
 }
 
-type MapEventsLike = {
-  add: (event: string, handler: (event: unknown) => void) => void
-  remove: (event: string, handler: (event: unknown) => void) => void
+/**
+ * Панель событий `ymaps`: единственный элемент, которому браузер отдаёт клики
+ * по карте, линиям и вершинам. Меню вершины, балуны и элементы управления
+ * лежат в контейнере карты рядом с ней и картой не считаются.
+ */
+const MAP_SURFACE_SELECTOR = '[class*="events-pane"]'
+
+/** Сдвиг указателя между нажатием и отпусканием, после которого это перетаскивание, px. */
+const DRAG_THRESHOLD_PX = 5
+
+/** Исходы, при которых клик попал в линию: редактору такой клик не отдаём. */
+const LINE_HIT_OUTCOMES: ReadonlySet<CutOutcome> = new Set([
+  'cut',
+  'opened',
+  'too-short',
+  'unsupported',
+])
+
+const readMapContainer = (map: CutMapLike): Element | null => {
+  try {
+    return map.container?.getElement?.() ?? null
+  } catch {
+    // Карта могла быть уничтожена
+    return null
+  }
 }
 
-const readMapEvents = (map: CutMapLike): MapEventsLike | null => {
-  const events = (map as { events?: MapEventsLike }).events
-  return events && typeof events.add === 'function' && typeof events.remove === 'function'
-    ? events
-    : null
+/** Клик пришёлся на саму карту, а не на меню, балун или интерфейс поверх неё. */
+const isMapSurfaceTarget = (target: EventTarget | null, map: CutMapLike): boolean => {
+  const container = readMapContainer(map)
+  if (!container || !(target instanceof Element)) return false
+  const surface = target.closest(MAP_SURFACE_SELECTOR)
+  return surface !== null && container.contains(surface)
 }
 
 /**
@@ -137,8 +164,10 @@ export class VegetationCutController {
   /** Активность редактора растительности, запущенная сейчас. */
   private tracked: unknown = null
   private editor: VegetationCutEditor | null = null
-  private map: CutMapLike | null = null
-  private clickHandler: ((event: unknown) => void) | null = null
+  private clickHandler: ((event: MouseEvent) => void) | null = null
+  private pressHandler: ((event: MouseEvent) => void) | null = null
+  /** Где была нажата кнопка мыши: по сдвигу отличаем клик от перетаскивания. */
+  private pressPoint: [number, number] | null = null
   private keyHandler: ((event: KeyboardEvent) => void) | null = null
   private observer: MutationObserver | null = null
   private cleanupHook: (() => void) | null = null
@@ -383,31 +412,77 @@ export class VegetationCutController {
   private subscribeMapClicks(): void {
     if (this.clickHandler) return
 
-    const map = this.editor?.getMap() ?? null
-    if (!map) return
-    const events = readMapEvents(map)
-    if (!events) return
-
-    this.map = map
-    this.clickHandler = (event: unknown) => {
-      if (!this.mode.isActive()) return
-      const pixels = readClickGlobalPixels((event ?? {}) as { get?: (key: string) => unknown }, map)
-      if (!pixels) return
-      this.mode.handleClick(pixels)
+    this.pressHandler = (event: MouseEvent) => {
+      this.pressPoint = [event.clientX, event.clientY]
     }
-    events.add('click', this.clickHandler)
+    this.clickHandler = (event: MouseEvent) => this.handleDomClick(event)
+
+    // Фаза перехвата на документе: обработчик срабатывает раньше редактора и
+    // может не отдать ему клик, которым уже разрезана линия.
+    document.addEventListener('pointerdown', this.pressHandler, true)
+    document.addEventListener('mousedown', this.pressHandler, true)
+    document.addEventListener('click', this.clickHandler, true)
   }
 
   private unsubscribeMapClicks(): void {
-    if (!this.clickHandler || !this.map) {
-      this.clickHandler = null
-      this.map = null
+    if (this.pressHandler) {
+      document.removeEventListener('pointerdown', this.pressHandler, true)
+      document.removeEventListener('mousedown', this.pressHandler, true)
+    }
+    if (this.clickHandler) {
+      document.removeEventListener('click', this.clickHandler, true)
+    }
+    this.pressHandler = null
+    this.clickHandler = null
+    this.pressPoint = null
+  }
+
+  private handleDomClick(event: MouseEvent): void {
+    const press = this.pressPoint
+    this.pressPoint = null
+
+    if (!this.mode.isActive() || event.button !== 0) return
+
+    const map = this.editor?.getMap() ?? null
+    if (!map) return
+
+    if (!isMapSurfaceTarget(event.target, map)) {
+      this.logClick('не карта', event)
       return
     }
-    const events = readMapEvents(this.map)
-    events?.remove('click', this.clickHandler)
-    this.clickHandler = null
-    this.map = null
+
+    // Карту или вершину тащили: браузер всё равно пришлёт `click`.
+    const moved = press ? Math.hypot(event.clientX - press[0], event.clientY - press[1]) : 0
+    if (moved > DRAG_THRESHOLD_PX) {
+      this.logClick('перетаскивание', event)
+      return
+    }
+
+    const pixels = readPageGlobalPixels(map, [
+      event.clientX + window.scrollX,
+      event.clientY + window.scrollY,
+    ])
+    if (!pixels) {
+      this.logClick('нет координат', event)
+      return
+    }
+
+    const outcome = this.handleMapClick(pixels)
+    this.logClick(outcome, event)
+    if (LINE_HIT_OUTCOMES.has(outcome)) {
+      event.stopPropagation()
+    }
+  }
+
+  /** Подробный лог кликов: без него «клик ничего не делает» не разобрать. */
+  private logClick(result: string, event: MouseEvent): void {
+    if (!isDebugEnabled()) return
+    const target = event.target instanceof Element ? event.target : null
+    console.debug('[nmap_vegetation_cut] click', {
+      result,
+      target: target ? `${target.tagName.toLowerCase()}.${String(target.className)}` : null,
+      point: [event.clientX, event.clientY],
+    })
   }
 
   private syncButton(): void {

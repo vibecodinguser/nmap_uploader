@@ -55,6 +55,7 @@ export type CutMapLike = {
   getZoom?: () => number
   options?: { get?: (name: string) => unknown }
   converter?: { pageToGlobal?: (coords: number[]) => number[] }
+  container?: { getElement?: () => Element | null }
 }
 
 type ProjectionLike = {
@@ -266,26 +267,15 @@ const isTooCloseToEnds = (element: CutElement, point: number[]): boolean => {
   )
 }
 
-/** Извлекает глобальные пиксели клика из события карты. */
-export const readClickGlobalPixels = (
-  event: { get?: (key: string) => unknown },
-  map: CutMapLike,
-): Point2 | null => {
-  const globalPixels = event.get?.('globalPixels')
-  if (Array.isArray(globalPixels) && globalPixels.length === 2) {
-    return [Number(globalPixels[0]), Number(globalPixels[1])]
+/** Переводит точку страницы в глобальные пиксели карты. */
+export const readPageGlobalPixels = (map: CutMapLike, pagePoint: Point2): Point2 | null => {
+  try {
+    const converted = map.converter?.pageToGlobal?.(pagePoint)
+    if (!Array.isArray(converted) || converted.length !== 2) return null
+    const point: Point2 = [Number(converted[0]), Number(converted[1])]
+    return Number.isFinite(point[0]) && Number.isFinite(point[1]) ? point : null
+  } catch {
+    // Карта могла быть уничтожена
+    return null
   }
-
-  const pagePixels = event.get?.('pagePixels')
-  if (Array.isArray(pagePixels) && pagePixels.length === 2) {
-    const converter = map.converter
-    if (converter?.pageToGlobal) {
-      const converted = converter.pageToGlobal([Number(pagePixels[0]), Number(pagePixels[1])])
-      if (Array.isArray(converted) && converted.length === 2) {
-        return [Number(converted[0]), Number(converted[1])]
-      }
-    }
-  }
-
-  return null
 }

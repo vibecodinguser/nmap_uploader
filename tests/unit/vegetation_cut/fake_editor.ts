@@ -162,10 +162,25 @@ export class FakeCommandManager {
   }
 }
 
-/** Проекция-заглушка: градусы в «пиксели» с шагом 1e6. */
+/**
+ * Карта-заглушка с разметкой как у `ymaps.Map`.
+ *
+ * Все клики по карте, линиям и вершинам браузер отдаёт одному элементу —
+ * панели событий; меню вершины и элементы управления лежат в контейнере рядом
+ * с ней. Событие `click` самой карты на линиях не срабатывает, поэтому его у
+ * заглушки нет вовсе.
+ *
+ * Проекция: градусы в «пиксели» с шагом 1e6; страница совпадает с картой.
+ */
 const createFakeMap = () => {
-  const add = vi.fn()
-  const remove = vi.fn()
+  const container = document.createElement('div')
+  const surface = document.createElement('ymaps')
+  surface.className = 'ymaps-2-1-79-events-pane ymaps-2-1-79-user-selection-none'
+  const vertexMenu = document.createElement('ymaps')
+  vertexMenu.className = 'ymaps-2-1-79-islets_editor-vertex-menu'
+  container.append(surface, vertexMenu)
+  document.body.appendChild(container)
+
   const map = {
     getZoom: () => 16,
     options: {
@@ -174,9 +189,10 @@ const createFakeMap = () => {
           ? { toGlobalPixels: (coords: number[]) => [coords[0] * 1e6, coords[1] * 1e6] }
           : undefined,
     },
-    events: { add, remove },
+    container: { getElement: () => container },
+    converter: { pageToGlobal: (page: number[]) => [page[0], page[1]] },
   }
-  return { map, add, remove }
+  return { map, surface, vertexMenu }
 }
 
 export const createFakeActivity = ({
@@ -188,7 +204,7 @@ export const createFakeActivity = ({
   withoutCommandManager = false,
   brokenFactory = false,
 }: FakeActivityParams = {}) => {
-  const { map, add, remove } = createFakeMap()
+  const { map, surface, vertexMenu } = createFakeMap()
 
   const commands = new FakeCommandManager()
   const relation = new FakeRelation()
@@ -308,7 +324,9 @@ export const createFakeActivity = ({
     /** За сколькими геометриями редактор следит на предмет ограничений. */
     watchedGeometries: (): number => watched.size,
     map,
-    add,
-    remove,
+    /** Элемент, которому браузер отдаёт клики по карте, линиям и вершинам. */
+    mapSurface: surface,
+    /** Меню вершины: лежит поверх карты, но картой не является. */
+    vertexMenu,
   }
 }

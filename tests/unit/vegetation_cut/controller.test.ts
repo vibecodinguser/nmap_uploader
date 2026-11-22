@@ -496,8 +496,39 @@ describe('режим разреза', () => {
     return { controller, ...fake }
   }
 
-  const clickAt = (controller: VegetationCutController, point: number[]) =>
-    controller.handleMapClick([point[0] * 1e6, point[1] * 1e6])
+  type PointerInit = { button?: number; target?: Element; pressedAt?: number[] }
+
+  /** Координаты точки на странице: в заглушке карты страница совпадает с картой. */
+  const toPage = (point: number[]) => ({ clientX: point[0] * 1e6, clientY: point[1] * 1e6 })
+
+  /**
+   * Клик мышью, как его видит страница: нажатие и `click` на элементе карты.
+   * Возвращает событие `click`, чтобы проверить, дошло ли оно до редактора.
+   */
+  const pressAndClick = (point: number[], init: PointerInit = {}): MouseEvent => {
+    const target = init.target ?? document.querySelector('[class*="events-pane"]')
+    if (!target) throw new Error('Карта не смонтирована')
+    const shared = { bubbles: true, cancelable: true, button: init.button ?? 0 }
+    target.dispatchEvent(
+      new MouseEvent('mousedown', { ...shared, ...toPage(init.pressedAt ?? point) }),
+    )
+    const click = new MouseEvent('click', { ...shared, ...toPage(point) })
+    target.dispatchEvent(click)
+    return click
+  }
+
+  /** Кликает по карте и возвращает исход разреза; `null` — инструмент клик не взял. */
+  const clickAt = (
+    controller: VegetationCutController,
+    point: number[],
+    init: PointerInit = {},
+  ): string | null => {
+    const handled = vi.spyOn(controller, 'handleMapClick')
+    pressAndClick(point, init)
+    const outcome = handled.mock.results.at(-1)?.value ?? null
+    handled.mockRestore()
+    return outcome
+  }
 
   it('показывает кнопку для линейной растительности', () => {
     mountToolbar()
@@ -720,31 +751,97 @@ describe('режим разреза', () => {
     const { controller, activity, drawnParts } = createController()
     controller.attachActivity(activity)
 
-    expect(clickAt(controller, CUT_POINT)).toBe('inactive')
+    expect(clickAt(controller, CUT_POINT)).toBeNull()
     expect(drawnParts()).toEqual({ 'el-1': OPEN_LINE })
   })
 
-  it('подписывается на клики карты на время режима и снимает подписку', () => {
+  it('перестаёт резать после выключения режима', () => {
     mountToolbar()
-    const { controller, activity, add, remove } = createController()
+    const { controller, activity, drawnParts } = createController()
     controller.attachActivity(activity)
-
     controller.toggle()
-    expect(add).toHaveBeenCalledWith('click', expect.any(Function))
-
     controller.toggle()
-    expect(remove).toHaveBeenCalledWith('click', expect.any(Function))
+
+    expect(clickAt(controller, CUT_POINT)).toBeNull()
+    expect(drawnParts()).toEqual({ 'el-1': OPEN_LINE })
+  })
+
+  describe('клик мышью по карте', () => {
+    const openEditor = () => {
+      mountToolbar()
+      const context = createController()
+      context.controller.attachActivity(context.activity)
+      context.controller.toggle()
+      return context
+    }
+
+    /** Редактор НЯК слушает клики ниже по дереву: дошёл ли клик до него. */
+    const listenAsEditor = (surface: Element) => {
+      const onClick = vi.fn()
+      surface.addEventListener('click', onClick)
+      return onClick
+    }
+
+    it('не отдаёт редактору клик, которым разрезана линия', () => {
+      const { mapSurface, drawnParts } = openEditor()
+      const editorClick = listenAsEditor(mapSurface)
+
+      pressAndClick(CUT_POINT)
+
+      expect(Object.keys(drawnParts())).toEqual(['el-1', 'new-1'])
+      expect(editorClick).not.toHaveBeenCalled()
+    })
+
+    it('отдаёт редактору клик мимо линии', () => {
+      const { mapSurface } = openEditor()
+      const editorClick = listenAsEditor(mapSurface)
+
+      pressAndClick([41.4205, 44.9])
+
+      expect(editorClick).toHaveBeenCalledTimes(1)
+    })
+
+    it('не режет, если карту тащили и отпустили над линией', () => {
+      const { controller, drawnParts } = openEditor()
+
+      expect(clickAt(controller, CUT_POINT, { pressedAt: [41.4215, 44.8401] })).toBeNull()
+      expect(drawnParts()).toEqual({ 'el-1': OPEN_LINE })
+    })
+
+    it('не режет правой кнопкой', () => {
+      const { controller, drawnParts } = openEditor()
+
+      expect(clickAt(controller, CUT_POINT, { button: 2 })).toBeNull()
+      expect(drawnParts()).toEqual({ 'el-1': OPEN_LINE })
+    })
+
+    it('не режет по клику в меню вершины, даже если под ним линия', () => {
+      const { controller, vertexMenu, drawnParts } = openEditor()
+
+      expect(clickAt(controller, CUT_POINT, { target: vertexMenu })).toBeNull()
+      expect(drawnParts()).toEqual({ 'el-1': OPEN_LINE })
+    })
+
+    it('не режет по клику вне карты, даже если под ним линия', () => {
+      const { controller, drawnParts } = openEditor()
+      const panel = document.createElement('div')
+      document.body.appendChild(panel)
+
+      expect(clickAt(controller, CUT_POINT, { target: panel })).toBeNull()
+      expect(drawnParts()).toEqual({ 'el-1': OPEN_LINE })
+    })
   })
 
   it('выключается по Escape', () => {
     mountToolbar()
-    const { controller, activity } = createController()
+    const { controller, activity, drawnParts } = createController()
     controller.attachActivity(activity)
     controller.toggle()
 
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
 
-    expect(controller.handleMapClick([0, 0])).toBe('inactive')
+    expect(clickAt(controller, CUT_POINT)).toBeNull()
+    expect(drawnParts()).toEqual({ 'el-1': OPEN_LINE })
   })
 
   it('снимает кнопку при закрытии редактора', () => {
