@@ -7,9 +7,10 @@
  * У стандартного `ymaps.geometryEditor` для таких объектов `startEditing`
  * вообще не вызывается, поэтому перехватывать надо активности.
  *
- * Классы активностей не экспортируются поимённо: модуль отдаёт их как значения
- * экспорта, а экземпляры создаёт фабрика. Поэтому перехватываем базовый класс
- * по форме прототипа и подписываемся на `start` / `stop`.
+ * Классы конкретных редакторов из модулей не экспортируются, но базовый класс
+ * активности экспортируется, и `start`/`stop` объявлены именно на нём. Поэтому
+ * достаточно узнать базовый класс по форме прототипа и обернуть его методы:
+ * все редакторы наследуют обёртку.
  */
 
 export const WEBPACK_CHUNK_NAME = 'webpackChunknmaps'
@@ -95,36 +96,22 @@ const dispatchStop = (registry: ActivityRegistry, activity: unknown): void => {
  * Повторный вызов для уже обёрнутого класса реестр не создаёт, а возвращает
  * существующий: обёртка при вызове читает актуальный список подписок.
  */
-const ensureRegistry = (
-  Class: ActivityClass,
-  allowInheritedStart = false,
-): ActivityRegistry | null => {
+const ensureRegistry = (Class: ActivityClass): ActivityRegistry | null => {
   const proto = Class.prototype
   const existing = readRegistry(proto)
   if (existing) return existing
 
   const hasOwn = (name: string): boolean => Object.hasOwn(proto, name)
 
-  /*
-   * Подкласс без собственного `start` наследует уже обёрнутый метод: второй хук
-   * дал бы двойное срабатывание, поэтому такие классы обычно пропускаем.
-   *
-   * Исключение — активности из DI-контейнера: там классы создаются напрямую, и
-   * у них `start` почти всегда унаследован (минификатор сводит его к базовому).
-   * В этом случае создаём собственную обёртку поверх унаследованного метода —
-   * она срабатывает один раз, потому что предок не обёрнут.
-   */
-  const inheritedStart = proto.start
-  if (!hasOwn('start') && (!allowInheritedStart || typeof inheritedStart !== 'function')) {
-    return null
-  }
-
-  if (typeof inheritedStart !== 'function') return null
+  // Подкласс без собственного `start` наследует уже обёрнутый метод: второй
+  // хук дал бы двойное срабатывание.
+  const originalStart = proto.start
+  if (!hasOwn('start') || typeof originalStart !== 'function') return null
 
   const registry: ActivityRegistry = { hooks: [] }
 
   proto.start = function (this: unknown, ...args: unknown[]) {
-    const result = Reflect.apply(inheritedStart, this, args)
+    const result = Reflect.apply(originalStart, this, args)
     const current = readRegistry(proto)
     if (!current) return result
     const self = this as { isStarted?: () => boolean }
@@ -156,9 +143,8 @@ const ensureRegistry = (
 export const subscribeActivityClass = (
   Class: ActivityClass,
   hooks: ActivityHooks,
-  options: { allowInheritedStart?: boolean } = {},
 ): (() => void) | null => {
-  const registry = ensureRegistry(Class, options.allowInheritedStart === true)
+  const registry = ensureRegistry(Class)
   if (!registry) return null
 
   // Один и тот же класс может встретиться в нескольких модулях: подписка
@@ -173,13 +159,26 @@ export const subscribeActivityClass = (
   }
 }
 
-/** Проходит по значениям экспорта модуля и подписывается на найденные активности. */
-export const hookModuleExports = (moduleExports: unknown, hooks: ActivityHooks): boolean => {
+/**
+ * Проходит по значениям экспорта модуля и подписывается на найденные активности.
+ *
+ * Отписки складываются в `unsubscribers`, если он передан: так хук снимается
+ * при остановке инструмента.
+ */
+export const hookModuleExports = (
+  moduleExports: unknown,
+  hooks: ActivityHooks,
+  unsubscribers?: Set<() => void>,
+): boolean => {
   let hooked = false
 
   const visit = (value: unknown, depth: number): void => {
     if (isActivityClass(value)) {
-      hooked = subscribeActivityClass(value, hooks) !== null || hooked
+      const unsubscribe = subscribeActivityClass(value, hooks)
+      if (unsubscribe) {
+        unsubscribers?.add(unsubscribe)
+        hooked = true
+      }
       return
     }
     if (depth >= 2 || !value || typeof value !== 'object') return
@@ -202,139 +201,6 @@ export type ObserveWebpackModulesFn = (
   onModule: (exports: unknown, moduleId: string) => void,
 ) => () => void
 
-/** Webpack-require: по id отдаёт exports модуля (из кэша, если он уже выполнен). */
-type WebpackRequire = {
-  (id: string | number): unknown
-  m?: Record<string, unknown>
-}
-
-/**
- * Достаёт webpack-require активного runtime.
- *
- * Рантайм вызывает третий элемент чанка как функцию и передаёт ей свой
- * `require`. Пустой чанк с такой функцией — единственный способ получить
- * `require` снаружи, не выполняя чужих модулей.
- */
-const captureWebpackRequire = (chunks: unknown[]): WebpackRequire | null => {
-  let captured: WebpackRequire | null = null
-  try {
-    const probe = (require: WebpackRequire): void => {
-      captured = require
-    }
-    chunks.push([[`__nmap_require_probe_${Date.now()}`], {}, probe])
-  } catch {
-    return null
-  }
-  return captured
-}
-
-const looksLikeActivityClass = (value: unknown): value is ActivityClass => {
-  if (typeof value !== 'function') return false
-  const proto = (value as ActivityClass).prototype
-  return Boolean(
-    proto &&
-      typeof proto.start === 'function' &&
-      typeof proto.onStart === 'function' &&
-      typeof proto.onViewAttrsRequest === 'function' &&
-      typeof proto.isStarted === 'function',
-  )
-}
-
-/**
- * Подписывается на создание активностей через DI-контейнер.
- *
- * Классы редакторов не экспортируются из модулей: модуль отдаёт только
- * фабрику/сервис, а сами классы регистрируются внутри и создаются через
- * `di-container.instantiate`. Поэтому единственная надёжная точка — обёрнуть
- * `instantiate` и подписаться на `start` конкретного созданного класса.
- *
- * Возвращает число подписанных классов.
- */
-export const subscribeActivityInstances = (
-  globalObject: Record<string, unknown>,
-  chunkName: string,
-  hooks: ActivityHooks,
-  unsubscribers: Set<() => void>,
-): number => {
-  const chunks = globalObject[chunkName]
-  if (!Array.isArray(chunks)) return 0
-
-  const require = captureWebpackRequire(chunks)
-  const modules = require?.m
-  if (!require || !modules) return 0
-
-  const container = findDiContainer(require, modules)
-  if (!container) return 0
-
-  const unsubscribersForClasses = new Set<() => void>()
-  const originalInstantiate = container.instantiate
-  let subscribed = 0
-
-  container.instantiate = function (Class: unknown, args?: unknown[]) {
-    const result = Reflect.apply(originalInstantiate, this, [Class, args])
-    if (looksLikeActivityClass(Class)) {
-      const unsubscribe = subscribeActivityClass(Class, hooks, { allowInheritedStart: true })
-      if (unsubscribe && !unsubscribersForClasses.has(unsubscribe)) {
-        unsubscribersForClasses.add(unsubscribe)
-        unsubscribers.add(unsubscribe)
-        subscribed += 1
-      }
-    }
-    return result
-  }
-
-  unsubscribers.add(() => {
-    container.instantiate = originalInstantiate
-  })
-
-  // Подписки появятся при создании активностей, но сам хук уже стоит:
-  // возвращаем 1, чтобы состояние отличалось от «не поймали ничего».
-  return 1
-}
-
-type DiContainerLike = {
-  instantiate: (Class: unknown, args?: unknown[]) => unknown
-  get?: (name: string) => unknown
-  registerType?: (...args: unknown[]) => unknown
-  registerProvider?: (...args: unknown[]) => unknown
-}
-
-const isDiContainer = (value: unknown): value is DiContainerLike => {
-  if (!value || typeof value !== 'object') return false
-  const candidate = value as Record<string, unknown>
-  return (
-    typeof candidate.instantiate === 'function' &&
-    typeof candidate.get === 'function' &&
-    typeof candidate.registerType === 'function' &&
-    typeof candidate.registerProvider === 'function'
-  )
-}
-
-/**
- * Ищет DI-контейнер среди уже выполненных модулей.
- *
- * Контейнер — синглтон модуля (объект, а не класс), поэтому `require` отдаёт
- * тот же экземпляр, которым пользуется приложение.
- */
-const findDiContainer = (
-  require: WebpackRequire,
-  modules: Record<string, unknown>,
-): DiContainerLike | null => {
-  for (const id of Object.keys(modules)) {
-    let moduleExports: unknown
-    try {
-      moduleExports = require(id)
-    } catch {
-      continue
-    }
-    if (!moduleExports || typeof moduleExports !== 'object') continue
-    for (const value of Object.values(moduleExports as Record<string, unknown>)) {
-      if (isDiContainer(value)) return value
-    }
-  }
-  return null
-}
-
 export type InstallActivityHookOptions = {
   globalObject?: Record<string, unknown>
   /** Подменяется в тестах: реальная подписка на webpack-чанки НЯК. */
@@ -343,8 +209,8 @@ export type InstallActivityHookOptions = {
   /**
    * Сообщает, сколько классов активностей уже обёрнуто.
    *
-   * Ноль означает, что наблюдатель стоит, но модули НЯК ещё не проходили через
-   * него: тогда редактор откроется мимо хука, и это видно по состоянию.
+   * Пока вызова не было, модули НЯК через наблюдатель не проходили: редактор
+   * откроется мимо хука, и это видно по состоянию инструмента.
    */
   onWrapped?: (count: number) => void
 }
@@ -352,9 +218,15 @@ export type InstallActivityHookOptions = {
 /**
  * Подписывается на загрузку модулей НЯК и перехватывает активности редактора.
  *
- * Ставить хук нужно в MAIN world на `document_start`: активности создаются
- * позже, но классы объявляются при исполнении бандла, и до этого момента
- * прототип должен быть уже обёрнут.
+ * Хук ставится в MAIN world на `document_start`: `app.js` подгружается в конце
+ * `<body>`, поэтому скрипт успевает раньше и видит модуль базового класса в
+ * момент исполнения.
+ *
+ * Если скрипт попал в уже загруженную вкладку (Firefox подставляет скрипты в
+ * открытые вкладки при обновлении расширения), модули исполнены и хук не
+ * встанет до перезагрузки вкладки. Искать класс среди исполненных модулей мы
+ * не пытаемся: у рантайма нет открытого кэша, а `require` исполнил бы модули,
+ * которые страница ещё не запускала.
  */
 export const installActivityHook = (
   hooks: ActivityHooks,
@@ -366,25 +238,14 @@ export const installActivityHook = (
   if (!observe) return () => {}
 
   const unsubscribers = new Set<() => void>()
-  let wrapped = 0
 
   const unsubscribeModules = observe(globalObject, chunkName, (moduleExports) => {
     const before = unsubscribers.size
-    hookModuleExportsWithUnsubscribe(moduleExports, hooks, unsubscribers)
-    const added = unsubscribers.size - before
-    if (added > 0) {
-      wrapped += added
-      options.onWrapped?.(wrapped)
+    hookModuleExports(moduleExports, hooks, unsubscribers)
+    if (unsubscribers.size > before) {
+      options.onWrapped?.(unsubscribers.size)
     }
   })
-
-  // Модули, объявленные до нас, через `push` уже не пройдут — забираем их
-  // из кэша webpack. Без этого хук молчит, если бандл загрузился раньше
-  // content script (обычный случай: `<script>` в `<head>`).
-  if (wrapped === 0) {
-    wrapped += subscribeActivityInstances(globalObject, chunkName, hooks, unsubscribers)
-    if (wrapped > 0) options.onWrapped?.(wrapped)
-  }
 
   return () => {
     unsubscribeModules()
@@ -393,35 +254,4 @@ export const installActivityHook = (
     }
     unsubscribers.clear()
   }
-}
-
-/** Как `hookModuleExports`, но складывает отписки, чтобы снять их при остановке. */
-const hookModuleExportsWithUnsubscribe = (
-  moduleExports: unknown,
-  hooks: ActivityHooks,
-  unsubscribers: Set<() => void>,
-): boolean => {
-  let hooked = false
-
-  const visit = (value: unknown, depth: number): void => {
-    if (isActivityClass(value)) {
-      const unsubscribe = subscribeActivityClass(value, hooks)
-      if (unsubscribe) {
-        unsubscribers.add(unsubscribe)
-        hooked = true
-      }
-      return
-    }
-    if (depth >= 2 || !value || typeof value !== 'object') return
-    let values: unknown[]
-    try {
-      values = Object.values(value as Record<string, unknown>)
-    } catch {
-      return
-    }
-    for (const item of values) visit(item, depth + 1)
-  }
-
-  visit(moduleExports, 0)
-  return hooked
 }

@@ -9,6 +9,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTranslator } from '@/lib/i18n'
+import { observeWebpackModules } from '@/lib/nmaps_webpack_module_observer'
 import {
   createVegetationCutButton,
   ensureVegetationCutButton,
@@ -22,11 +23,16 @@ import {
 import { VegetationCutController } from '@/lib/vegetation_cut/controller'
 import {
   hookModuleExports,
+  installActivityHook,
   isActivityClass,
   subscribeActivityClass,
-  subscribeActivityInstances,
 } from '@/lib/vegetation_cut/editor_access'
 import { createEditorBridge } from '@/lib/vegetation_cut/editor_bridge'
+import {
+  installWebpackRuntime,
+  pushWebpackChunk,
+  type RuntimeChunk,
+} from '../nmaps_webpack_runtime_fixture'
 
 const RING: number[][] = [
   [41.42, 44.84],
@@ -357,55 +363,88 @@ describe('перехват активностей редактора', () => {
     expect(live.onStart).toHaveBeenCalledTimes(1)
   })
 
-  it('подписывается на активности через DI-контейнер', () => {
-    const { activity } = createFakeActivity()
-    const ActivityClass = activity.constructor as unknown as new (...args: unknown[]) => unknown
-    const onStart = vi.fn()
-    const hooks = { onStart, onStop: vi.fn() }
+  describe('на странице НЯК', () => {
+    type EditorLike = { start: () => unknown; stop: () => unknown }
 
-    // Контейнер — синглтон модуля: require отдаёт тот же объект, что у приложения.
-    const container = {
-      instantiate: (Cls: new (...args: unknown[]) => unknown, args?: unknown[]) =>
-        new Cls(...(args ?? [])),
-      get: () => undefined,
-      registerType: () => undefined,
-      registerProvider: () => undefined,
+    /** Чанк как в `app-bundle`: базовый класс экспортируется, редактор — нет. */
+    const createEditorChunk = () => {
+      const { activity } = createFakeActivity()
+      const Base = activity.constructor as new () => EditorLike
+      class TopologyEditor extends Base {}
+      const lazyModule = vi.fn()
+      const chunk: RuntimeChunk = [
+        [265],
+        {
+          17574: (_module, exports) => {
+            exports.A = Base
+          },
+          74613: (_module, exports, require) => {
+            require(17574)
+            exports.open = () => new TopologyEditor()
+          },
+          99999: lazyModule,
+        },
+      ]
+      return { chunk, lazyModule }
     }
-    const modules: Record<string, unknown> = { 7006: { A: container } }
-    const require = Object.assign((id: string | number) => modules[String(id)], { m: modules })
-    const chunks: unknown[] = []
-    chunks.push = ((...incoming: unknown[]) => {
-      const probe = incoming[0] as unknown[]
-      const runtime = probe?.[2]
-      if (typeof runtime === 'function') (runtime as (r: unknown) => void)(require)
-      return 0
-    }) as never
 
-    const globalObject: Record<string, unknown> = { webpackChunknmaps: chunks }
-    const unsubscribers = new Set<() => void>()
+    const openEditor = (require: (id: number) => Record<string, unknown>): EditorLike =>
+      (require(74613).open as () => EditorLike)()
 
-    expect(
-      subscribeActivityInstances(globalObject, 'webpackChunknmaps', hooks, unsubscribers),
-    ).toBe(1)
+    it('ловит редактор после обычной загрузки, даже если следом встал другой наблюдатель', () => {
+      // Порядок манифеста: разрез, затем трассировка — оба до `app.js`.
+      const globalObject: Record<string, unknown> = {}
+      const hooks = { onStart: vi.fn(), onStop: vi.fn() }
+      const onWrapped = vi.fn()
+      installActivityHook(hooks, { globalObject, observe: observeWebpackModules, onWrapped })
+      observeWebpackModules(globalObject, 'webpackChunknmaps', () => {})
 
-    // Класс подписывается в момент создания активности.
-    container.instantiate(ActivityClass)
+      const require = installWebpackRuntime(globalObject)
+      const { chunk } = createEditorChunk()
+      pushWebpackChunk(globalObject, chunk)
+      const editor = openEditor(require)
 
-    const instance = new ActivityClass() as { start: () => void }
-    instance.start()
-    expect(onStart).toHaveBeenCalledTimes(1)
-  })
+      editor.start()
+      expect(onWrapped).toHaveBeenLastCalledWith(1)
+      expect(hooks.onStart).toHaveBeenCalledExactlyOnceWith(editor)
 
-  it('молчит, если DI-контейнер недоступен', () => {
-    const hooks = { onStart: vi.fn(), onStop: vi.fn() }
-    const unsubscribers = new Set<() => void>()
+      editor.stop()
+      expect(hooks.onStop).toHaveBeenCalledExactlyOnceWith(editor)
+    })
 
-    const globalObject: Record<string, unknown> = { webpackChunknmaps: [] }
-    expect(
-      subscribeActivityInstances(globalObject, 'webpackChunknmaps', hooks, unsubscribers),
-    ).toBe(0)
+    it('перестаёт слушать редактор после снятия хука', () => {
+      const globalObject: Record<string, unknown> = {}
+      const hooks = { onStart: vi.fn(), onStop: vi.fn() }
+      const uninstall = installActivityHook(hooks, { globalObject, observe: observeWebpackModules })
+      const require = installWebpackRuntime(globalObject)
+      const { chunk } = createEditorChunk()
+      pushWebpackChunk(globalObject, chunk)
+      const editor = openEditor(require)
 
-    expect(subscribeActivityInstances({}, 'webpackChunknmaps', hooks, unsubscribers)).toBe(0)
+      uninstall()
+      editor.start()
+
+      expect(hooks.onStart).not.toHaveBeenCalled()
+    })
+
+    it('при поздней установке не исполняет модули страницы и не подключается', () => {
+      // Скрипт попал в уже загруженную вкладку: модули редактора исполнены,
+      // остальные ждут своего часа и не должны запускаться из-за нас.
+      const globalObject: Record<string, unknown> = {}
+      const require = installWebpackRuntime(globalObject)
+      const { chunk, lazyModule } = createEditorChunk()
+      pushWebpackChunk(globalObject, chunk)
+      const editor = openEditor(require)
+
+      const hooks = { onStart: vi.fn(), onStop: vi.fn() }
+      const onWrapped = vi.fn()
+      installActivityHook(hooks, { globalObject, observe: observeWebpackModules, onWrapped })
+      editor.start()
+
+      expect(lazyModule).not.toHaveBeenCalled()
+      expect(onWrapped).not.toHaveBeenCalled()
+      expect(hooks.onStart).not.toHaveBeenCalled()
+    })
   })
 })
 
