@@ -21,8 +21,6 @@ export default defineContentScript({
       const locale = pageLang.toLowerCase().startsWith('en') ? 'en' : 'ru'
       const t: TranslateFn = createTranslator(locale)
 
-      console.info('[nmap_cut] content script loaded')
-
       const controller = new CutController({
         getTranslator: () => t,
         onMessage: (text) => showCutMessage(text),

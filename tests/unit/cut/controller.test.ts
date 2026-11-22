@@ -78,9 +78,14 @@ describe('кнопка разреза растительности', () => {
     expect(button.innerHTML).toContain('svg')
   })
 
-  it('рисует ножницы, а не копирует чужую иконку', () => {
-    expect(CUT_ICON_SVG).toContain('<circle')
-    expect(CUT_ICON_SVG).toContain('stroke="currentColor"')
+  it('рисует ту же иконку, что нативная кнопка разрезания', () => {
+    // Нативная иконка `nk-icon_id_split` — залитый путь 22×22 из набора
+    // редактора. Своя обводка выглядела бы иначе.
+    expect(CUT_ICON_SVG).toContain('width="22"')
+    expect(CUT_ICON_SVG).toContain('height="22"')
+    expect(CUT_ICON_SVG).toContain('viewBox="0 0 22 22"')
+    expect(CUT_ICON_SVG).toContain('m3.7 14.5 1.3 1 7.8-3.5')
+    expect(CUT_ICON_SVG).not.toContain('stroke=')
   })
 
   it('ставится после нативной кнопки разрезания, если она есть', () => {
