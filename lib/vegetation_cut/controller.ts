@@ -59,6 +59,8 @@ const readMapEvents = (map: CutMapLike): MapEventsLike | null => {
  * - `hooked` — хук активностей установлен;
  * - `other:<категория>` — открыт редактор не растительности;
  * - `wait:<категория>` — растительность открыта, но редактор ещё не готов резать;
+ * - `unsupported:commands` — у редактора не нашёлся менеджер команд, разрез
+ *   нельзя было бы отменить, поэтому инструмент выключен;
  * - `ready:<категория>:<элементов>` — кнопка доступна.
  */
 export const VEGETATION_CUT_STATE_ATTR = 'data-nmap-veg-cut'
@@ -244,16 +246,14 @@ export class VegetationCutController {
     // Редактор открывает активности вложенно: сначала редактор топологии,
     // затем контейнер объекта. Контейнер умеет меньше, поэтому не должен
     // вытеснять уже найденный рабочий редактор.
-    const cuttable = bridge.canCut() && bridge.getElements().length > 0
-    if (cuttable || !this.isTrackedCuttable()) {
+    if (bridge.canEditElements() || !this.isTrackedEditable()) {
       this.tracked = activity
     }
   }
 
-  private isTrackedCuttable(): boolean {
+  private isTrackedEditable(): boolean {
     if (!this.tracked) return false
-    const bridge = createEditorBridge(this.tracked)
-    return Boolean(bridge?.canCut() && bridge.getElements().length > 0)
+    return createEditorBridge(this.tracked)?.canEditElements() === true
   }
 
   private readAttrsKeys(activity: unknown): string[] | null {
@@ -304,9 +304,16 @@ export class VegetationCutController {
     }
 
     const elements = bridge.getElements()
-    if (!bridge.canCut() || elements.length === 0) {
+    if (!bridge.canEditElements() || elements.length === 0) {
       this.editor = null
       setVegetationCutState(`wait:${String(elementCategoryId ?? categoryId)}`)
+      return
+    }
+
+    // Резать есть что, но отменить разрез было бы нечем: кнопку не показываем.
+    if (!bridge.hasCommandManager()) {
+      this.editor = null
+      setVegetationCutState('unsupported:commands')
       return
     }
 

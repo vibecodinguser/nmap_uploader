@@ -3,8 +3,8 @@
  *
  * Всё нужное редактор сам отдаёт представлению через `onViewAttrsRequest()`:
  * объект, элементы контура, карту, фабрики и обработчик изменения координат
- * элемента. Это единственная поверхность, на которую опирается инструмент:
- * внутренние модели и минифицированные методы не трогаем.
+ * элемента. Сверх этого инструмент берёт у активности только менеджер команд,
+ * и находит его по набору методов, а не по минифицированному имени поля.
  *
  * Устройство редактора описано в `docs/nmaps-editor-internals.md`.
  */
@@ -22,14 +22,42 @@ type GeoObjectLike = {
   getCategoryId?: () => string
   getGeometry?: () => GeometryLike | null
   getId?: () => string
-  getSlavesByRole?: (role: string) => CollectionLike | null
+  getSlavesByRole?: (role: string) => RelationLike | null
 }
 
+/** Коллекция объектов: её рисует представление редактора. */
 type CollectionLike = {
   get?: () => GeoObjectLike[]
   getGeoObjects?: () => CollectionLike
   findById?: (id: string) => GeoObjectLike | null
+  add?: (geoObject: GeoObjectLike) => unknown
+  remove?: (geoObject: GeoObjectLike) => unknown
+}
+
+/** Связь «контур → части»: по ней сервер узнаёт о новых и убранных частях. */
+type RelationLike = {
   addGeoObject?: (geoObject: GeoObjectLike) => unknown
+  removeGeoObject?: (geoObject: GeoObjectLike) => unknown
+}
+
+/** Команда редактора: то, что кладётся в историю отмены. */
+type CommandLike = {
+  apply: () => unknown
+  undo: () => unknown
+  redo?: () => unknown
+}
+
+/** Менеджер команд активности: через него идёт любая правка и её отмена. */
+type CommandManagerLike = {
+  apply: (command: CommandLike) => unknown
+  undo: () => unknown
+  redo: () => unknown
+  canUndo: () => boolean
+  canRedo: () => boolean
+}
+
+type GeometryRestrictionsLike = {
+  stopWatching?: (geometry: unknown) => unknown
 }
 
 /**
@@ -61,6 +89,7 @@ type ViewAttrsLike = {
   nonEditableElements?: CollectionLike | null
   geoObjectFactory?: GeoObjectFactoryLike | null
   geometryFactory?: GeometryFactoryLike | null
+  geometryRestrictionsManager?: GeometryRestrictionsLike | null
   onChangeElementCoords?: (element: unknown, coordinates: LineCoordinates) => unknown
 }
 
@@ -87,9 +116,18 @@ export type VegetationCutEditor = {
   /** Части контура, доступные для правки. */
   getElements: () => CutElement[]
   getMap: () => CutMapLike | null
-  /** Редактор умеет делить элемент: есть обработчик и фабрики. */
+  /** Редактор отдаёт части контура, обработчик правки и фабрики. */
+  canEditElements: () => boolean
+  /** У активности нашёлся менеджер команд — без него разрез не отменить. */
+  hasCommandManager: () => boolean
+  /** Разрез доступен: есть и что править, и чем отменять. */
   canCut: () => boolean
-  /** Заменяет элемент одной или двумя частями. */
+  /**
+   * Заменяет элемент одной или двумя частями.
+   *
+   * Разрез ложится в историю редактора одной командой: `Ctrl+Z` возвращает
+   * линию целиком, `Ctrl+Y` режет снова.
+   */
   applyCut: (elementId: string, parts: LineCoordinates[]) => boolean
 }
 
@@ -242,20 +280,22 @@ export const createEditorBridge = (activity: unknown): VegetationCutEditor | nul
 
     getMap: () => readMap(readAttrs(candidate)),
 
-    canCut: () => {
-      const attrs = readAttrs(candidate)
-      if (!attrs) return false
-      if (typeof attrs.onChangeElementCoords !== 'function') return false
-      if (!attrs.geoObjectFactory || !attrs.geometryFactory) return false
-      if (!readElementRoleId(candidate, attrs)) return false
-      return readElements(readElementsCollection(attrs)).length > 0
-    },
+    canEditElements: () => canEditElements(candidate, readAttrs(candidate)),
+
+    hasCommandManager: () => findCommandManager(candidate) !== null,
+
+    canCut: () =>
+      canEditElements(candidate, readAttrs(candidate)) && findCommandManager(candidate) !== null,
 
     applyCut: (elementId, parts) => {
       if (parts.length === 0 || parts.length > 2) return false
 
       const attrs = readAttrs(candidate)
-      if (!attrs || typeof attrs.onChangeElementCoords !== 'function') return false
+      const onChange = attrs?.onChangeElementCoords
+      if (!attrs || typeof onChange !== 'function') return false
+
+      const commands = findCommandManager(candidate)
+      if (!commands) return false
 
       const element = readElements(readElementsCollection(attrs)).find((item) => {
         try {
@@ -266,51 +306,184 @@ export const createEditorBridge = (activity: unknown): VegetationCutEditor | nul
       })
       if (!element) return false
 
+      // Вторая часть готовится до любой правки: если её создать нельзя,
+      // линия должна остаться нетронутой.
+      const addition = parts.length === 2 ? prepareAddition(candidate, attrs, parts[1]) : null
+      if (parts.length === 2 && !addition) return false
+
+      const edit = captureCommand(commands, () => onChange(element, parts[0]))
+      if (!edit) return false
+
       try {
-        attrs.onChangeElementCoords(element, parts[0])
+        commands.apply({
+          apply: () => {
+            edit.apply()
+            addition?.add()
+          },
+          undo: () => {
+            addition?.remove()
+            edit.undo()
+          },
+          redo: () => {
+            if (typeof edit.redo === 'function') edit.redo()
+            else edit.apply()
+            addition?.add()
+          },
+        })
       } catch {
         return false
       }
 
-      if (parts.length === 1) return true
-
-      return addElement(activity, candidate, attrs, parts[1])
+      return true
     },
   }
 }
 
+const canEditElements = (candidate: ActivityLike, attrs: ViewAttrsLike | null): boolean => {
+  if (!attrs) return false
+  if (typeof attrs.onChangeElementCoords !== 'function') return false
+  if (!attrs.geoObjectFactory || !attrs.geometryFactory) return false
+  if (!readElementRoleId(candidate, attrs)) return false
+  return readElements(readElementsCollection(attrs)).length > 0
+}
+
+const isCommandManager = (value: unknown): value is CommandManagerLike => {
+  if (!value || typeof value !== 'object') return false
+  const candidate = value as Record<string, unknown>
+  return (
+    typeof candidate.apply === 'function' &&
+    typeof candidate.undo === 'function' &&
+    typeof candidate.redo === 'function' &&
+    typeof candidate.canUndo === 'function' &&
+    typeof candidate.canRedo === 'function'
+  )
+}
+
+const isCommand = (value: unknown): value is CommandLike => {
+  if (!value || typeof value !== 'object') return false
+  const candidate = value as Record<string, unknown>
+  return typeof candidate.apply === 'function' && typeof candidate.undo === 'function'
+}
+
 /**
- * Добавляет вторую часть в контур.
+ * Находит менеджер команд активности.
  *
- * Создаём объект фабрикой редактора и кладём в коллекцию роли элементов —
- * так же, как это делает сам редактор при рисовании новой части. Команда
- * отмены при этом не создаётся: это ограничение зафиксировано в ADR 0012.
+ * В `attrs` редактор его не отдаёт, а имя поля в бандле минифицировано и
+ * меняется от сборки к сборке. Набор методов (`apply`, `undo`, `redo`,
+ * `canUndo`, `canRedo`) при этом стабилен, поэтому ищем по нему. Если
+ * подходящих полей нет или их несколько, инструмент не включается: угадывать,
+ * в чью историю писать, нельзя.
  */
-const addElement = (
-  activity: unknown,
+const findCommandManager = (activity: ActivityLike): CommandManagerLike | null => {
+  let values: unknown[]
+  try {
+    values = Object.values(activity)
+  } catch {
+    return null
+  }
+
+  const found = new Set<CommandManagerLike>()
+  for (const value of values) {
+    if (isCommandManager(value)) found.add(value)
+  }
+  if (found.size !== 1) return null
+
+  const [manager] = found
+  return manager
+}
+
+/**
+ * Забирает команду, которую редактор собирался применить, не применяя её.
+ *
+ * `onChangeElementCoords` сам кладёт правку в историю. Чтобы разрез был одной
+ * записью, на время вызова подменяем `apply` менеджера: редактор собирает свою
+ * команду как обычно (правка координат и фиксация элемента в контуре), а мы
+ * включаем её в общую команду разреза.
+ */
+const captureCommand = (commands: CommandManagerLike, run: () => unknown): CommandLike | null => {
+  const captured: unknown[] = []
+  const target = commands as unknown as Record<string, unknown>
+  const hadOwnApply = Object.hasOwn(target, 'apply')
+  const ownApply = target.apply
+
+  target.apply = (command: unknown) => {
+    captured.push(command)
+  }
+  try {
+    run()
+  } catch {
+    return null
+  } finally {
+    if (hadOwnApply) target.apply = ownApply
+    else Reflect.deleteProperty(target, 'apply')
+  }
+
+  // Ноль команд — редактор отказал в правке (например, лимит вершин);
+  // больше одной — порядок их применения нам неизвестен.
+  const [command] = captured
+  return captured.length === 1 && isCommand(command) ? command : null
+}
+
+type ElementAddition = {
+  add: () => void
+  remove: () => void
+}
+
+/**
+ * Готовит вторую часть линии и способ добавить её в контур и убрать обратно.
+ *
+ * Новая часть должна попасть в два места: в коллекцию `elements`, которую
+ * рисует редактор (иначе её не видно и нельзя резать дальше), и в связь
+ * контура с частями (иначе она не сохранится).
+ */
+const prepareAddition = (
   candidate: ActivityLike,
   attrs: ViewAttrsLike,
   coordinates: LineCoordinates,
-): boolean => {
+): ElementAddition | null => {
   const roleId = readElementRoleId(candidate, attrs)
   const categoryId = attrs.elementCategoryId
   const factory = attrs.geoObjectFactory
   const geometryFactory = attrs.geometryFactory
-  const geoObject = readGeoObject(candidate, attrs)
+  const drawn = readElementsCollection(attrs)
 
   if (!roleId || !categoryId || !factory?.createGeoObject || !geometryFactory?.createPolyline) {
-    return false
+    return null
   }
+  if (typeof drawn?.add !== 'function' || typeof drawn.remove !== 'function') return null
 
   try {
-    const collection = geoObject?.getSlavesByRole?.(roleId)
-    if (!collection || typeof collection.addGeoObject !== 'function') return false
+    const relation = readGeoObject(candidate, attrs)?.getSlavesByRole?.(roleId)
+    if (
+      typeof relation?.addGeoObject !== 'function' ||
+      typeof relation.removeGeoObject !== 'function'
+    ) {
+      return null
+    }
 
     const geometry = geometryFactory.createPolyline(coordinates)
     const element = factory.createGeoObject({ categoryId, geometry })
-    collection.addGeoObject(element)
-    return true
+
+    // Порядок шагов повторяет штатное рисование новой части контура в НЯК:
+    // сначала связь, потом коллекция — к перерисовке контур уже согласован.
+    return {
+      add: () => {
+        relation.addGeoObject?.(element)
+        drawn.add?.(element)
+      },
+      remove: () => {
+        // Редактор начинает следить за геометрией при добавлении в коллекцию,
+        // но при удалении сам слежку не снимает.
+        try {
+          attrs.geometryRestrictionsManager?.stopWatching?.(element.getGeometry?.())
+        } catch {
+          // Слежка — вспомогательная: её сбой не должен срывать отмену
+        }
+        relation.removeGeoObject?.(element)
+        drawn.remove?.(element)
+      },
+    }
   } catch {
-    return false
+    return null
   }
 }

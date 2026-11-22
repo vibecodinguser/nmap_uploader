@@ -33,159 +33,12 @@ import {
   pushWebpackChunk,
   type RuntimeChunk,
 } from '../nmaps_webpack_runtime_fixture'
+import { createFakeActivity, type FakeActivityParams, OPEN_LINE, RING } from './fake_editor'
 
-const RING: number[][] = [
-  [41.42, 44.84],
-  [41.421, 44.84],
-  [41.421, 44.841],
-  [41.42, 44.841],
-  [41.42, 44.84],
-]
+const STATE_ATTR = 'data-nmap-veg-cut'
 
-const OPEN_LINE: number[][] = [
-  [41.42, 44.84],
-  [41.421, 44.84],
-  [41.422, 44.84],
-  [41.423, 44.84],
-]
-
-/** Проекция-заглушка: градусы в «пиксели» с шагом 1e6. */
-const createFakeMap = () => {
-  const add = vi.fn()
-  const remove = vi.fn()
-  const map = {
-    getZoom: () => 16,
-    options: {
-      get: (name: string) =>
-        name === 'projection'
-          ? { toGlobalPixels: (coords: number[]) => [coords[0] * 1e6, coords[1] * 1e6] }
-          : undefined,
-    },
-    events: { add, remove },
-  }
-  return { map, add, remove }
-}
-
-type FakeElement = {
-  id: string
-  coordinates: number[][]
-}
-
-type FakeActivityParams = {
-  categoryId?: string
-  elementCategoryId?: string
-  elementRoleId?: string
-  elements?: FakeElement[]
-  /** Редактор без обработчика правки: инструмент не должен включаться. */
-  withoutChangeHandler?: boolean
-}
-
-const createFakeActivity = ({
-  categoryId = 'vegetation_fc',
-  elementCategoryId = 'vegetation_el',
-  elementRoleId = 'part',
-  elements = [{ id: 'el-1', coordinates: OPEN_LINE }],
-  withoutChangeHandler = false,
-}: FakeActivityParams = {}) => {
-  const { map, add, remove } = createFakeMap()
-
-  const onChangeElementCoords = vi.fn()
-  const addGeoObject = vi.fn()
-  const created: Array<Record<string, unknown>> = []
-
-  const makeElement = (element: FakeElement) => ({
-    getId: () => element.id,
-    getGeometry: () => ({
-      getType: () => 'LineString',
-      getCoordinates: () => element.coordinates,
-      isClosed: () => {
-        const first = element.coordinates[0]
-        const last = element.coordinates[element.coordinates.length - 1]
-        return first[0] === last[0] && first[1] === last[1]
-      },
-    }),
-  })
-
-  const elementObjects = elements.map(makeElement)
-
-  const collection = {
-    get: () => elementObjects,
-    findById: (id: string) => elementObjects.find((item) => item.getId() === id) ?? null,
-    addGeoObject,
-  }
-
-  const addElement = (element: FakeElement): void => {
-    elementObjects.push(makeElement(element))
-  }
-
-  const geoObject = {
-    getCategoryId: () => categoryId,
-    getId: () => 'contour-1',
-    getSlavesByRole: (role: string) => (role === elementRoleId ? collection : null),
-  }
-
-  const geoObjectFactory = {
-    createGeoObject: (params: Record<string, unknown>) => {
-      created.push(params)
-      return { ...params, getId: () => `new-${created.length}` }
-    },
-  }
-
-  const geometryFactory = {
-    createPolyline: (coordinates: number[][]) => ({ coordinates }),
-  }
-
-  const viewAttrs = {
-    map,
-    geoObject,
-    elementRoleId,
-    elementCategoryId,
-    elements: collection,
-    geoObjectFactory,
-    geometryFactory,
-    onChangeElementCoords: withoutChangeHandler ? undefined : onChangeElementCoords,
-  }
-
-  class FakeActivity {
-    public params = { geoObject, elementRoleId }
-    public started = false
-
-    start() {
-      this.started = true
-      return this
-    }
-
-    onStart() {
-      return true
-    }
-
-    stop() {
-      this.started = false
-      return this
-    }
-
-    onStop() {}
-
-    isStarted() {
-      return this.started
-    }
-
-    onViewAttrsRequest() {
-      return viewAttrs
-    }
-  }
-
-  return {
-    activity: new FakeActivity(),
-    onChangeElementCoords,
-    addGeoObject,
-    addElement,
-    created,
-    map,
-    add,
-    remove,
-  }
-}
+/** Точка на втором отрезке `OPEN_LINE`, не совпадающая с вершиной. */
+const CUT_POINT: number[] = [41.4215, 44.84]
 
 const mountToolbar = (): HTMLElement => {
   const toolbar = document.createElement('div')
@@ -203,6 +56,7 @@ beforeEach(() => {
 afterEach(() => {
   removeVegetationCutButton()
   document.body.innerHTML = ''
+  document.documentElement.removeAttribute(STATE_ATTR)
   vi.restoreAllMocks()
 })
 
@@ -449,6 +303,9 @@ describe('перехват активностей редактора', () => {
 })
 
 describe('мост к активности редактора', () => {
+  const LEFT = [OPEN_LINE[0], OPEN_LINE[1]]
+  const RIGHT = [OPEN_LINE[1], OPEN_LINE[2], OPEN_LINE[3]]
+
   it('читает категории, роль и элементы контура', () => {
     const { activity } = createFakeActivity()
     const bridge = createEditorBridge(activity)
@@ -485,7 +342,10 @@ describe('мост к активности редактора', () => {
     }
     const withWrapper = createFakeActivity()
     const originalAttrs = withWrapper.activity.onViewAttrsRequest as () => Record<string, unknown>
-    withWrapper.activity.onViewAttrsRequest = () => ({ ...originalAttrs(), map: wrapper })
+    withWrapper.activity.onViewAttrsRequest = (() => ({
+      ...originalAttrs(),
+      map: wrapper,
+    })) as never
 
     const map = createEditorBridge(withWrapper.activity)?.getMap()
     expect(map).toBe(attrs.map)
@@ -495,7 +355,7 @@ describe('мост к активности редактора', () => {
     const { activity } = createFakeActivity()
     const originalAttrs = activity.onViewAttrsRequest as () => Record<string, unknown>
     const wrapper = { getZoom: () => 16, getYMap: () => null }
-    activity.onViewAttrsRequest = () => ({ ...originalAttrs(), map: wrapper })
+    activity.onViewAttrsRequest = (() => ({ ...originalAttrs(), map: wrapper })) as never
 
     expect(createEditorBridge(activity)?.getMap()).toBe(wrapper)
   })
@@ -505,53 +365,116 @@ describe('мост к активности редактора', () => {
     expect(createEditorBridge(activity)?.canCut()).toBe(false)
   })
 
-  it('делит элемент на две части: первую правит, вторую добавляет', () => {
-    const { activity, onChangeElementCoords, addGeoObject, created } = createFakeActivity()
+  it('не считает разрез доступным без менеджера команд редактора', () => {
+    const { activity, drawnParts } = createFakeActivity({ withoutCommandManager: true })
     const bridge = createEditorBridge(activity)
-    const [left, right] = [
-      [OPEN_LINE[0], OPEN_LINE[1]],
-      [OPEN_LINE[1], OPEN_LINE[2], OPEN_LINE[3]],
-    ]
 
-    expect(bridge?.applyCut('el-1', [left, right])).toBe(true)
+    expect(bridge?.canEditElements()).toBe(true)
+    expect(bridge?.hasCommandManager()).toBe(false)
+    expect(bridge?.canCut()).toBe(false)
+    expect(bridge?.applyCut('el-1', [LEFT, RIGHT])).toBe(false)
+    expect(drawnParts()).toEqual({ 'el-1': OPEN_LINE })
+  })
 
-    expect(onChangeElementCoords).toHaveBeenCalledTimes(1)
-    const [element, coordinates] = onChangeElementCoords.mock.calls[0]
-    expect(element.getId()).toBe('el-1')
-    expect(coordinates).toEqual(left)
+  it('делит элемент на две части: обе видны в редакторе, вторая уйдёт на сервер новой', () => {
+    const { activity, drawnParts, partsToCreate } = createFakeActivity()
+    const bridge = createEditorBridge(activity)
 
-    expect(created).toHaveLength(1)
-    expect(created[0].categoryId).toBe('vegetation_el')
-    expect(created[0].geometry).toEqual({ coordinates: right })
-    expect(addGeoObject).toHaveBeenCalledTimes(1)
+    expect(bridge?.applyCut('el-1', [LEFT, RIGHT])).toBe(true)
+
+    expect(drawnParts()).toEqual({ 'el-1': LEFT, 'new-1': RIGHT })
+    expect(partsToCreate()).toEqual([{ id: 'new-1', categoryId: 'vegetation_el' }])
+  })
+
+  it('отменяет разрез одним шагом и повторяет его', () => {
+    const { activity, commands, drawnParts, partsToCreate } = createFakeActivity()
+    createEditorBridge(activity)?.applyCut('el-1', [LEFT, RIGHT])
+
+    commands.undo()
+    expect(drawnParts()).toEqual({ 'el-1': OPEN_LINE })
+    expect(partsToCreate()).toEqual([])
+    // В истории редактора разрез — одна запись, а не две.
+    expect(commands.canUndo()).toBe(false)
+
+    commands.redo()
+    expect(drawnParts()).toEqual({ 'el-1': LEFT, 'new-1': RIGHT })
+    expect(partsToCreate()).toEqual([{ id: 'new-1', categoryId: 'vegetation_el' }])
+  })
+
+  it('после отмены редактор не следит за геометрией убранной части', () => {
+    const { activity, commands, watchedGeometries } = createFakeActivity()
+    createEditorBridge(activity)?.applyCut('el-1', [LEFT, RIGHT])
+    expect(watchedGeometries()).toBe(2)
+
+    commands.undo()
+
+    expect(watchedGeometries()).toBe(1)
+  })
+
+  it('режет только что созданную часть ещё раз', () => {
+    const { activity, drawnParts, partsToCreate } = createFakeActivity()
+    const bridge = createEditorBridge(activity)
+    bridge?.applyCut('el-1', [LEFT, RIGHT])
+
+    const middle = [OPEN_LINE[1], OPEN_LINE[2]]
+    const tail = [OPEN_LINE[2], OPEN_LINE[3]]
+    expect(bridge?.applyCut('new-1', [middle, tail])).toBe(true)
+
+    expect(drawnParts()).toEqual({ 'el-1': LEFT, 'new-1': middle, 'new-2': tail })
+    expect(partsToCreate().map((part) => part.id)).toEqual(['new-1', 'new-2'])
   })
 
   it('размыкает кольцо одной частью и не создаёт новый элемент', () => {
-    const { activity, onChangeElementCoords, addGeoObject } = createFakeActivity({
+    const { activity, commands, drawnParts, partsToCreate } = createFakeActivity({
       elements: [{ id: 'ring', coordinates: RING }],
     })
-    const bridge = createEditorBridge(activity)
     const opened = [[41.4205, 44.84], ...RING]
 
-    expect(bridge?.applyCut('ring', [opened])).toBe(true)
+    expect(createEditorBridge(activity)?.applyCut('ring', [opened])).toBe(true)
+    expect(drawnParts()).toEqual({ ring: opened })
+    expect(partsToCreate()).toEqual([])
 
-    expect(onChangeElementCoords).toHaveBeenCalledTimes(1)
-    expect(addGeoObject).not.toHaveBeenCalled()
+    commands.undo()
+    expect(drawnParts()).toEqual({ ring: RING })
+  })
+
+  it('не трогает линию, если вторую часть создать нельзя', () => {
+    const { activity, commands, drawnParts } = createFakeActivity({ brokenFactory: true })
+
+    expect(createEditorBridge(activity)?.applyCut('el-1', [LEFT, RIGHT])).toBe(false)
+
+    expect(drawnParts()).toEqual({ 'el-1': OPEN_LINE })
+    expect(commands.canUndo()).toBe(false)
+  })
+
+  it('не перехватывает правки редактора после разреза', () => {
+    const { activity, commands, onChangeElementCoords, drawnParts } = createFakeActivity()
+    createEditorBridge(activity)?.applyCut('el-1', [LEFT, RIGHT])
+
+    // Пользователь двигает вершину сам: правка идёт обычным путём редактора.
+    const attrs = activity.onViewAttrsRequest()
+    const moved = [OPEN_LINE[0], [41.4205, 44.8401]]
+    onChangeElementCoords(attrs.elements.get()[0], moved)
+
+    expect(drawnParts()['el-1']).toEqual(moved)
+    commands.undo()
+    expect(drawnParts()['el-1']).toEqual(LEFT)
   })
 
   it('отказывает, если элемента с таким id нет', () => {
-    const { activity, onChangeElementCoords } = createFakeActivity()
+    const { activity, drawnParts } = createFakeActivity()
     const bridge = createEditorBridge(activity)
 
     expect(bridge?.applyCut('missing', [OPEN_LINE])).toBe(false)
-    expect(onChangeElementCoords).not.toHaveBeenCalled()
+    expect(drawnParts()).toEqual({ 'el-1': OPEN_LINE })
   })
 
   it('не пропускает больше двух частей', () => {
-    const { activity } = createFakeActivity()
+    const { activity, drawnParts } = createFakeActivity()
     const bridge = createEditorBridge(activity)
 
     expect(bridge?.applyCut('el-1', [OPEN_LINE, OPEN_LINE, OPEN_LINE])).toBe(false)
+    expect(drawnParts()).toEqual({ 'el-1': OPEN_LINE })
   })
 })
 
@@ -567,6 +490,9 @@ describe('режим разреза', () => {
     })
     return { controller, ...fake }
   }
+
+  const clickAt = (controller: VegetationCutController, point: number[]) =>
+    controller.handleMapClick([point[0] * 1e6, point[1] * 1e6])
 
   it('показывает кнопку для линейной растительности', () => {
     mountToolbar()
@@ -595,73 +521,115 @@ describe('режим разреза', () => {
     expect(controller.attachActivity(activity)).toBe(false)
   })
 
+  it('не показывает кнопку, если у редактора не нашлось менеджера команд', () => {
+    // Без него разрез нельзя отменить целиком: лучше без кнопки, чем с
+    // наложением линий после Ctrl+Z.
+    mountToolbar()
+    const { controller, activity } = createController({
+      activity: { withoutCommandManager: true },
+    })
+
+    expect(controller.attachActivity(activity)).toBe(false)
+    expect(getVegetationCutButton()).toBeNull()
+    expect(document.documentElement.getAttribute(STATE_ATTR)).toBe('unsupported:commands')
+  })
+
   it('делит линию в месте клика', () => {
     mountToolbar()
-    const { controller, activity, onChangeElementCoords, addGeoObject } = createController()
+    const { controller, activity, drawnParts, partsToCreate } = createController()
     controller.attachActivity(activity)
     controller.toggle()
 
-    const outcome = controller.handleMapClick([41.4215 * 1e6, 44.84 * 1e6])
+    expect(clickAt(controller, CUT_POINT)).toBe('cut')
 
-    expect(outcome).toBe('cut')
-    expect(onChangeElementCoords).toHaveBeenCalledTimes(1)
-    expect(addGeoObject).toHaveBeenCalledTimes(1)
+    const parts = drawnParts()
+    expect(Object.keys(parts)).toEqual(['el-1', 'new-1'])
+    expect(parts['el-1'][0]).toEqual(OPEN_LINE[0])
+    expect(parts['el-1'].at(-1)?.[0]).toBeCloseTo(CUT_POINT[0], 6)
+    // Части стыкуются в точке разреза без зазора.
+    expect(parts['new-1'][0]).toEqual(parts['el-1'].at(-1))
+    expect(parts['new-1'].at(-1)).toEqual(OPEN_LINE[3])
+    expect(partsToCreate()).toEqual([{ id: 'new-1', categoryId: 'vegetation_el' }])
+  })
 
-    const [element, left] = onChangeElementCoords.mock.calls[0]
-    expect(element.getId()).toBe('el-1')
-    expect(left[0]).toEqual(OPEN_LINE[0])
-    expect(left[left.length - 1][0]).toBeCloseTo(41.4215, 6)
+  it('отменяет разрез одним Ctrl+Z редактора', () => {
+    mountToolbar()
+    const { controller, activity, commands, drawnParts, partsToCreate } = createController()
+    controller.attachActivity(activity)
+    controller.toggle()
+    clickAt(controller, CUT_POINT)
+
+    commands.undo()
+
+    expect(drawnParts()).toEqual({ 'el-1': OPEN_LINE })
+    expect(partsToCreate()).toEqual([])
+    expect(commands.canUndo()).toBe(false)
+  })
+
+  it('режет подряд, не выключая режим', () => {
+    mountToolbar()
+    const { controller, activity, drawnParts } = createController()
+    controller.attachActivity(activity)
+    controller.toggle()
+
+    expect(clickAt(controller, [41.4205, 44.84])).toBe('cut')
+    expect(clickAt(controller, [41.4225, 44.84])).toBe('cut')
+
+    expect(Object.keys(drawnParts())).toEqual(['el-1', 'new-1', 'new-2'])
   })
 
   it('размыкает кольцо одной правкой, не добавляя элемент', () => {
     mountToolbar()
-    const { controller, activity, onChangeElementCoords, addGeoObject } = createController({
+    const { controller, activity, drawnParts, partsToCreate } = createController({
       activity: { elements: [{ id: 'ring', coordinates: RING }] },
     })
     controller.attachActivity(activity)
     controller.toggle()
 
-    const outcome = controller.handleMapClick([41.4205 * 1e6, 44.84 * 1e6])
+    expect(clickAt(controller, [41.4205, 44.84])).toBe('cut')
 
-    expect(outcome).toBe('cut')
-    expect(onChangeElementCoords).toHaveBeenCalledTimes(1)
-    expect(addGeoObject).not.toHaveBeenCalled()
+    // Кольцо остаётся одной линией, которая начинается и кончается в точке разреза.
+    const parts = drawnParts()
+    expect(Object.keys(parts)).toEqual(['ring'])
+    expect(parts.ring).toHaveLength(RING.length + 1)
+    expect(parts.ring[0][0]).toBeCloseTo(41.4205, 6)
+    expect(parts.ring.at(-1)).toEqual(parts.ring[0])
+    expect(partsToCreate()).toEqual([])
   })
 
   it('игнорирует клик мимо линии', () => {
     mountToolbar()
     const onMessage = vi.fn()
-    const { controller, activity } = createController({ onMessage })
+    const { controller, activity, drawnParts } = createController({ onMessage })
     controller.attachActivity(activity)
     controller.toggle()
 
-    const outcome = controller.handleMapClick([41.4205 * 1e6, 44.9 * 1e6])
+    expect(clickAt(controller, [41.4205, 44.9])).toBe('miss')
 
-    expect(outcome).toBe('miss')
+    expect(drawnParts()).toEqual({ 'el-1': OPEN_LINE })
     expect(onMessage).not.toHaveBeenCalled()
   })
 
   it('не режет у самого конца линии', () => {
     mountToolbar()
     const onMessage = vi.fn()
-    const { controller, activity, onChangeElementCoords } = createController({ onMessage })
+    const { controller, activity, drawnParts } = createController({ onMessage })
     controller.attachActivity(activity)
     controller.toggle()
 
-    const outcome = controller.handleMapClick([41.42 * 1e6, 44.84 * 1e6])
+    expect(clickAt(controller, OPEN_LINE[0])).toBe('too-short')
 
-    expect(outcome).toBe('too-short')
-    expect(onChangeElementCoords).not.toHaveBeenCalled()
+    expect(drawnParts()).toEqual({ 'el-1': OPEN_LINE })
     expect(onMessage).toHaveBeenCalledWith('Слишком короткая часть — разрез не сделан')
   })
 
   it('не режет, пока режим выключен', () => {
     mountToolbar()
-    const { controller, activity, onChangeElementCoords } = createController()
+    const { controller, activity, drawnParts } = createController()
     controller.attachActivity(activity)
 
-    expect(controller.handleMapClick([41.4215 * 1e6, 44.84 * 1e6])).toBe('inactive')
-    expect(onChangeElementCoords).not.toHaveBeenCalled()
+    expect(clickAt(controller, CUT_POINT)).toBe('inactive')
+    expect(drawnParts()).toEqual({ 'el-1': OPEN_LINE })
   })
 
   it('подписывается на клики карты на время режима и снимает подписку', () => {
@@ -711,10 +679,10 @@ describe('режим разреза', () => {
     const { controller, activity } = createController()
     controller.attachActivity(activity)
 
-    expect(document.documentElement.getAttribute('data-nmap-veg-cut')).toBe('ready:vegetation_el:1')
+    expect(document.documentElement.getAttribute(STATE_ATTR)).toBe('ready:vegetation_el:1')
 
     controller.detachActivity(activity)
-    expect(document.documentElement.getAttribute('data-nmap-veg-cut')).toBe('idle')
+    expect(document.documentElement.getAttribute(STATE_ATTR)).toBe('idle')
   })
 
   it('показывает, сколько классов активностей перехвачено', () => {
@@ -731,7 +699,7 @@ describe('режим разреза', () => {
     controller.start()
 
     const states = setAttribute.mock.calls
-      .filter(([name]) => name === 'data-nmap-veg-cut')
+      .filter(([name]) => name === STATE_ATTR)
       .map(([, value]) => value)
 
     expect(states).toContain('hooked:0')
@@ -745,7 +713,7 @@ describe('режим разреза', () => {
     const { controller, activity } = createController({ activity: { elements: [] } })
 
     expect(controller.attachActivity(activity)).toBe(false)
-    expect(document.documentElement.getAttribute('data-nmap-veg-cut')).toBe('wait:vegetation_el')
+    expect(document.documentElement.getAttribute(STATE_ATTR)).toBe('wait:vegetation_el')
   })
 
   it('показывает кнопку, когда элементы контура догрузились позже', async () => {
@@ -764,7 +732,7 @@ describe('режим разреза', () => {
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(getVegetationCutButton()).not.toBeNull()
-    expect(document.documentElement.getAttribute('data-nmap-veg-cut')).toBe('ready:vegetation_el:1')
+    expect(document.documentElement.getAttribute(STATE_ATTR)).toBe('ready:vegetation_el:1')
 
     stop()
   })
@@ -781,6 +749,6 @@ describe('режим разреза', () => {
     expect(controller.attachActivity(master)).toBe(true)
 
     expect(getVegetationCutButton()).not.toBeNull()
-    expect(document.documentElement.getAttribute('data-nmap-veg-cut')).toBe('ready:vegetation_el:1')
+    expect(document.documentElement.getAttribute(STATE_ATTR)).toBe('ready:vegetation_el:1')
   })
 })
