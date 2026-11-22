@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import { observeWebpackModules } from '@/lib/nmaps_webpack_module_observer'
+import {
+  installWebpackRuntime,
+  pushWebpackChunk,
+  type RuntimeFactory,
+} from './nmaps_webpack_runtime_fixture'
 
 type Factory = (
   module: { exports: Record<string, unknown> },
@@ -90,5 +95,81 @@ describe('observeWebpackModules', () => {
 
     expect(runtimePush).toHaveBeenCalledOnce()
     expect(seen).not.toHaveBeenCalled()
+  })
+})
+
+describe('несколько наблюдателей на одной странице', () => {
+  const geometryModule: RuntimeFactory = (_module, exports) => {
+    exports.A = class GeometryFactory {}
+  }
+
+  /** Страница грузит `app.js`, затем чанк с модулем, затем исполняет модуль. */
+  const loadPage = (globalObject: Record<string, unknown>): Record<string, unknown> => {
+    const require = installWebpackRuntime(globalObject)
+    pushWebpackChunk(globalObject, [[265], { 48590: geometryModule }])
+    return require(48590)
+  }
+
+  it('оба скрипта видят модуль, если встали до загрузки НЯК', () => {
+    // Скрипты расширения собраны раздельно и ставят наблюдатель по очереди
+    // на `document_start`; порядок задаёт манифест.
+    const globalObject: Record<string, unknown> = {}
+    const first = vi.fn()
+    const second = vi.fn()
+    observeWebpackModules(globalObject, 'webpackChunknmaps', first)
+    observeWebpackModules(globalObject, 'webpackChunknmaps', second)
+
+    const exports = loadPage(globalObject)
+
+    expect(first).toHaveBeenCalledExactlyOnceWith(exports, '48590')
+    expect(second).toHaveBeenCalledExactlyOnceWith(exports, '48590')
+  })
+
+  it('снятие одного наблюдателя не глушит второй', () => {
+    const globalObject: Record<string, unknown> = {}
+    const first = vi.fn()
+    const second = vi.fn()
+    const restoreFirst = observeWebpackModules(globalObject, 'webpackChunknmaps', first)
+    observeWebpackModules(globalObject, 'webpackChunknmaps', second)
+
+    restoreFirst()
+    const exports = loadPage(globalObject)
+
+    expect(first).not.toHaveBeenCalled()
+    expect(second).toHaveBeenCalledExactlyOnceWith(exports, '48590')
+  })
+
+  it('наблюдатель, вставший после снятия всех прежних, видит модуль один раз', () => {
+    const globalObject: Record<string, unknown> = {}
+    const gone = vi.fn()
+    const late = vi.fn()
+    observeWebpackModules(globalObject, 'webpackChunknmaps', gone)()
+    // Чанк лёг в очередь до рантайма: его фабрики рантайм заберёт позже.
+    pushWebpackChunk(globalObject, [[265], { 48590: geometryModule }])
+    observeWebpackModules(globalObject, 'webpackChunknmaps', late)
+
+    const exports = installWebpackRuntime(globalObject)(48590)
+
+    expect(gone).not.toHaveBeenCalled()
+    expect(late).toHaveBeenCalledExactlyOnceWith(exports, '48590')
+  })
+
+  it('сбой одного наблюдателя не ломает модуль страницы и второй наблюдатель', () => {
+    const globalObject: Record<string, unknown> = {}
+    const second = vi.fn()
+    observeWebpackModules(globalObject, 'webpackChunknmaps', () => {
+      throw new Error('Extension context invalidated')
+    })
+    observeWebpackModules(globalObject, 'webpackChunknmaps', second)
+
+    expect(() => loadPage(globalObject)).not.toThrow()
+    expect(second).toHaveBeenCalledOnce()
+  })
+
+  it('не оставляет перечислимых следов в очереди чанков', () => {
+    const globalObject: Record<string, unknown> = {}
+    observeWebpackModules(globalObject, 'webpackChunknmaps', vi.fn())
+
+    expect(Object.keys(globalObject.webpackChunknmaps as object)).toEqual([])
   })
 })
