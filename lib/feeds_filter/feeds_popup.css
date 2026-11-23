@@ -1,5 +1,5 @@
-#nmap-uploader-feeds-filter-popup,
-    #nmap-uploader-feeds-action-filter-popup,
+#yamapper-feeds-filter-popup,
+    #yamapper-feeds-action-filter-popup,
     .nmap-feeds-status-popup,
     .nmap-feeds-action-popup {
       position: fixed !important;
@@ -19,24 +19,24 @@
       box-sizing: border-box !important;
       pointer-events: auto !important;
     }
-    #nmap-uploader-feeds-filter-popup.nk-popup_visible,
-    #nmap-uploader-feeds-action-filter-popup.nk-popup_visible,
+    #yamapper-feeds-filter-popup.nk-popup_visible,
+    #yamapper-feeds-action-filter-popup.nk-popup_visible,
     .nmap-feeds-status-popup.nk-popup_visible,
     .nmap-feeds-action-popup.nk-popup_visible {
       display: block !important;
       visibility: visible !important;
       opacity: 1 !important;
     }
-    #nmap-uploader-feeds-filter-popup .nk-popup__content,
-    #nmap-uploader-feeds-action-filter-popup .nk-popup__content,
+    #yamapper-feeds-filter-popup .nk-popup__content,
+    #yamapper-feeds-action-filter-popup .nk-popup__content,
     .nmap-feeds-status-popup .nk-popup__content,
     .nmap-feeds-action-popup .nk-popup__content {
       padding: 4px 0 !important;
       background: transparent !important;
       border-radius: var(--nmap-radius-sm) !important;
     }
-    #nmap-uploader-feeds-filter-popup .nk-menu,
-    #nmap-uploader-feeds-action-filter-popup .nk-menu,
+    #yamapper-feeds-filter-popup .nk-menu,
+    #yamapper-feeds-action-filter-popup .nk-menu,
     .nmap-feeds-status-popup .nk-menu,
     .nmap-feeds-action-popup .nk-menu {
       background: var(--nmap-popup-bg) !important;
@@ -46,10 +46,10 @@
       padding: 0 !important;
       margin: 0 !important;
     }
-    #nmap-uploader-feeds-filter-popup .nk-menu-item,
-    #nmap-uploader-feeds-action-filter-popup .nk-menu-item,
-    #nmap-uploader-feeds-filter-popup .nk-menu__item,
-    #nmap-uploader-feeds-action-filter-popup .nk-menu__item,
+    #yamapper-feeds-filter-popup .nk-menu-item,
+    #yamapper-feeds-action-filter-popup .nk-menu-item,
+    #yamapper-feeds-filter-popup .nk-menu__item,
+    #yamapper-feeds-action-filter-popup .nk-menu__item,
     .nmap-feeds-status-popup .nk-menu-item,
     .nmap-feeds-action-popup .nk-menu-item,
     .nmap-feeds-status-popup .nk-menu__item,
@@ -68,20 +68,20 @@
       white-space: nowrap !important;
       transition: background-color 0.1s ease, color 0.1s ease !important;
     }
-    #nmap-uploader-feeds-filter-popup .nk-menu-item::before,
-    #nmap-uploader-feeds-action-filter-popup .nk-menu-item::before,
-    #nmap-uploader-feeds-filter-popup .nk-menu__item::before,
-    #nmap-uploader-feeds-action-filter-popup .nk-menu__item::before,
+    #yamapper-feeds-filter-popup .nk-menu-item::before,
+    #yamapper-feeds-action-filter-popup .nk-menu-item::before,
+    #yamapper-feeds-filter-popup .nk-menu__item::before,
+    #yamapper-feeds-action-filter-popup .nk-menu__item::before,
     .nmap-feeds-status-popup .nk-menu-item::before,
     .nmap-feeds-action-popup .nk-menu-item::before,
     .nmap-feeds-status-popup .nk-menu__item::before,
     .nmap-feeds-action-popup .nk-menu__item::before {
       display: none !important;
     }
-    #nmap-uploader-feeds-filter-popup .nk-menu-item:hover,
-    #nmap-uploader-feeds-action-filter-popup .nk-menu-item:hover,
-    #nmap-uploader-feeds-filter-popup .nk-menu__item:hover,
-    #nmap-uploader-feeds-action-filter-popup .nk-menu__item:hover,
+    #yamapper-feeds-filter-popup .nk-menu-item:hover,
+    #yamapper-feeds-action-filter-popup .nk-menu-item:hover,
+    #yamapper-feeds-filter-popup .nk-menu__item:hover,
+    #yamapper-feeds-action-filter-popup .nk-menu__item:hover,
     .nmap-feeds-status-popup .nk-menu-item:hover,
     .nmap-feeds-action-popup .nk-menu-item:hover,
     .nmap-feeds-status-popup .nk-menu__item:hover,
@@ -91,10 +91,10 @@
       background-color: var(--nmap-popup-hover-bg) !important;
       color: var(--nmap-popup-text-strong) !important;
     }
-    #nmap-uploader-feeds-filter-popup .nk-menu-item_checked,
-    #nmap-uploader-feeds-action-filter-popup .nk-menu-item_checked,
-    #nmap-uploader-feeds-filter-popup .nk-menu__item_checked,
-    #nmap-uploader-feeds-action-filter-popup .nk-menu__item_checked,
+    #yamapper-feeds-filter-popup .nk-menu-item_checked,
+    #yamapper-feeds-action-filter-popup .nk-menu-item_checked,
+    #yamapper-feeds-filter-popup .nk-menu__item_checked,
+    #yamapper-feeds-action-filter-popup .nk-menu__item_checked,
     .nmap-feeds-status-popup .nk-menu-item_checked,
     .nmap-feeds-action-popup .nk-menu-item_checked,
     .nmap-feeds-status-popup .nk-menu__item_checked,
@@ -103,10 +103,10 @@
       color: var(--nmap-popup-text-strong) !important;
       font-weight: 500 !important;
     }
-    #nmap-uploader-feeds-filter-popup .nk-menu__text,
-    #nmap-uploader-feeds-action-filter-popup .nk-menu__text,
-    #nmap-uploader-feeds-filter-popup .nk-menu-item__text,
-    #nmap-uploader-feeds-action-filter-popup .nk-menu-item__text,
+    #yamapper-feeds-filter-popup .nk-menu__text,
+    #yamapper-feeds-action-filter-popup .nk-menu__text,
+    #yamapper-feeds-filter-popup .nk-menu-item__text,
+    #yamapper-feeds-action-filter-popup .nk-menu-item__text,
     .nmap-feeds-status-popup .nk-menu__text,
     .nmap-feeds-action-popup .nk-menu__text,
     .nmap-feeds-status-popup .nk-menu-item__text,
@@ -160,7 +160,7 @@
     }
 
     .nmap-feeds-period-section {
-      border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+      border-top: 1px solid var(--nmap-popup-separator) !important;
       margin-top: 4px !important;
       padding: 8px 14px !important;
       box-sizing: border-box !important;
@@ -188,7 +188,7 @@
       flex: 1 1 0 !important;
       padding: 4px 0 !important;
       border-radius: var(--nmap-radius-sm) !important;
-      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+      border: 1px solid var(--nmap-popup-border) !important;
       background: transparent !important;
       color: var(--nmap-popup-text) !important;
       font-size: 12px !important;
@@ -201,7 +201,7 @@
     }
     .nmap-feeds-period-btn:hover {
       background: var(--nmap-popup-hover-bg) !important;
-      border-color: rgba(255, 255, 255, 0.4) !important;
+      border-color: var(--nmap-accent-strong) !important;
       color: var(--nmap-popup-text-strong) !important;
     }
     .nmap-feeds-period-btn.nmap-feeds-period-btn_active {

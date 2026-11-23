@@ -119,6 +119,8 @@ const HOST_SELECTOR_ALLOWLIST = [
   ':root',
   '.nk-page',
   '.nk-page_color-scheme_dark',
+  '.nk-page_color-scheme_light',
+  '.nk-page_color-scheme_auto',
   '.nk-user-events-view__filters',
   'ymaps',
   '.nk-app-view',
@@ -136,8 +138,11 @@ const isAllowedHostSelector = (compound: string): boolean =>
 
 const isNamespaced = (compound: string): boolean =>
   compound.startsWith('#nmap-') ||
+  compound.startsWith('#yamapper-') ||
   compound.startsWith('.nmap-') ||
+  compound.startsWith('.yamapper-') ||
   compound.startsWith('html.nmap-') ||
+  compound.startsWith('html.yamapper-') ||
   compound.startsWith('html[data-nmap-')
 
 describe('инжектируемые стили', () => {
@@ -154,11 +159,11 @@ describe('инжектируемые стили', () => {
   }
 
   it('go-to включает стили раздельного вида', () => {
-    expect(GO_TO_STYLES).toContain('.nmap-uploader-split {')
+    expect(GO_TO_STYLES).toContain('.yamapper-split {')
   })
 
   it('скрытие карточек использует общий класс ленты', () => {
-    expect(FEED_CARD_HIDDEN_STYLES).toContain('.nmap-uploader-feed-event-hidden')
+    expect(FEED_CARD_HIDDEN_STYLES).toContain('.yamapper-feed-event-hidden')
   })
 
   it('скрытие баннера привязано к data-атрибуту', () => {
@@ -176,7 +181,7 @@ describe('инжектируемые стили', () => {
       ),
     )
     // Значения этих переменных выставляет JS по вычисленным стилям хоста.
-    const runtimePrefixes = ['--nmap-feeds-select-', '--nmap-uploader-']
+    const runtimePrefixes = ['--nmap-feeds-select-', '--yamapper-']
 
     const used = new Set(
       Object.values(SHEETS).flatMap(
@@ -214,7 +219,8 @@ describe('инжектируемые стили', () => {
         if (!selector.startsWith('.nk-user-events-view__filters')) continue
         // Либо ряд перестраивается только при нашем контроле (:has),
         // либо правило целится в наш элемент внутри ряда.
-        const scoped = selector.includes(':has(') || selector.includes('nmap-')
+        const scoped =
+          selector.includes(':has(') || selector.includes('nmap-') || selector.includes('yamapper-')
         if (!scoped) offenders.push(`${name}: ${selector}`)
       }
     }

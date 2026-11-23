@@ -42,4 +42,41 @@
   --nmap-popup-text-strong: #ffffff;
   --nmap-popup-hover-bg: #4d4d4d;
   --nmap-popup-checked-bg: #444444;
+  --nmap-popup-border: rgb(255 255 255 / 10%);
+  --nmap-popup-separator: rgb(255 255 255 / 10%);
+}
+
+/*
+ * Светлая тема редактора: попап ленты и блок периода следуют за ней, как и
+ * остальные наши панели. Значения — из живого замера редактора
+ * (`docs/checklists/panel-parity.md`): фон `#ffffff`, текст `#000000`,
+ * hover `#f2f2f2`, разделители `#e6e6e6`.
+ */
+.nk-page_color-scheme_light {
+  --nmap-popup-bg: #ffffff;
+  --nmap-popup-text: #000000;
+  --nmap-popup-text-strong: #000000;
+  --nmap-popup-hover-bg: #f2f2f2;
+  --nmap-popup-checked-bg: #e6e6e6;
+  --nmap-popup-border: rgb(0 0 0 / 15%);
+  --nmap-popup-separator: #e6e6e6;
+}
+
+/*
+ * Редактор в режиме «как в системе» не ставит класс темы, поэтому светлую
+ * палитру для него включаем по медиазапросу — как это делает хост. Явный
+ * класс тёмной темы перекрывает правило: оно ниже по порядку, а
+ * `.nk-page_color-scheme_dark` специфичнее голого `.nk-page`.
+ */
+@media (prefers-color-scheme: light) {
+  .nk-page_color-scheme_auto,
+  .nk-page:not(.nk-page_color-scheme_dark) {
+    --nmap-popup-bg: #ffffff;
+    --nmap-popup-text: #000000;
+    --nmap-popup-text-strong: #000000;
+    --nmap-popup-hover-bg: #f2f2f2;
+    --nmap-popup-checked-bg: #e6e6e6;
+    --nmap-popup-border: rgb(0 0 0 / 15%);
+    --nmap-popup-separator: #e6e6e6;
+  }
 }
