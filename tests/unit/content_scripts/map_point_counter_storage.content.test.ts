@@ -31,7 +31,7 @@ describe('map-point-counter-storage.content', () => {
 
     await vi.waitFor(() => {
       expect(postMessageSpy).toHaveBeenCalledWith(
-        { type: POINT_COUNTER_STATE_MSG, enabled: true },
+        { type: POINT_COUNTER_STATE_MSG, enabled: false },
         '*',
       )
     })

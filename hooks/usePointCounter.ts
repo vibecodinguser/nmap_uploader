@@ -7,7 +7,9 @@ import {
 } from '@/lib/point_counter'
 
 export const usePointCounter = () => {
-  const [isEnabled, setIsEnabledState] = useState(true)
+  // До чтения хранилища считаем счётчик выключенным: иначе при старте
+  // переключатель мигал бы включённым, хотя пользователь его не включал.
+  const [isEnabled, setIsEnabledState] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
 
   useEffect(function loadStoredEnabledEffect() {

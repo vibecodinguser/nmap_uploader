@@ -128,7 +128,7 @@ export const SettingsTab = ({
   const isObjectTrackerLoaded = objectTracker?.isLoaded ?? true
   const isObjectTrackerDisabled = !isObjectTrackerLoaded
 
-  const isPointCounterEnabled = pointCounter?.isEnabled ?? true
+  const isPointCounterEnabled = pointCounter?.isEnabled ?? false
   const isPointCounterLoaded = pointCounter?.isLoaded ?? true
   const isPointCounterDisabled = !isPointCounterLoaded
 

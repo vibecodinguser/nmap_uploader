@@ -4,6 +4,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import mapPointCounterScript from '@/entrypoints/map-point-counter.content'
 import { createContentScriptContext } from '@/tests/setup/content_script_context'
 
+const setCounterEnabled = (enabled: boolean): void => {
+  window.dispatchEvent(
+    new MessageEvent('message', {
+      data: { type: 'nmap:point-counter-state', enabled },
+      source: window,
+    }),
+  )
+}
+
 describe('map-point-counter.content', () => {
   let ctx: ReturnType<typeof createContentScriptContext>
 
@@ -27,6 +36,27 @@ describe('map-point-counter.content', () => {
     expect(wrapper?.style.display).toBe('none')
   })
 
+  it('по умолчанию не показывает счётчик, пока не пришло включение', async () => {
+    mapPointCounterScript.main?.(ctx)
+
+    const wrapper = document.getElementById('nmap-point-counter-wrapper')
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    path.setAttribute('d', 'M0 0')
+    svg.appendChild(path)
+    document.body.appendChild(svg)
+
+    svg.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    await new Promise((r) => setTimeout(r, 0))
+
+    path.setAttribute('d', 'M0 0 L10 10 L20 20')
+    await new Promise((r) => setTimeout(r, 0))
+
+    // Хранилище ещё не ответило — значит, пользователь счётчик не включал.
+    expect(wrapper?.style.display).toBe('none')
+  })
+
   it('скрывает счетчик для зданий (если категория выделена)', async () => {
     // Имитируем, что выбрана категория Здание
     const sidebar = document.createElement('div')
@@ -39,6 +69,7 @@ describe('map-point-counter.content', () => {
     document.body.appendChild(sidebar)
 
     mapPointCounterScript.main?.(ctx)
+    setCounterEnabled(true)
 
     const wrapper = document.getElementById('nmap-point-counter-wrapper')
 
@@ -64,6 +95,7 @@ describe('map-point-counter.content', () => {
 
   it('показывает счетчик для обычных контуров (лимит 500)', async () => {
     mapPointCounterScript.main?.(ctx)
+    setCounterEnabled(true)
 
     const wrapper = document.getElementById('nmap-point-counter-wrapper')
     const textSpan = wrapper?.querySelector('span')
@@ -95,6 +127,7 @@ describe('map-point-counter.content', () => {
 
   it('скрывает и отключает счетчик при получении POINT_COUNTER_STATE_MSG с enabled: false', async () => {
     mapPointCounterScript.main?.(ctx)
+    setCounterEnabled(true)
 
     const wrapper = document.getElementById('nmap-point-counter-wrapper')
 

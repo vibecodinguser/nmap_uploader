@@ -16,9 +16,9 @@ describe('point_counter storage', () => {
     await resetBrowserMocks()
   })
 
-  it('по умолчанию возвращает true, если значение не установлено', async () => {
+  it('по умолчанию возвращает false, если значение не установлено', async () => {
     const enabled = await getStoredPointCounterEnabled()
-    expect(enabled).toBe(true)
+    expect(enabled).toBe(false)
   })
 
   it('сохраняет и считывает значение false', async () => {

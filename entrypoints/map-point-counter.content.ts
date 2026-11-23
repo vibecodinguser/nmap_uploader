@@ -27,7 +27,9 @@ export default defineContentScript({
     ui.ensureCreated()
 
     let lastMapInteractionTime = 0
-    let isCounterEnabled = true
+    // До ответа из хранилища счётчик выключен: по умолчанию инструмент не
+    // активен, а включённое состояние придёт отдельным сообщением.
+    let isCounterEnabled = false
     let svgObserver: SvgPointCounterObserver | null = null
     let multipartCounter: MultipartEditorCounter | null = null
 

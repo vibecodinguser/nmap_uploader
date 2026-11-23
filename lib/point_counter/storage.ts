@@ -16,12 +16,13 @@ export type PointCounterRequestMessage = {
 
 /**
  * Возвращает флаг включения счетчика вершин из локального хранилища.
- * По умолчанию счетчик активен (true).
+ * По умолчанию счетчик выключен (false): пока пользователь не включил его
+ * в настройках, инструмент не вмешивается в редактор.
  */
 export const getStoredPointCounterEnabled = async (): Promise<boolean> => {
   const stored = await browser.storage.local.get(POINT_COUNTER_ENABLED_STORAGE_KEY)
   const value = stored[POINT_COUNTER_ENABLED_STORAGE_KEY]
-  return value === undefined ? true : Boolean(value)
+  return value === undefined ? false : Boolean(value)
 }
 
 /**

@@ -15,7 +15,7 @@ describe('usePointCounter', () => {
     await resetBrowserMocks()
   })
 
-  it('по умолчанию загружается со значением true', async () => {
+  it('по умолчанию загружается выключенным', async () => {
     const { result } = renderHook(() => usePointCounter())
 
     await act(async () => {
@@ -23,7 +23,7 @@ describe('usePointCounter', () => {
     })
 
     expect(result.current.isLoaded).toBe(true)
-    expect(result.current.isEnabled).toBe(true)
+    expect(result.current.isEnabled).toBe(false)
   })
 
   it('загружает сохраненное значение false', async () => {
