@@ -83,8 +83,8 @@ export const launchYandexAuth = async ({
       let firefoxNote = ''
       if (redirectUri === FIREFOX_OAUTH_REDIRECT_URI) {
         firefoxNote =
-          ` (Firefox: SHA1 от ${FIREFOX_EXTENSION_ID}; ` +
-          'не nmap-uploader_local.dev и не 127.0.0.1/mozoauth2…)'
+          ` (Firefox: адрес построен из gecko.id ${FIREFOX_EXTENSION_ID}; ` +
+          'если он не совпадает с Callback URL, меняли gecko.id без перерегистрации)'
       }
       const hint =
         `Авторизация не завершена. Проверьте: 1) Redirect URI в oauth.yandex.ru = ${redirectUri}${firefoxNote}` +
