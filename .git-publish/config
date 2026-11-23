@@ -1,0 +1,14 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+	worktree = /Users/marinanton/Documents/Projects/yamapper/docs-site/.vitepress/dist
+	ignorecase = true
+	precomposeunicode = true
+[user]
+	name = marinanton
+	email = vibecodinguser@gmail.com
+[remote "origin"]
+	url = https://github.com/vibecodinguser/yamapper.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
