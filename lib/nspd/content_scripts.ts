@@ -15,8 +15,8 @@ import {
   type NspdContentScriptDescriptor,
 } from '@/lib/nspd/content_script_descriptors'
 import {
-  getStoredNspdButtonEnabled,
   NSPD_BUTTON_ENABLED_STORAGE_KEY,
+  readStoredNspdButtonEnabled,
   setStoredNspdButtonEnabled,
 } from '@/lib/nspd/nspd_button'
 
@@ -167,14 +167,17 @@ export const whenNspdSyncIdle = (): Promise<void> => syncQueue
 /**
  * Синхронизирует скрипты с сохранённой настройкой.
  *
- * Если настройка включена, а доступа к домену нет (пользователь отозвал его или браузер
- * сбросил разрешение при обновлении), функция выключается — иначе тумблер обещал бы
- * работающую кнопку, которой нет. При недоступном API состояние не трогаем: иначе
- * сбой чтения разрешений молча выключал бы функцию.
+ * Кнопка по умолчанию включена, но доступ к домену необязательный и по себе не
+ * выдаётся. Поэтому при явно сохранённой настройке пропажа доступа её выключает
+ * (иначе тумблер обещал бы работающую кнопку), а при отсутствии сохранённого
+ * значения кнопка остаётся включённой — скрипты просто не регистрируются, пока
+ * пользователь не разрешит доступ. При недоступном API состояние не трогаем:
+ * иначе сбой чтения разрешений молча менял бы настройку.
  */
 export const syncNspdContentScriptsFromStorage = (): Promise<void> =>
   enqueueSync(async () => {
-    const enabled = await getStoredNspdButtonEnabled()
+    const stored = await readStoredNspdButtonEnabled()
+    const enabled = stored ?? true
     if (!enabled) {
       await unregisterNspdContentScripts()
       return
@@ -185,10 +188,14 @@ export const syncNspdContentScriptsFromStorage = (): Promise<void> =>
       await registerNspdContentScripts()
       return
     }
-    if (access === 'denied') {
+    if (access === 'denied' && stored === true) {
       await setStoredNspdButtonEnabled(false)
       await unregisterNspdContentScripts()
+      return
     }
+    // Доступ не выдан, но настройку пользователь не включал: кнопку оставляем
+    // включённой, скрипты — снятыми.
+    await unregisterNspdContentScripts()
   })
 
 const runNspdSync = (enabled: boolean): void => {

@@ -185,17 +185,29 @@ describe('NSPD content scripts', () => {
   })
 
   it('следит за настройкой: включает и выключает регистрацию', async () => {
+    // Кнопка по умолчанию включена, поэтому при выданном доступе скрипты
+    // регистрируются сразу.
     permissionsMock.grant(...NSPD_HOST_PATTERNS)
     initWithCleanup()
+    await flush()
+    expect(scriptingMock.registered.size).toBe(2)
+
+    await browser.storage.local.set({ [NSPD_BUTTON_ENABLED_STORAGE_KEY]: false })
     await flush()
     expect(scriptingMock.registered.size).toBe(0)
 
     await browser.storage.local.set({ [NSPD_BUTTON_ENABLED_STORAGE_KEY]: true })
     await flush()
     expect(scriptingMock.registered.size).toBe(2)
+  })
 
-    await browser.storage.local.set({ [NSPD_BUTTON_ENABLED_STORAGE_KEY]: false })
-    await flush()
+  it('оставляет кнопку включённой при старте без доступа, если пользователь её не включал', async () => {
+    // Кнопка по умолчанию включена, а необязательный доступ к домену ещё не
+    // выдан: настройку не трогаем, скрипты не регистрируем.
+    await syncNspdContentScriptsFromStorage()
+
+    await expect(getStoredNspdButtonEnabled()).resolves.toBe(true)
+    expect(scriptingMock.registerContentScripts).not.toHaveBeenCalled()
     expect(scriptingMock.registered.size).toBe(0)
   })
 
@@ -236,6 +248,7 @@ describe('NSPD content scripts', () => {
     await registerNspdContentScripts()
     expect(scriptingMock.registered.size).toBe(2)
 
+    await setStoredNspdButtonEnabled(false)
     await syncNspdContentScriptsFromStorage()
 
     expect(scriptingMock.registered.size).toBe(0)

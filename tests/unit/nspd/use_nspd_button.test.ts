@@ -23,16 +23,21 @@ describe('useNspdButton', () => {
     await resetBrowserMocks()
   })
 
-  it('по умолчанию возвращает false', async () => {
-    await expect(getStoredNspdButtonEnabled()).resolves.toBe(false)
+  it('по умолчанию включена', async () => {
+    await expect(getStoredNspdButtonEnabled()).resolves.toBe(true)
   })
 
-  it('включает функцию и сохраняет состояние, когда доступ выдан', async () => {
+  it('показывает включённую кнопку без сохранённой настройки', async () => {
     const { result } = renderHook(() => useNspdButton())
     await flushEffects()
 
-    expect(result.current.isEnabled).toBe(false)
+    expect(result.current.isEnabled).toBe(true)
     expect(result.current.isLoaded).toBe(true)
+  })
+
+  it('при первом нажатии просит доступ, если его ещё нет, и сохраняет состояние', async () => {
+    const { result } = renderHook(() => useNspdButton())
+    await flushEffects()
 
     await act(async () => {
       result.current.setIsEnabled(true)
@@ -45,7 +50,7 @@ describe('useNspdButton', () => {
     expect([...scriptingMock.registered.keys()]).toHaveLength(2)
   })
 
-  it('оставляет функцию выключенной и сообщает об отказе, когда доступ не выдан', async () => {
+  it('остаётся включённой, но сообщает об отказе, когда доступ не выдан', async () => {
     permissionsMock.denyNextRequest()
     const { result } = renderHook(() => useNspdButton())
     await flushEffects()
@@ -54,9 +59,10 @@ describe('useNspdButton', () => {
       result.current.setIsEnabled(true)
     })
 
-    expect(result.current.isEnabled).toBe(false)
+    // Кнопка по умолчанию включена: отказ в доступе не выключает саму настройку,
+    // а предупреждение объясняет, почему переход в НСПД не сработает.
+    expect(result.current.isEnabled).toBe(true)
     expect(result.current.permissionDenied).toBe(true)
-    await expect(getStoredNspdButtonEnabled()).resolves.toBe(false)
     expect(scriptingMock.registered.size).toBe(0)
   })
 

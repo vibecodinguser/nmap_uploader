@@ -118,7 +118,21 @@ describe('map-go-to.content', () => {
     })
   })
 
-  it('по умолчанию не монтирует кнопку NSPD', async () => {
+  it('по умолчанию монтирует кнопку NSPD', async () => {
+    mountNmapsToolbarAnchor()
+    mapGoToScript.main?.(ctx)
+
+    await vi.waitFor(() => {
+      expect(document.getElementById(GO_TO_SERVICE_BUTTON_ID)).not.toBeNull()
+    })
+
+    await vi.waitFor(() => {
+      expect(document.getElementById(NSPD_BUTTON_ID)).not.toBeNull()
+    })
+  })
+
+  it('не монтирует кнопку NSPD, если её выключили в настройках', async () => {
+    await browser.storage.local.set({ [NSPD_BUTTON_ENABLED_STORAGE_KEY]: false })
     mountNmapsToolbarAnchor()
     mapGoToScript.main?.(ctx)
 

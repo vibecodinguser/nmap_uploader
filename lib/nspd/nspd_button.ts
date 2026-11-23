@@ -53,10 +53,22 @@ export const buildNspdMapUrl = (href: string): string | null => {
   return `https://nspd.gov.ru/map?${params.toString()}`
 }
 
-export const getStoredNspdButtonEnabled = async (): Promise<boolean> => {
+/**
+ * Возвращает флаг кнопки НСПД.
+ *
+ * По умолчанию кнопка включена: пока пользователь не выключил её сам, она
+ * должна быть в тулбаре. Сами скрипты на nspd.gov.ru при этом не работают,
+ * пока не выдан необязательный доступ к домену, — регистрацию решает
+ * `syncNspdContentScriptsFromStorage`.
+ */
+export const getStoredNspdButtonEnabled = async (): Promise<boolean> =>
+  (await readStoredNspdButtonEnabled()) ?? true
+
+/** Сохранённое значение без умолчания: `null`, если пользователь ещё не выбирал. */
+export const readStoredNspdButtonEnabled = async (): Promise<boolean | null> => {
   const stored = await browser.storage.local.get(NSPD_BUTTON_ENABLED_STORAGE_KEY)
   const value = stored[NSPD_BUTTON_ENABLED_STORAGE_KEY]
-  return value === undefined ? false : Boolean(value)
+  return value === undefined ? null : Boolean(value)
 }
 
 export const setStoredNspdButtonEnabled = async (enabled: boolean): Promise<void> => {

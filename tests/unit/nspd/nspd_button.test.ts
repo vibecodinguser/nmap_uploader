@@ -32,14 +32,15 @@ describe('NSPD button', () => {
     expect(buildNspdMapUrl('invalid-url')).toBeNull()
   })
 
-  it('по умолчанию кнопка выключена и сохраняет измененное значение', async () => {
-    const { getStoredNspdButtonEnabled, setStoredNspdButtonEnabled } = await import(
-      '@/lib/nspd/nspd_button'
-    )
+  it('по умолчанию кнопка включена и сохраняет измененное значение', async () => {
+    const { getStoredNspdButtonEnabled, readStoredNspdButtonEnabled, setStoredNspdButtonEnabled } =
+      await import('@/lib/nspd/nspd_button')
     const { browser } = await import('wxt/browser')
     await browser.storage.local.clear()
 
-    expect(await getStoredNspdButtonEnabled()).toBe(false)
+    expect(await getStoredNspdButtonEnabled()).toBe(true)
+    // Настройку пользователь ещё не сохранял.
+    expect(await readStoredNspdButtonEnabled()).toBeNull()
 
     await setStoredNspdButtonEnabled(true)
     expect(await getStoredNspdButtonEnabled()).toBe(true)
