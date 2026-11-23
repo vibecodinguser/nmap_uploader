@@ -130,7 +130,7 @@
 
 .notes-panel__row-meta {
   color: var(--muted-foreground, #6b6b6b);
-  font-size: 12px;
+  font-size: var(--font-size-xs);
 }
 
 .notes-panel__row-action {
@@ -145,7 +145,7 @@
   border-radius: var(--notes-radius-sm, 6px);
   background: transparent;
   color: inherit;
-  font-size: 14px;
+  font-size: var(--font-size-title);
   cursor: pointer;
 }
 

@@ -25,14 +25,14 @@
 
 .notes-panel__dialog-title {
   margin: 0 0 8px;
-  font-size: 14px;
+  font-size: var(--font-size-title);
   font-weight: 600;
 }
 
 .notes-panel__dialog-text {
   margin: 0 0 14px;
   color: var(--muted-foreground, #6b6b6b);
-  font-size: 12px;
+  font-size: var(--font-size-xs);
 }
 
 .notes-panel__dialog-actions {
@@ -138,8 +138,8 @@
 .notes-panel__confirm-text {
   margin: 0;
   padding: 12px 12px 0;
-  font-size: 13px;
-  line-height: 18px;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
 }
 
 .notes-panel__confirm-actions {
@@ -165,7 +165,7 @@
   background: var(--background, #ffffff);
   color: inherit;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   cursor: pointer;
   box-sizing: border-box;
 }

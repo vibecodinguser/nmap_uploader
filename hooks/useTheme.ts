@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react'
-import { applyBrowserThemeVars } from '@/lib/browser_theme'
 import {
   getStoredThemeMode,
   getSystemTheme,
@@ -27,14 +26,9 @@ function applyThemeClass(themeTarget: Element | undefined, isDark: boolean): voi
   const el = themeTarget ?? document.documentElement
   el.classList.toggle('dark', isDark)
 
-  if (el instanceof HTMLElement) {
-    applyBrowserThemeVars(el, isDark)
-  }
-
   const root = el.getRootNode()
   if (root instanceof ShadowRoot && root.host instanceof HTMLElement) {
     root.host.classList.toggle('dark', isDark)
-    applyBrowserThemeVars(root.host, isDark)
   }
 }
 
@@ -86,7 +80,7 @@ function runSystemThemeEffect(
 }
 
 function onThemeStorageSyncError(error: unknown): void {
-  console.warn('[nmap_uploader] theme storage sync failed:', error)
+  console.warn('[yamapper] theme storage sync failed:', error)
 }
 
 function handleThemeStorageSyncTask(task: Promise<void>): void {

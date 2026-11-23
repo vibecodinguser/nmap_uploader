@@ -1,5 +1,4 @@
 import { browser } from 'wxt/browser'
-import { applyBrowserThemeVars } from '@/lib/browser_theme'
 import {
   getStoredExtensionThemeMode,
   getStoredThemeMode,
@@ -18,12 +17,10 @@ import {
  */
 export const applyThemeTo = (themeTarget: HTMLElement, isDark: boolean): void => {
   themeTarget.classList.toggle('dark', isDark)
-  applyBrowserThemeVars(themeTarget, isDark)
 
   const root = themeTarget.getRootNode()
   if (root instanceof ShadowRoot && root.host instanceof HTMLElement) {
     root.host.classList.toggle('dark', isDark)
-    applyBrowserThemeVars(root.host, isDark)
   }
 }
 
@@ -32,7 +29,7 @@ export const applyStoredDarkTheme = (themeTarget: HTMLElement): void => {
   applyThemeTo(themeTarget, resolveTheme(getStoredThemeMode()) === 'dark')
 
   void syncThemeLocalToExtensionStorage().catch((error: unknown) => {
-    console.warn('[nmap_uploader] theme storage bootstrap failed:', error)
+    console.warn('[yamapper] theme storage bootstrap failed:', error)
   })
 }
 

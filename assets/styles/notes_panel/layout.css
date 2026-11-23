@@ -12,9 +12,9 @@ body,
 body {
   color: var(--foreground, #1f1f1f);
   background: var(--background, #ffffff);
-  font-family: "Yandex Sans Text", "YS Text", Arial, Helvetica, sans-serif;
-  font-size: var(--notes-font-size, 14px);
-  line-height: 1.45;
+  font-family: var(--font-family);
+  font-size: var(--notes-font-size, 13px);
+  line-height: var(--line-height-notes);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -38,7 +38,7 @@ body {
 
 .notes-panel__title {
   margin: 0;
-  font-size: 17px;
+  font-size: var(--font-size-title);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -65,13 +65,14 @@ body {
 /*
  * Чекбокс в стиле нативного `nk-checkbox__box`.
  *
- * Значения сняты с боевого CSS редактора (`app-bundle.*.css` и маска галочки),
- * а не подобраны на глаз:
+ * Значения сняты живым замером в редакторе (`getComputedStyle`):
  *
- *   .nk-checkbox__box            background: var(--control...border); radius 3px
- *   .nk-checkbox__box::before    inset 1px, radius 2px, background: фон страницы
- *   .nk-checkbox__box::after     маска галочки 15×15, left 2px, top -5px,
- *                                background: --checkbox__tick--color
+ *   .nk-checkbox__box            фон rgba(255,255,255,.5), цвет/рамка #bfbfbf,
+ *                                радиус 3px, размер 14x14 (нет выбранного —
+ *                                серый квадрат, это и есть «серая заливка»)
+ *   .nk-checkbox__box::before    inset 1px, radius 2px, background: #333333
+ *   .nk-checkbox__box::after     маска галочки 15x15, left 2px, top -5px,
+ *                                background: #999999
  *   .nk-checkbox_checked __box   background: #e6b800
  *   .nk-checkbox_checked ::before background: #ffeb99
  *   размер m: 14px, размер l: 17px
@@ -85,13 +86,13 @@ body {
  * изменении размера пропорции сохраняются.
  *
  * Цвета отмеченного состояния в редакторе заданы жёстко и одинаковы в обеих
- * темах; цвет галочки приходит из токена: #000 в светлой, #999 в тёмной.
+ * темах; цвет галочки приходит из токена: #999999 в обеих темах.
  */
 .notes-panel__check {
-  --check-size: 18px;
-  --check-border: rgb(0 0 0 / 20%);
-  --check-fill: var(--background, #ffffff);
-  --check-tick: #000000;
+  --check-size: 14px;
+  --check-border: var(--notes-checkbox-border);
+  --check-fill: var(--notes-checkbox-inner, #333333);
+  --check-tick: var(--notes-checkbox-tick, #999999);
 
   position: relative;
   display: inline-flex;
@@ -102,21 +103,21 @@ body {
 
 .dark .notes-panel__check,
 :root.dark .notes-panel__check {
-  --check-border: rgb(255 255 255 / 50%);
-  --check-tick: #999999;
+  --check-border: var(--notes-checkbox-border);
+  --check-tick: var(--notes-checkbox-tick, #999999);
 }
 
 /* Внешний квадрат — это и есть рамка. */
 .notes-panel__row-check,
 .notes-panel__field--checkbox input {
   flex: 0 0 auto;
-  width: var(--check-size, 18px);
-  height: var(--check-size, 18px);
+  width: var(--check-size, 14px);
+  height: var(--check-size, 14px);
   margin: 0;
   appearance: none;
   border: 0;
   border-radius: 3px;
-  background: var(--check-border, rgb(0 0 0 / 20%));
+  background: var(--check-border, rgb(255 255 255 / 50%));
   cursor: pointer;
   box-sizing: border-box;
 }
@@ -157,7 +158,7 @@ body {
 
 /* Отмеченный: золотая рамка и палевая заливка, галочка проявляется. */
 .notes-panel__check:has(input:checked)::before {
-  background: #ffeb99;
+  background: var(--notes-checkbox-checked-bg);
 }
 
 .notes-panel__check:has(input:checked)::after {
@@ -166,14 +167,14 @@ body {
 
 .notes-panel__row-check:checked,
 .notes-panel__field--checkbox input:checked {
-  background: #e6b800;
+  background: var(--notes-checkbox-checked-fill);
 }
 
 /* Фокус: как у редактора — золотое кольцо по внутреннему слою. */
 .notes-panel__check:has(input:focus-visible)::before {
   box-shadow:
-    0 0 0 1px #ffcc00,
-    inset 0 0 0 1px #ffcc00;
+    0 0 0 1px var(--notes-checkbox-checked-border),
+    inset 0 0 0 1px var(--notes-checkbox-checked-border);
 }
 
 /*
@@ -372,7 +373,7 @@ body {
   padding: 0 12px;
   margin: 0;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: inherit;
   text-align: left;
   cursor: pointer;
@@ -489,7 +490,7 @@ body {
   gap: 2px;
   min-height: 36px;
   padding: 0 13px;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   line-height: 20px;
   cursor: pointer;
 }

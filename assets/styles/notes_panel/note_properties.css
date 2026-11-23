@@ -35,7 +35,7 @@
 /* Время чуть светлее вида и с табличными цифрами: колонки не «прыгают». */
 .notes-panel__properties-time {
   color: var(--muted-foreground, #6b6b6b);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   font-variant-numeric: tabular-nums;
 }
 
@@ -56,7 +56,7 @@
 
 .notes-panel__field-label {
   color: var(--muted-foreground, #6b6b6b);
-  font-size: 12px;
+  font-size: var(--font-size-xs);
 }
 
 /* Подпись с текущим значением справа: используется у ползунков. */
@@ -263,7 +263,7 @@
 .notes-panel__field-group-title {
   padding: 0 6px;
   color: var(--muted-foreground, #6b6b6b);
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   font-weight: 600;
 }
 
@@ -287,7 +287,7 @@
  */
 .notes-panel__field-group .notes-panel__field-label {
   color: inherit;
-  font-size: 14px;
+  font-size: var(--font-size-title);
 }
 
 /*
@@ -436,7 +436,7 @@
 
 .notes-panel__hint {
   color: var(--muted-foreground, #6b6b6b);
-  font-size: 12px;
+  font-size: var(--font-size-xs);
 }
 
 .notes-panel__hint--error {

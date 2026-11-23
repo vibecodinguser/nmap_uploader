@@ -1,46 +1,29 @@
 /* noinspection CssUnusedSymbol — классы используются в components и entrypoints/panel/App.tsx */
 @import "./theme_tokens.css";
 
+/*
+ * Алиасы прежней шкалы на общую типографику из `theme_tokens.css`.
+ *
+ * Имена `--text-*` остались, потому что на них завязано больше шестидесяти
+ * правил; здесь они лишь перенаправлены на единую шкалу редактора в px.
+ */
 :root {
-  --header-bg: rgba(255, 255, 255, 0.95);
-  --header-bg-blur: rgba(255, 255, 255, 0.6);
-  --text-xs: 0.75rem;
-  --text-sm: 0.875rem;
-  --text-md: 0.8125rem;
-  --text-title: 0.9375rem;
-  --text-lg: 1.125rem;
-  --nk-user-bar-font-size: 13px;
-  --nk-user-bar-line-height: 16px;
+  --text-xs: var(--font-size-xs);
+  --text-sm: var(--font-size-sm);
+  --text-md: var(--font-size-sm);
+  --text-title: var(--font-size-title);
+  --text-lg: var(--font-size-title);
+  --nk-user-bar-font-size: var(--font-size-sm);
+  --nk-user-bar-line-height: var(--line-height-block);
   --nk-user-bar-font-weight: 400;
-  --nk-user-bar-font-family: "Yandex Sans Text", "YS Text", arial, helvetica, sans-serif;
-  --success: #16a34a;
-  --error: #dc2626;
-  --transition-ui: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  --input-focus-shadow: 0 0 0 1px var(--ring);
-  --dropzone-focus-ring: 0 0 0 2px var(--ring), 0 0 0 4px var(--background);
-  --elevation-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --elevation-tab-active-dark: 0 1px 3px rgba(0, 0, 0, 0.45);
-  --elevation-segment-checked: 0 1px 2px rgba(0, 0, 0, 0.08);
-  --elevation-segment-checked-dark: 0 1px 2px rgba(0, 0, 0, 0.25);
-}
+  --nk-user-bar-font-family: var(--font-family);
 
-:root.browser-firefox:not(.dark) {
-  --header-bg: rgba(249, 249, 251, 0.95);
-  --header-bg-blur: rgba(249, 249, 251, 0.6);
-}
-
-@supports (-moz-appearance: none) {
-  :root:not(.dark) {
-    --header-bg: rgba(249, 249, 251, 0.95);
-    --header-bg-blur: rgba(249, 249, 251, 0.6);
-  }
-}
-
-.dark {
-  --surface-hover: #454545;
-  --surface-hover-border: #6d6d6d;
-  --success: #6abf69;
-  --error: #e57373;
+  /*
+   * Имя в шапке редактора крупнее логина: замер `.nk-user-bar-view__name`
+   * даёт 15px/28px при 13px/16px у `.nk-user-bar-view__login`.
+   */
+  --nk-user-bar-name-font-size: var(--font-size-title);
+  --nk-user-bar-name-line-height: 28px;
 }
 
 *,
@@ -285,9 +268,12 @@ body {
 
 .user-info-name {
   font-family: var(--nk-user-bar-font-family), sans-serif;
-  font-size: 15px;
-  line-height: var(--nk-user-bar-line-height);
+  font-size: var(--nk-user-bar-name-font-size);
+  line-height: var(--nk-user-bar-name-line-height);
   font-weight: var(--nk-user-bar-font-weight);
+
+  /* Замер у живого редактора: имя `rgb(191,191,191)` в тёмной и
+     `rgb(0,0,0)` в светлой — это и есть `--foreground`, в обеих темах. */
   color: var(--foreground);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -295,7 +281,7 @@ body {
 }
 
 .user-info-name::first-letter {
-  color: #e00;
+  color: var(--error);
 }
 
 :is(.btn-icon, .settings-go-to-move-btn, .point-date-trigger) {
@@ -467,7 +453,7 @@ body {
 }
 
 .dark .tab-btn.active {
-  box-shadow: var(--elevation-tab-active-dark);
+  box-shadow: var(--elevation-tab-active);
 }
 
 .upload-form {
@@ -495,7 +481,7 @@ body {
 
 .dark .upload-dropzone:hover,
 .dark .upload-dropzone.is-dragover {
-  background-color: #424244;
+  background-color: var(--surface-hover);
 }
 
 .upload-dropzone:focus-visible {
@@ -861,16 +847,16 @@ body {
 
 .point-date-popover .point-date-day--occupied .rdp-day_button {
   background-color: var(--error);
-  color: #ffffff;
+  color: var(--primary-foreground);
 }
 
 .point-date-popover .point-date-day--occupied .rdp-day_button:hover {
-  background-color: #c62828;
-  color: #ffffff;
+  background-color: color-mix(in srgb, var(--error) 85%, #000000);
+  color: var(--primary-foreground);
 }
 
 :is(.dark, :host(.dark)) .point-date-popover .point-date-day--occupied .rdp-day_button:hover {
-  background-color: #ef5350;
+  background-color: color-mix(in srgb, var(--error) 85%, #ffffff);
 }
 
 .point-date-popover .rdp-selected .rdp-day_button {
@@ -1505,7 +1491,7 @@ body {
 }
 
 .dark .theme-mode-switch-option:has(.theme-mode-switch-input:checked) {
-  box-shadow: var(--elevation-segment-checked-dark);
+  box-shadow: var(--elevation-segment-checked);
 }
 
 .theme-mode-switch-option:has(.theme-mode-switch-input:checked) .theme-mode-switch-label {
@@ -1532,22 +1518,22 @@ body {
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%) translateY(-8px);
-  background-color: #ffffff;
-  color: #000000;
+  background-color: var(--background);
+  color: var(--foreground);
   padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-family: "Yandex Sans Text", "YS Text", Arial, sans-serif;
+  border-radius: calc(var(--radius) * 2);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family);
   white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
   pointer-events: none;
   z-index: 1000;
   animation: tooltipFadeIn 0.2s ease-out forwards;
 }
 
 .dark .yandex-tooltip-wrapper[data-tooltip]:hover::after {
-  background-color: #32333d;
-  color: #ffffff;
+  background-color: var(--muted);
+  color: var(--foreground);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 

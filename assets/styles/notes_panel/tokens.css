@@ -14,23 +14,32 @@
   --notes-control: 40px;
   --notes-radius: 8px;
   --notes-radius-sm: 6px;
-  --notes-gap: 12px;
-  --notes-accent: #ffdb4d;
-  --notes-danger: #e00000;
-  --notes-link: #0055cc;
+  --notes-accent: var(--accent);
+  --notes-danger: var(--error);
+  --notes-link: var(--link);
   --notes-hover: rgb(0 0 0 / 6%);
   --notes-hover-strong: rgb(0 0 0 / 10%);
-  --notes-font-size: 14px;
+  --notes-font-size: var(--font-size-sm);
 
   /* Один размер глифов вида: строка списка, фильтры, выбор фигуры. */
   --notes-icon-size: 22px;
 
-  /* Чекбокс: значения сняты с токенов самого редактора
-     (`--control_theme_islands*`, `--checkbox_theme_islands__tick--color`). */
-  --notes-checkbox-border: rgb(0 0 0 / 20%);
-  --notes-checkbox-border-hover: rgb(0 0 0 / 30%);
-  --notes-checkbox-checked-bg: #fff6cc;
+  /* Высота строки инструментов списка: совпадает с панелью выбора. */
+  --notes-toolbar-height: 56px;
+
+  /* Чекбокс: живой замер `.nk-checkbox__box` в редакторе.
+     Светлая тема: фон rgba(255,255,255,.5), внутренний слой #333333,
+     рамка/цвет #bfbfbf, радиус 3px, размер 14x14.
+     Галочка (#999999) проявляется только у отмеченного, у невыбранного
+     `::after` прозрачен — в замере `opacity: 0` в обоих состояниях, потому
+     что в редакторе галочка красится классом, а не самим квадратом. */
+  --notes-checkbox-border: rgb(255 255 255 / 50%);
+  --notes-checkbox-border-hover: rgb(255 255 255 / 70%);
+  --notes-checkbox-inner: #333333;
+  --notes-checkbox-tick: #999999;
+  --notes-checkbox-checked-bg: #ffeb99;
   --notes-checkbox-checked-border: #ffcc00;
+  --notes-checkbox-checked-fill: #e6b800;
 
   /* Маска галочки из редактора (`7b25040ff7c9f14a396a.svg`). Один файл на две
      роли: отметка чекбокса и отмеченный пункт выпадающего списка. */
@@ -40,12 +49,15 @@
 
 .dark,
 :root.dark {
-  --notes-link: #7fb2ff;
-  --notes-hover: rgb(255 255 255 / 8%);
-  --notes-hover-strong: rgb(255 255 255 / 14%);
+  --notes-link: var(--link);
+  --notes-hover: #4d4d4d;
+  --notes-hover-strong: #4d4d4d;
   --notes-checkbox-border: rgb(255 255 255 / 50%);
   --notes-checkbox-border-hover: rgb(255 255 255 / 70%);
+  --notes-checkbox-inner: #333333;
+  --notes-checkbox-tick: #999999;
   --notes-checkbox-checked-bg: #ffe680;
-  --notes-checkbox-checked-border: #ffdb4d;
+  --notes-checkbox-checked-border: var(--accent-strong);
+  --notes-checkbox-checked-fill: #e6b800;
   --notes-select-border-hover: rgb(255 255 255 / 40%);
 }

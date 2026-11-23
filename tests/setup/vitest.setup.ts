@@ -1,9 +1,39 @@
 import { DOMParser as XmlDomParser } from '@xmldom/xmldom'
+import { Storage } from 'happy-dom'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll, beforeEach, expect } from 'vitest'
 import * as axeMatchers from 'vitest-axe/matchers'
 import { resetBrowserMocks } from './browser_mock'
 import { resetYandexMockState, yandexHandlers } from './yandex_handlers'
+
+/*
+ * Node 26 объявляет `localStorage` в глобальном объекте и без флага
+ * `--localstorage-file` возвращает `undefined`. Его getter перебивает тот,
+ * что создаёт happy-dom, поэтому тесты happy-dom падали на `localStorage`
+ * даже там, где браузерное окружение их поднимало. Здесь подставляется
+ * настоящее хранилище happy-dom — только если глобальное не работает.
+ */
+function ensureWorkingLocalStorage(): void {
+  const win = globalThis.window as unknown as Record<string, unknown> | undefined
+  if (!win) return
+
+  const hasStorage = (value: unknown): boolean =>
+    typeof (value as { setItem?: unknown } | null)?.setItem === 'function'
+
+  if (hasStorage(globalThis.localStorage)) return
+
+  const storage = new Storage()
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    get: () => storage,
+  })
+  Object.defineProperty(win, 'localStorage', {
+    configurable: true,
+    get: () => storage,
+  })
+}
+
+ensureWorkingLocalStorage()
 
 globalThis.DOMParser ??= class MockDOMParser {
   parseFromString(str: string, type: string): Document {

@@ -94,7 +94,7 @@
   padding: 0 7px;
   margin-left: 4px;
   color: var(--muted-foreground, #6b6b6b);
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   background: color-mix(in srgb, var(--foreground, #1f1f1f) 8%, transparent);

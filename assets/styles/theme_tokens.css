@@ -1,23 +1,73 @@
-/* Общие design tokens для Side Panel и встроенной боковой панели (:host). */
+/*
+ * Общие design tokens для Side Panel и встроенной боковой панели (:host).
+ *
+ * Палитра повторяет нативный редактор Народной карты: белый фон, чёрный текст,
+ * жёлтый акцент. Значения одинаковы во всех браузерах — браузерных развилок
+ * (`@supports`, `.browser-firefox`) здесь намеренно нет: расхождение фона
+ * Chrome/Firefox было багом, а не дизайном. Правила паритета и источники
+ * значений — в `docs/checklists/panel-parity.md`.
+ *
+ * Размеры шрифтов в px, а не в rem: цель — совпадение с редактором, который
+ * не масштабируется с настройкой размера шрифта браузера.
+ */
 :root,
 :host {
+  /* Цвета — светлая тема */
   --background: #ffffff;
-  --foreground: #020817;
-  --muted: #e5e5e5;
-  --muted-foreground: #64748b;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --primary: #0f172a;
+  --foreground: #000000;
+
+  /* Светлая тема — живой замер редактора. Все значения сняты там: фон
+     `.nk-island` #ffffff, hover `.nk-list-item-view_interactive` #f2f2f2,
+     описание `.nk-geoobject-template-view__description` #999999,
+     разделители `.nk-menu__group` / `.nk-scrollable` #e6e6e6,
+     ссылка `.nk-link_theme_islands` rgb(77,166,255). */
+  --muted: #f2f2f2;
+  --muted-foreground: #999999;
+  --border: #e6e6e6;
+  --input: #e6e6e6;
+  --primary: #000000;
   --primary-foreground: #ffffff;
-  --ring: #0f172a;
-  --radius: 0.375rem;
+  --ring: #000000;
+  --surface-hover: #f2f2f2;
+
+  /* Акцент и семантика — одни и те же в обеих темах */
+  --accent: #ffdb4d;
+  --accent-strong: #ffcc00;
+  --link: #4da6ff;
+  --success: #16a34a;
+  --error: #e00000;
+
+  /* Геометрия и шрифт */
+  --radius: 4px;
   --font-family:
-    "Yandex Sans Text", "YS Text", "Inter", system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, sans-serif;
-  --dark-surface: #45464f;
+    "Yandex Sans Text", "YS Text", "Arial", "Helvetica", sans-serif;
+
+  /* Типографическая шкала редактора.
+     Безразмерный line-height, кроме `--line-height-block`: в редакторе плотная
+     строка 16px на 13px текста, и она задана именно в px. */
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-title: 15px;
+  --line-height-block: 16px;
+  --line-height-tight: 1.25;
+  --line-height-relaxed: 1.4;
+  --line-height-notes: 1.45;
+
+  /* Фон заголовков */
+  --dark-surface: #333333;
   --dark-header-bg: var(--dark-surface);
   --dark-header-bg-blur: var(--dark-surface);
+  --header-bg: rgba(255, 255, 255, 0.95);
+  --header-bg-blur: rgba(255, 255, 255, 0.6);
+
+  /* Тени и фокус */
   --focus-ring: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+  --input-focus-shadow: 0 0 0 1px var(--ring);
+  --dropzone-focus-ring: 0 0 0 2px var(--ring), 0 0 0 4px var(--background);
+  --elevation-sm: 0 1px 2px 0 rgb(0 0 0 / 5%);
+  --elevation-tab-active: 0 1px 3px rgb(0 0 0 / 25%);
+  --elevation-segment-checked: 0 1px 2px rgb(0 0 0 / 8%);
+  --transition-ui: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   color-scheme: light;
 }
 
@@ -26,49 +76,29 @@
   color-scheme: dark;
 
   --background: var(--dark-surface);
-  --foreground: #ededed;
-  --muted: #32333d;
+
+  /* Замер `.nk-list-item-view` и `.nk-sidebar-header-view__title` в редакторе:
+     основной текст #bfbfbf, приглушённый #999999, фон #333333. */
+  --foreground: #bfbfbf;
+  --muted: #4d4d4d;
   --muted-foreground: #999999;
+
+  /* Настоящих границ в тёмной теме не нашлось: единственный найденный
+     разделитель `.nk-modal__content` — #bfbfbf, то есть currentColor, а не
+     отдельный тон. Светлые разделители #e6e6e6 в тёмной теме не применимы,
+     поэтому взято производное значение между фоном #333333 и текстом. */
   --border: #525252;
   --input: #525252;
-  --primary: #32333d;
+  --primary: #262626;
   --primary-foreground: #ffffff;
   --ring: #6d6d6d;
-  --header-bg: var(--dark-header-bg);
-  --header-bg-blur: var(--dark-header-bg-blur);
-}
-
-/* Firefox Side Panel — после .dark, чтобы перекрыть #32333d и #45464f. */
-@supports (-moz-appearance: none) {
-  :root:not(.dark),
-  :host:not(.dark) {
-    --background: #f9f9fb;
-    --muted: #eaeaed;
-  }
-
-  .dark,
-  :host(.dark) {
-    --dark-surface: #333;
-    --dark-header-bg: var(--dark-surface);
-    --dark-header-bg-blur: var(--dark-surface);
-    --background: var(--dark-surface);
-    --muted: #262626;
-    --primary: #262626;
-  }
-}
-
-:root.browser-firefox:not(.dark),
-:host.browser-firefox:not(.dark) {
-  --background: #f9f9fb;
-  --muted: #eaeaed;
-}
-
-.dark.browser-firefox,
-:host(.dark.browser-firefox) {
-  --dark-surface: #333;
+  --dark-surface: #333333;
   --dark-header-bg: var(--dark-surface);
   --dark-header-bg-blur: var(--dark-surface);
-  --background: var(--dark-surface);
-  --muted: #262626;
-  --primary: #262626;
+  --header-bg: var(--dark-header-bg);
+  --header-bg-blur: var(--dark-header-bg-blur);
+  --link: #7fb2ff;
+  --success: #6abf69;
+  --error: #e57373;
+  --surface-hover: #4d4d4d;
 }
