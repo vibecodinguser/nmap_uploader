@@ -21,6 +21,8 @@ export interface TrackerViewModel {
   errors: Record<string, string>
   isLoading: boolean
   hasToken: boolean
+  /** Сервер ограничил частоту запросов: опрос на паузе. */
+  isRateLimited: boolean
 }
 
 export interface PanelCallbacks {

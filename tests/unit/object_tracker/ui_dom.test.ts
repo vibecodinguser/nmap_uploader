@@ -271,6 +271,7 @@ describe('object_tracker: renderPanel', () => {
     errors: {},
     isLoading: false,
     hasToken: true,
+    isRateLimited: false,
   }
 
   const callbacks = {
@@ -302,6 +303,16 @@ describe('object_tracker: renderPanel', () => {
     renderPanel(container, { ...baseView, hasToken: false }, callbacks)
 
     expect(container.querySelector('.nmap-ot-warning')).not.toBeNull()
+  })
+
+  it('показывает паузу после 429 вместо предупреждения о токене', () => {
+    const container = document.createElement('div')
+
+    renderPanel(container, { ...baseView, isRateLimited: true }, callbacks)
+
+    expect(container.querySelector('.nmap-ot-warning')?.textContent).toContain(
+      'ограничил частоту запросов',
+    )
   })
 
   it('в режиме объектов показывает список и ошибку загрузки', () => {

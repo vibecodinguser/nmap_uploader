@@ -161,6 +161,39 @@ export const parseGeoObjectResult = (result: BatchResult | undefined): GeoObject
 export const isMissingObjectError = (errorType: string | undefined): boolean =>
   errorType === 'ERR_MISSING_OBJECT'
 
+/** Сервер ответил 429: слишком много запросов, опрос нужно притормозить. */
+export class RateLimitedError extends Error {
+  /** Сколько миллисекунд просил подождать сервер (`Retry-After`), если он это указал. */
+  readonly retryAfterMs: number | null
+
+  constructor(retryAfterMs: number | null = null) {
+    super('batch rate limited')
+    this.name = 'RateLimitedError'
+    this.retryAfterMs = retryAfterMs
+  }
+}
+
+/**
+ * Читает `Retry-After`: сервер может прислать секунды или HTTP-дату.
+ * Возвращает миллисекунды либо `null`, если заголовка нет или он непонятен.
+ */
+export const parseRetryAfter = (value: string | null, now = Date.now()): number | null => {
+  if (!value) {
+    return null
+  }
+
+  const trimmed = value.trim()
+  if (/^\d+$/u.test(trimmed)) {
+    return Number(trimmed) * 1000
+  }
+
+  const date = Date.parse(trimmed)
+  if (Number.isNaN(date)) {
+    return null
+  }
+  return Math.max(0, date - now)
+}
+
 /**
  * Создаёт транспорт batch через `fetch` страницы.
  *
@@ -186,6 +219,10 @@ export const createFetchTransport = (fetchFn: typeof fetch): BatchTransport => {
 
     if (response.status === 403) {
       throw new CsrfTokenRejectedError()
+    }
+
+    if (response.status === 429) {
+      throw new RateLimitedError(parseRetryAfter(response.headers.get('retry-after')))
     }
 
     if (!response.ok) {

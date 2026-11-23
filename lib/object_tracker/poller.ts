@@ -1,10 +1,12 @@
 import {
+  type BatchResult,
   type BatchTransport,
   CsrfTokenRejectedError,
   getGeoObjectCall,
   getObjectCommitsCall,
   parseCommitsResult,
   parseGeoObjectResult,
+  RateLimitedError,
 } from './batch_api'
 import type { ObjectCommit, TrackedObject } from './types'
 
@@ -47,6 +49,10 @@ export interface PollResult {
   errors: Record<string, string>
   /** Токен не принят сервером: нужен новый перехват. */
   tokenRejected: boolean
+  /** Сервер ограничил частоту запросов: этот опрос пропущен. */
+  rateLimited: boolean
+  /** Сколько миллисекунд просил подождать сервер (`Retry-After`). */
+  retryAfterMs: number | null
   /** Уточнённые данные объектов: название и категория для иконки. */
   enrichedObjects: Record<string, { title: string | null; categoryId: string | null }>
 }
@@ -56,6 +62,8 @@ const emptyResult = (): PollResult => ({
   newCommits: [],
   errors: {},
   tokenRejected: false,
+  rateLimited: false,
+  retryAfterMs: null,
   enrichedObjects: {},
 })
 
@@ -93,6 +101,11 @@ export const pollTrackedObjects = async (
     if (error instanceof CsrfTokenRejectedError) {
       return { ...emptyResult(), tokenRejected: true }
     }
+    // 429 — не сбой инструмента, а просьба подождать: отдаём это вызывающему,
+    // чтобы он притормозил опрос, вместо повторов и ошибки в консоли.
+    if (error instanceof RateLimitedError) {
+      return { ...emptyResult(), rateLimited: true, retryAfterMs: error.retryAfterMs }
+    }
     throw error
   }
 
@@ -115,11 +128,29 @@ export const pollTrackedObjects = async (
       if (error instanceof CsrfTokenRejectedError) {
         return { ...emptyResult(), tokenRejected: true }
       }
+      if (error instanceof RateLimitedError) {
+        // История уже получена: отдаём её без уточнения, а опрос притормозим.
+        return {
+          ...emptyResult(),
+          ...buildCommitsResult(results, objects, readMarks),
+          rateLimited: true,
+          retryAfterMs: error.retryAfterMs,
+        }
+      }
       // История уже получена: сбой уточнения не должен её терять.
       console.warn('[nmap_uploader] object tracker details failed:', error)
     }
   }
 
+  return { ...emptyResult(), ...buildCommitsResult(results, objects, readMarks), enrichedObjects }
+}
+
+/** Раскладывает ответ batch по объектам: история, ошибки и новые коммиты. */
+const buildCommitsResult = (
+  results: readonly BatchResult[],
+  objects: readonly TrackedObject[],
+  readMarks: Record<string, string>,
+): Pick<PollResult, 'commitsByObject' | 'newCommits' | 'errors'> => {
   const commitsByObject: Record<string, ObjectCommit[]> = {}
   const errors: Record<string, string> = {}
   const newCommits: ObjectCommit[] = []
@@ -141,7 +172,7 @@ export const pollTrackedObjects = async (
 
   newCommits.sort((a, b) => Date.parse(b.date) - Date.parse(a.date))
 
-  return { commitsByObject, newCommits, errors, tokenRejected: false, enrichedObjects }
+  return { commitsByObject, newCommits, errors }
 }
 
 /** Сколько всего новых правок: основа для бейджа. */

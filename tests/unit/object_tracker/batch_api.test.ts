@@ -9,6 +9,8 @@ import {
   parseBatchResponse,
   parseCommitsResult,
   parseGeoObjectResult,
+  parseRetryAfter,
+  RateLimitedError,
 } from '@/lib/object_tracker/batch_api'
 
 const commitsResponse = JSON.stringify({
@@ -168,5 +170,47 @@ describe('object_tracker: createFetchTransport', () => {
     const transport = createFetchTransport(fetchFn)
 
     await expect(transport([], 'token')).rejects.toThrow('HTTP 500')
+  })
+
+  it('на 429 бросает RateLimitedError и читает Retry-After', async () => {
+    const fetchFn = vi.fn(
+      async () => new Response('', { status: 429, headers: { 'retry-after': '30' } }),
+    ) as unknown as typeof fetch
+    const transport = createFetchTransport(fetchFn)
+
+    const error = await transport([], 'token').catch((caught: unknown) => caught)
+    expect(error).toBeInstanceOf(RateLimitedError)
+    expect((error as RateLimitedError).retryAfterMs).toBe(30_000)
+  })
+
+  it('на 429 без Retry-After не выдумывает паузу', async () => {
+    const fetchFn = makeFetch(429, '') as unknown as typeof fetch
+    const transport = createFetchTransport(fetchFn)
+
+    const error = await transport([], 'token').catch((caught: unknown) => caught)
+    expect(error).toBeInstanceOf(RateLimitedError)
+    expect((error as RateLimitedError).retryAfterMs).toBeNull()
+  })
+})
+
+describe('object_tracker: parseRetryAfter', () => {
+  it('понимает секунды', () => {
+    expect(parseRetryAfter('120')).toBe(120_000)
+  })
+
+  it('понимает HTTP-дату', () => {
+    const now = Date.parse('2026-11-23T10:00:00Z')
+    expect(parseRetryAfter('Mon, 23 Nov 2026 10:00:30 GMT', now)).toBe(30_000)
+  })
+
+  it('не отдаёт отрицательную паузу для прошедшей даты', () => {
+    const now = Date.parse('2026-11-23T10:01:00Z')
+    expect(parseRetryAfter('Mon, 23 Nov 2026 10:00:30 GMT', now)).toBe(0)
+  })
+
+  it('возвращает null для пустого или непонятного значения', () => {
+    expect(parseRetryAfter(null)).toBeNull()
+    expect(parseRetryAfter('')).toBeNull()
+    expect(parseRetryAfter('скоро')).toBeNull()
   })
 })

@@ -7,6 +7,7 @@ import {
   isMissingObjectError,
   parseCommitsResult,
   parseGeoObjectResult,
+  RateLimitedError,
 } from './batch_api'
 import { getCsrfToken, hasCsrfToken, onCsrfTokenAvailable, resetCsrfToken } from './csrf_token'
 import { ObjectTrackerNativeMenu } from './native_menu'
@@ -40,6 +41,18 @@ export interface TrackerControllerOptions {
   /** Источник текущего токена подменяется в тестах. */
   getToken?: () => string
 }
+/**
+ * Пауза после 429, если сервер не прислал `Retry-After`.
+ *
+ * Повторять запрос сразу бессмысленно: сервер уже сказал, что запросов слишком
+ * много, и следующий упрётся в тот же лимит.
+ */
+const RATE_LIMIT_FALLBACK_MS = 60_000
+/** Пауза не бывает короче этого: иначе серия ответов 429 превратится в цикл. */
+const RATE_LIMIT_MIN_MS = 5_000
+/** Верхняя граница: дольше суток ждать смысла нет. */
+const RATE_LIMIT_MAX_MS = 24 * 60 * 60 * 1000
+
 const BADGE_BACKGROUND = '#ffdb4d'
 const BADGE_TEXT_COLOR = '#000000'
 const BADGE_MAX_DIGITS = 3
@@ -93,6 +106,12 @@ export class ObjectTrackerController {
   /** Объекты, добавленные из меню: их текущая история не считается новой. */
   private readonly pendingReadMarkIds = new Set<string>()
   private isRefreshing = false
+  /** Опрос идёт: повторный вызов `refresh` ждёт его, а не шлёт второй запрос. */
+  private refreshPromise: Promise<void> | null = null
+  /** До этого момента сеть не трогаем: сервер ответил 429. */
+  private quietUntil = 0
+  /** Отложенный повтор после 429. */
+  private retryTimer: ReturnType<typeof setTimeout> | null = null
   private mode: TrackerViewMode = 'feed'
   private timer: ReturnType<typeof setInterval> | null = null
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null
@@ -112,6 +131,7 @@ export class ObjectTrackerController {
       isTracked: (objectId) => this.objects.some((object) => object.id === objectId),
       canAdd: () => this.objects.length < MAX_TRACKED_OBJECTS,
       onAdd: (objectId, title) => this.addObjectFromMenu(objectId, title),
+      onRemove: (objectId) => this.removeObjectFromMenu(objectId),
     })
   }
 
@@ -134,6 +154,7 @@ export class ObjectTrackerController {
     this.started = false
     this.clearTimer()
     this.clearHeartbeat()
+    this.clearRetryTimer()
     this.detachTokenListener()
     this.detachStorageListener()
     this.nativeMenu.stop()
@@ -173,13 +194,40 @@ export class ObjectTrackerController {
     this.render()
   }
 
-  /** Опрашивает историю всех объектов и обновляет интерфейс. */
+  /**
+   * Опрашивает историю всех объектов и обновляет интерфейс.
+   *
+   * Вызовы схлопываются: на старте обновление просят настройки, появление
+   * CSRF-токена и открытие вкладки — три batch-запроса подряд у сервера
+   * превращаются в 429. Пока запрос в полёте, повторные вызовы ждут его.
+   */
   public async refresh(): Promise<void> {
-    if (!this.settingsEnabled || this.isRefreshing || this.objects.length === 0) {
+    if (!this.settingsEnabled || this.objects.length === 0) {
       this.render()
       return
     }
 
+    if (this.refreshPromise) {
+      await this.refreshPromise
+      return
+    }
+
+    // Сервер недавно сказал «слишком много запросов»: сеть не трогаем, повтор
+    // уже запланирован.
+    if (Date.now() < this.quietUntil) {
+      this.render()
+      return
+    }
+
+    this.refreshPromise = this.runRefresh()
+    try {
+      await this.refreshPromise
+    } finally {
+      this.refreshPromise = null
+    }
+  }
+
+  private async runRefresh(): Promise<void> {
     this.isRefreshing = true
     this.render()
 
@@ -195,6 +243,11 @@ export class ObjectTrackerController {
         this.objects,
         this.readMarks,
       )
+
+      if (result.rateLimited) {
+        this.handleRateLimited(result.retryAfterMs)
+        return
+      }
 
       if (result.tokenRejected) {
         resetCsrfToken()
@@ -249,6 +302,10 @@ export class ObjectTrackerController {
       // Названия могли не сохраниться при добавлении — подтягиваем из истории.
       this.render()
     } catch (error: unknown) {
+      if (error instanceof RateLimitedError) {
+        this.handleRateLimited(error.retryAfterMs)
+        return
+      }
       console.warn('[nmap_uploader] object tracker refresh failed:', error)
       this.errors = { '*': 'FETCH_FAILED' }
       this.render()
@@ -354,6 +411,28 @@ export class ObjectTrackerController {
     return { ok: true }
   }
 
+  /**
+   * Убирает объект из наблюдения пунктом «Не отслеживать» нативного меню.
+   *
+   * Отдельно от `removeObject`: там нечего сообщать при ошибке, а меню ждёт
+   * результат, чтобы показать его коротким сообщением.
+   */
+  public async removeObjectFromMenu(rawId: string): Promise<{ ok: boolean; error?: string }> {
+    const id = normalizeObjectId(rawId)
+
+    if (!this.objects.some((object) => object.id === id)) {
+      return { ok: false, error: 'NOT_FOUND' }
+    }
+
+    try {
+      await this.removeObject(id)
+      return { ok: true }
+    } catch (error: unknown) {
+      console.warn('[nmap_uploader] object tracker remove failed:', error)
+      return { ok: false, error: 'FETCH_FAILED' }
+    }
+  }
+
   /** Убирает объект из наблюдения и чистит локальные данные. */
   public async removeObject(objectId: string): Promise<void> {
     this.objects = this.objects.filter((object) => object.id !== objectId)
@@ -381,6 +460,7 @@ export class ObjectTrackerController {
       errors: this.errors,
       isLoading: this.isRefreshing,
       hasToken: this.getToken().length > 0,
+      isRateLimited: Date.now() < this.quietUntil,
     }
   }
 
@@ -455,6 +535,39 @@ export class ObjectTrackerController {
     if (this.timer !== null) {
       clearInterval(this.timer)
       this.timer = null
+    }
+  }
+
+  /**
+   * Сервер ответил 429: замолкаем на время из `Retry-After` и повторяем опрос
+   * один раз, когда пауза кончится.
+   *
+   * Раньше 429 вылетал исключением наружу: это была видимая ошибка в консоли и
+   * повтор запроса при каждом следующем событии, то есть продолжение
+   * превышения лимита.
+   */
+  private handleRateLimited(retryAfterMs: number | null): void {
+    const delay = Math.min(
+      RATE_LIMIT_MAX_MS,
+      Math.max(RATE_LIMIT_MIN_MS, retryAfterMs ?? RATE_LIMIT_FALLBACK_MS),
+    )
+
+    this.quietUntil = Date.now() + delay
+    this.errors = { '*': 'RATE_LIMITED' }
+    this.render()
+
+    this.clearRetryTimer()
+    this.retryTimer = setTimeout(() => {
+      this.retryTimer = null
+      this.quietUntil = 0
+      void this.refresh()
+    }, delay)
+  }
+
+  private clearRetryTimer(): void {
+    if (this.retryTimer !== null) {
+      clearTimeout(this.retryTimer)
+      this.retryTimer = null
     }
   }
 

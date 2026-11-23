@@ -274,11 +274,12 @@ export const ruMessages = {
   },
   objectTracker: {
     menuTrack: 'Отслеживать',
-    menuTracked: 'Отслеживается',
+    menuUntrack: 'Не отслеживать',
     menuLimit: 'Достигнут лимит наблюдения',
     errorDuplicate: 'Объект уже добавлен в «Мои объекты»',
     errorLimit: 'Достигнут лимит наблюдения: не больше 30 объектов',
     errorInvalidId: 'Не удалось определить идентификатор объекта',
     errorUnknown: 'Не удалось добавить объект в «Мои объекты»',
+    errorUntrack: 'Не удалось убрать объект из «Мои объекты»',
   },
 }

@@ -275,7 +275,8 @@ export type Messages = {
   }
   objectTracker: {
     menuTrack: string
-    menuTracked: string
+    menuUntrack: string
+    errorUntrack: string
     menuLimit: string
     errorDuplicate: string
     errorLimit: string

@@ -38,6 +38,12 @@ const createHeader = (view: TrackerViewModel, callbacks: PanelCallbacks): HTMLEl
     warning.textContent =
       'Нет доступа к API редактора. Откройте ленту правок или обновите страницу.'
     header.appendChild(warning)
+  } else if (view.isRateLimited) {
+    const warning = document.createElement('div')
+    warning.className = 'nmap-ot-warning'
+    warning.textContent =
+      'Редактор ограничил частоту запросов. Обновление повторится автоматически чуть позже.'
+    header.appendChild(warning)
   }
 
   const form = document.createElement('form')

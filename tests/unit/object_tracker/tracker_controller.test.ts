@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { browser } from 'wxt/browser'
 import type { BatchTransport } from '@/lib/object_tracker/batch_api'
-import { parseBatchResponse } from '@/lib/object_tracker/batch_api'
+import { parseBatchResponse, RateLimitedError } from '@/lib/object_tracker/batch_api'
 import { installCsrfTokenListener } from '@/lib/object_tracker/csrf_token'
 import {
   getTrackerLocalState,
@@ -253,6 +253,95 @@ describe('object_tracker: контроллер', () => {
     await controller.refresh()
 
     expect([...controller.getViewModel().newCommitIds]).toEqual(['12'])
+    controller.stop()
+  })
+
+  it('схлопывает одновременные обновления в один запрос', async () => {
+    await setTrackerEnabled(true)
+    await setTrackedObjects([{ id: '1', title: 'Объект', categoryId: 'rd', addedAt: 0 }])
+
+    let pending = 0
+    const transport = vi.fn(async () => {
+      pending += 1
+      // Запрос «висит», пока тест не отпустит его.
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 50)
+      })
+      return response([commit('10')])
+    })
+    const controller = createController(transport)
+    const started = controller.start()
+    // Первый опрос на старте ещё висит на транспорте: дожидаемся запроса.
+    await vi.waitFor(() => expect(pending).toBe(1))
+    const first = controller.refresh()
+    const second = controller.refresh()
+    await vi.advanceTimersByTimeAsync(60)
+    await Promise.all([first, second, started])
+
+    // Три вызова refresh одного опроса: лишних запросов сервер не получил.
+    expect(transport.mock.calls.length).toBe(1)
+    expect(pending).toBe(1)
+    controller.stop()
+  })
+
+  it('на 429 замолкает и повторяет опрос после паузы', async () => {
+    await setTrackerEnabled(true)
+    await setTrackedObjects([{ id: '1', title: 'Объект', categoryId: 'rd', addedAt: 0 }])
+
+    const transport = vi
+      .fn()
+      .mockRejectedValueOnce(new RateLimitedError(10_000))
+      .mockResolvedValue(response([commit('10')]))
+    const controller = createController(transport)
+    await controller.start()
+
+    expect(controller.getViewModel().isRateLimited).toBe(true)
+    // Ошибка не вылетает наружу и не попадает в карточки объектов.
+    expect(controller.getViewModel().errors).toEqual({ '*': 'RATE_LIMITED' })
+
+    // Пока пауза идёт, повторные обновления в сеть не ходят.
+    const callsDuringPause = transport.mock.calls.length
+    await controller.refresh()
+    await controller.refresh()
+    expect(transport.mock.calls.length).toBe(callsDuringPause)
+
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    expect(transport.mock.calls.length).toBe(callsDuringPause + 1)
+    expect(controller.getViewModel().isRateLimited).toBe(false)
+    controller.stop()
+  })
+
+  it('на 429 без Retry-After выдерживает паузу по умолчанию', async () => {
+    await setTrackerEnabled(true)
+    await setTrackedObjects([{ id: '1', title: 'Объект', categoryId: 'rd', addedAt: 0 }])
+
+    const transport = vi.fn().mockRejectedValue(new RateLimitedError(null))
+    const controller = createController(transport)
+    await controller.start()
+
+    const calls = transport.mock.calls.length
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(transport.mock.calls.length).toBe(calls)
+    expect(controller.getViewModel().isRateLimited).toBe(true)
+
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(transport.mock.calls.length).toBe(calls + 1)
+    controller.stop()
+  })
+
+  it('убирает объект из наблюдения через пункт меню', async () => {
+    await setTrackerEnabled(true)
+    await setTrackedObjects([{ id: '1', title: 'Объект', addedAt: 0 }])
+
+    const controller = createController(vi.fn(async () => response([commit('10')])))
+    await controller.start()
+
+    expect(await controller.removeObjectFromMenu('1')).toEqual({ ok: true })
+    expect((await getTrackerSettings()).objects).toEqual([])
+
+    // Повторное нажатие «Не отслеживать» уже нечего убирать.
+    expect(await controller.removeObjectFromMenu('1')).toEqual({ ok: false, error: 'NOT_FOUND' })
     controller.stop()
   })
 

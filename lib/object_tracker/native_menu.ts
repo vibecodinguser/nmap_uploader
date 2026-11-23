@@ -1,5 +1,5 @@
 /**
- * Пункт «Отслеживать» в нативном меню объекта редактора.
+ * Пункт «Отслеживать» / «Не отслеживать» в нативном меню объекта редактора.
  *
  * Меню «Ещё» (`nk-icon_id_more`) в шапке карточки объекта рендерится порталом
  * (`.nk-portal > .nk-popup > .nk-popup__content > .nk-menu`) и переиспользуется
@@ -47,7 +47,6 @@ export const NATIVE_OBJECT_TITLE_SELECTOR =
   '.nk-geoobject-viewer-view .nk-sidebar-header-view__title'
 
 const OBJECT_HASH_RE = /#!?\/objects\/(\d{1,20})/u
-const DESTRUCTIVE_MENU_ITEM_TEXT = 'Удалить'
 /** Меню открывается асинхронно: пробуем несколько раз, пока попап не появится. */
 const SYNC_DELAYS_MS = [0, 40, 120, 300, 700] as const
 /** Склейка пачки мутаций портала перед проверкой меню. */
@@ -73,18 +72,20 @@ const isMenuMutation = (record: MutationRecord): boolean => {
   )
 }
 
-export type NativeMenuAddResult = {
+export type NativeMenuActionResult = {
   ok: boolean
   error?: string
 }
 
 export type ObjectTrackerNativeMenuOptions = {
-  /** Объект уже наблюдается: пункт становится неактивным. */
+  /** Объект уже наблюдается: пункт предлагает убрать его из наблюдения. */
   isTracked: (objectId: string) => boolean
   /** Есть место в списке наблюдения. */
   canAdd: () => boolean
   /** Добавляет объект; ошибки показываются коротким сообщением. */
-  onAdd: (objectId: string, title: string) => Promise<NativeMenuAddResult>
+  onAdd: (objectId: string, title: string) => Promise<NativeMenuActionResult>
+  /** Убирает объект из наблюдения. */
+  onRemove: (objectId: string) => Promise<NativeMenuActionResult>
   /** Подменяется в тестах. */
   translate?: TranslateFn
 }
@@ -309,28 +310,19 @@ export class ObjectTrackerNativeMenu {
   }
 
   private ensureMenuItem(menu: HTMLElement): HTMLElement {
-    const existing = menu.querySelector<HTMLElement>(`.${NATIVE_MENU_ITEM_CLASS}`)
-    if (existing) {
-      this.item = existing
-      return existing
-    }
-
     const group = menu.querySelector<HTMLElement>('.nk-menu__group') ?? menu
-    const item = this.createMenuItem()
-    const destructive = this.findMenuItemByText(group, DESTRUCTIVE_MENU_ITEM_TEXT)
-    if (destructive) {
-      group.insertBefore(item, destructive)
-    } else {
+    const existing = group.querySelector<HTMLElement>(`.${NATIVE_MENU_ITEM_CLASS}`)
+    const item = existing ?? this.createMenuItem()
+
+    // Пункт держим последним: «Удалить» — разрушающее действие, и за ним
+    // не должно стоять наше. Редактор перерисовывает меню и может дописать
+    // свой пункт после нас, поэтому место проверяем при каждой синхронизации.
+    if (group.lastElementChild !== item) {
       group.appendChild(item)
     }
 
     this.item = item
     return item
-  }
-
-  private findMenuItemByText(container: HTMLElement, text: string): HTMLElement | null {
-    const items = Array.from(container.querySelectorAll<HTMLElement>('.nk-menu-item'))
-    return items.find((item) => normalizeMenuText(item.textContent) === text) ?? null
   }
 
   private createMenuItem(): HTMLElement {
@@ -360,11 +352,13 @@ export class ObjectTrackerNativeMenu {
 
     const isTracked = this.options.isTracked(context.objectId)
     const limitReached = !isTracked && !this.options.canAdd()
-    const isDisabled = isTracked || limitReached
+    const isDisabled = !isTracked && limitReached
 
+    // Наблюдаемый объект получает активный пункт «Не отслеживать»: повторное
+    // добавление невозможно, а снять наблюдение из карточки — ожидаемое действие.
     let label = t('objectTracker.menuTrack')
     if (isTracked) {
-      label = t('objectTracker.menuTracked')
+      label = t('objectTracker.menuUntrack')
     } else if (limitReached) {
       label = t('objectTracker.menuLimit')
     }
@@ -372,6 +366,7 @@ export class ObjectTrackerNativeMenu {
     if (item.textContent !== label) {
       item.textContent = label
     }
+    item.dataset.nmapTracked = String(isTracked)
     item.classList.toggle(NATIVE_MENU_ITEM_DISABLED_CLASS, isDisabled)
     item.setAttribute('aria-disabled', String(isDisabled))
     item.tabIndex = isDisabled ? -1 : 0
@@ -383,17 +378,36 @@ export class ObjectTrackerNativeMenu {
 
     const objectId = item.dataset.nmapObjectId ?? ''
     const title = item.dataset.nmapObjectTitle ?? ''
-    const result = await this.options.onAdd(objectId, title)
+    // Смотрим на состояние пункта, а не на хранилище: оно обновляется
+    // асинхронно, и повторное нажатие не должно превратиться в добавление.
+    const tracked = item.dataset.nmapTracked === 'true'
+
+    const result = tracked
+      ? await this.options.onRemove(objectId)
+      : await this.options.onAdd(objectId, title)
+
     if (!result.ok) {
-      showTrackerToast(this.describeError(result.error))
+      showTrackerToast(this.describeError(result.error, tracked))
       return
     }
 
-    // Пункт остаётся в открытом меню: показываем, что объект уже наблюдается.
-    this.sync()
+    // Меню закрываем кликом по пустому месту страницы: редактор закрывает так
+    // свой попап сам, и это не уводит со страницы.
+    this.closeMenu()
   }
 
-  private describeError(error?: string): string {
+  /** Закрывает попап меню объекта кликом по пустому месту страницы. */
+  private closeMenu(): void {
+    if (typeof document === 'undefined') return
+    document.body.dispatchEvent(
+      new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }),
+    )
+    document.body.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true, view: window }),
+    )
+  }
+
+  private describeError(error: string | undefined, tracked: boolean): string {
     const t = this.translate()
     switch (error) {
       case 'DUPLICATE':
@@ -403,7 +417,7 @@ export class ObjectTrackerNativeMenu {
       case 'INVALID_ID':
         return t('objectTracker.errorInvalidId')
       default:
-        return t('objectTracker.errorUnknown')
+        return t(tracked ? 'objectTracker.errorUntrack' : 'objectTracker.errorUnknown')
     }
   }
 

@@ -4,6 +4,7 @@ import {
   type BatchTransport,
   CsrfTokenRejectedError,
   parseBatchResponse,
+  RateLimitedError,
 } from '@/lib/object_tracker/batch_api'
 import {
   buildReadMarks,
@@ -125,6 +126,34 @@ describe('object_tracker: pollTrackedObjects', () => {
     const result = await pollTrackedObjects({ transport, token: 'bad' }, objects, {})
 
     expect(result.tokenRejected).toBe(true)
+  })
+
+  it('на 429 не бросает исключение, а сообщает о паузе', async () => {
+    const transport = vi.fn(async () => {
+      throw new RateLimitedError(45_000)
+    })
+
+    const result = await pollTrackedObjects({ transport, token: 'token' }, objects, {})
+
+    expect(result.rateLimited).toBe(true)
+    expect(result.retryAfterMs).toBe(45_000)
+    expect(result.tokenRejected).toBe(false)
+    expect(result.errors).toEqual({})
+  })
+
+  it('на 429 при уточнении данных сохраняет уже полученную историю', async () => {
+    const withoutCategory: TrackedObject[] = [{ id: '7', title: '', addedAt: 0 }]
+    const transport = vi.fn(async (calls: BatchCall[]) => {
+      if (calls[0]?.method === 'editor/getGeoObject') {
+        throw new RateLimitedError(null)
+      }
+      return parseBatchResponse(okResponse([[commit('10', '2026-11-05')]]))
+    })
+
+    const result = await pollTrackedObjects({ transport, token: 'token' }, withoutCategory, {})
+
+    expect(result.rateLimited).toBe(true)
+    expect(result.commitsByObject['7']?.map((item) => item.id)).toEqual(['10'])
   })
 
   it('сортирует новые коммиты по убыванию даты', async () => {

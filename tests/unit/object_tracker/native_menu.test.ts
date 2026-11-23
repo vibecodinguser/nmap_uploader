@@ -103,16 +103,28 @@ describe('object_tracker: пункт «Отслеживать» в нативн�
   const createMenu = (
     overrides: Partial<ConstructorParameters<typeof ObjectTrackerNativeMenu>[0]> = {},
   ) => {
-    const onAdd = vi.fn(async () => ({ ok: true }))
+    const tracked = new Set<string>()
+    const onAdd = vi.fn(async (objectId: string) => {
+      tracked.add(objectId)
+      return { ok: true }
+    })
+    const onRemove = vi.fn(async (objectId: string) => {
+      tracked.delete(objectId)
+      return { ok: true }
+    })
     const menu = new ObjectTrackerNativeMenu({
-      isTracked: () => false,
+      isTracked: (objectId) => tracked.has(objectId),
       canAdd: () => true,
       onAdd,
+      onRemove,
       translate: (key) => key,
       ...overrides,
     })
-    return { menu, onAdd }
+    return { menu, onAdd, onRemove, tracked }
   }
+
+  const isPopupVisible = (): boolean =>
+    Boolean(document.querySelector('.nk-portal .nk-popup')?.classList.contains('nk-popup_visible'))
 
   it('достаёт id объекта из hash редактора', () => {
     expect(readObjectIdFromUrl(`https://n.maps.yandex.ru/#!/objects/${OBJECT_ID}?z=14`)).toBe(
@@ -134,7 +146,7 @@ describe('object_tracker: пункт «Отслеживать» в нативн�
     expect(findObjectMenu()).toBe(menus[0])
   })
 
-  it('вставляет пункт перед «Удалить» по клику на иконку «Ещё»', () => {
+  it('вставляет пункт последним по клику на иконку «Ещё»', () => {
     const { menu } = createMenu()
     menu.start()
 
@@ -145,8 +157,33 @@ describe('object_tracker: пункт «Отслеживать» в нативн�
     const group = item?.parentElement
     expect(item?.textContent).toBe('objectTracker.menuTrack')
     expect(item?.getAttribute('role')).toBe('menuitem')
-    expect(group?.firstElementChild).toBe(item)
-    expect(item?.previousElementSibling).toBeNull()
+    expect(group?.lastElementChild).toBe(item)
+    expect(item?.nextElementSibling).toBeNull()
+
+    menu.stop()
+  })
+
+  it('переносит пункт в конец, если редактор дописал свой после него', async () => {
+    const { menu } = createMenu()
+    menu.start()
+
+    clickMoreIcon()
+    await vi.advanceTimersByTimeAsync(100)
+
+    const item = getMenuItem()
+    const group = item?.parentElement
+    const nativeItem = document.createElement('div')
+    nativeItem.className = 'nk-menu-item nk-menu-item_theme_islands nk-menu-item_size_m'
+    nativeItem.textContent = 'История объекта'
+    group?.appendChild(nativeItem)
+    expect(group?.lastElementChild).not.toBe(item)
+
+    // Ближайшая синхронизация возвращает пункт в конец.
+    document.body.appendChild(document.createElement('span'))
+    await vi.advanceTimersByTimeAsync(100)
+
+    expect(group?.lastElementChild).toBe(item)
+    expect(item?.nextElementSibling).toBeNull()
 
     menu.stop()
   })
@@ -164,7 +201,7 @@ describe('object_tracker: пункт «Отслеживать» в нативн�
     menu.stop()
   })
 
-  it('показывает неактивный пункт, если объект уже наблюдается', () => {
+  it('показывает активный пункт «Не отслеживать», если объект уже наблюдается', () => {
     const { menu } = createMenu({ isTracked: () => true })
     menu.start()
 
@@ -172,9 +209,10 @@ describe('object_tracker: пункт «Отслеживать» в нативн�
     vi.advanceTimersByTime(800)
 
     const item = getMenuItem()
-    expect(item?.textContent).toBe('objectTracker.menuTracked')
-    expect(item?.classList.contains(NATIVE_MENU_ITEM_DISABLED_CLASS)).toBe(true)
-    expect(item?.getAttribute('aria-disabled')).toBe('true')
+    expect(item?.textContent).toBe('objectTracker.menuUntrack')
+    expect(item?.classList.contains(NATIVE_MENU_ITEM_DISABLED_CLASS)).toBe(false)
+    expect(item?.getAttribute('aria-disabled')).toBe('false')
+    expect(item?.tabIndex).toBe(0)
 
     menu.stop()
   })
@@ -193,8 +231,81 @@ describe('object_tracker: пункт «Отслеживать» в нативн�
     menu.stop()
   })
 
-  it('добавляет объект по клику и обновляет пункт', async () => {
-    const { menu, onAdd } = createMenu()
+  it('добавляет объект по клику и закрывает меню', async () => {
+    const { menu, onAdd, tracked } = createMenu()
+    menu.start()
+
+    clickMoreIcon()
+    vi.advanceTimersByTime(800)
+    expect(isPopupVisible()).toBe(true)
+
+    getMenuItem()?.click()
+    await flushPromises()
+
+    expect(onAdd).toHaveBeenCalledWith(OBJECT_ID, OBJECT_TITLE)
+    expect(tracked.has(OBJECT_ID)).toBe(true)
+    // Меню закрывается: после открытия пункт предлагает снять наблюдение.
+    clickMoreIcon()
+    vi.advanceTimersByTime(800)
+    expect(getMenuItem()?.textContent).toBe('objectTracker.menuUntrack')
+    expect(getMenuItem()?.classList.contains(NATIVE_MENU_ITEM_DISABLED_CLASS)).toBe(false)
+
+    menu.stop()
+  })
+
+  it('закрывает меню кликом по странице после добавления', async () => {
+    const { menu } = createMenu()
+    menu.start()
+
+    clickMoreIcon()
+    vi.advanceTimersByTime(800)
+
+    const closeSpy = vi.fn()
+    document.body.addEventListener('click', (event) => {
+      if (event.target === document.body) closeSpy()
+    })
+
+    getMenuItem()?.click()
+    await flushPromises()
+
+    expect(closeSpy).toHaveBeenCalledTimes(1)
+
+    menu.stop()
+  })
+
+  it('убирает объект из наблюдения пунктом «Не отслеживать»', async () => {
+    const { menu, onAdd, onRemove, tracked } = createMenu()
+    menu.start()
+
+    clickMoreIcon()
+    vi.advanceTimersByTime(800)
+    getMenuItem()?.click()
+    await flushPromises()
+    expect(tracked.has(OBJECT_ID)).toBe(true)
+
+    // Открываем меню снова: объект уже в «Мои объекты».
+    clickMoreIcon()
+    vi.advanceTimersByTime(800)
+    expect(getMenuItem()?.textContent).toBe('objectTracker.menuUntrack')
+
+    getMenuItem()?.click()
+    await flushPromises()
+
+    expect(onRemove).toHaveBeenCalledWith(OBJECT_ID)
+    expect(onAdd).toHaveBeenCalledTimes(1)
+    expect(tracked.has(OBJECT_ID)).toBe(false)
+    clickMoreIcon()
+    vi.advanceTimersByTime(800)
+    expect(getMenuItem()?.textContent).toBe('objectTracker.menuTrack')
+
+    menu.stop()
+  })
+
+  it('показывает сообщение об ошибке снятия с наблюдения', async () => {
+    const { menu } = createMenu({
+      isTracked: () => true,
+      onRemove: vi.fn(async () => ({ ok: false, error: 'FETCH_FAILED' })),
+    })
     menu.start()
 
     clickMoreIcon()
@@ -203,14 +314,15 @@ describe('object_tracker: пункт «Отслеживать» в нативн�
     getMenuItem()?.click()
     await flushPromises()
 
-    expect(onAdd).toHaveBeenCalledWith(OBJECT_ID, OBJECT_TITLE)
-    expect(getMenuItem()?.classList.contains(NATIVE_MENU_ITEM_DISABLED_CLASS)).toBe(false)
+    expect(document.getElementById(TRACKER_TOAST_ID)?.textContent).toBe(
+      'objectTracker.errorUntrack',
+    )
 
     menu.stop()
   })
 
-  it('не добавляет объект повторно, если пункт неактивен', async () => {
-    const { menu, onAdd } = createMenu({ isTracked: () => true })
+  it('не добавляет объект повторно, если он уже наблюдается', async () => {
+    const { menu, onAdd, onRemove } = createMenu({ isTracked: () => true })
     menu.start()
 
     clickMoreIcon()
@@ -220,6 +332,7 @@ describe('object_tracker: пункт «Отслеживать» в нативн�
     await flushPromises()
 
     expect(onAdd).not.toHaveBeenCalled()
+    expect(onRemove).toHaveBeenCalledWith(OBJECT_ID)
 
     menu.stop()
   })
