@@ -1,12 +1,22 @@
 name: Deploy docs
 
-# Публикует сайт справки из docs-site/ на GitHub Pages.
-# Деплой — только по ручному запуску, чтобы не выкладывать черновики
-# до того, как раздел готов. После первого успешного деплоя в настройках
-# репозитория: Settings → Pages → Source = "GitHub Actions".
-
+# ВНИМАНИЕ: этот workflow пока не работает — аккаунт заблокирован для запуска
+# GitHub Actions из-за биллинговой проблемы, и джобы падают с
+# "The job was not started because your account is locked due to a billing issue".
+#
+# Пока вопрос не решён, сайт публикуется с локальной машины скриптом
+# `docs-site/scripts/publish-gh-pages.sh` в ветку gh-pages
+# (Settings → Pages → Source = "Deploy from a branch", ветка gh-pages, папка /).
+#
+# Когда биллинг восстановят: переключите Pages обратно на "GitHub Actions"
+# и раскомментируйте триггер по push ниже.
 on:
   workflow_dispatch:
+  # push:
+  #   branches: [master]
+  #   paths:
+  #     - 'docs-site/**'
+  #     - '.github/workflows/deploy-docs.yml'
 
 permissions:
   contents: read
