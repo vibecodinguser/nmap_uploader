@@ -1,5 +1,6 @@
 export * from './button'
 export * from './controller'
+export * from './diagnostics'
 export * from './editor_bridge'
 export * from './geometry'
 export * from './mode'

@@ -10,7 +10,7 @@
  */
 
 import type { LineCoordinates } from './geometry'
-import type { CutMapLike } from './mode'
+import { type CutMapLike, unwrapYMap } from './mode'
 
 /** Нативный пресет редактора: красная капля с ножницами. */
 export const SPLIT_PIN_PRESET = 'nk#splitRedPinIcon'
@@ -32,7 +32,6 @@ type YmapsLike = {
 /** Карта, на которую можно ставить маркеры. */
 type PinMapLike = CutMapLike & {
   geoObjects?: GeoObjectsLike
-  getYMap?: () => PinMapLike | null
 }
 
 const readYmaps = (): YmapsLike | null => {
@@ -42,19 +41,8 @@ const readYmaps = (): YmapsLike | null => {
 
 /** Достаёт карту с коллекцией объектов: у обёртки она внутри `getYMap()`. */
 const readPinMap = (map: CutMapLike | null): PinMapLike | null => {
-  const candidate = map as PinMapLike | null
-  if (!candidate) return null
-
-  if (typeof candidate.getYMap === 'function') {
-    try {
-      const inner = candidate.getYMap()
-      if (inner && typeof inner === 'object') return inner
-    } catch {
-      // Обёртка могла быть уничтожена
-    }
-  }
-
-  return candidate
+  const unwrapped = unwrapYMap(map)
+  return unwrapped ? (unwrapped as PinMapLike) : null
 }
 
 export type CutPins = {

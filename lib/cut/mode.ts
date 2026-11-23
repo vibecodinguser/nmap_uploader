@@ -1,5 +1,5 @@
 /**
- * Режим разреза растительности.
+ * Режим разреза линейных объектов: растительности и водоёмов.
  *
  * Инструмент включается кнопкой в нативном тулбаре и живёт, пока пользователь
  * не выключит его повторным нажатием или клавишей Esc. Каждый клик по линии —
@@ -93,6 +93,30 @@ const readZoom = (map: CutMapLike): number => {
   }
 }
 
+/**
+ * Достаёт настоящую карту из того, что отдаёт редактор.
+ *
+ * `attrs.map` — обёртка `map-service`: у неё нет `events` и проекции, поэтому
+ * клик по карте к ней не подписать. Настоящий `ymaps.Map` лежит внутри и
+ * доступен через `getYMap()`. Если обёртки нет или она не отдала карту,
+ * возвращаем то, что пришло: вызывающий код проверит нужные ему поля.
+ */
+export const unwrapYMap = (map: CutMapLike | null | undefined): CutMapLike | null => {
+  if (!map || typeof map !== 'object') return null
+
+  const wrapper = map as CutMapLike & { getYMap?: () => CutMapLike | null }
+  if (typeof wrapper.getYMap === 'function') {
+    try {
+      const inner = wrapper.getYMap()
+      if (inner && typeof inner === 'object') return inner
+    } catch {
+      // Обёртка могла быть уничтожена
+    }
+  }
+
+  return map
+}
+
 const projectLine = (line: LineCoordinates, projection: ProjectionLike, zoom: number): Point2[] => {
   const result: Point2[] = []
   for (const point of line) {
@@ -127,12 +151,6 @@ export class CutMode {
   }
 
   public isActive(): boolean {
-    return this.active
-  }
-
-  /** Включает или выключает режим. Возвращает новое состояние. */
-  public toggle(): boolean {
-    this.active = !this.active
     return this.active
   }
 

@@ -10,7 +10,7 @@
  */
 
 import type { LineCoordinates } from './geometry'
-import type { CutMapLike } from './mode'
+import { type CutMapLike, unwrapYMap } from './mode'
 import { type CutTarget, resolveCutTarget } from './targets'
 
 type GeometryLike = {
@@ -61,17 +61,6 @@ type GeometryRestrictionsLike = {
   stopWatching?: (geometry: unknown) => unknown
 }
 
-/**
- * Карта редактора — обёртка (`map-service`), а не `ymaps.Map`.
- *
- * У обёртки есть `getZoom`/`getCenter`/`getFlatBounds`, но нет ни `events`, ни
- * `options.get('projection')`: подписаться на клик и спроецировать координаты
- * можно только через настоящую карту из `getYMap()`.
- */
-type MapWrapperLike = CutMapLike & {
-  getYMap?: () => CutMapLike | null
-}
-
 type GeoObjectFactoryLike = {
   createGeoObject?: (params: Record<string, unknown>) => GeoObjectLike
 }
@@ -103,7 +92,6 @@ type ActivityLike = {
 export type CutElement = {
   id: string
   coordinates: LineCoordinates
-  closed: boolean
 }
 
 /** Что инструменту нужно от открытого редактора. */
@@ -156,7 +144,7 @@ const readAttrs = (activity: ActivityLike): ViewAttrsLike | null => {
 
 /**
  * Объект редактора: представление отдаёт его в `attrs`, но у контейнерных
- * активностей (контур растительности) `attrs` содержит только тулбар, а объект
+ * активностей (контур объекта) `attrs` содержит только тулбар, а объект
  * лежит в `params`. Без этого fallback категория не определяется.
  */
 const readGeoObject = (
@@ -210,35 +198,8 @@ const readElementCoordinates = (element: GeoObjectLike): LineCoordinates | null 
   }
 }
 
-const isClosedCoordinates = (coordinates: LineCoordinates): boolean => {
-  if (coordinates.length < 3) return false
-  const first = coordinates[0]
-  const last = coordinates[coordinates.length - 1]
-  return Math.abs(first[0] - last[0]) < 1e-9 && Math.abs(first[1] - last[1]) < 1e-9
-}
-
-/**
- * Достаёт настоящую карту из того, что отдаёт редактор.
- *
- * `attrs.map` — обёртка `map-service`: у неё нет `events` и проекции, поэтому
- * клик по карте к ней не подписать. Настоящий `ymaps.Map` лежит внутри и
- * доступен через `getYMap()`.
- */
-const readMap = (attrs: ViewAttrsLike | null): CutMapLike | null => {
-  const candidate = attrs?.map as MapWrapperLike | null | undefined
-  if (!candidate || typeof candidate !== 'object') return null
-
-  if (typeof candidate.getYMap === 'function') {
-    try {
-      const inner = candidate.getYMap()
-      if (inner && typeof inner === 'object') return inner
-    } catch {
-      // Обёртка могла быть уничтожена
-    }
-  }
-
-  return candidate
-}
+/** Достаёт настоящую карту из того, что отдаёт редактор. */
+const readMap = (attrs: ViewAttrsLike | null): CutMapLike | null => unwrapYMap(attrs?.map)
 
 /** Собирает мост к активности редактора; `null`, если это не редактор. */
 export const createEditorBridge = (activity: unknown): CutEditor | null => {
@@ -284,7 +245,7 @@ export const createEditorBridge = (activity: unknown): CutEditor | null => {
           id = ''
         }
         if (!id) continue
-        result.push({ id, coordinates, closed: isClosedCoordinates(coordinates) })
+        result.push({ id, coordinates })
       }
       return result
     },

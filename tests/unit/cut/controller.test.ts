@@ -25,6 +25,7 @@ import {
   subscribeActivityClass,
 } from '@/lib/cut/editor_access'
 import { createEditorBridge } from '@/lib/cut/editor_bridge'
+import { type CutMapLike, unwrapYMap } from '@/lib/cut/mode'
 import { HYDRO_TARGET, VEGETATION_TARGET } from '@/lib/cut/targets'
 import { createTranslator } from '@/lib/i18n'
 import { observeWebpackModules } from '@/lib/nmaps_webpack_module_observer'
@@ -331,17 +332,19 @@ describe('мост к активности редактора', () => {
     expect(bridge?.getCategoryId()).toBe('vegetation_fc')
     expect(bridge?.getElementCategoryId()).toBe('vegetation_el')
     expect(bridge?.getElementRoleId()).toBe('part')
-    expect(bridge?.getElements()).toEqual([{ id: 'el-1', coordinates: OPEN_LINE, closed: false }])
+    expect(bridge?.getElements()).toEqual([{ id: 'el-1', coordinates: OPEN_LINE }])
     expect(bridge?.getMap()).not.toBeNull()
     expect(bridge?.canCut()).toBe(true)
   })
 
-  it('отмечает замкнутый элемент как кольцо', () => {
+  it('отдаёт кольцо без изменений: замкнутость решает геометрия', () => {
     const { activity } = createFakeActivity({
       elements: [{ id: 'ring', coordinates: RING }],
     })
 
-    expect(createEditorBridge(activity)?.getElements()[0].closed).toBe(true)
+    // Мост не дублирует проверку замкнутости: единственный источник истины —
+    // `isClosedLine` из `geometry`, иначе допуски разойдутся.
+    expect(createEditorBridge(activity)?.getElements()[0].coordinates).toEqual(RING)
   })
 
   it('возвращает null, если передан не редактор', () => {
@@ -493,6 +496,36 @@ describe('мост к активности редактора', () => {
 
     expect(bridge?.applyCut('el-1', [OPEN_LINE, OPEN_LINE, OPEN_LINE])).toBe(false)
     expect(drawnParts()).toEqual({ 'el-1': OPEN_LINE })
+  })
+})
+
+describe('настоящая карта из обёртки редактора', () => {
+  it('достаёт ymaps.Map из map-service', () => {
+    const inner = { getZoom: () => 16, options: {}, container: {} } as unknown as CutMapLike
+    const wrapper = { getZoom: () => 16, getYMap: () => inner } as unknown as CutMapLike
+    expect(unwrapYMap(wrapper)).toBe(inner)
+  })
+
+  it('возвращает переданное, если обёртки нет', () => {
+    const map = { getZoom: () => 16 } as unknown as CutMapLike
+    expect(unwrapYMap(map)).toBe(map)
+  })
+
+  it('возвращает переданное, если обёртка не отдала карту или упала', () => {
+    const broken = { getYMap: () => null } as unknown as CutMapLike
+    expect(unwrapYMap(broken)).toBe(broken)
+
+    const throwing = {
+      getYMap: () => {
+        throw new Error('wrapper destroyed')
+      },
+    } as unknown as CutMapLike
+    expect(unwrapYMap(throwing)).toBe(throwing)
+  })
+
+  it('возвращает null для пустого значения', () => {
+    expect(unwrapYMap(null)).toBeNull()
+    expect(unwrapYMap(undefined)).toBeNull()
   })
 })
 
@@ -972,6 +1005,20 @@ describe('режим разреза', () => {
     expect(document.documentElement.getAttribute(STATE_ATTR)).toBe('ready:vegetation_el:1')
 
     stop()
+  })
+
+  it('перечитывает возможности активности: элементы догрузились после старта', () => {
+    mountToolbar()
+    const { controller, activity } = createController({
+      activity: { elements: [{ id: 'el-1', coordinates: OPEN_LINE }] },
+    })
+
+    // Контейнер без элементов запоминается как рабочий, но не готовый: после
+    // него активность с готовым контуром должна включить кнопку.
+    const { activity: empty } = createController({ activity: { elements: [] } })
+    expect(controller.attachActivity(empty)).toBe(false)
+    expect(controller.attachActivity(activity)).toBe(true)
+    expect(getCutButton(VEGETATION_TARGET)).not.toBeNull()
   })
 
   it('контейнер объекта не вытесняет уже найденный редактор топологии', () => {

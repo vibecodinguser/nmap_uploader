@@ -25,6 +25,13 @@ import {
   removeCutButton,
   setCutButtonActive,
 } from './button'
+import {
+  appendLogEntry,
+  type CutLogEntry,
+  clearCutState,
+  isDebugEnabled,
+  setCutState,
+} from './diagnostics'
 import { installActivityHook } from './editor_access'
 import { type CutEditor, createEditorBridge } from './editor_bridge'
 import { type CutMapLike, CutMode, type CutOutcome, readPageGlobalPixels } from './mode'
@@ -78,89 +85,21 @@ const isMapSurfaceTarget = (target: EventTarget | null, map: CutMapLike): boolea
   return surface !== null && container.contains(surface)
 }
 
-/**
- * Метка состояния на `<html>`: по ней из консоли видно, дошёл ли инструмент до
- * каждого этапа. Без неё «кнопки нет» одинаково выглядит и когда скрипт не
- * загружен, и когда редактор не поймали.
- *
- * Значения:
- * - `loaded` — скрипт исполнился, хук ещё не поставлен;
- * - `hooked:<N>` — хук активностей установлен, перехвачено N классов;
- * - `idle` — редактор закрыт;
- * - `other:<категория>` — открыт редактор не растительности;
- * - `wait:<категория>` — растительность открыта, но редактор ещё не готов резать;
- * - `unsupported:commands` — у редактора не нашёлся менеджер команд, разрез
- *   нельзя было бы отменить, поэтому инструмент выключен;
- * - `ready:<категория>:<элементов>` — кнопка доступна.
- *
- * Атрибут живёт, пока работает скрипт, и снимается при остановке.
- */
-export const CUT_STATE_ATTR = 'data-nmap-veg-cut'
-
-/**
- * Журнал запусков активностей для разбора проблем: последние 50 записей.
- * Ведётся только при включённой отладке (`CUT_DEBUG_FLAG`).
- */
-export const CUT_LOG_KEY = '__nmapVegCutLog'
-
-/** Ключ `localStorage`: значение `'1'` включает журнал и подробный лог. */
-export const CUT_DEBUG_FLAG = 'nmap-veg-cut-debug'
-
-export type CutLogEntry = {
-  categoryId: string | null
-  elementCategoryId: string | null
-  elementRoleId: string | null
-  elements: number
-  canCut: boolean
-  attrsKeys: string[] | null
-}
-
-const MAX_LOG_ENTRIES = 50
-
-export const setCutState = (state: string): void => {
-  try {
-    document.documentElement.setAttribute(CUT_STATE_ATTR, state)
-  } catch {
-    // Документ мог быть уже выгружен
-  }
-}
-
-const clearCutState = (): void => {
-  try {
-    document.documentElement.removeAttribute(CUT_STATE_ATTR)
-  } catch {
-    // Документ мог быть уже выгружен
-  }
-}
-
-const isDebugEnabled = (): boolean => {
-  try {
-    return typeof localStorage !== 'undefined' && localStorage.getItem(CUT_DEBUG_FLAG) === '1'
-  } catch {
-    // Хранилище может быть недоступно (настройки приватности)
-    return false
-  }
-}
-
-const appendLogEntry = (entry: CutLogEntry): void => {
-  try {
-    const target = globalThis as Record<string, unknown>
-    const log = Array.isArray(target[CUT_LOG_KEY]) ? (target[CUT_LOG_KEY] as CutLogEntry[]) : []
-    log.push(entry)
-    if (log.length > MAX_LOG_ENTRIES) {
-      log.splice(0, log.length - MAX_LOG_ENTRIES)
-    }
-    target[CUT_LOG_KEY] = log
-  } catch {
-    // Журнал не должен ломать инструмент
-  }
-}
+export {
+  CUT_DEBUG_FLAG,
+  CUT_LOG_KEY,
+  CUT_STATE_ATTR,
+  type CutLogEntry,
+  setCutState,
+} from './diagnostics'
 
 export class CutController {
   private readonly options: CutControllerOptions
   private readonly mode: CutMode
-  /** Активность редактора растительности, запущенная сейчас. */
+  /** Активность редактора, запущенная сейчас. */
   private tracked: unknown = null
+  /** Умеет ли запомненная активность править элементы: решается при чтении её attrs. */
+  private trackedEditable = false
   private editor: CutEditor | null = null
   /** Цель разреза для открытого объекта: растительность или водоём. */
   private target: CutTarget | null = null
@@ -195,7 +134,9 @@ export class CutController {
 
     this.cleanupHook = installActivityHook(
       {
-        onStart: (activity) => this.handleActivityStart(activity),
+        onStart: (activity) => {
+          this.attachActivity(activity)
+        },
         onStop: (activity) => this.detachActivity(activity),
       },
       {
@@ -229,8 +170,8 @@ export class CutController {
   /**
    * Реагирует на запуск активности.
    *
-   * Запоминаем последнюю растительную активность и пытаемся получить из неё
-   * редактор. Возвращает `true`, если разрез уже доступен.
+   * Запоминаем подходящую активность и пытаемся получить из неё редактор.
+   * Возвращает `true`, если разрез уже доступен.
    */
   public attachActivity(activity: unknown): boolean {
     this.track(activity)
@@ -249,6 +190,7 @@ export class CutController {
 
   public detachEditor(): void {
     this.tracked = null
+    this.trackedEditable = false
     this.editor = null
     this.target = null
     this.mode.forgetRingSeams()
@@ -274,18 +216,12 @@ export class CutController {
     return this.mode.handleClick(globalPixels)
   }
 
-  private handleActivityStart(activity: unknown): void {
-    this.track(activity)
-    this.promote()
-    this.syncButton()
-  }
-
   /**
-   * Запоминает активность, если она про растительность.
+   * Запоминает активность, если она относится к одной из целей разреза.
    *
    * Редактор открывает несколько активностей подряд: контейнер объекта,
    * экран выбора контура, редактор топологии. Резать умеет только последний,
-   * поэтому запоминаем любую растительную, а решаем по её возможностям.
+   * поэтому запоминаем любую подходящую, а решаем по её возможностям.
    */
   private track(activity: unknown): void {
     const bridge = createEditorBridge(activity)
@@ -319,14 +255,11 @@ export class CutController {
     // Редактор открывает активности вложенно: сначала редактор топологии,
     // затем контейнер объекта. Контейнер умеет меньше, поэтому не должен
     // вытеснять уже найденный рабочий редактор.
-    if (bridge.canEditElements() || !this.isTrackedEditable()) {
+    const canEdit = bridge.canEditElements()
+    if (canEdit || !this.trackedEditable) {
       this.tracked = activity
+      this.trackedEditable = canEdit
     }
-  }
-
-  private isTrackedEditable(): boolean {
-    if (!this.tracked) return false
-    return createEditorBridge(this.tracked)?.canEditElements() === true
   }
 
   private readAttrsKeys(activity: unknown): string[] | null {
@@ -347,14 +280,21 @@ export class CutController {
   private promote(): void {
     if (!this.tracked) {
       this.editor = null
+      this.trackedEditable = false
       return
     }
 
     const bridge = createEditorBridge(this.tracked)
     if (!bridge) {
       this.editor = null
+      this.trackedEditable = false
       return
     }
+
+    // Заодно обновляем возможности запомненной активности: элементы контура
+    // могли догрузиться уже после её запуска.
+    const canEdit = bridge.canEditElements()
+    this.trackedEditable = canEdit
 
     const elementCategoryId = bridge.getElementCategoryId()
     const categoryId = bridge.getCategoryId()
@@ -371,7 +311,7 @@ export class CutController {
     }
 
     const elements = bridge.getElements()
-    if (!bridge.canEditElements() || elements.length === 0) {
+    if (!canEdit || elements.length === 0) {
       this.editor = null
       this.target = null
       setCutState(`wait:${String(elementCategoryId ?? categoryId)}`)
