@@ -1,5 +1,4 @@
 import { browser } from 'wxt/browser'
-import { isFirefox } from '@/lib/browser'
 import {
   getStoredExtensionThemeMode,
   getSystemTheme,
@@ -8,10 +7,9 @@ import {
   type Theme,
 } from '@/lib/theme'
 
-export const GO_TO_MENU_ITEM_HOVER_VAR = '--nmap-uploader-menu-item-hover-bg'
+export const GO_TO_MENU_ITEM_HOVER_VAR = '--yamapper-menu-item-hover-bg'
 
-const GO_TO_THEME_TARGETS =
-  '.nmap-uploader-popup:not(.nmap-uploader-popup--tooltip), .nmap-uploader-split'
+const GO_TO_THEME_TARGETS = '.yamapper-popup:not(.yamapper-popup--tooltip), .yamapper-split'
 
 export type GoToThemeColors = {
   background: string
@@ -23,42 +21,26 @@ export type GoToThemeColors = {
 const GO_TO_THEME_LIGHT: GoToThemeColors = {
   background: '#ffffff',
   color: '#000000',
-  hoverBackground: '#ffeba0',
+  hoverBackground: '#f2f2f2',
   boxShadow: '0 4px 16px rgba(0, 0, 0, 0.15)',
 }
 
 const GO_TO_THEME_DARK: GoToThemeColors = {
-  background: '#45464f',
-  color: '#ededed',
-  hoverBackground: '#4d4d4d',
-  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.45)',
-}
-
-/** Совпадает с --dark-surface в theme_tokens.css для Firefox. */
-const GO_TO_THEME_DARK_FIREFOX: GoToThemeColors = {
   background: '#333333',
-  color: '#ededed',
+  color: '#bfbfbf',
   hoverBackground: '#4d4d4d',
   boxShadow: '0 4px 16px rgba(0, 0, 0, 0.45)',
 }
 
 let resolvedExtensionTheme: Theme = 'light'
 
-export const resolveGoToThemeColors = (
-  theme: Theme,
-  options?: { isFirefox?: boolean },
-): GoToThemeColors => {
-  let colors = GO_TO_THEME_LIGHT
-  if (theme === 'dark') {
-    const useFirefoxDark = options?.isFirefox ?? isFirefox()
-    if (useFirefoxDark) {
-      colors = GO_TO_THEME_DARK_FIREFOX
-    } else {
-      colors = GO_TO_THEME_DARK
-    }
-  }
-  return colors
-}
+/**
+ * Цвета go-to UI. Одинаковы во всех браузерах: фон `#45464f` был в Chrome
+ * против `#333333` в Firefox — это то же расхождение, что убрано из панели
+ * (`docs/checklists/panel-parity.md`), а не особенность браузера.
+ */
+export const resolveGoToThemeColors = (theme: Theme): GoToThemeColors =>
+  theme === 'dark' ? GO_TO_THEME_DARK : GO_TO_THEME_LIGHT
 
 export const readGoToThemeColors = (): GoToThemeColors => {
   return resolveGoToThemeColors(resolvedExtensionTheme)
@@ -78,7 +60,7 @@ const applyThemeColors = (element: HTMLElement, colors: GoToThemeColors): void =
 
 export const applyGoToTheme = (element: HTMLElement): void => {
   // Подсказка всегда тёмная: её цвета заданы в CSS и от темы не зависят.
-  if (element.classList.contains('nmap-uploader-popup--tooltip')) {
+  if (element.classList.contains('yamapper-popup--tooltip')) {
     return
   }
   const colors = readGoToThemeColors()
@@ -90,7 +72,7 @@ export const syncGoToTheme = (): void => {
   for (const element of document.querySelectorAll<HTMLElement>(GO_TO_THEME_TARGETS)) {
     applyThemeColors(element, colors)
   }
-  const tooltip = document.querySelector<HTMLElement>('.nmap-uploader-popup--tooltip')
+  const tooltip = document.querySelector<HTMLElement>('.yamapper-popup--tooltip')
   if (tooltip) {
     applyGoToTheme(tooltip)
   }

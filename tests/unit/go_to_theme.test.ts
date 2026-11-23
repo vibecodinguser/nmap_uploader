@@ -6,26 +6,22 @@ describe('resolveGoToThemeColors', () => {
     expect(resolveGoToThemeColors('light')).toEqual({
       background: '#ffffff',
       color: '#000000',
-      hoverBackground: '#ffeba0',
+      hoverBackground: '#f2f2f2',
       boxShadow: '0 4px 16px rgba(0, 0, 0, 0.15)',
     })
   })
 
-  it('возвращает тёмную палитру Chrome', () => {
-    expect(resolveGoToThemeColors('dark', { isFirefox: false })).toEqual({
-      background: '#45464f',
-      color: '#ededed',
+  it('возвращает тёмную палитру редактора', () => {
+    expect(resolveGoToThemeColors('dark')).toEqual({
+      background: '#333333',
+      color: '#bfbfbf',
       hoverBackground: '#4d4d4d',
       boxShadow: '0 4px 16px rgba(0, 0, 0, 0.45)',
     })
   })
 
-  it('в Firefox использует фон #333333', () => {
-    expect(resolveGoToThemeColors('dark', { isFirefox: true })).toEqual({
-      background: '#333333',
-      color: '#ededed',
-      hoverBackground: '#4d4d4d',
-      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.45)',
-    })
+  it('не зависит от браузера: фон один и тот же', () => {
+    // Было расхождение Chrome #45464f / Firefox #333333 — фон обязан совпадать.
+    expect(resolveGoToThemeColors('dark').background).toBe('#333333')
   })
 })

@@ -49,7 +49,7 @@ export const showNspdToast = (
     align-items: center !important;
     gap: 10px !important;
     pointer-events: none !important;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    font-family: "Yandex Sans Text", "YS Text", Arial, Helvetica, sans-serif !important;
   `
 
   const toast = document.createElement('div')
@@ -104,7 +104,7 @@ export const createNspdUploadButton = (onUpload: () => void): HTMLButtonElement 
     transition: background-color 0.2s ease, transform 0.1s ease !important;
     z-index: 99999 !important;
     position: relative !important;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    font-family: "Yandex Sans Text", "YS Text", Arial, Helvetica, sans-serif !important;
     line-height: 1.4 !important;
     visibility: visible !important;
     opacity: 1 !important;
@@ -156,7 +156,7 @@ export const updateFloatingWidget = (
       border-radius: 8px !important;
       padding: 6px 14px !important;
       box-shadow: 0 4px 16px rgba(0,0,0,0.25) !important;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+      font-family: "Yandex Sans Text", "YS Text", Arial, Helvetica, sans-serif !important;
     `
     document.body.appendChild(widget)
   }
@@ -191,7 +191,7 @@ export const updateFloatingWidget = (
       font-weight: 600 !important;
       color: #111111 !important;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+      font-family: "Yandex Sans Text", "YS Text", Arial, Helvetica, sans-serif !important;
       pointer-events: auto !important;
       white-space: nowrap !important;
     `
