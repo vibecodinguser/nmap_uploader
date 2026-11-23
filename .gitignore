@@ -70,3 +70,8 @@ coverage/
 # Аналитика сборки (Vite bundle analyzer)
 stats.html
 stats-*.json
+
+# Сайт справки (docs-site)
+docs-site/.vitepress/dist/
+docs-site/.vitepress/cache/
+docs-site/node_modules/

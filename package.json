@@ -60,8 +60,10 @@
     "stylelint-config-standard": "^40.0.0",
     "typescript": "^5.9.3",
     "vite": "^8.3.8",
+    "vitepress": "^1.6.4",
     "vitest": "^4.1.12",
     "vitest-axe": "^0.1.0",
+    "vue": "^3.5.46",
     "wxt": "^0.20.27"
   }
 }

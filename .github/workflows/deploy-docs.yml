@@ -1,0 +1,61 @@
+name: Deploy docs
+
+# Публикует сайт справки из docs-site/ на GitHub Pages.
+# Деплой — только по ручному запуску, чтобы не выкладывать черновики
+# до того, как раздел готов. После первого успешного деплоя в настройках
+# репозитория: Settings → Pages → Source = "GitHub Actions".
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # нужен для lastUpdated в VitePress
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # Сайт — самостоятельный pnpm-проект в docs-site/ со своим lockfile.
+      # Ставим его из текущего каталога, чтобы pnpm взял docs-site как корень:
+      # так его pnpm-workspace.yaml (allowBuilds для esbuild) действительно
+      # действует. С --ignore-workspace настройка игнорируется.
+      - run: pnpm install --frozen-lockfile
+        working-directory: docs-site
+
+      - run: pnpm build
+        working-directory: docs-site
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs-site/.vitepress/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

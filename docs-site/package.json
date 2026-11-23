@@ -1,0 +1,19 @@
+{
+  "name": "yamapper-docs-site",
+  "description": "Сайт справки расширения Yamapper",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview",
+    "install:ci": "pnpm install --frozen-lockfile"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  },
+  "devDependencies": {
+    "vitepress": "^1.6.4",
+    "vue": "^3.5.46"
+  }
+}
