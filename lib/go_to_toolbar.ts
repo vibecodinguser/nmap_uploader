@@ -6,7 +6,7 @@ import { NSPD_BUTTON_ID } from '@/lib/nspd/nspd_button'
 import { parseStaticSvg } from '@/lib/parse_static_svg'
 import { POLYGON_UPLOAD_BUTTON_ID } from '@/lib/polygon_upload_button'
 
-const GO_TO_ICON_SELECTOR = '.nmap-uploader-goto-icon'
+const GO_TO_ICON_SELECTOR = '.yamapper-goto-icon'
 
 export type GoToToolbarMountState = {
   goToCount: number

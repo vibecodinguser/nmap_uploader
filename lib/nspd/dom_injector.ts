@@ -110,7 +110,7 @@ export const handleUploadNspdObjects = async (
       showNspdToast(errorMsg, 'error')
     }
   } catch (err: unknown) {
-    console.error('[nmap_uploader] error uploading NSPD object:', err)
+    console.error('[yamapper] error uploading NSPD object:', err)
     showNspdToast('Не удалось отправить геометрию в Блокнот картографа', 'error')
   } finally {
     if (span && originalText) {
@@ -215,7 +215,7 @@ export const scanAndMountNspdButtons = (): number => {
 
 /** Запускает наблюдатель DOM на странице nspd.gov.ru. */
 export const startNspdDomObserver = (): (() => void) => {
-  console.log('[nmap_uploader] NSPD DOM observer starting on', window.location.href)
+  console.log('[yamapper] NSPD DOM observer starting on', window.location.href)
   updateFloatingWidget(null)
   scanAndMountNspdButtons()
 

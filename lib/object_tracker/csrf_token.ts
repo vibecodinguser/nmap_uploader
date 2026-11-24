@@ -42,7 +42,7 @@ const setToken = (token: string): void => {
     try {
       listener(token)
     } catch (error: unknown) {
-      console.warn('[nmap_uploader] csrf listener failed:', error)
+      console.warn('[yamapper] csrf listener failed:', error)
     }
   }
 }

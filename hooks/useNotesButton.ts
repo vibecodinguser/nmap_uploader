@@ -25,7 +25,7 @@ export function useNotesButton() {
           setIsLoaded(true)
         }
       } catch (error: unknown) {
-        console.warn('[nmap_uploader] getIsEnabled failed:', error)
+        console.warn('[yamapper] getIsEnabled failed:', error)
       }
     })()
 
@@ -57,7 +57,7 @@ export function useNotesButton() {
         await setStoredNotesButtonEnabled(enabled)
         await notifyMapTabsAboutGoToMenu()
       } catch (error: unknown) {
-        console.warn('[nmap_uploader] notes button setting save failed:', error)
+        console.warn('[yamapper] notes button setting save failed:', error)
       }
     })()
   }, [])

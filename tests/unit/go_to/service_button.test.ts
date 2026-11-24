@@ -25,7 +25,7 @@ describe('createGoToServiceButton', () => {
     for (const neighbour of neighbours) {
       for (const className of neighbour.classList) {
         // Маркер конкретной кнопки у каждого свой — сравниваем остальные.
-        if (className.startsWith('nmap-uploader-') && className !== 'nmap-uploader-goto-btn') {
+        if (className.startsWith('yamapper-') && className !== 'yamapper-goto-btn') {
           continue
         }
         expect(ownClasses.has(className)).toBe(true)

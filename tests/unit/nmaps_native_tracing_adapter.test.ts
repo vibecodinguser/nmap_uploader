@@ -41,7 +41,7 @@ describe('createNativeTracingAdapter', () => {
 
     expect(original).toEqual([nativeCandidate])
     expect(result).toHaveLength(2)
-    expect((result[1] as { getId: () => string }).getId()).toBe('nmap-uploader:note:polygon')
+    expect((result[1] as { getId: () => string }).getId()).toBe('yamapper:note:polygon')
     expect(Object.isFrozen(result[1])).toBe(true)
     const geometry = (result[1] as { getGeometry: () => FakePolygon }).getGeometry()
     expect(geometry.getType()).toBe('Polygon')
@@ -66,7 +66,7 @@ describe('createNativeTracingAdapter', () => {
       override getGeoObjectsByCoords(_coordinates: Coordinate): Promise<unknown[]> {
         return Promise.resolve([
           nativeCandidate,
-          { getId: () => 'nmap-uploader:note:polygon', getGeometry: () => new FakePolygon([[]]) },
+          { getId: () => 'yamapper:note:polygon', getGeometry: () => new FakePolygon([[]]) },
         ])
       }
     }
@@ -81,7 +81,7 @@ describe('createNativeTracingAdapter', () => {
 
     expect(
       withTarget.filter(
-        (item) => (item as { getId: () => string }).getId() === 'nmap-uploader:note:polygon',
+        (item) => (item as { getId: () => string }).getId() === 'yamapper:note:polygon',
       ),
     ).toHaveLength(1)
     expect(withoutTarget).toHaveLength(2)
@@ -121,7 +121,7 @@ describe('createNativeTracingAdapter', () => {
 
     expect(result.map((item) => (item as { getId: () => string }).getId())).toEqual([
       'native',
-      'nmap-uploader:note:near-second',
+      'yamapper:note:near-second',
     ])
     adapter.destroy()
   })
@@ -155,7 +155,7 @@ describe('createNativeTracingAdapter', () => {
 
     expect(result.map((item) => (item as { getId: () => string }).getId())).toEqual([
       'native',
-      'nmap-uploader:note:first',
+      'yamapper:note:first',
     ])
     adapter.destroy()
   })
@@ -176,7 +176,7 @@ describe('createNativeTracingAdapter', () => {
 
     expect(adapter.getCapability()).toBe('disabled')
     expect(InvalidHotspot.prototype.getGeoObjectsByCoords).toBe(original)
-    expect(debug).toHaveBeenCalledWith('[nmap_uploader] native tracing unavailable')
+    expect(debug).toHaveBeenCalledWith('[yamapper] native tracing unavailable')
     adapter.destroy()
   })
 

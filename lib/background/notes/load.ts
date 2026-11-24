@@ -20,7 +20,7 @@ export const handleNotesLoad: MessageHandler = guard(
       const ports = await createPorts()
       if (!ports) {
         // Диагностика: чаще всего это «панель открыта до входа в Яндекс».
-        console.debug('[nmap_uploader notes] нет токена в storage, заметки недоступны')
+        console.debug('[yamapper notes] нет токена в storage, заметки недоступны')
         sendResponse({ ok: false, error: 'AUTH_REQUIRED' })
         return
       }

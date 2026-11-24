@@ -90,19 +90,19 @@ describe('go_to_split_view/sync_manager', () => {
   it('динамически обновляет класс предупреждения на баннере при изменении зума', () => {
     const banner = document.createElement('div')
     banner.id = SPLIT_BANNER_ID
-    banner.className = 'nmap-uploader-split-banner'
+    banner.className = 'yamapper-split-banner'
     markNmapOwned(banner)
     document.body.appendChild(banner)
 
     const dom = mountSplitDomElements('https://nakarte.me')
     const manager = new SplitSyncManager(dom, { longitude: 37.61, latitude: 55.75, zoom: 19 })
     manager.initListeners()
-    expect(banner.classList.contains('nmap-uploader-split-banner--warning')).toBe(true)
+    expect(banner.classList.contains('yamapper-split-banner--warning')).toBe(true)
 
     // При имитации колесика мыши (zoom out до 18)
     const wheelEvent = new WheelEvent('wheel', { deltaY: 100 })
     window.dispatchEvent(wheelEvent)
-    expect(banner.classList.contains('nmap-uploader-split-banner--warning')).toBe(false)
+    expect(banner.classList.contains('yamapper-split-banner--warning')).toBe(false)
 
     manager.dispose()
   })

@@ -23,7 +23,7 @@ export function useSplitViewButton() {
           setIsLoaded(true)
         }
       } catch (error: unknown) {
-        console.warn('[nmap_uploader] getIsEnabled failed:', error)
+        console.warn('[yamapper] getIsEnabled failed:', error)
       }
     })()
 
@@ -55,7 +55,7 @@ export function useSplitViewButton() {
         await setStoredSplitButtonEnabled(enabled)
         await notifyMapTabsAboutGoToMenu()
       } catch (error: unknown) {
-        console.warn('[nmap_uploader] split view button setting save failed:', error)
+        console.warn('[yamapper] split view button setting save failed:', error)
       }
     })()
   }, [])

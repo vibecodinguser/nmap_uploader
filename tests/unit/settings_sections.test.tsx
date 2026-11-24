@@ -296,9 +296,7 @@ describe('SettingsTab: блок «О версии»', () => {
 
     const link = screen.getByRole('link', { name: 'Предложить функцию' })
 
-    expect(link.getAttribute('href')).toBe(
-      'https://github.com/vibecodinguser/nmap_uploader/discussions',
-    )
+    expect(link.getAttribute('href')).toBe('https://github.com/vibecodinguser/yamapper/discussions')
     expect(link.getAttribute('target')).toBe('_blank')
     expect(link.getAttribute('rel')).toBe('noopener noreferrer')
   })

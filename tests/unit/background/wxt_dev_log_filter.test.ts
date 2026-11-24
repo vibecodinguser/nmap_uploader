@@ -28,7 +28,7 @@ describe('shouldSilenceWxtLog', () => {
   })
 
   it('не трогает сообщения расширения', () => {
-    expect(shouldSilenceWxtLog(['[nmap_uploader] notes sidebar sync failed:', {}])).toBe(false)
+    expect(shouldSilenceWxtLog(['[yamapper] notes sidebar sync failed:', {}])).toBe(false)
     expect(shouldSilenceWxtLog(['Reloaded: notes-panel'])).toBe(false)
   })
 

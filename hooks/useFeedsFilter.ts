@@ -22,7 +22,7 @@ export const useFeedsFilter = () => {
           setIsLoaded(true)
         }
       } catch (error: unknown) {
-        console.warn('[nmap_uploader] load FeedsFilter state failed:', error)
+        console.warn('[yamapper] load FeedsFilter state failed:', error)
       }
     }
 
@@ -55,7 +55,7 @@ export const useFeedsFilter = () => {
         setIsEnabledState(enabled)
         await setStoredFeedsFilterEnabled(enabled)
       } catch (error: unknown) {
-        console.warn('[nmap_uploader] save FeedsFilter state failed:', error)
+        console.warn('[yamapper] save FeedsFilter state failed:', error)
       }
     }
 

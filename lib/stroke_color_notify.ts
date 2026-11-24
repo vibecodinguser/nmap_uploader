@@ -21,7 +21,7 @@ export const notifyMapTabsAboutStrokeColor = async (
       return { ok: true }
     }
   } catch (error: unknown) {
-    console.warn('[nmap_uploader] applyStrokeColor notify failed:', error)
+    console.warn('[yamapper] applyStrokeColor notify failed:', error)
   }
 
   return { ok: isMapPageContext() }

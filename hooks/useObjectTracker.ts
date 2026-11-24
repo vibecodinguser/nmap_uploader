@@ -24,7 +24,7 @@ export const useObjectTracker = () => {
           setIsLoaded(true)
         }
       } catch (error: unknown) {
-        console.warn('[nmap_uploader] load object tracker state failed:', error)
+        console.warn('[yamapper] load object tracker state failed:', error)
       }
     }
 
@@ -60,7 +60,7 @@ export const useObjectTracker = () => {
         setIsEnabledState(enabled)
         await setTrackerEnabled(enabled)
       } catch (error: unknown) {
-        console.warn('[nmap_uploader] save object tracker state failed:', error)
+        console.warn('[yamapper] save object tracker state failed:', error)
       }
     })()
   }, [])

@@ -15,14 +15,14 @@ export const GO_TO_MENU_ITEM_ID_PREFIX = 'nmapUploaderGoToLink'
 export const createGoToMenuElement = (): HTMLElement => {
   const menu = document.createElement('div')
   menu.id = MENU_ID
-  menu.className = 'nmap-uploader-popup'
+  menu.className = 'yamapper-popup'
 
   const content = document.createElement('div')
-  content.className = 'nmap-uploader-popup__content'
+  content.className = 'yamapper-popup__content'
 
   const menuItems = document.createElement('div')
   menuItems.id = MENU_ITEMS_ID
-  menuItems.className = 'nmap-uploader-menu'
+  menuItems.className = 'yamapper-menu'
   menuItems.tabIndex = 0
   menuItems.setAttribute('role', 'menu')
 
@@ -40,7 +40,7 @@ export const createMenuItemElement = (
 ): HTMLDivElement => {
   const menuItem = document.createElement('div')
   menuItem.id = `${GO_TO_MENU_ITEM_ID_PREFIX}${item.name}`
-  menuItem.className = 'nmap-uploader-menu__item'
+  menuItem.className = 'yamapper-menu__item'
   menuItem.setAttribute('role', 'menuitem')
   menuItem.style.backgroundImage = `url("${iconUrl}")`
   menuItem.textContent = getGoToSourceDisplayName(item.name, locale)

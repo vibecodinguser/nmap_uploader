@@ -199,7 +199,7 @@ components/notes_panel/            NoteList, NoteProperties, NoteKindIcon, Color
 - **Background** — `lib/background/notes_handlers.ts`: загрузка снимка (кэш → Диск), запись, удаление, группы, перенос в группу, загрузка иконок, выбор заметки, скрытие, начало и конец рисования.
 - **Слой карты** — `lib/notes_layer/*`: рендер через MAIN-мир, собственные SVG-иконки точек, штриховка через `fillImageHref`, подписи отдельными метками, выделение выбором, передача контуров нативной трассировке. Тесты: `tests/unit/notes_layer/objects.test.ts`, `tests/unit/nmaps/repaint_and_layer.test.ts`.
 - **Хост панели** — `lib/notes_panel/host.ts`: iframe по нижней кромке, высота 25 %/100 %, ручка, запоминание высоты, кнопка «Редактировать» в `nk-map-bottom-controls-view`.
-- **Content script** — `entrypoints/notes-panel-host.content.tsx`; кнопка `nmapUploaderNotesButton` теперь открывает панель через событие `nmap-uploader-toggle-notes-panel`.
+- **Content script** — `entrypoints/notes-panel-host.content.tsx`; кнопка `nmapUploaderNotesButton` теперь открывает панель через событие `yamapper-toggle-notes-panel`.
 - **UI панели** — `entrypoints/notes-panel/*`, `components/notes_panel/*`: заголовок, поиск, выбор вида фигуры, виртуализированный список (своя windowing-логика, без новой зависимости), свойства (название, описание, дата, цвет, прозрачность, толщина, подпись, видимость), удаление с «Отменить» на 5 секунд.
 - **Удалено** — `lib/notes_sidebar/*`, `components/NotesTab.tsx`, `NoteListItem.tsx`, `AnchoredTooltip.tsx`, `hooks/useNotesManagement.ts`, `lib/notes_popup.ts`, `lib/nmaps/object_drawer.ts`, `lib/nmaps/note_visibility.ts`, `lib/nmaps_draw_objects.ts`, `DRAW_MAP_OBJECTS`/`GET_DRAW_MAP_OBJECTS`, вместе с их тестами и мёртвым CSS.
 

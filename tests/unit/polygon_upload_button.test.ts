@@ -11,6 +11,6 @@ describe('polygon upload toolbar button', () => {
     expect(button.type).toBe('button')
     expect(button.getAttribute('aria-label')).toBe('Загрузить полигоны')
     expect(button.classList.contains('nk-map-region-view__button')).toBe(true)
-    expect(button.querySelector('.nmap-uploader-goto-icon svg')).not.toBeNull()
+    expect(button.querySelector('.yamapper-goto-icon svg')).not.toBeNull()
   })
 })

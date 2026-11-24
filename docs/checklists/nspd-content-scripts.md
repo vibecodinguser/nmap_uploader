@@ -5,7 +5,7 @@
 В консоли background повторялось:
 
 ```
-[nmap_uploader] syncNspdContentScriptsFromStorage failed:
+[yamapper] syncNspdContentScriptsFromStorage failed:
   Error: Duplicate script ID 'nmap-nspd-collector'
 ```
 

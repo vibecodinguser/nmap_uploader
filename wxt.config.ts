@@ -109,7 +109,7 @@ function getChromeDevKey(browser: string, command: string) {
       keySettings = { key: process.env.CHROME_EXTENSION_KEY }
     } else {
       console.warn(
-        '[nmap_uploader] CHROME_EXTENSION_KEY не задан: id расширения будет случайным, ' +
+        '[yamapper] CHROME_EXTENSION_KEY не задан: id расширения будет случайным, ' +
           'авторизация Яндекса не сработает. Скопируйте .env из основного каталога репозитория.',
       )
     }

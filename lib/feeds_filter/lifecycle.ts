@@ -166,7 +166,7 @@ export class FeedFilterLifecycleManager {
         this.removeFilterDropdown()
       }
     } catch (error: unknown) {
-      console.warn('[nmap_uploader] FeedsFilter init failed:', error)
+      console.warn('[yamapper] FeedsFilter init failed:', error)
     }
   }
 

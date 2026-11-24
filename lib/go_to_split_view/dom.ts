@@ -263,14 +263,14 @@ export const mountSplitDomElements = (
 ): SplitDomElements => {
   const root = document.createElement('div')
   root.id = SPLIT_ROOT_ID
-  root.className = 'nmap-uploader-split'
+  root.className = 'yamapper-split'
   markNmapOwned(root)
 
   const iframeWrap = document.createElement('div')
-  iframeWrap.className = 'nmap-uploader-split__iframe-wrap'
+  iframeWrap.className = 'yamapper-split__iframe-wrap'
 
   const frame = document.createElement('iframe')
-  frame.className = 'nmap-uploader-split__iframe'
+  frame.className = 'yamapper-split__iframe'
   frame.src = nakarteUrl
   frame.title = 'Nakarte'
   frame.setAttribute('referrerpolicy', 'no-referrer-when-downgrade')
@@ -280,10 +280,10 @@ export const mountSplitDomElements = (
 
   iframeWrap.appendChild(frame)
 
-  const rightOverlay = createCursorOverlay('nmap-uploader-split__cursor-overlay', false)
+  const rightOverlay = createCursorOverlay('yamapper-split__cursor-overlay', false)
   const rightCursorMarker = rightOverlay.firstElementChild as HTMLElement
 
-  const leftOverlay = createCursorOverlay('nmap-uploader-split__left-cursor-overlay', true)
+  const leftOverlay = createCursorOverlay('yamapper-split__left-cursor-overlay', true)
   const leftCursorMarker = leftOverlay.firstElementChild as HTMLElement
 
   root.appendChild(iframeWrap)
@@ -324,7 +324,7 @@ export const mountSplitNoticeBanner = (text: string, initialZoom?: number): HTML
 
   const banner = document.createElement('div')
   banner.id = SPLIT_BANNER_ID
-  banner.className = 'nmap-uploader-split-banner'
+  banner.className = 'yamapper-split-banner'
   markNmapOwned(banner)
   if (typeof initialZoom === 'number' && initialZoom > SPLIT_MAX_RECOMMENDED_ZOOM) {
     banner.classList.add(SPLIT_BANNER_WARNING_CLASS)

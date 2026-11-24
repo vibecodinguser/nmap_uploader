@@ -154,9 +154,9 @@ export class FeedFilterDomAdapter {
       existingActionPopup.remove()
     }
 
-    const hiddenCards = document.querySelectorAll('.nmap-uploader-feed-event-hidden')
+    const hiddenCards = document.querySelectorAll('.yamapper-feed-event-hidden')
     hiddenCards.forEach((card) => {
-      card.classList.remove('nmap-uploader-feed-event-hidden')
+      card.classList.remove('yamapper-feed-event-hidden')
     })
   }
 

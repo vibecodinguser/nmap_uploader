@@ -112,7 +112,7 @@ const renderNotesEvent = (
   geometries: Record<string, unknown>,
   hiddenIds: string[] = [],
 ): CustomEvent =>
-  new CustomEvent('nmap-uploader-render-notes', {
+  new CustomEvent('yamapper-render-notes', {
     detail: JSON.stringify({ notes, geometries, groups: [], hiddenIds, iconUrls: {} }),
   })
 
@@ -254,7 +254,7 @@ describe('nmaps-location-main.content', () => {
     const withoutTarget = await new FakeHotspot().getGeoObjectsByCoords([40, 6])
 
     expect(withTarget.map((item) => (item as { getId: () => string }).getId())).toContain(
-      'nmap-uploader:note:right',
+      'yamapper:note:right',
     )
     expect(withoutTarget).toEqual([])
     expect(document.querySelector('[data-nmap-snap-marker]')).toBeNull()
@@ -318,7 +318,7 @@ describe('nmaps-location-main.content', () => {
 
     const result = await new FakeHotspot().getGeoObjectsByCoords([50, 5])
     expect(result.map((item) => (item as { getId: () => string }).getId())).toContain(
-      'nmap-uploader:note:sample',
+      'yamapper:note:sample',
     )
   })
 })

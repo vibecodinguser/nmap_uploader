@@ -16,13 +16,13 @@ export interface ActionFilterOption {
   readonly colorClass?: string
 }
 
-export const FEEDS_FILTER_SELECT_ID = 'nmap-uploader-feeds-filter-select'
+export const FEEDS_FILTER_SELECT_ID = 'yamapper-feeds-filter-select'
 export const FEEDS_FILTER_BAR_ID = FEEDS_FILTER_SELECT_ID
-export const FEEDS_FILTER_POPUP_ID = 'nmap-uploader-feeds-filter-popup'
-export const FEEDS_ACTION_FILTER_SELECT_ID = 'nmap-uploader-feeds-action-filter-select'
-export const FEEDS_ACTION_FILTER_POPUP_ID = 'nmap-uploader-feeds-action-filter-popup'
-export const FEEDS_FILTER_STYLES_ID = 'nmap-uploader-feeds-filter-styles'
-export const FEED_HIDDEN_CLASS = 'nmap-uploader-feed-event-hidden'
+export const FEEDS_FILTER_POPUP_ID = 'yamapper-feeds-filter-popup'
+export const FEEDS_ACTION_FILTER_SELECT_ID = 'yamapper-feeds-action-filter-select'
+export const FEEDS_ACTION_FILTER_POPUP_ID = 'yamapper-feeds-action-filter-popup'
+export const FEEDS_FILTER_STYLES_ID = 'yamapper-feeds-filter-styles'
+export const FEED_HIDDEN_CLASS = 'yamapper-feed-event-hidden'
 
 export const HISTORY_PERIOD_OPTIONS = [1, 3, 7] as const
 export type HistoryPeriodDays = (typeof HISTORY_PERIOD_OPTIONS)[number]

@@ -12,7 +12,7 @@ export default defineContentScript({
     })
 
     lifecycle.start().catch((error: unknown) => {
-      console.warn('[nmap_uploader] FeedsFilter start failed:', error)
+      console.warn('[yamapper] FeedsFilter start failed:', error)
     })
 
     ctx.onInvalidated(() => {

@@ -24,7 +24,7 @@ export const usePointCounter = () => {
           setIsLoaded(true)
         }
       } catch (error: unknown) {
-        console.warn('[nmap_uploader] load point counter state failed:', error)
+        console.warn('[yamapper] load point counter state failed:', error)
       }
     })()
 
@@ -55,7 +55,7 @@ export const usePointCounter = () => {
         setIsEnabledState(enabled)
         await setStoredPointCounterEnabled(enabled)
       } catch (error: unknown) {
-        console.warn('[nmap_uploader] save point counter state failed:', error)
+        console.warn('[yamapper] save point counter state failed:', error)
       }
     })()
   }, [])

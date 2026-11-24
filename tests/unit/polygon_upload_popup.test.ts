@@ -56,8 +56,8 @@ describe('polygon upload popup', () => {
     const popup = document.getElementById(POLYGON_UPLOAD_POPUP_ID)
 
     expect(popup?.className).not.toMatch(/nk-popup/)
-    expect(popup?.classList.contains('nmap-uploader-popup--visible')).toBe(true)
-    expect(popup?.classList.contains('nmap-uploader-polygon-popup')).toBe(true)
+    expect(popup?.classList.contains('yamapper-popup--visible')).toBe(true)
+    expect(popup?.classList.contains('yamapper-polygon-popup')).toBe(true)
     expect(popup?.style.top).not.toBe('')
     expect(popup?.style.bottom).toBe('auto')
     expect(Number.parseFloat(popup?.style.maxHeight || '0')).toBeGreaterThan(100)

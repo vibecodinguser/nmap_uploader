@@ -10,7 +10,7 @@ const persistYandexBrowserFlag = async (): Promise<void> => {
 }
 
 const reportPersistYandexBrowserFlagError = (error: unknown): void => {
-  console.error('[nmap_uploader] persistYandexBrowserFlag failed:', error)
+  console.error('[yamapper] persistYandexBrowserFlag failed:', error)
 }
 
 const startPersistYandexBrowserFlag = (): void => {

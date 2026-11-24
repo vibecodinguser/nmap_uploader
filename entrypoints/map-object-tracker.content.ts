@@ -16,7 +16,7 @@ export default defineContentScript({
     void syncLocaleFromStorage()
 
     controller.start().catch((error: unknown) => {
-      console.warn('[nmap_uploader] object tracker start failed:', error)
+      console.warn('[yamapper] object tracker start failed:', error)
     })
 
     ctx.onInvalidated(() => {

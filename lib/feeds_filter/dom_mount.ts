@@ -125,10 +125,7 @@ export const attachFilterDropdownToDom = (
     try {
       targetSelect.insertAdjacentElement('afterend', dropdownElement)
     } catch (error) {
-      console.warn(
-        '[nmap-uploader] Ошибка при размещении селекта фильтра рядом с targetSelect:',
-        error,
-      )
+      console.warn('[yamapper] Ошибка при размещении селекта фильтра рядом с targetSelect:', error)
       return false
     }
   }
@@ -202,7 +199,7 @@ export const attachActionFilterDropdownToDom = (
         categoryFilter.insertAdjacentElement('afterend', actionDropdownElement)
       } catch (error) {
         console.warn(
-          '[nmap-uploader] Ошибка при размещении селекта действий рядом с categoryFilter:',
+          '[yamapper] Ошибка при размещении селекта действий рядом с categoryFilter:',
           error,
         )
         return false
@@ -212,10 +209,7 @@ export const attachActionFilterDropdownToDom = (
     try {
       filtersSection.appendChild(actionDropdownElement)
     } catch (error) {
-      console.warn(
-        '[nmap-uploader] Ошибка при размещении селекта действий в filtersSection:',
-        error,
-      )
+      console.warn('[yamapper] Ошибка при размещении селекта действий в filtersSection:', error)
       return false
     }
   }

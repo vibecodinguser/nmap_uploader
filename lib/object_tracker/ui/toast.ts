@@ -6,7 +6,7 @@
  */
 import { ensureTrackerStyles } from './styles'
 
-export const TRACKER_TOAST_ID = 'nmap-uploader-object-tracker-toast'
+export const TRACKER_TOAST_ID = 'yamapper-object-tracker-toast'
 export const TRACKER_TOAST_CLASS = 'nmap-ot-toast'
 export const TRACKER_TOAST_VISIBLE_CLASS = 'nmap-ot-toast_visible'
 

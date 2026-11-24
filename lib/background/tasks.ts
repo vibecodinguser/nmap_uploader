@@ -2,7 +2,7 @@
  * Адаптер вызовов фоновых задач (Background Task Runner).
  */
 export const logBackgroundTaskFailure = (label: string, error: unknown): void => {
-  console.warn(`[nmap_uploader] ${label} failed:`, error)
+  console.warn(`[yamapper] ${label} failed:`, error)
 }
 
 export const executeBackgroundTask = async (

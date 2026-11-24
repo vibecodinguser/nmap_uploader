@@ -7,6 +7,6 @@ export const notifyMapTabsAboutGoToMenu = async (): Promise<void> => {
   try {
     await browser.runtime.sendMessage({ action: GO_TO_REFRESH_ACTION })
   } catch (error: unknown) {
-    console.warn('[nmap_uploader] refreshGoToMenu notify failed:', error)
+    console.warn('[yamapper] refreshGoToMenu notify failed:', error)
   }
 }

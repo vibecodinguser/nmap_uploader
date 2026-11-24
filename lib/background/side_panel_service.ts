@@ -87,7 +87,7 @@ export const tryOpenNativeSidePanel = async (clickedTab: Browser.tabs.Tab): Prom
         openedNatively = true
       }
     } catch (error: unknown) {
-      console.warn('[nmap_uploader] native sidePanel.open failed:', error)
+      console.warn('[yamapper] native sidePanel.open failed:', error)
     }
   }
   return openedNatively
@@ -116,7 +116,7 @@ export const configureInstalledSidePanel = async (): Promise<void> => {
     try {
       await sidePanel?.setOptions({ path: PANEL_PAGE, enabled: true })
     } catch (error: unknown) {
-      console.warn('[nmap_uploader] sidePanel.setOptions failed:', error)
+      console.warn('[yamapper] sidePanel.setOptions failed:', error)
     }
   }
 }

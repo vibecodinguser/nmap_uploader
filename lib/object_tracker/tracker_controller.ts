@@ -84,7 +84,7 @@ export const setTrackerBadge = async (count: number): Promise<void> => {
       await action.setBadgeTextColor?.({ color: BADGE_TEXT_COLOR })
     }
   } catch (error: unknown) {
-    console.warn('[nmap_uploader] object tracker badge failed:', error)
+    console.warn('[yamapper] object tracker badge failed:', error)
   }
 }
 
@@ -306,7 +306,7 @@ export class ObjectTrackerController {
         this.handleRateLimited(error.retryAfterMs)
         return
       }
-      console.warn('[nmap_uploader] object tracker refresh failed:', error)
+      console.warn('[yamapper] object tracker refresh failed:', error)
       this.errors = { '*': 'FETCH_FAILED' }
       this.render()
     } finally {
@@ -370,7 +370,7 @@ export class ObjectTrackerController {
       this.render()
       return { ok: true }
     } catch (error: unknown) {
-      console.warn('[nmap_uploader] object tracker add failed:', error)
+      console.warn('[yamapper] object tracker add failed:', error)
       return { ok: false, error: 'FETCH_FAILED' }
     }
   }
@@ -428,7 +428,7 @@ export class ObjectTrackerController {
       await this.removeObject(id)
       return { ok: true }
     } catch (error: unknown) {
-      console.warn('[nmap_uploader] object tracker remove failed:', error)
+      console.warn('[yamapper] object tracker remove failed:', error)
       return { ok: false, error: 'FETCH_FAILED' }
     }
   }

@@ -109,7 +109,7 @@ export const processLogout = async (
     await resetNotesSession()
     sendResponse({ ok: true })
   } catch (error: unknown) {
-    console.error('[nmap_uploader] logout failed:', error)
+    console.error('[yamapper] logout failed:', error)
     sendResponse({ ok: false })
   }
 }
@@ -126,7 +126,7 @@ export const processListOccupiedDates = async (
       sendResponse({ ok: true, dates: [] })
     }
   } catch (error: unknown) {
-    console.error('[nmap_uploader] listOccupiedDates failed:', error)
+    console.error('[yamapper] listOccupiedDates failed:', error)
     const t = await getBackgroundTranslator()
     const folderReadErrorFallback = t('auth.folderReadError')
     sendResponse({

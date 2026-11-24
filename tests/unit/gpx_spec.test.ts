@@ -55,11 +55,11 @@ describe('GPX 1.1 spec: корневой элемент gpx', () => {
     const root = doc.documentElement
 
     expect(root.getAttribute('version')).toBe(GPX_VERSION)
-    expect(root.getAttribute('creator')).toBe('nmap_uploader_test')
+    expect(root.getAttribute('creator')).toBe('yamapper_test')
   })
 
   it('отклоняет отсутствие creator', () => {
-    const broken = readGpxFixture('point.gpx').replace('creator="nmap_uploader_test"', '')
+    const broken = readGpxFixture('point.gpx').replace('creator="yamapper_test"', '')
     expectGpxError(() => validateGpxText(broken), 'creator обязателен')
   })
 

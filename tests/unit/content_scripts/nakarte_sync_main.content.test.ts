@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import nakarteSyncMainScript from '@/entrypoints/nakarte-sync-main.content'
 import { NMAPS_ORIGIN } from '@/lib/extension_origins'
-import { NMAP_UPLOADER_MSG_SOURCE } from '@/lib/go_to_map_sync'
+import { YAMAPPER_MSG_SOURCE } from '@/lib/go_to_map_sync'
 import { createContentScriptContext, mockIframeWindow } from '@/tests/setup/content_script_context'
 
 describe('nakarte-sync-main.content', () => {
@@ -26,7 +26,7 @@ describe('nakarte-sync-main.content', () => {
     window.dispatchEvent(
       new MessageEvent('message', {
         data: {
-          source: NMAP_UPLOADER_MSG_SOURCE,
+          source: YAMAPPER_MSG_SOURCE,
           type: 'set_location',
           location: { longitude: 37.6, latitude: 55.7, zoom: 12 },
         },
@@ -50,7 +50,7 @@ describe('nakarte-sync-main.content', () => {
     window.dispatchEvent(
       new MessageEvent('message', {
         data: {
-          source: NMAP_UPLOADER_MSG_SOURCE,
+          source: YAMAPPER_MSG_SOURCE,
           type: 'set_location',
           location: { longitude: 37.6123456, latitude: 55.7123456, zoom: 12 },
         },
@@ -75,7 +75,7 @@ describe('nakarte-sync-main.content', () => {
     window.dispatchEvent(
       new MessageEvent('message', {
         data: {
-          source: NMAP_UPLOADER_MSG_SOURCE,
+          source: YAMAPPER_MSG_SOURCE,
           type: 'set_location',
           location: { longitude: 37.6123456, latitude: 55.7123456, zoom: 14 },
         },
@@ -99,7 +99,7 @@ describe('nakarte-sync-main.content', () => {
     window.dispatchEvent(
       new MessageEvent('message', {
         data: {
-          source: NMAP_UPLOADER_MSG_SOURCE,
+          source: YAMAPPER_MSG_SOURCE,
           type: 'set_location',
           location: { longitude: 37.6, latitude: 55.7, zoom: 12 },
         },

@@ -1,4 +1,4 @@
-#nmap-cut-toast {
+#yamapper-cut-toast {
   position: fixed;
   top: 64px;
   left: 50%;
@@ -17,6 +17,6 @@
   pointer-events: none;
 }
 
-#nmap-cut-toast[hidden] {
+#yamapper-cut-toast[hidden] {
   display: none;
 }

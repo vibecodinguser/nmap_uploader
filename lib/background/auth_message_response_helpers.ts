@@ -41,7 +41,7 @@ export const handleYandexAuthFailure = async (
   sendResponse: (response: AuthMessageResponse) => void,
   logLabel: string,
 ): Promise<void> => {
-  console.error(`[nmap_uploader] ${logLabel} failed:`, error)
+  console.error(`[yamapper] ${logLabel} failed:`, error)
   const t = await getBackgroundTranslator()
   const authErrorFallback = t('auth.authError')
   const errorMessage = getErrorMessage(error, authErrorFallback)

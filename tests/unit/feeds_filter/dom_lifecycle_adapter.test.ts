@@ -162,7 +162,7 @@ describe('FeedFilterDomAdapter', () => {
     const newPanel = buildFeedDom()
     adapter.checkAndAttach(true)
 
-    const dropdown = document.getElementById('nmap-uploader-feeds-filter-select')
+    const dropdown = document.getElementById('yamapper-feeds-filter-select')
     expect(dropdown).not.toBeNull()
     expect(dropdown?.style.display).toBe('')
     expect(dropdown?.closest('.nk-user-feeds-view')).toBe(newPanel)
@@ -182,7 +182,7 @@ describe('FeedFilterDomAdapter', () => {
     container.style.display = ''
     adapter.checkAndAttach(true)
 
-    const dropdown = document.getElementById('nmap-uploader-feeds-filter-select')
+    const dropdown = document.getElementById('yamapper-feeds-filter-select')
     expect(dropdown).not.toBeNull()
     expect(dropdown?.style.display).toBe('')
     expect(dropdown?.closest('.nk-user-feeds-view')).toBe(container)

@@ -157,7 +157,7 @@ const initBackground = (): void => {
   if (toolbarAction) {
     toolbarAction.onClicked.addListener(handleToolbarClick)
   } else {
-    console.error('[nmap_uploader] toolbar action API is unavailable in this browser')
+    console.error('[yamapper] toolbar action API is unavailable in this browser')
   }
 
   browser.runtime.onInstalled.addListener(handleInstalled)

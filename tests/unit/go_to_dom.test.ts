@@ -107,15 +107,15 @@ describe('showGoToTooltip / hideGoToTooltip', () => {
     document.body.replaceChildren()
   })
 
-  it('создаёт тултип с .nmap-uploader-popup__content и показывает текст', () => {
+  it('создаёт тултип с .yamapper-popup__content и показывает текст', () => {
     const target = createAlignTarget(new DOMRect(100, 200, 40, 32))
 
     showGoToTooltip('Внешние геосервисы', target, 'top')
 
     const tooltip = document.getElementById(TOOLTIP_ID)
-    const content = tooltip?.querySelector('.nmap-uploader-popup__content')
+    const content = tooltip?.querySelector('.yamapper-popup__content')
 
-    expect(tooltip?.classList.contains('nmap-uploader-popup--tooltip')).toBe(true)
+    expect(tooltip?.classList.contains('yamapper-popup--tooltip')).toBe(true)
     expect(tooltip?.getAttribute('role')).toBe('tooltip')
     expect(content).not.toBeNull()
     expect(content?.textContent).toBe('Внешние геосервисы')
@@ -132,7 +132,7 @@ describe('showGoToTooltip / hideGoToTooltip', () => {
     const second = document.getElementById(TOOLTIP_ID)
 
     expect(second).toBe(first)
-    expect(second?.querySelector('.nmap-uploader-popup__content')?.textContent).toBe('Второй')
+    expect(second?.querySelector('.yamapper-popup__content')?.textContent).toBe('Второй')
     expect(document.querySelectorAll(`#${TOOLTIP_ID}`)).toHaveLength(1)
   })
 
@@ -175,7 +175,7 @@ describe('showGoToTooltip / hideGoToTooltip', () => {
     hideGoToTooltip()
 
     const tooltip = document.getElementById(TOOLTIP_ID)
-    const content = tooltip?.querySelector('.nmap-uploader-popup__content')
+    const content = tooltip?.querySelector('.yamapper-popup__content')
 
     expect(tooltip?.classList.contains(GO_TO_POPUP_VISIBLE_CLASS)).toBe(false)
     expect(content?.textContent).toBe('')

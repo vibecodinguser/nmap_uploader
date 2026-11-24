@@ -8,8 +8,8 @@
 import { markNmapOwned } from '@/lib/go_to/ownership'
 import { parseStaticSvg } from '@/lib/parse_static_svg'
 
-export const NOTES_EDIT_BUTTON_ID = 'nmap-notes-edit-button'
-export const NOTES_EDIT_BUTTON_WRAPPER_ID = 'nmap-notes-edit-button-wrapper'
+export const NOTES_EDIT_BUTTON_ID = 'yamapper-notes-edit-button'
+export const NOTES_EDIT_BUTTON_WRAPPER_ID = 'yamapper-notes-edit-button-wrapper'
 export const BOTTOM_CONTROLS_SELECTOR = '.nk-map-bottom-controls-view'
 
 export const NOTES_EDIT_BUTTON_ICON_SVG =
@@ -21,7 +21,7 @@ export const NOTES_EDIT_BUTTON_ICON_SVG =
  * полупрозрачную подложку со скруглением под пилюлю.
  */
 const BUTTON_CLASS =
-  'nk-button nk-button_theme_air nk-button_size_xl nk-button_view_dark nmap-notes-edit-button'
+  'nk-button nk-button_theme_air nk-button_size_xl nk-button_view_dark yamapper-notes-edit-button'
 
 export const findBottomControls = (): HTMLElement | null =>
   document.querySelector<HTMLElement>(BOTTOM_CONTROLS_SELECTOR)
@@ -41,11 +41,11 @@ export const createNotesEditButton = ({
   button.title = label
 
   const icon = document.createElement('span')
-  icon.className = 'nmap-notes-edit-button__icon'
+  icon.className = 'yamapper-notes-edit-button__icon'
   icon.appendChild(parseStaticSvg(NOTES_EDIT_BUTTON_ICON_SVG))
 
   const text = document.createElement('span')
-  text.className = 'nmap-notes-edit-button__text'
+  text.className = 'yamapper-notes-edit-button__text'
   text.textContent = label
 
   button.append(icon, text)
@@ -79,7 +79,7 @@ export const ensureNotesEditButton = ({
   if (!wrapper) {
     wrapper = document.createElement('div')
     wrapper.id = NOTES_EDIT_BUTTON_WRAPPER_ID
-    wrapper.className = 'nmap-notes-edit-button-wrapper'
+    wrapper.className = 'yamapper-notes-edit-button-wrapper'
     controls.appendChild(wrapper)
   }
 
@@ -88,7 +88,7 @@ export const ensureNotesEditButton = ({
     button = createNotesEditButton({ label, onClick })
     wrapper.appendChild(button)
   } else {
-    const text = button.querySelector<HTMLElement>('.nmap-notes-edit-button__text')
+    const text = button.querySelector<HTMLElement>('.yamapper-notes-edit-button__text')
     if (text && text.textContent !== label) text.textContent = label
   }
 

@@ -19,7 +19,7 @@ const syncAndBroadcast = async (): Promise<void> => {
     setSystemBannerSuppressed(enabled)
     broadcastState(enabled)
   } catch (error: unknown) {
-    console.warn('[nmap_uploader] sync point counter setting failed:', error)
+    console.warn('[yamapper] sync point counter setting failed:', error)
   }
 }
 

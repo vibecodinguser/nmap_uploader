@@ -1,6 +1,6 @@
-export const NMAPS_START_PICK_POINT_EVENT = 'nmap-uploader-start-pick-point' as const
-export const NMAPS_POINT_PICKED_EVENT = 'nmap-uploader-point-picked' as const
-export const NMAPS_CANCEL_PICK_POINT_EVENT = 'nmap-uploader-cancel-pick-point' as const
+export const NMAPS_START_PICK_POINT_EVENT = 'yamapper-start-pick-point' as const
+export const NMAPS_POINT_PICKED_EVENT = 'yamapper-point-picked' as const
+export const NMAPS_CANCEL_PICK_POINT_EVENT = 'yamapper-cancel-pick-point' as const
 
 export const notifyStartPickPoint = (geomType: string): void => {
   document.dispatchEvent(

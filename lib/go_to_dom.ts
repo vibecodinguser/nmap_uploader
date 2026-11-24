@@ -79,18 +79,18 @@ const TOOLTIP_ID = 'nmapUploaderGoToTooltip'
 const getTooltipElement = (): HTMLElement | null => getOwnedElementById(TOOLTIP_ID)
 
 const getTooltipContentElement = (): HTMLElement | null =>
-  getTooltipElement()?.querySelector<HTMLElement>('.nmap-uploader-popup__content') ?? null
+  getTooltipElement()?.querySelector<HTMLElement>('.yamapper-popup__content') ?? null
 
 const createTooltipElement = (): HTMLElement => {
   const tooltip = document.createElement('div')
   tooltip.id = TOOLTIP_ID
   tooltip.className =
-    'nk-popup nk-popup_theme_islands nk-popup_view_tooltip nmap-uploader-popup nmap-uploader-popup--tooltip'
+    'nk-popup nk-popup_theme_islands nk-popup_view_tooltip yamapper-popup yamapper-popup--tooltip'
   tooltip.setAttribute('role', 'tooltip')
   markNmapOwned(tooltip)
 
   const content = document.createElement('div')
-  content.className = 'nk-popup__content nmap-uploader-popup__content'
+  content.className = 'nk-popup__content yamapper-popup__content'
   tooltip.appendChild(content)
 
   return tooltip

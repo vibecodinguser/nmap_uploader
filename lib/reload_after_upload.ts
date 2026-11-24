@@ -75,10 +75,10 @@ export const triggerEditorReloadIfNeeded = async ({
     })) as { ok?: boolean } | undefined
 
     if (response?.ok !== true) {
-      console.warn('[nmap_uploader] editor page reload failed: no map tabs found')
+      console.warn('[yamapper] editor page reload failed: no map tabs found')
     }
   } catch (error: unknown) {
-    console.warn('[nmap_uploader] editor page reload failed:', error)
+    console.warn('[yamapper] editor page reload failed:', error)
   }
 }
 

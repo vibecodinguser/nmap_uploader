@@ -47,7 +47,7 @@ function onLoadFinally(context: LoadEffectContext): void {
 }
 
 function onLoadError(error: unknown): void {
-  console.warn('[nmap_uploader] reload-after-upload setting load failed:', error)
+  console.warn('[yamapper] reload-after-upload setting load failed:', error)
 }
 
 async function loadStoredSetting(context: LoadEffectContext): Promise<void> {
@@ -149,7 +149,7 @@ function runStorageEffect(userId: string | undefined, setEnabled: EnabledSetter)
 }
 
 function onSaveError(error: unknown): void {
-  console.warn('[nmap_uploader] reload-after-upload setting save failed:', error)
+  console.warn('[yamapper] reload-after-upload setting save failed:', error)
 }
 
 function handleSaveTask(task: Promise<void>): void {

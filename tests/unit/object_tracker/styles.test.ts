@@ -35,7 +35,7 @@ describe('object_tracker: стили панели', () => {
   })
 
   it('описывает точку непрочитанного на вкладке', () => {
-    expect(TRACKER_STYLES).toContain('#nmap-uploader-object-tracker-tab.nmap-ot-tab-unread::after')
+    expect(TRACKER_STYLES).toContain('#yamapper-object-tracker-tab.nmap-ot-tab-unread::after')
   })
 
   it('рисует обводку фокуса на обёртке поля, а не на input', () => {

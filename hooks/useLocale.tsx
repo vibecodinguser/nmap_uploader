@@ -43,7 +43,7 @@ async function loadStoredLocale(setLocaleState: LocaleSetter): Promise<void> {
 }
 
 function onStoredLocaleLoadError(error: unknown): void {
-  console.warn('[nmap_uploader] locale load failed:', error)
+  console.warn('[yamapper] locale load failed:', error)
 }
 
 function handleStoredLocaleLoad(task: Promise<void>): void {

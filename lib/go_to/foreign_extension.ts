@@ -20,6 +20,6 @@ export const warnIfForeignGoToExtensionDetected = (): void => {
   }
   warned = true
   console.warn(
-    '[nmap_uploader] обнаружено расширение с похожей функцией (goToButton/goToLinksMenu); элементы go-to работают независимо',
+    '[yamapper] обнаружено расширение с похожей функцией (goToButton/goToLinksMenu); элементы go-to работают независимо',
   )
 }

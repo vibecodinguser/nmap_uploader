@@ -9,9 +9,9 @@ import type { Note, NoteGeometry, NoteGroup } from '@/lib/notes/model/types'
  * касается только формы этого обмена — ни карты, ни React.
  */
 
-export const NMAPS_RENDER_NOTES_EVENT = 'nmap-uploader-render-notes'
-export const NMAPS_SELECT_NOTE_EVENT = 'nmap-uploader-select-note'
-export const NMAPS_NOTE_SELECTED_EVENT = 'nmap-uploader-note-selected'
+export const NMAPS_RENDER_NOTES_EVENT = 'yamapper-render-notes'
+export const NMAPS_SELECT_NOTE_EVENT = 'yamapper-select-note'
+export const NMAPS_NOTE_SELECTED_EVENT = 'yamapper-note-selected'
 
 export type NotesLayerInput = {
   notes: Note[]

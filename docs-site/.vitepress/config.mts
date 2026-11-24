@@ -72,6 +72,13 @@ export default defineConfig({
 
     outline: { level: [2, 3], label: 'Содержание' },
 
+    // Ссылка «Редактировать» в подвале страницы: ведёт прямо в файл на GitHub,
+    // откуда можно править текст в браузере и открыть PR.
+    editLink: {
+      pattern: 'https://github.com/vibecodinguser/yamapper/edit/master/docs-site/:path',
+      text: 'Редактировать эту страницу',
+    },
+
     docFooter: { prev: 'Назад', next: 'Вперёд' },
 
     lastUpdated: {

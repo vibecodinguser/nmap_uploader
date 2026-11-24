@@ -6,9 +6,9 @@ import { getOwnedElementById } from '@/lib/go_to/ownership'
 import { getMapLocationFromUrl, type MapLocation } from '@/lib/go_to_link'
 import {
   NAKARTE_SYNC_MSG_SOURCE,
-  NMAP_UPLOADER_MSG_SOURCE,
   normalizeMapLocation,
   type SplitLocationMessage,
+  YAMAPPER_MSG_SOURCE,
 } from '@/lib/go_to_map_sync'
 import { GO_TO_SPLIT_BUTTON_ID } from '@/lib/go_to_split_button'
 import { GO_TO_SPLIT_BUTTON_ACTIVE_CLASS } from '@/lib/go_to_styles'
@@ -31,7 +31,7 @@ export const postLocationToIframe = (
   const normalized = normalizeMapLocation(location)
   iframe?.contentWindow?.postMessage(
     {
-      source: NMAP_UPLOADER_MSG_SOURCE,
+      source: YAMAPPER_MSG_SOURCE,
       type: 'set_location',
       location: normalized,
     },

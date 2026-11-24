@@ -9,10 +9,10 @@ import { browser } from 'wxt/browser'
 import { ensureInjectedStyle, removeInjectedStyle } from '@/lib/injected_styles'
 import { NOTES_PANEL_STYLES } from './styles'
 
-export const NOTES_PANEL_HOST_ID = 'nmap-notes-panel'
-export const NOTES_PANEL_FRAME_ID = 'nmap-notes-panel-frame'
-export const NOTES_PANEL_HANDLE_ID = 'nmap-notes-panel-handle'
-export const NOTES_PANEL_STYLES_ID = 'nmap-notes-panel-styles'
+export const NOTES_PANEL_HOST_ID = 'yamapper-notes-panel'
+export const NOTES_PANEL_FRAME_ID = 'yamapper-notes-panel-frame'
+export const NOTES_PANEL_HANDLE_ID = 'yamapper-notes-panel-handle'
+export const NOTES_PANEL_STYLES_ID = 'yamapper-notes-panel-styles'
 export const NOTES_PANEL_HEIGHT_STORAGE_KEY = 'notes_panel_height_px'
 
 /** Сообщения iframe → хост. */

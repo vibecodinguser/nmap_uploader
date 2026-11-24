@@ -1,7 +1,7 @@
 import type { MapLocation } from '@/lib/go_to_link'
 
 /** Событие реалтайм-изменения вида карты НЯК (MAIN world → isolated). */
-export const NMAPS_BOUNDS_CHANGE_EVENT = 'nmap-uploader-nmaps-bounds-change' as const
+export const NMAPS_BOUNDS_CHANGE_EVENT = 'yamapper-nmaps-bounds-change' as const
 
 /** Отправляет CustomEvent с текущими координатами карты НЯК. */
 export const notifyNmapsBoundsChange = (location: MapLocation): void => {

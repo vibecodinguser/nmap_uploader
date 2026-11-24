@@ -23,7 +23,7 @@ export const CUT_ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22"><path d="m3.7 14.5 1.3 1 7.8-3.5 1.4.7 3.3.4c.6.3.3 1.2.3 1.2-.4.6-1 .6-1.6.4-.5-.2-.8-1.8-.8-1.8l-1.2-.2c.1.1.7 2.5 1.2 2.8.6.4 2.3.7 3.3-.2.9-.9.7-2.3-.7-2.9L14.9 11 18 9.7c1.4-.7 1.6-2 .7-3-1-.9-2.7-.5-3.3-.2-.5.4-1.2 2.8-1.2 2.8l1.2-.2s.3-1.5.9-1.8c.5-.2 1.1-.1 1.5.5 0-.1.3.8-.3 1.1l-3.3.4-1.4.7L5 6.6l-1.3 1 7.1 3.4-7.1 3.45z"/></svg>'
 
 const BUTTON_CLASSES = [
-  'nmap-uploader-cut-btn',
+  'yamapper-cut-btn',
   'nk-button',
   'nk-button_theme_air',
   'nk-button_size_xl',
@@ -48,7 +48,7 @@ export const createCutButton = (target: CutTarget, label: string): HTMLButtonEle
   button.title = label
 
   const iconHost = document.createElement('span')
-  iconHost.className = 'nk-icon nk-icon_align_auto nmap-uploader-cut-icon'
+  iconHost.className = 'nk-icon nk-icon_align_auto yamapper-cut-icon'
   iconHost.appendChild(parseStaticSvg(CUT_ICON_SVG))
   button.appendChild(iconHost)
 

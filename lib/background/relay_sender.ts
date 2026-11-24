@@ -35,7 +35,7 @@ export const processRelayToMapTabs = async (
     await relayMessageToMapTabs(sender, relayMessage)
     sendResponse({ ok: true })
   } catch (error: unknown) {
-    console.warn(`[nmap_uploader] ${logLabel} relay failed:`, error)
+    console.warn(`[yamapper] ${logLabel} relay failed:`, error)
     sendResponse({ ok: false })
   }
 }
@@ -51,7 +51,7 @@ export const processReloadEditor = async (
     const ok = await reloadMapEditorTabs({ preferredTabId: sender.tab?.id })
     sendResponse({ ok })
   } catch (error: unknown) {
-    console.warn('[nmap_uploader] reloadEditorPage failed:', error)
+    console.warn('[yamapper] reloadEditorPage failed:', error)
     sendResponse({ ok: false })
   }
 }

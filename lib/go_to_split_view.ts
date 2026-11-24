@@ -51,7 +51,7 @@ const cleanupDomAndSync = (): void => {
   getOwnedElementById(SPLIT_BANNER_ID)?.remove()
   domElements?.splitRoot.remove()
   getOwnedElementById(SPLIT_ROOT_ID)?.remove()
-  document.querySelectorAll('.nmap-uploader-split').forEach((el) => {
+  document.querySelectorAll('.yamapper-split').forEach((el) => {
     el.remove()
   })
   document.querySelectorAll(`.${LEFT_CURSOR_OVERLAY_CLASS}`).forEach((el) => {
@@ -106,7 +106,7 @@ const mountSplitView = async (): Promise<boolean> => {
     updateSplitButtonState(true)
     return true
   } catch (error: unknown) {
-    console.warn('[nmap_uploader] mountSplitView failed, rolling back:', error)
+    console.warn('[yamapper] mountSplitView failed, rolling back:', error)
     cleanupDomAndSync()
     status = 'closed'
     updateSplitButtonState(false)

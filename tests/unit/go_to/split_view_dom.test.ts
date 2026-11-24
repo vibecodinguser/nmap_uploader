@@ -120,13 +120,13 @@ describe('go_to_split_view/dom', () => {
   it('mountSplitNoticeBanner монтирует баннер и переключает warning класс при зуме > 18', () => {
     const banner = mountSplitNoticeBanner('Тестовое сообщение', 19)
     expect(banner.textContent).toBe('Тестовое сообщение')
-    expect(banner.classList.contains('nmap-uploader-split-banner--warning')).toBe(true)
+    expect(banner.classList.contains('yamapper-split-banner--warning')).toBe(true)
 
     updateSplitNoticeBannerZoom(18)
-    expect(banner.classList.contains('nmap-uploader-split-banner--warning')).toBe(false)
+    expect(banner.classList.contains('yamapper-split-banner--warning')).toBe(false)
 
     updateSplitNoticeBannerZoom(20)
-    expect(banner.classList.contains('nmap-uploader-split-banner--warning')).toBe(true)
+    expect(banner.classList.contains('yamapper-split-banner--warning')).toBe(true)
 
     unmountSplitNoticeBanner()
     expect(document.getElementById('nmapUploaderSplitBanner')).toBeNull()

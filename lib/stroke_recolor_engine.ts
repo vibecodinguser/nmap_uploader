@@ -69,7 +69,7 @@ const bindStrokeColorListeners = (): (() => void) => {
     getStoredStrokeColorRaw()
       .then((raw) => postStrokeColorMessage(getEffectiveStrokeColor(raw)))
       .catch((error: unknown) => {
-        console.warn('[nmap_uploader] stroke color reply failed:', error)
+        console.warn('[yamapper] stroke color reply failed:', error)
       })
   }
 
@@ -96,7 +96,7 @@ export const ensureStrokeRecolorEngine = (): void => {
   getStoredStrokeColorRaw()
     .then((raw) => applyStrokeColorOnPage(getEffectiveStrokeColor(raw)))
     .catch((error: unknown) => {
-      console.warn('[nmap_uploader] stroke color init failed:', error)
+      console.warn('[yamapper] stroke color init failed:', error)
     })
 }
 

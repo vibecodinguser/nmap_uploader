@@ -46,7 +46,7 @@ export const buildTracingTargets = (
       ) {
         continue
       }
-      const id = `nmap-uploader:note:${payload.id}`
+      const id = `yamapper:note:${payload.id}`
       const candidate: NativeCandidate = Object.freeze({
         getId: () => id,
         getGeometry: () => geometry,

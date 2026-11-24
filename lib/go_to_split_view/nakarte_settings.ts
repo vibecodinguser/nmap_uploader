@@ -10,7 +10,7 @@ export const getStoredNakarteViewSettings = async (): Promise<string> => {
     const value = stored[NAKARTE_SPLIT_VIEW_SETTINGS_STORAGE_KEY]
     return typeof value === 'string' ? getNakarteSettingsFromHash(value) : ''
   } catch (error) {
-    console.warn('[nmap_uploader] nakarte settings read failed:', error)
+    console.warn('[yamapper] nakarte settings read failed:', error)
     return ''
   }
 }
@@ -21,6 +21,6 @@ export const saveNakarteViewSettings = async (hash: string): Promise<void> => {
   try {
     await browser.storage.local.set({ [NAKARTE_SPLIT_VIEW_SETTINGS_STORAGE_KEY]: settings })
   } catch (error) {
-    console.warn('[nmap_uploader] nakarte settings save failed:', error)
+    console.warn('[yamapper] nakarte settings save failed:', error)
   }
 }

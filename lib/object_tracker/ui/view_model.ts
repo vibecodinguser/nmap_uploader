@@ -4,9 +4,9 @@
 
 import type { ObjectCommit, TrackedObject } from '../types'
 
-export const TRACKER_TAB_ID = 'nmap-uploader-object-tracker-tab'
-export const TRACKER_PANEL_ID = 'nmap-uploader-object-tracker-panel'
-export const TRACKER_STYLES_ID = 'nmap-uploader-object-tracker-styles'
+export const TRACKER_TAB_ID = 'yamapper-object-tracker-tab'
+export const TRACKER_PANEL_ID = 'yamapper-object-tracker-panel'
+export const TRACKER_STYLES_ID = 'yamapper-object-tracker-styles'
 
 export const MODES_SELECTION_CLASS = 'nmap-ot-modes__selection'
 

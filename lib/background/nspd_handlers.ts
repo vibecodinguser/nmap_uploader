@@ -52,7 +52,7 @@ export const processUploadNspdGeoJson = async (
 
     sendResponse({ ok: true })
   } catch (err: unknown) {
-    console.error('[nmap_uploader] processUploadNspdGeoJson error:', err)
+    console.error('[yamapper] processUploadNspdGeoJson error:', err)
     sendResponse({ ok: false, error: 'INTERNAL_ERROR' })
   }
 }
@@ -87,7 +87,7 @@ export const processCloseCurrentTab = async (
 
     sendResponse({ ok: true })
   } catch (err) {
-    console.error('[nmap_uploader] processCloseCurrentTab error:', err)
+    console.error('[yamapper] processCloseCurrentTab error:', err)
     sendResponse({ ok: false })
   }
 }

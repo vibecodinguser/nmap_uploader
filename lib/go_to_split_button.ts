@@ -10,11 +10,11 @@ export const GO_TO_SPLIT_BUTTON_HIDDEN_CLASS = GO_TO_BUTTON_HIDDEN_CLASS
 export const GO_TO_SPLIT_BUTTON_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 90" fill="none" aria-hidden="true"><rect x="12" y="15" width="30" height="60" rx="4" stroke="currentColor" stroke-width="5"/><rect x="48" y="15" width="30" height="60" rx="4" stroke="currentColor" stroke-width="5"/></svg>`
 
 const GO_TO_SPLIT_BUTTON_CLASS =
-  'nmap-uploader-goto-btn nmap-uploader-split-btn nk-button nk-button_type_link nk-button_theme_air nk-button_size_xl nk-button_view_dark nk-map-region-view__button nk-map-region-view__button_id_goto'
+  'yamapper-goto-btn yamapper-split-btn nk-button nk-button_type_link nk-button_theme_air nk-button_size_xl nk-button_view_dark nk-map-region-view__button nk-map-region-view__button_id_goto'
 
 const createSplitIconHost = (): HTMLSpanElement => {
   const iconHost = document.createElement('span')
-  iconHost.className = 'nk-icon nk-icon_align_auto nmap-uploader-goto-icon'
+  iconHost.className = 'nk-icon nk-icon_align_auto yamapper-goto-icon'
   iconHost.appendChild(parseStaticSvg(GO_TO_SPLIT_BUTTON_ICON_SVG))
   return iconHost
 }

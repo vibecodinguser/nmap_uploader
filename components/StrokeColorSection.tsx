@@ -56,7 +56,7 @@ export const StrokeColorSection = memo(
 
     const onApplyClick = () => {
       handleApply().catch((error) => {
-        console.warn('[nmap_uploader] stroke color apply failed:', error)
+        console.warn('[yamapper] stroke color apply failed:', error)
       })
     }
 

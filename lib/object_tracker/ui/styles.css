@@ -1,4 +1,4 @@
-#nmap-uploader-object-tracker-panel,
+#yamapper-object-tracker-panel,
     .nmap-ot-panel {
       display: flex;
       flex-direction: column;
@@ -22,22 +22,22 @@
       overflow: auto;
       overscroll-behavior: contain;
     }
-    #nmap-uploader-object-tracker-panel *,
+    #yamapper-object-tracker-panel *,
     .nmap-ot-panel * {
       box-sizing: border-box;
     }
-    #nmap-uploader-object-tracker-panel :focus-visible,
+    #yamapper-object-tracker-panel :focus-visible,
     .nmap-ot-panel :focus-visible {
       outline: var(--nmap-focus-outline);
       outline-offset: 1px;
     }
 
-    #nmap-uploader-object-tracker-tab {
+    #yamapper-object-tracker-tab {
       cursor: pointer;
       user-select: none;
       white-space: nowrap;
     }
-    #nmap-uploader-object-tracker-tab.nmap-ot-tab-unread::after {
+    #yamapper-object-tracker-tab.nmap-ot-tab-unread::after {
       content: '';
       display: inline-block;
       width: 6px;
@@ -318,7 +318,7 @@
      * Переменные islands задаём локально, чтобы кнопки и поля оставались
      * читаемыми, даже если тема не выставила их на своей поверхности.
      */
-    .nk-page_color-scheme_dark #nmap-uploader-object-tracker-panel,
+    .nk-page_color-scheme_dark #yamapper-object-tracker-panel,
     .nk-page_color-scheme_dark .nmap-ot-panel {
       --control_theme_islands--bg-color: rgba(255, 255, 255, 0.08);
       --control_theme_islands--border-color: rgba(255, 255, 255, 0.3);
@@ -376,7 +376,7 @@
 }
 
 /* Короткое сообщение об ошибке добавления в наблюдение. */
-#nmap-uploader-object-tracker-toast,
+#yamapper-object-tracker-toast,
 .nmap-ot-toast {
   position: fixed;
   right: 16px;

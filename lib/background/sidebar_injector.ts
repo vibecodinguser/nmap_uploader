@@ -72,7 +72,7 @@ let panelSidebarRegistration: Promise<void> | undefined
 
 export const handleEnsurePanelSidebarError = (error: unknown): void => {
   panelSidebarRegistration = undefined
-  console.warn('[nmap_uploader] ensurePanelSidebarRegistered failed:', error)
+  console.warn('[yamapper] ensurePanelSidebarRegistered failed:', error)
 }
 
 export const registerPanelSidebarSafely = async (): Promise<void> => {

@@ -49,7 +49,7 @@ describe('go_to_split_view facade state machine', () => {
 
     await toggleSplitView()
 
-    const iframe = document.querySelector<HTMLIFrameElement>('.nmap-uploader-split__iframe')
+    const iframe = document.querySelector<HTMLIFrameElement>('.yamapper-split__iframe')
     expect(iframe?.src).toContain('l=Otm/Y&nktp=55.7/37.6')
   })
 

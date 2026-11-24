@@ -1,10 +1,10 @@
 import type { MapLocation } from '@/lib/go_to_link'
 
-export const NMAP_UPLOADER_MSG_SOURCE = 'nmap_uploader' as const
+export const YAMAPPER_MSG_SOURCE = 'yamapper' as const
 export const NAKARTE_SYNC_MSG_SOURCE = 'nakarte_sync' as const
 
 export type SplitLocationMessage = {
-  source: typeof NMAP_UPLOADER_MSG_SOURCE | typeof NAKARTE_SYNC_MSG_SOURCE
+  source: typeof YAMAPPER_MSG_SOURCE | typeof NAKARTE_SYNC_MSG_SOURCE
   type: 'set_location' | 'location' | 'cursor'
   location: MapLocation | null
 }

@@ -75,10 +75,14 @@ export default {
       // которые переименовать нельзя.
       files: ['lib/**/*.css'],
       rules: {
+        // Переименование `nmap-uploader-* → yamapper-*` завершено. Один
+        // префикс вместо двух: пока разрешены оба, забытый старый id
+        // проходит проверку и ломает связь с разметкой молча — ровно так
+        // разъехались `gecko.id` и redirect URI (коммит 319181e).
         'selector-id-pattern': [
-          '^nmap-[a-z0-9-]+$',
+          '^yamapper-[a-z0-9-]+$',
           {
-            message: 'id инжектируемых стилей — nmap-<kebab-case>',
+            message: 'id инжектируемых стилей — yamapper-<kebab-case>',
           },
         ],
         'selector-class-pattern': [

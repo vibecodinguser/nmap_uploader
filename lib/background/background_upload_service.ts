@@ -31,7 +31,7 @@ export const processUpload = async (
     const result = await uploadProcessedFilesToYandexDisk({ files, targetDate })
     sendResponse(result)
   } catch (error: unknown) {
-    console.error('[nmap_uploader] upload failed:', error)
+    console.error('[yamapper] upload failed:', error)
     const t = await getBackgroundTranslator()
     const uploadErrorFallback = t('auth.uploadError')
     sendResponse({

@@ -42,7 +42,7 @@ export const createNativeTracingAdapter = ({
   const writeDiagnostic = (): void => {
     if (!diagnosticWritten) {
       diagnosticWritten = true
-      console.debug('[nmap_uploader] native tracing unavailable')
+      console.debug('[yamapper] native tracing unavailable')
     }
   }
 

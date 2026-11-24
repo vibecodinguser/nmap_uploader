@@ -140,7 +140,7 @@ export class GoToToolbarController {
 
     if (menuEnabled) {
       showGoToServiceButton()
-      void this.buildMenu().catch((err) => console.warn('[nmap_uploader] menu build failed:', err))
+      void this.buildMenu().catch((err) => console.warn('[yamapper] menu build failed:', err))
     } else {
       this.hideGoToMenuOnly()
     }

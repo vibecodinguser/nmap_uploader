@@ -52,7 +52,7 @@ export default defineContentScript({
 
   main(ctx) {
     persistYandexBrowserFlag().catch((error: unknown) => {
-      console.error('[nmap_uploader] persistYandexBrowserFlag failed:', error)
+      console.error('[yamapper] persistYandexBrowserFlag failed:', error)
     })
 
     let ui: SidebarUi | undefined
@@ -87,7 +87,7 @@ export default defineContentScript({
       yieldToMain()
         .then(togglePanel)
         .catch((error: unknown) => {
-          console.error('[nmap_uploader] togglePanel failed:', error)
+          console.error('[yamapper] togglePanel failed:', error)
         })
     }
 
@@ -100,7 +100,7 @@ export default defineContentScript({
           }),
         )
       } else {
-        console.error('[nmap_uploader panel] Invalid coordinates for centerMap', message)
+        console.error('[yamapper panel] Invalid coordinates for centerMap', message)
       }
     }
 
@@ -151,7 +151,7 @@ export default defineContentScript({
             source,
           })
           .catch((error: unknown) => {
-            console.error('[nmap_uploader] pointPicked send failed:', error)
+            console.error('[yamapper] pointPicked send failed:', error)
           })
       }
     }

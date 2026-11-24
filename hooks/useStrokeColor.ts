@@ -127,7 +127,7 @@ function resolveApplyStatus(ok: boolean): ApplyStatus {
 }
 
 function onStrokeColorApplyError(error: unknown): void {
-  console.warn('[nmap_uploader] stroke color apply failed:', error)
+  console.warn('[yamapper] stroke color apply failed:', error)
 }
 
 function canApplyStrokeColor(trimmed: string): boolean {

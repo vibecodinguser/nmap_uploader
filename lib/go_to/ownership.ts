@@ -7,7 +7,7 @@
  * WeakSet даёт точную идентичность в пределах текущей сессии.
  */
 
-export const NMAP_OWNED_ATTR = 'data-nmap-uploader-owned'
+export const NMAP_OWNED_ATTR = 'data-yamapper-owned'
 
 const ownedElements = new WeakSet<HTMLElement>()
 

@@ -138,7 +138,7 @@ export const pollTrackedObjects = async (
         }
       }
       // История уже получена: сбой уточнения не должен её терять.
-      console.warn('[nmap_uploader] object tracker details failed:', error)
+      console.warn('[yamapper] object tracker details failed:', error)
     }
   }
 

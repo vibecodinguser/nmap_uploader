@@ -64,7 +64,7 @@ export const isTrustedNspdSender = (sender: RuntimeMessageSender): boolean =>
   isExtensionSender(sender) && isNspdContentSender(sender)
 
 export const logRejectedMessage = (action: string, sender: RuntimeMessageSender): void => {
-  console.warn(`[nmap_uploader] отклонено сообщение "${action}"`, {
+  console.warn(`[yamapper] отклонено сообщение "${action}"`, {
     senderUrl: sender.url,
     tabUrl: sender.tab?.url,
   })

@@ -25,7 +25,7 @@ export function useNspdButton() {
           setIsLoaded(true)
         }
       } catch (error: unknown) {
-        console.warn('[nmap_uploader] getNspdEnabled failed:', error)
+        console.warn('[yamapper] getNspdEnabled failed:', error)
       }
     })()
 
@@ -74,7 +74,7 @@ export function useNspdButton() {
         await syncNspdContentScripts(enabled)
         await notifyMapTabsAboutGoToMenu()
       } catch (error: unknown) {
-        console.warn('[nmap_uploader] nspd button setting save failed:', error)
+        console.warn('[yamapper] nspd button setting save failed:', error)
       }
     })()
   }, [])

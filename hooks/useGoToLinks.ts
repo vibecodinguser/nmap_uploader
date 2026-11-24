@@ -88,7 +88,7 @@ async function saveGoToMenuEnabled(enabled: boolean): Promise<void> {
 }
 
 function onSaveMenuEnabledError(error: unknown): void {
-  console.warn('[nmap_uploader] go-to menu setting save failed:', error)
+  console.warn('[yamapper] go-to menu setting save failed:', error)
 }
 
 async function saveGoToMenuEnabledSafely(enabled: boolean): Promise<void> {
@@ -105,7 +105,7 @@ async function saveGoToItemsWithNotify(nextItems: GoToItem[]): Promise<void> {
 }
 
 function onSaveGoToItemsError(error: unknown): void {
-  console.warn('[nmap_uploader] go-to items save failed:', error)
+  console.warn('[yamapper] go-to items save failed:', error)
 }
 
 async function saveGoToItemsSafely(nextItems: GoToItem[]): Promise<void> {
@@ -140,7 +140,7 @@ async function reloadStoredItems(setItems: GoToItemsSetter): Promise<void> {
 }
 
 function onReloadItemsError(error: unknown): void {
-  console.warn('[nmap_uploader] go-to items reload failed:', error)
+  console.warn('[yamapper] go-to items reload failed:', error)
 }
 
 function handleReloadItemsTask(task: Promise<void>): void {

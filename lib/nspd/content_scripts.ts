@@ -57,7 +57,7 @@ const readNspdAccessState = async (): Promise<NspdAccessState> => {
     const granted = await browser.permissions.contains({ origins: NSPD_ORIGINS })
     return granted ? 'granted' : 'denied'
   } catch (error: unknown) {
-    console.warn('[nmap_uploader] nspd permissions.contains failed:', error)
+    console.warn('[yamapper] nspd permissions.contains failed:', error)
     return 'unknown'
   }
 }
@@ -74,7 +74,7 @@ export const requestNspdHostAccess = async (): Promise<boolean> => {
   try {
     return await browser.permissions.request({ origins: NSPD_ORIGINS })
   } catch (error: unknown) {
-    console.warn('[nmap_uploader] nspd permissions.request failed:', error)
+    console.warn('[yamapper] nspd permissions.request failed:', error)
     return false
   }
 }
@@ -200,7 +200,7 @@ export const syncNspdContentScriptsFromStorage = (): Promise<void> =>
 
 const runNspdSync = (enabled: boolean): void => {
   void syncNspdContentScripts(enabled).catch((error: unknown) => {
-    console.warn('[nmap_uploader] syncNspdContentScripts failed:', error)
+    console.warn('[yamapper] syncNspdContentScripts failed:', error)
   })
 }
 
@@ -220,7 +220,7 @@ const handlePermissionsRemoved = (removed: { origins?: string[] }): void => {
 
   runNspdSync(false)
   void setStoredNspdButtonEnabled(false).catch((error: unknown) => {
-    console.warn('[nmap_uploader] disable nspd after access revoke failed:', error)
+    console.warn('[yamapper] disable nspd after access revoke failed:', error)
   })
 }
 
@@ -237,7 +237,7 @@ const handlePermissionsAdded = (added: { origins?: string[] }): void => {
   if (!gainedNspdAccess) return
 
   void syncNspdContentScriptsFromStorage().catch((error: unknown) => {
-    console.warn('[nmap_uploader] sync nspd after access grant failed:', error)
+    console.warn('[yamapper] sync nspd after access grant failed:', error)
   })
 }
 
@@ -250,7 +250,7 @@ const handlePermissionsAdded = (added: { origins?: string[] }): void => {
  */
 export const initNspdContentScriptSync = (): (() => void) => {
   void syncNspdContentScriptsFromStorage().catch((error: unknown) => {
-    console.warn('[nmap_uploader] syncNspdContentScriptsFromStorage failed:', error)
+    console.warn('[yamapper] syncNspdContentScriptsFromStorage failed:', error)
   })
 
   browser.storage.onChanged.addListener(handleStorageChange)

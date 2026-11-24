@@ -4,7 +4,7 @@
  * Панель живёт в отдельной странице расширения, поэтому здесь только коробка:
  * позиция по нижней кромке, высота, рамка и ручка изменения размера.
  */
-#nmap-notes-panel {
+#yamapper-notes-panel {
   position: fixed;
   right: 0;
   bottom: 0;
@@ -18,11 +18,11 @@
   box-shadow: 0 -6px 24px rgb(0 0 0 / 18%);
 }
 
-#nmap-notes-panel[data-open='true'] {
+#yamapper-notes-panel[data-open='true'] {
   display: flex;
 }
 
-#nmap-notes-panel-handle {
+#yamapper-notes-panel-handle {
   flex: 0 0 auto;
   height: 8px;
   margin-top: -4px;
@@ -31,7 +31,7 @@
   touch-action: none;
 }
 
-#nmap-notes-panel-handle::after {
+#yamapper-notes-panel-handle::after {
   display: block;
   width: 44px;
   height: 4px;
@@ -42,12 +42,12 @@
   content: '';
 }
 
-#nmap-notes-panel-handle:hover::after,
-#nmap-notes-panel-handle:focus-visible::after {
+#yamapper-notes-panel-handle:hover::after,
+#yamapper-notes-panel-handle:focus-visible::after {
   opacity: 0.8;
 }
 
-#nmap-notes-panel-frame {
+#yamapper-notes-panel-frame {
   flex: 1 1 auto;
   width: 100%;
   min-height: 0;
@@ -55,7 +55,7 @@
   background: var(--nmap-surface, #ffffff);
 }
 
-#nmap-notes-panel[data-layout='full'] #nmap-notes-panel-handle {
+#yamapper-notes-panel[data-layout='full'] #yamapper-notes-panel-handle {
   cursor: default;
 }
 
@@ -63,7 +63,7 @@
  * Пока тянем, iframe не должен перехватывать указатель: он отдельный документ,
  * и события протяжки до хоста не доходят, если курсор уходит на панель.
  */
-#nmap-notes-panel[data-dragging='true'] #nmap-notes-panel-frame {
+#yamapper-notes-panel[data-dragging='true'] #yamapper-notes-panel-frame {
   pointer-events: none;
 }
 
@@ -74,7 +74,7 @@
  * кнопка не может центрироваться внутри него. Она вынимается из потока ряда
  * и ставится по центру окна на той же высоте, что и остальные контролы.
  */
-.nmap-notes-edit-button-wrapper {
+.yamapper-notes-edit-button-wrapper {
   position: fixed;
   bottom: 18px;
   left: 50%;
@@ -91,7 +91,7 @@
  * содержимого. Селектор по id перебивает правила хоста без повышения
  * специфичности флагами.
  */
-#nmap-notes-edit-button {
+#yamapper-notes-edit-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -106,15 +106,15 @@
 }
 
 /* Подложка хоста рисуется в `:before`, содержимое должно быть выше неё. */
-#nmap-notes-edit-button:hover::before {
+#yamapper-notes-edit-button:hover::before {
   box-shadow: 0 3px 4px 1px rgb(0 0 0 / 30%);
 }
 
-#nmap-notes-edit-button:focus-visible::before {
+#yamapper-notes-edit-button:focus-visible::before {
   box-shadow: 0 0 0 2px #ffdb4d;
 }
 
-.nmap-notes-edit-button__icon {
+.yamapper-notes-edit-button__icon {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -126,17 +126,17 @@
   transition: opacity 0.2s ease-in-out;
 }
 
-#nmap-notes-edit-button:hover .nmap-notes-edit-button__icon,
-#nmap-notes-edit-button:focus-visible .nmap-notes-edit-button__icon {
+#yamapper-notes-edit-button:hover .yamapper-notes-edit-button__icon,
+#yamapper-notes-edit-button:focus-visible .yamapper-notes-edit-button__icon {
   opacity: 1;
 }
 
-.nmap-notes-edit-button__icon svg {
+.yamapper-notes-edit-button__icon svg {
   display: block;
   width: 16px;
   height: 16px;
 }
 
-.nmap-notes-edit-button__text {
+.yamapper-notes-edit-button__text {
   position: relative;
 }

@@ -2,15 +2,18 @@
  * Короткое сообщение о результате разреза поверх карты.
  *
  * Своей плашки у редактора нет, а в тулбаре места для текста не хватает.
- * Сообщение живёт в отдельном узле с префиксом `nmap-`, поэтому не
+ * Сообщение живёт в отдельном узле с префиксом `yamapper-`, поэтому не
  * пересекается с разметкой хоста.
  */
 
 import { ensureInjectedStyle, removeInjectedStyle } from '@/lib/injected_styles'
 import toastCss from './toast.css?inline'
 
-export const CUT_TOAST_ID = 'nmap-cut-toast'
-export const CUT_TOAST_STYLE_ID = 'nmap-cut-toast-style'
+/** Стили тоста как строка: нужны и инжектору, и тесту на совпадение id. */
+export const CUT_TOAST_CSS = toastCss
+
+export const CUT_TOAST_ID = 'yamapper-cut-toast'
+export const CUT_TOAST_STYLE_ID = 'yamapper-cut-toast-style'
 
 /** Сколько сообщение висит на экране, мс. */
 export const TOAST_VISIBLE_MS = 2500

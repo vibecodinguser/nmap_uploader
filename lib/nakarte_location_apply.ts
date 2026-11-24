@@ -2,9 +2,9 @@ import type { MapLocation } from '@/lib/go_to_link'
 import {
   buildNakarteHash,
   mapNmapsLayerToNakarte,
-  NMAP_UPLOADER_MSG_SOURCE,
   normalizeMapLocation,
   type SplitLocationMessage,
+  YAMAPPER_MSG_SOURCE,
 } from '@/lib/go_to_map_sync'
 
 export const readLayersFromNakarteHash = (hash: string): string => {
@@ -31,7 +31,7 @@ export const parseSetLocationMessage = (data: unknown): MapLocation | null => {
   if (!data || typeof data !== 'object') return null
 
   const message = data as SplitLocationMessage
-  if (message.source !== NMAP_UPLOADER_MSG_SOURCE) return null
+  if (message.source !== YAMAPPER_MSG_SOURCE) return null
   if (message.type !== 'set_location' || !message.location) return null
 
   return normalizeMapLocation(message.location)
