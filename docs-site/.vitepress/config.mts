@@ -12,16 +12,6 @@ export default defineConfig({
   cleanUrls: true,
   lastUpdated: true,
 
-  // В корне репозитория esbuild 0.28 (override против Dependabot), а esbuild
-  // не умеет понижать деструктуризацию `const { a } = useData()` до
-  // витроессовского build.target. VitePress собирает статический сайт и
-  // нативные ESM-браузеры деструктуризацию поддержмвают, поэтому target —
-  // esnext. На сборку расширения это не влияет: там свой wxt.config.ts.
-  vite: {
-    esbuild: { target: 'esnext' },
-    build: { target: 'esnext' },
-  },
-
   head: [
     ['link', { rel: 'icon', href: '/yamapper/favicon.png' }],
     ['meta', { name: 'theme-color', content: '#1b1b20' }],
@@ -46,15 +36,6 @@ export default defineConfig({
           text: 'Форматы и геометрии',
           items: [
             { text: 'Поддерживаемые форматы', link: '/guide/formats' },
-            { text: 'Геометрии и конвертация', link: '/guide/geometries' },
-          ],
-        },
-        {
-          text: 'Возможности',
-          items: [
-            { text: 'Заметки', link: '/guide/notes' },
-            { text: 'Раздельный вид', link: '/guide/split-view' },
-            { text: 'НСПД', link: '/guide/nspd' },
           ],
         },
       ],
@@ -63,8 +44,6 @@ export default defineConfig({
           text: 'Разработчикам',
           items: [
             { text: 'Обзор', link: '/dev/' },
-            { text: 'Сборка и проверки', link: '/dev/build' },
-            { text: 'Архитектура', link: '/dev/architecture' },
           ],
         },
       ],
