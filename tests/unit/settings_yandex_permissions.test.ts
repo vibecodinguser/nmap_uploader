@@ -29,7 +29,7 @@ describe('включение функций просит разрешения Я
     expect(result.current.permissionDenied).toBe(false)
   })
 
-  it('«НСПД» сначала просит nspd.gov.ru, затем Яндекс', async () => {
+  it('«НСПД» просит только nspd.gov.ru и работает без Диска', async () => {
     permissionsMock.revoke(...NSPD_HOST_PATTERNS, ...YANDEX_PERMISSION_REQUEST.origins)
     const { result } = renderHook(() => useNspdButton())
     await flushEffects()
@@ -39,9 +39,12 @@ describe('включение функций просит разрешения Я
     })
 
     const calls = permissionsMock.request.mock.calls.map(([request]) => request)
+    expect(calls).toHaveLength(1)
     expect(calls[0]?.origins).toEqual([...NSPD_HOST_PATTERNS])
-    expect(calls[1]).toEqual(YANDEX_PERMISSION_REQUEST)
+    // Второй `permissions.request` после ожидания первого уже не считается
+    // жестом пользователя, поэтому Диск спрашивают отдельно, в «Блокноте».
     await expect(getStoredNspdButtonEnabled()).resolves.toBe(true)
+    expect(result.current.permissionDenied).toBe('yandex')
   })
 
   it('без доступа к Яндексу функция остаётся выключенной и сообщает об отказе', async () => {

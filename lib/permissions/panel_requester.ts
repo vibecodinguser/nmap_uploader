@@ -1,92 +1,38 @@
 import { browser } from 'wxt/browser'
-import { NMAPS_ORIGIN } from '@/lib/extension_origins'
 import { YANDEX_PERMISSION_REQUEST } from '@/lib/manifest/yandex_optional_hosts'
-import {
-  PANEL_PERMISSION_REQUEST,
-  PANEL_PERMISSION_RESPONSE,
-  type PermissionSetName,
-} from '@/lib/permissions/panel_receiver'
 import { hasYandexPermissions } from '@/lib/yandex/permissions'
 
 /**
- * Запрос необязательных разрешений из страницы расширения.
+ * Запрос необязательных разрешений Яндекса из страницы расширения.
  *
- * Панель в iframe редактора не может вызвать `permissions.request` сама:
- * её инициатор — сайт карты, у которого нет доступа к `cloud-api.yandex.net`.
- * Диалог открывает контент-скрипт редактора (`lib/permissions/panel_receiver`),
- * а панель только просит и ждёт ответа.
+ * Разрешения спрашиваются прямо здесь — из панели (`notes-panel.html`) или
+ * страницы настроек (`panel.html`), — а не через контент-скрипт редактора.
  *
- * Вызывать из обработчика клика: жест пользователя должен дойти до
- * `permissions.request` в content scriptовом контексте — окно, через которое
- * идёт `postMessage`, считается активным только внутри обработчика события.
+ * Почему не контент-скриптом: `chrome.permissions` в content scripts
+ * недоступен. Из API расширения там видны только `dom`, `i18n`, `storage` и
+ * `runtime`, поэтому `browser.permissions.request` из контент-скрипта — это
+ * `undefined`, а не отклонённый вызов. Страница расширения в iframe, наоборот,
+ * имеет полный доступ к API, а клик внутри iframe даёт ей собственный жест
+ * пользователя — ровно то, что нужно `permissions.request`.
+ *
+ * Побочный плюс: панель, открытая отдельной вкладкой, работает так же, как
+ * панель в iframe, — отдельной ветки для этого не нужно.
  */
-
-/** Сколько ждём ответа контент-скрипта: больше, чем пользователь смотрит диалог. */
-const PERMISSION_RESPONSE_TIMEOUT_MS = 120_000
-
-type PendingRequest = {
-  resolve: (granted: boolean) => void
-  timeoutId: number
-}
-
-const pendingRequests = new Map<string, PendingRequest>()
-
-let isListenerInstalled = false
-
-const settle = (requestId: string, granted: boolean): void => {
-  const pending = pendingRequests.get(requestId)
-  if (!pending) return
-  pendingRequests.delete(requestId)
-  window.clearTimeout(pending.timeoutId)
-  pending.resolve(granted)
-}
-
-const handlePermissionResponse = (event: MessageEvent): void => {
-  if (event.origin !== NMAPS_ORIGIN) return
-  const data = event.data as
-    | { source?: unknown; requestId?: unknown; granted?: unknown }
-    | null
-    | undefined
-  if (data?.source !== PANEL_PERMISSION_RESPONSE) return
-  if (typeof data.requestId !== 'string') return
-  settle(data.requestId, data.granted === true)
-}
-
-const ensureResponseListener = (): void => {
-  if (isListenerInstalled) return
-  isListenerInstalled = true
-  window.addEventListener('message', handlePermissionResponse)
-}
-
-const createRequestId = (): string =>
-  `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
 
 /**
- * Просит набор разрешений и возвращает, выдан ли он.
+ * Просит разрешения Яндекса и возвращает, выданы ли они.
  *
- * Если контент-скрипта редактора нет (панель открыта вне карты), запрос
- * `permissions.request` делается напрямую: тогда инициатор — сама страница
- * расширения, и это работает.
+ * Вызывать строго из обработчика клика: между жестом пользователя и
+ * `permissions.request` не должно быть `await`'ов на сеть или хранилище.
+ * Поэтому выдача проверяется до диалога, а не после.
  */
-export const requestPanelPermissions = async (set: PermissionSetName): Promise<boolean> => {
-  if (window.parent === window) {
-    return browser.permissions.request(YANDEX_PERMISSION_REQUEST)
+export const requestYandexPermissions = async (): Promise<boolean> => {
+  try {
+    return await browser.permissions.request(YANDEX_PERMISSION_REQUEST)
+  } catch (error: unknown) {
+    console.warn('[yamapper] yandex permissions.request failed:', error)
+    return false
   }
-
-  ensureResponseListener()
-  const requestId = createRequestId()
-
-  const granted = await new Promise<boolean>((resolve) => {
-    const timeoutId = window.setTimeout(
-      () => settle(requestId, false),
-      PERMISSION_RESPONSE_TIMEOUT_MS,
-    )
-    pendingRequests.set(requestId, { resolve, timeoutId })
-    window.parent.postMessage({ source: PANEL_PERMISSION_REQUEST, set, requestId }, NMAPS_ORIGIN)
-  })
-
-  return granted
 }
 
-/** Выданы ли разрешения Яндекса прямо сейчас. */
-export const isYandexPermissionGranted = hasYandexPermissions
+export { hasYandexPermissions }

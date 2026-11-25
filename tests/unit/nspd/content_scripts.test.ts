@@ -158,7 +158,7 @@ describe('NSPD content scripts', () => {
     expect(scriptingMock.registered.size).toBe(2)
   })
 
-  it('снимает скрипты и выключает настройку при отзыве доступа', async () => {
+  it('снимает скрипты, но не выключает настройку при отзыве доступа', async () => {
     permissionsMock.grant(...NSPD_HOST_PATTERNS)
     await setStoredNspdButtonEnabled(true)
     initWithCleanup()
@@ -169,7 +169,9 @@ describe('NSPD content scripts', () => {
     await flush()
 
     expect(scriptingMock.registered.size).toBe(0)
-    await expect(getStoredNspdButtonEnabled()).resolves.toBe(false)
+    // Тумблер про кнопку в тулбаре, а не про разрешения: снятое в браузере
+    // разрешение не должно молча выключать функцию пользователя.
+    await expect(getStoredNspdButtonEnabled()).resolves.toBe(true)
   })
 
   it('восстанавливает регистрацию при старте background после обновления расширения', async () => {
@@ -211,14 +213,32 @@ describe('NSPD content scripts', () => {
     expect(scriptingMock.registered.size).toBe(0)
   })
 
-  it('выключает настройку при старте, если доступа больше нет', async () => {
-    // Настройка осталась с прошлой сессии, а доступ отозван вручную.
+  it('оставляет настройку включённой при старте, если доступа нет', async () => {
+    // Настройка осталась с прошлой сессии (или с обязательного доступа прежних
+    // версий), а доступ ещё не выдан. Настройку пользователя не трогаем: иначе
+    // после переноса разрешений в необязательные функция молча выключилась бы.
     await setStoredNspdButtonEnabled(true)
 
     await syncNspdContentScriptsFromStorage()
 
-    await expect(getStoredNspdButtonEnabled()).resolves.toBe(false)
+    await expect(getStoredNspdButtonEnabled()).resolves.toBe(true)
     expect(scriptingMock.registerContentScripts).not.toHaveBeenCalled()
+  })
+
+  it('регистрирует скрипты, когда доступ выдали после старта', async () => {
+    // Сценарий обновления: настройка включена, доступа нет, а затем его выдали.
+    await setStoredNspdButtonEnabled(true)
+    initWithCleanup()
+    await flush()
+    expect(scriptingMock.registered.size).toBe(0)
+
+    // `permissions.request` выдаёт доступ и будит `permissions.onAdded` —
+    // так это выглядит для пользователя, разрешившего хост в браузере.
+    await browser.permissions.request({ origins: [...NSPD_HOST_PATTERNS] })
+    await flush()
+
+    expect(scriptingMock.registered.size).toBe(2)
+    await expect(getStoredNspdButtonEnabled()).resolves.toBe(true)
   })
 
   it('не трогает настройку при отзыве чужого доступа', async () => {

@@ -17,12 +17,11 @@ import {
 import {
   NSPD_BUTTON_ENABLED_STORAGE_KEY,
   readStoredNspdButtonEnabled,
-  setStoredNspdButtonEnabled,
 } from '@/lib/nspd/nspd_button'
 
 export { NSPD_COLLECTOR_SCRIPT_ID, NSPD_INTERCEPTOR_SCRIPT_ID }
 
-const NSPD_ORIGINS = [...NSPD_HOST_PATTERNS]
+export const NSPD_ORIGINS = [...NSPD_HOST_PATTERNS]
 
 type RegisteredNspdScript = {
   id: string
@@ -168,11 +167,19 @@ export const whenNspdSyncIdle = (): Promise<void> => syncQueue
  * Синхронизирует скрипты с сохранённой настройкой.
  *
  * Кнопка по умолчанию включена, но доступ к домену необязательный и по себе не
- * выдаётся. Поэтому при явно сохранённой настройке пропажа доступа её выключает
- * (иначе тумблер обещал бы работающую кнопку), а при отсутствии сохранённого
- * значения кнопка остаётся включённой — скрипты просто не регистрируются, пока
- * пользователь не разрешит доступ. При недоступном API состояние не трогаем:
- * иначе сбой чтения разрешений молча менял бы настройку.
+ * выдаётся, поэтому включённая настройка без доступа означает «кнопка есть в
+ * тулбаре, скрипты ждут разрешения» — не «выключить функцию».
+ *
+ * Раньше здесь настройка сбрасывалась в `false` при отсутствии доступа. Это
+ * ломало обновление: у пользователя старый доступ к НСПД был обязательным и уже
+ * выданным, а новая версия переносит его в необязательные — то есть при первом
+ * запуске доступа ещё нет. Сброс выключал тумблер, пользователь видел
+ * выключенную функцию и сайт без кнопки, а выдача доступа не включала её
+ * обратно, потому что настройка уже стояла `false`.
+ *
+ * Настройку пользователя не меняем никогда: это его выбор, а не состояние
+ * разрешений. При недоступном API разрешений состояние тоже не трогаем — иначе
+ * сбой чтения молча выключал бы функцию.
  */
 export const syncNspdContentScriptsFromStorage = (): Promise<void> =>
   enqueueSync(async () => {
@@ -188,13 +195,7 @@ export const syncNspdContentScriptsFromStorage = (): Promise<void> =>
       await registerNspdContentScripts()
       return
     }
-    if (access === 'denied' && stored === true) {
-      await setStoredNspdButtonEnabled(false)
-      await unregisterNspdContentScripts()
-      return
-    }
-    // Доступ не выдан, но настройку пользователь не включал: кнопку оставляем
-    // включённой, скрипты — снятыми.
+    // Доступ не выдан: кнопку в тулбаре оставляем включённой, скрипты — снятыми.
     await unregisterNspdContentScripts()
   })
 
@@ -213,14 +214,20 @@ const handleStorageChange = (
   runNspdSync(nextValue === true)
 }
 
+/**
+ * Отзыв доступа к НСПД — снимаем скрипты, но настройку не трогаем.
+ *
+ * Тумблер остаётся включённым: он про кнопку в тулбаре, а не про выданные
+ * разрешения. Когда доступ вернут, скрипты зарегистрируются сами через
+ * `permissions.onAdded`, и функция заработает без повторного включения.
+ */
 const handlePermissionsRemoved = (removed: { origins?: string[] }): void => {
   const origins = removed.origins ?? []
   const lostNspdAccess = origins.some((origin) => NSPD_ORIGINS.includes(origin))
   if (!lostNspdAccess) return
 
-  runNspdSync(false)
-  void setStoredNspdButtonEnabled(false).catch((error: unknown) => {
-    console.warn('[yamapper] disable nspd after access revoke failed:', error)
+  void syncNspdContentScriptsFromStorage().catch((error: unknown) => {
+    console.warn('[yamapper] sync nspd after access revoke failed:', error)
   })
 }
 

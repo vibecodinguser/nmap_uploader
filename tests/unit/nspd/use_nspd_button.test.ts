@@ -45,7 +45,9 @@ describe('useNspdButton', () => {
 
     expect(permissionsMock.request).toHaveBeenCalledWith({ origins: [...NSPD_HOST_PATTERNS] })
     expect(result.current.isEnabled).toBe(true)
-    expect(result.current.permissionDenied).toBe(null)
+    // Доступ к Яндексу не просили: кнопка НСПД работает и без Диска, поэтому
+    // подсказка «нужен Диск» не мешает включению.
+    expect(result.current.permissionDenied).toBe('yandex')
     await expect(getStoredNspdButtonEnabled()).resolves.toBe(true)
     expect([...scriptingMock.registered.keys()]).toHaveLength(2)
   })
