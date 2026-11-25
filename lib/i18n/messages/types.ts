@@ -17,10 +17,6 @@ export type Messages = {
     invalidDateFormat: string
   }
   header: {
-    logout: string
-    login: string
-    loggingIn: string
-    loginAria: string
     closeSidebar: string
   }
   tabs: {

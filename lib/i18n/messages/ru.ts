@@ -13,10 +13,6 @@ export const ruMessages = {
     invalidDateFormat: 'Неверный формат даты',
   },
   header: {
-    logout: 'Выйти',
-    login: 'Войти',
-    loggingIn: 'Вход…',
-    loginAria: 'Войти через Яндекс ID',
     closeSidebar: 'Закрыть панель',
   },
   tabs: {

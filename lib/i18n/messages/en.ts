@@ -13,10 +13,6 @@ export const enMessages = {
     invalidDateFormat: 'Invalid date format',
   },
   header: {
-    logout: 'Log out',
-    login: 'Sign in',
-    loggingIn: 'Signing in…',
-    loginAria: 'Sign in with Yandex ID',
     closeSidebar: 'Close panel',
   },
   tabs: {

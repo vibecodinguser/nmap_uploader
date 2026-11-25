@@ -18,7 +18,10 @@ import {
 
 export const App = () => {
   const strokeColor = useStrokeColor()
-  const { user, avatarDataUrl, isLoggingIn, handleLogin, handleLogout } = useAuth()
+  // Вход из панели не нужен: он спрашивается по месту (Блокнот, загрузка НСПД).
+  // Сессия при этом восстанавливается молча, поэтому `user` для per-user
+  // настройки «Перезагружать после загрузки» доступен.
+  const { user } = useAuth()
   const reloadAfterUpload = useReloadAfterUpload(user?.id)
   const splitViewButton = useSplitViewButton()
   const notesButton = useNotesButton()
@@ -33,19 +36,9 @@ export const App = () => {
     new URLSearchParams(window.location.search).get(SETTINGS_POPUP_FOCUS_QUERY_PARAM) ===
     SETTINGS_POPUP_FOCUS_NSPD
 
-  const triggerLogin = async () => {
-    await handleLogin()
-  }
-
   return (
     <div className="sidepanel-app">
-      <Header
-        user={user}
-        avatarDataUrl={avatarDataUrl}
-        isLoggingIn={isLoggingIn}
-        onLogin={triggerLogin}
-        onLogout={handleLogout}
-      />
+      <Header />
 
       <main className="sidepanel-main">
         <SettingsTab

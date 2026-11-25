@@ -30,6 +30,10 @@
   --ring: #000000;
   --surface-hover: #f2f2f2;
 
+  /* Иконки — замер `.nk-icon`: базовый цвет `#666`, наведение `#333`. */
+  --icon-color: #666666;
+  --icon-hovered-color: #333333;
+
   /* Акцент и семантика — одни и те же в обеих темах */
   --accent: #ffdb4d;
   --accent-strong: #ffcc00;
@@ -48,6 +52,10 @@
   --font-size-xs: 12px;
   --font-size-sm: 13px;
   --font-size-title: 15px;
+
+  /* Заголовок шапки панели: замер `.nk-sidebar-header-view__title` — 16px/22px. */
+  --font-size-header: 16px;
+  --line-height-header: 22px;
   --line-height-block: 16px;
   --line-height-tight: 1.25;
   --line-height-relaxed: 1.4;
@@ -55,10 +63,6 @@
 
   /* Фон заголовков */
   --dark-surface: #333333;
-  --dark-header-bg: var(--dark-surface);
-  --dark-header-bg-blur: var(--dark-surface);
-  --header-bg: rgba(255, 255, 255, 0.95);
-  --header-bg-blur: rgba(255, 255, 255, 0.6);
 
   /* Тени и фокус */
   --focus-ring: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
@@ -93,10 +97,8 @@
   --primary-foreground: #ffffff;
   --ring: #6d6d6d;
   --dark-surface: #333333;
-  --dark-header-bg: var(--dark-surface);
-  --dark-header-bg-blur: var(--dark-surface);
-  --header-bg: var(--dark-header-bg);
-  --header-bg-blur: var(--dark-header-bg-blur);
+  --icon-color: #bfbfbf;
+  --icon-hovered-color: #e6e6e6;
   --link: #7fb2ff;
   --success: #6abf69;
   --error: #e57373;

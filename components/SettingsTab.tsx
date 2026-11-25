@@ -186,8 +186,6 @@ export const SettingsTab = ({
         </button>
       ) : null}
 
-      <h2 className="settings-title">{t('settings.title')}</h2>
-
       <SettingsGroupSection id="settings-editing" title={t('settings.editing')} defaultExpanded>
         <SettingsToggleRow
           id="settings-split-view-button"

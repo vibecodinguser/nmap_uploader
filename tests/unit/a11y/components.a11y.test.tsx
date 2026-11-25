@@ -102,35 +102,8 @@ describe('a11y: TabBar', () => {
 })
 
 describe('a11y: Header', () => {
-  it('без нарушений для гостя', async () => {
-    const { container } = renderA11y(
-      <Header
-        user={null}
-        avatarDataUrl={null}
-        isLoggingIn={false}
-        onLogin={noop}
-        onLogout={noop}
-      />,
-    )
-
-    await expectNoA11yViolations(container)
-  })
-
-  it('без нарушений для авторизованного пользователя', async () => {
-    const { container } = renderA11y(
-      <Header
-        user={{
-          id: '1',
-          login: 'tester',
-          displayName: 'Тестер',
-          realName: 'Тестер',
-        }}
-        avatarDataUrl="data:image/png;base64,iVBORw0KGgo="
-        isLoggingIn={false}
-        onLogin={noop}
-        onLogout={noop}
-      />,
-    )
+  it('без нарушений', async () => {
+    const { container } = renderA11y(<Header />)
 
     await expectNoA11yViolations(container)
   })
