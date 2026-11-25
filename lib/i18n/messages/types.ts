@@ -98,11 +98,6 @@ export type Messages = {
   settings: {
     title: string
     openAria: string
-    appearance: string
-    themeAria: string
-    themeDark: string
-    themeLight: string
-    themeSystem: string
     splitViewButton: string
     splitViewAria: string
     notesButton: string

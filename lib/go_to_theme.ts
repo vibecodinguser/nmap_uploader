@@ -1,11 +1,5 @@
-import { browser } from 'wxt/browser'
-import {
-  getStoredExtensionThemeMode,
-  getSystemTheme,
-  resolveTheme,
-  THEME_STORAGE_KEY,
-  type Theme,
-} from '@/lib/theme'
+import { observeNativeTheme, readNativeTheme } from '@/lib/native_theme'
+import type { Theme } from '@/lib/theme'
 
 export const GO_TO_MENU_ITEM_HOVER_VAR = '--yamapper-menu-item-hover-bg'
 
@@ -32,8 +26,6 @@ const GO_TO_THEME_DARK: GoToThemeColors = {
   boxShadow: '0 4px 16px rgba(0, 0, 0, 0.45)',
 }
 
-let resolvedExtensionTheme: Theme = 'light'
-
 /**
  * Цвета go-to UI. Одинаковы во всех браузерах: фон `#45464f` был в Chrome
  * против `#333333` в Firefox — это то же расхождение, что убрано из панели
@@ -43,12 +35,7 @@ export const resolveGoToThemeColors = (theme: Theme): GoToThemeColors =>
   theme === 'dark' ? GO_TO_THEME_DARK : GO_TO_THEME_LIGHT
 
 export const readGoToThemeColors = (): GoToThemeColors => {
-  return resolveGoToThemeColors(resolvedExtensionTheme)
-}
-
-export const refreshGoToThemeFromStorage = async (): Promise<void> => {
-  const mode = await getStoredExtensionThemeMode()
-  resolvedExtensionTheme = resolveTheme(mode)
+  return resolveGoToThemeColors(readNativeTheme())
 }
 
 const applyThemeColors = (element: HTMLElement, colors: GoToThemeColors): void => {
@@ -90,60 +77,15 @@ const scheduleSyncGoToTheme = (): void => {
   themeSyncTimer = setTimeout(runScheduledThemeSync, 0)
 }
 
-const refreshAndSyncGoToTheme = async (): Promise<void> => {
-  await refreshGoToThemeFromStorage()
-  scheduleSyncGoToTheme()
-}
-
-const syncFromSystemThemeIfNeeded = async (): Promise<void> => {
-  const mode = await getStoredExtensionThemeMode()
-  if (mode === 'system') {
-    resolvedExtensionTheme = getSystemTheme()
-    scheduleSyncGoToTheme()
-  }
-}
-
-const onThemeSyncError = (): void => {
-  // Синхронизация темы best-effort; сбой не блокирует UI карты.
-}
-
-const handleThemeSyncTask = (syncTask: Promise<void>): void => {
-  syncTask.catch(onThemeSyncError)
-}
-
-const startThemeSyncTask = (task: () => Promise<void>): void => {
-  const syncTask = task()
-  handleThemeSyncTask(syncTask)
-}
-
-/** Следит за темой расширения из настроек и синхронизирует go-to UI на карте. */
+/** Следит за темой редактора и перекрашивает go-to UI на карте. */
 export const observeGoToTheme = (): (() => void) => {
-  const syncFromStorage = (): void => {
-    startThemeSyncTask(refreshAndSyncGoToTheme)
-  }
+  const stopNativeTheme = observeNativeTheme(scheduleSyncGoToTheme)
 
-  const onSystemThemeChange = (): void => {
-    startThemeSyncTask(syncFromSystemThemeIfNeeded)
-  }
+  scheduleSyncGoToTheme()
 
-  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-  mediaQuery.addEventListener('change', onSystemThemeChange)
-
-  const onStorageChange = (changes: Record<string, { newValue?: unknown }>, area: string): void => {
-    if (area === 'local' && THEME_STORAGE_KEY in changes) {
-      syncFromStorage()
-    }
-  }
-
-  const disconnectGoToThemeObserver = (): void => {
+  return () => {
     clearTimeout(themeSyncTimer)
     themeSyncTimer = undefined
-    mediaQuery.removeEventListener('change', onSystemThemeChange)
-    browser?.storage?.onChanged?.removeListener(onStorageChange)
+    stopNativeTheme()
   }
-
-  browser.storage.onChanged.addListener(onStorageChange)
-  syncFromStorage()
-
-  return disconnectGoToThemeObserver
 }

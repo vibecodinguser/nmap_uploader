@@ -16,7 +16,6 @@ import type { useObjectTracker } from '@/hooks/useObjectTracker'
 import type { usePointCounter } from '@/hooks/usePointCounter'
 import type { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
 import type { useSplitViewButton } from '@/hooks/useSplitViewButton'
-import type { ThemeMode } from '@/hooks/useTheme'
 import { LOCALE_OPTIONS } from '@/lib/i18n/locale'
 
 type ReloadAfterUploadSettings = Pick<
@@ -68,8 +67,6 @@ type ObjectTrackerSettings = Pick<
 const SETTINGS_BACK_ICON_SIZE = 18
 
 type SettingsTabProps = {
-  themeMode: ThemeMode
-  onThemeModeChange: (mode: ThemeMode) => void
   onBack?: () => void
   strokeColor: StrokeColorSettingsProps
   reloadAfterUpload: ReloadAfterUploadSettings
@@ -83,8 +80,6 @@ type SettingsTabProps = {
 }
 
 export const SettingsTab = ({
-  themeMode,
-  onThemeModeChange,
   onBack,
   strokeColor,
   reloadAfterUpload,
@@ -132,15 +127,6 @@ export const SettingsTab = ({
   const isPointCounterLoaded = pointCounter?.isLoaded ?? true
   const isPointCounterDisabled = !isPointCounterLoaded
 
-  const themeModeOptions = useMemo(
-    () => [
-      { value: 'dark' as const, label: t('settings.themeDark') },
-      { value: 'light' as const, label: t('settings.themeLight') },
-      { value: 'system' as const, label: t('settings.themeSystem') },
-    ],
-    [t],
-  )
-
   const localeOptions = useMemo(
     () =>
       LOCALE_OPTIONS.map((opt) => ({
@@ -179,16 +165,6 @@ export const SettingsTab = ({
             value={locale}
             options={localeOptions}
             onChange={setLocale}
-          />
-        </SettingsFieldRow>
-
-        <SettingsFieldRow id="settings-appearance" title={t('settings.appearance')}>
-          <SegmentedRadioGroup
-            name="theme-mode"
-            ariaLabel={t('settings.themeAria')}
-            value={themeMode}
-            options={themeModeOptions}
-            onChange={onThemeModeChange}
           />
         </SettingsFieldRow>
       </SettingsGroupSection>

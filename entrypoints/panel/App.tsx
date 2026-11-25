@@ -11,14 +11,8 @@ import { usePointCounter } from '@/hooks/usePointCounter'
 import { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
 import { useSplitViewButton } from '@/hooks/useSplitViewButton'
 import { useStrokeColor } from '@/hooks/useStrokeColor'
-import { useTheme } from '@/hooks/useTheme'
 
-type AppProps = {
-  themeTarget?: Element
-}
-
-export const App = ({ themeTarget }: AppProps) => {
-  const { themeMode, setThemeMode } = useTheme(themeTarget)
+export const App = () => {
   const strokeColor = useStrokeColor()
   const { user, avatarDataUrl, isLoggingIn, handleLogin, handleLogout } = useAuth()
   const reloadAfterUpload = useReloadAfterUpload(user?.id)
@@ -46,8 +40,6 @@ export const App = ({ themeTarget }: AppProps) => {
 
       <main className="sidepanel-main">
         <SettingsTab
-          themeMode={themeMode}
-          onThemeModeChange={setThemeMode}
           strokeColor={strokeColor}
           reloadAfterUpload={reloadAfterUpload}
           splitViewButton={splitViewButton}

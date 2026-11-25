@@ -96,11 +96,6 @@ export const enMessages = {
   settings: {
     title: 'Settings',
     openAria: 'Extension settings',
-    appearance: 'Theme',
-    themeAria: 'Theme',
-    themeDark: 'Dark',
-    themeLight: 'Light',
-    themeSystem: 'Auto',
     splitViewButton: 'Button: Split view',
     splitViewAria: 'Split view',
     notesButton: 'Button: Notes',

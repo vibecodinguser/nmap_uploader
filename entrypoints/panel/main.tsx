@@ -1,10 +1,13 @@
 import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
 import { LocaleProvider } from '@/hooks/useLocale'
-import { applyStoredDarkTheme } from '@/lib/theme_bootstrap'
+import { applyThemeTo, initNativeThemeBridge, observeTheme } from '@/lib/theme_bootstrap'
 import { App } from './App'
 
-applyStoredDarkTheme(document.documentElement)
+initNativeThemeBridge()
+observeTheme((isDark) => {
+  applyThemeTo(document.documentElement, isDark)
+})
 
 const root = document.getElementById('root')
 if (!root) {

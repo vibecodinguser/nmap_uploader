@@ -96,11 +96,6 @@ export const ruMessages = {
   settings: {
     title: 'Настройки',
     openAria: 'Настройки расширения',
-    appearance: 'Тема',
-    themeAria: 'Тема оформления',
-    themeDark: 'Тёмная',
-    themeLight: 'Светлая',
-    themeSystem: 'Авто',
     splitViewButton: 'Кнопка: Раздельный вид',
     splitViewAria: 'Раздельный вид',
     notesButton: 'Кнопка: Заметки',

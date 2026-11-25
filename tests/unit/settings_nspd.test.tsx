@@ -8,8 +8,6 @@ import { LocaleProvider } from '@/hooks/useLocale'
 const noop = () => {}
 
 const buildProps = (permissionDenied: boolean) => ({
-  themeMode: 'system' as const,
-  onThemeModeChange: noop,
   strokeColor: {
     inputValue: 'ff0000',
     effectiveColor: '#ff0000',

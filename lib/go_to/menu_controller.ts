@@ -16,7 +16,7 @@ import { buildGoToLink, getMapLocationFromUrl } from '@/lib/go_to_link'
 import { type GoToItem, getActiveGoToItems, getStoredGoToItems } from '@/lib/go_to_settings'
 import { GO_TO_SOURCES, getGoToSourceIconUrl } from '@/lib/go_to_sources'
 import { GO_TO_MENU_ITEM_HOVERED_CLASS, GO_TO_POPUP_VISIBLE_CLASS } from '@/lib/go_to_styles'
-import { refreshGoToThemeFromStorage, syncGoToTheme } from '@/lib/go_to_theme'
+import { syncGoToTheme } from '@/lib/go_to_theme'
 import type { Locale } from '@/lib/i18n/locale.types'
 
 export const getMenu = (): HTMLElement | null => getOwnedElementById(MENU_ID)
@@ -143,18 +143,16 @@ export const showGoToMenu = (): void => {
     return
   }
 
-  void refreshGoToThemeFromStorage().then(() => {
-    syncGoToTheme()
-    menu.classList.add(GO_TO_POPUP_VISIBLE_CLASS)
-    button.setAttribute('aria-expanded', 'true')
-    positionMenu()
+  syncGoToTheme()
+  menu.classList.add(GO_TO_POPUP_VISIBLE_CLASS)
+  button.setAttribute('aria-expanded', 'true')
+  positionMenu()
 
-    document.addEventListener('pointerdown', handleDocumentPointerDown, true)
-    document.addEventListener('keydown', handleDocumentKeyDown)
-    window.addEventListener('resize', positionMenu)
+  document.addEventListener('pointerdown', handleDocumentPointerDown, true)
+  document.addEventListener('keydown', handleDocumentKeyDown)
+  window.addEventListener('resize', positionMenu)
 
-    hideGoToTooltip()
-  })
+  hideGoToTooltip()
 }
 
 export const refreshGoToMenuItems = async (locale: Locale): Promise<void> => {

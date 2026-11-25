@@ -2,14 +2,14 @@ import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
 import '@/assets/styles/notes_panel.css'
 import { LocaleProvider } from '@/hooks/useLocale'
-import { applyStoredDarkTheme, applyThemeTo, observeStoredTheme } from '@/lib/theme_bootstrap'
+import { applyThemeTo, initNativeThemeBridge, observeTheme } from '@/lib/theme_bootstrap'
 import { NotesPanelApp } from './App'
 
-applyStoredDarkTheme(document.documentElement)
+initNativeThemeBridge()
 
 // Панель живёт в постоянно смонтированном iframe: без подписки смена темы в
-// боковой панели до неё не доходила, и она оставалась в прежней теме.
-observeStoredTheme((isDark) => {
+// редакторе до неё не доходила, и она оставалась в прежней теме.
+observeTheme((isDark) => {
   applyThemeTo(document.documentElement, isDark)
 })
 

@@ -8,8 +8,6 @@ import { LocaleProvider } from '@/hooks/useLocale'
 const noop = () => {}
 
 const buildProps = () => ({
-  themeMode: 'system' as const,
-  onThemeModeChange: noop,
   strokeColor: {
     inputValue: 'ff0000',
     effectiveColor: '#ff0000',
@@ -62,25 +60,30 @@ const expandSection = (name: string) => {
 describe('SettingsTab: секция «Оформление»', () => {
   afterEach(cleanup)
 
-  it('объединяет язык и тему', () => {
+  it('содержит переключатель языка', () => {
     renderTab()
 
     const section = sectionNames('Оформление')
 
     expect(within(section).getByRole('radiogroup', { name: 'Язык интерфейса' })).toBeTruthy()
-    expect(within(section).getByRole('radiogroup', { name: 'Тема оформления' })).toBeTruthy()
   })
 
-  it('делает язык и тему строками внутри секции', () => {
+  it('не предлагает ручной выбор темы', () => {
+    renderTab()
+
+    expect(screen.queryByRole('radiogroup', { name: 'Тема оформления' })).toBeNull()
+  })
+
+  it('делает язык строкой внутри секции', () => {
     renderTab()
 
     const subheadings = screen.getAllByRole('heading', { level: 4 }).map((node) => node.textContent)
 
     expect(subheadings).toContain('Язык')
-    expect(subheadings).toContain('Тема')
+    expect(subheadings).not.toContain('Тема')
   })
 
-  it('не выводит язык и тему отдельными карточками', () => {
+  it('не выводит язык отдельной карточкой', () => {
     renderTab()
 
     const standaloneSections = Array.from(

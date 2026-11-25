@@ -29,9 +29,6 @@ vi.mock('@/hooks/usePointCounter', () => ({
   usePointCounter: () => ({ isEnabled: true, isLoaded: true, setIsEnabled: vi.fn() }),
 }))
 vi.mock('@/hooks/useStrokeColor', () => ({ useStrokeColor: () => '#000000' }))
-vi.mock('@/hooks/useTheme', () => ({
-  useTheme: () => ({ themeMode: 'system', setThemeMode: vi.fn() }),
-}))
 
 describe('panel App', () => {
   afterEach(cleanup)

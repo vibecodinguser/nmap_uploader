@@ -1,42 +1,27 @@
-import { browser } from 'wxt/browser'
-
 export type Theme = 'light' | 'dark'
-export type ThemeMode = 'light' | 'dark' | 'system'
-
-export const THEME_STORAGE_KEY = 'theme'
 
 export const getSystemTheme = (): Theme =>
   window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 
-export const normalizeThemeMode = (value: unknown): ThemeMode => {
-  if (value === 'light' || value === 'dark' || value === 'system') return value
-  return 'system'
-}
+let nativeThemeState: Theme | null = null
+const nativeThemeListeners = new Set<(theme: Theme) => void>()
 
-export const resolveTheme = (mode: ThemeMode): Theme =>
-  mode === 'system' ? getSystemTheme() : mode
-
-export const getStoredThemeMode = (): ThemeMode =>
-  normalizeThemeMode(localStorage.getItem(THEME_STORAGE_KEY))
-
-export const getStoredExtensionThemeMode = async (): Promise<ThemeMode> => {
-  const stored = await browser.storage.local.get(THEME_STORAGE_KEY)
-  return normalizeThemeMode(stored[THEME_STORAGE_KEY])
-}
-
-export const setStoredExtensionThemeMode = async (mode: ThemeMode): Promise<void> => {
-  await browser.storage.local.set({ [THEME_STORAGE_KEY]: mode })
+/** Тема нативного редактора, полученная из iframe-моста. */
+export const setNativeTheme = (theme: Theme): void => {
+  if (nativeThemeState === theme) return
+  nativeThemeState = theme
+  for (const listener of nativeThemeListeners) listener(theme)
 }
 
 /**
- * Копирует тему из localStorage панели в storage для content scripts.
- *
- * Пишет только если в `localStorage` есть явный выбор: иначе страница, которая
- * никогда не выбирала тему, затирала бы сохранённое значение на `system` и
- * возвращала пользователя к системной теме каждый раз при открытии.
+ * Последняя известная тема редактора; пока мост не сообщил её (или за его
+ * пределами) — системная тема.
  */
-export const syncThemeLocalToExtensionStorage = async (): Promise<void> => {
-  const raw = localStorage.getItem(THEME_STORAGE_KEY)
-  if (raw !== 'light' && raw !== 'dark' && raw !== 'system') return
-  await setStoredExtensionThemeMode(raw)
+export const getNativeThemeSnapshot = (): Theme => nativeThemeState ?? getSystemTheme()
+
+export const subscribeNativeTheme = (listener: (theme: Theme) => void): (() => void) => {
+  nativeThemeListeners.add(listener)
+  return () => {
+    nativeThemeListeners.delete(listener)
+  }
 }

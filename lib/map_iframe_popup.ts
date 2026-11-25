@@ -1,6 +1,8 @@
 import { browser } from 'wxt/browser'
 import { markNmapOwned } from '@/lib/go_to/ownership'
 import { applyGoToTheme } from '@/lib/go_to_theme'
+import { readNativeTheme } from '@/lib/native_theme'
+import { withNativeThemeParam } from '@/lib/theme_bridge'
 
 const VIEWPORT_MARGIN = 12
 const BUTTON_GAP = 10
@@ -109,7 +111,7 @@ export const createMapIframePopup = (options: MapIframePopupOptions): MapIframeP
 
     const iframe = document.createElement('iframe')
     iframe.className = options.iframeClassName
-    iframe.src = pageUrl
+    iframe.src = withNativeThemeParam(pageUrl, readNativeTheme())
     iframe.title = button.getAttribute('aria-label') ?? ''
 
     content.appendChild(iframe)

@@ -1,13 +1,10 @@
-import { browser } from 'wxt/browser'
 import {
-  getStoredExtensionThemeMode,
-  getStoredThemeMode,
-  normalizeThemeMode,
-  resolveTheme,
-  syncThemeLocalToExtensionStorage,
-  THEME_STORAGE_KEY,
-  type ThemeMode,
+  getNativeThemeSnapshot,
+  setNativeTheme,
+  subscribeNativeTheme,
+  type Theme,
 } from '@/lib/theme'
+import { NATIVE_THEME_MESSAGE, NATIVE_THEME_QUERY_PARAM } from '@/lib/theme_bridge'
 
 /**
  * Включает или выключает тёмную тему на элементе и его shadow host.
@@ -24,73 +21,50 @@ export const applyThemeTo = (themeTarget: HTMLElement, isDark: boolean): void =>
   }
 }
 
-/** Применяет сохранённую тему к элементу и shadow host при первом mount. */
-export const applyStoredDarkTheme = (themeTarget: HTMLElement): void => {
-  applyThemeTo(themeTarget, resolveTheme(getStoredThemeMode()) === 'dark')
+const isTheme = (value: unknown): value is Theme => value === 'light' || value === 'dark'
 
-  void syncThemeLocalToExtensionStorage().catch((error: unknown) => {
-    console.warn('[yamapper] theme storage bootstrap failed:', error)
-  })
+const readNativeThemeFromLocation = (): Theme | null => {
+  const value = new URLSearchParams(window.location.search).get(NATIVE_THEME_QUERY_PARAM)
+  return isTheme(value) ? value : null
 }
 
-const SYSTEM_DARK_QUERY = '(prefers-color-scheme: dark)'
+/**
+ * Принимает тему редактора внутри iframe.
+ *
+ * Начальное значение приходит в URL (его ставит хост при создании iframe), а
+ * дальнейшие изменения — сообщением. Без этого панель не может узнать тему
+ * редактора: у неё другой origin и свой DOM.
+ */
+export const initNativeThemeBridge = (): (() => void) => {
+  const initialTheme = readNativeThemeFromLocation()
+  if (initialTheme) setNativeTheme(initialTheme)
+
+  const handleMessage = (event: MessageEvent): void => {
+    if (event.source !== window.parent) return
+    const data = event.data as { action?: unknown; theme?: unknown } | null | undefined
+    if (data?.action !== NATIVE_THEME_MESSAGE || !isTheme(data.theme)) return
+    setNativeTheme(data.theme)
+  }
+
+  window.addEventListener('message', handleMessage)
+  return () => {
+    window.removeEventListener('message', handleMessage)
+  }
+}
 
 /**
- * Следит за сменой темы и сообщает, стала ли она тёмной.
+ * Применяет тему редактора к элементу и подписывается на её смену.
  *
- * Тема приходит из трёх источников, и все три важны: выбор в боковой панели
- * (`storage.local`), тот же выбор в `localStorage` соседних страниц расширения
- * и системная тема при режиме «как в системе».
- *
- * Наблюдатель нужен именно потому, что страницы расширения живут долго: панель
- * заметок открыта в постоянно смонтированном iframe и при смене темы не
- * перезагружается, поэтому без подписки оставалась в старой теме.
+ * Страницы расширения живут долго: панель заметок смонтирована в постоянно
+ * открытом iframe и при смене темы не перезагружается, поэтому без подписки
+ * оставалась бы в прежней теме. Сначала тема применяется сразу, затем идёт за
+ * сообщениями моста.
  */
-export const observeStoredTheme = (onChange: (isDark: boolean) => void): (() => void) => {
-  let mode: ThemeMode = getStoredThemeMode()
-  let active = true
-  const mediaQuery = window.matchMedia(SYSTEM_DARK_QUERY)
-
+export const observeTheme = (onChange: (isDark: boolean) => void): (() => void) => {
   const emit = (): void => {
-    if (!active) return
-    onChange(resolveTheme(mode) === 'dark')
+    onChange(getNativeThemeSnapshot() === 'dark')
   }
 
-  const handleStorageChange = (
-    changes: Record<string, { newValue?: unknown }>,
-    area: string,
-  ): void => {
-    if (area !== 'local' || !(THEME_STORAGE_KEY in changes)) return
-    mode = normalizeThemeMode(changes[THEME_STORAGE_KEY]?.newValue)
-    emit()
-  }
-
-  const handleLocalStorage = (event: StorageEvent): void => {
-    if (event.key !== THEME_STORAGE_KEY) return
-    mode = normalizeThemeMode(event.newValue)
-    emit()
-  }
-
-  const handleSystemTheme = (): void => {
-    if (mode === 'system') emit()
-  }
-
-  browser.storage.onChanged.addListener(handleStorageChange)
-  window.addEventListener('storage', handleLocalStorage)
-  mediaQuery.addEventListener('change', handleSystemTheme)
-
-  // Тема могла смениться, пока страница была скрыта: сразу выравниваем.
-  getStoredExtensionThemeMode()
-    .then((stored) => {
-      mode = stored
-      emit()
-    })
-    .catch(() => {})
-
-  return () => {
-    active = false
-    browser.storage.onChanged.removeListener(handleStorageChange)
-    window.removeEventListener('storage', handleLocalStorage)
-    mediaQuery.removeEventListener('change', handleSystemTheme)
-  }
+  emit()
+  return subscribeNativeTheme(emit)
 }

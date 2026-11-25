@@ -10,10 +10,12 @@
  */
 import { browser } from 'wxt/browser'
 import { removeOwnedElementsById } from '@/lib/go_to/ownership'
-import { applyGoToTheme, refreshGoToThemeFromStorage, syncGoToTheme } from '@/lib/go_to_theme'
+import { applyGoToTheme, syncGoToTheme } from '@/lib/go_to_theme'
 import type { Locale } from '@/lib/i18n/locale.types'
 import { createTranslator } from '@/lib/i18n/translate'
 import { ensureInjectedStyle, removeInjectedStyle } from '@/lib/injected_styles'
+import { readNativeTheme } from '@/lib/native_theme'
+import { withNativeThemeParam } from '@/lib/theme_bridge'
 import { getSettingsButton, SETTINGS_APP_BAR_SELECTOR } from './button'
 import {
   CLOSE_SETTINGS_POPUP_ACTION,
@@ -177,7 +179,7 @@ export const createSettingsPopupHost = ({
     const iframe = document.createElement('iframe')
     iframe.className = 'yamapper-settings-popup__iframe'
     iframe.title = title
-    iframe.src = browser.runtime.getURL(pagePath)
+    iframe.src = withNativeThemeParam(browser.runtime.getURL(pagePath), readNativeTheme())
 
     content.appendChild(iframe)
     container.appendChild(content)
@@ -220,23 +222,21 @@ export const createSettingsPopupHost = ({
       return
     }
 
-    // Тема могла смениться, пока попап был закрыт: перечитываем до показа,
+    // Тема могла смениться, пока попап был закрыт: перекрашиваем до показа,
     // иначе белая вспышка на тёмной странице.
-    void refreshGoToThemeFromStorage().then(() => {
-      ensureSettingsPopupStyles()
-      build()
-      if (!popup) {
-        return
-      }
-      fittedHeight = null
-      applyGoToTheme(popup)
-      position()
-      syncGoToTheme()
-      attachListeners()
-      // Фокус отдаём iframe: внутри него живёт React-корень панели.
-      frame?.focus()
-      onVisibilityChange?.(true)
-    })
+    ensureSettingsPopupStyles()
+    build()
+    if (!popup) {
+      return
+    }
+    fittedHeight = null
+    applyGoToTheme(popup)
+    position()
+    syncGoToTheme()
+    attachListeners()
+    // Фокус отдаём iframe: внутри него живёт React-корень панели.
+    frame?.focus()
+    onVisibilityChange?.(true)
   }
 
   const destroy = (): void => {

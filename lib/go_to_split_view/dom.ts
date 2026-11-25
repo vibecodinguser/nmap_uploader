@@ -19,7 +19,7 @@ import {
   SPLIT_ROOT_ID,
 } from '@/lib/go_to_split_view/core'
 import { GO_TO_SPLIT_ACTIVE_CLASS } from '@/lib/go_to_styles'
-import { applyGoToTheme, refreshGoToThemeFromStorage, syncGoToTheme } from '@/lib/go_to_theme'
+import { applyGoToTheme, syncGoToTheme } from '@/lib/go_to_theme'
 
 export const getSplitPanelSize = (): PanelDimensions => ({
   width: Math.max(1, Math.round(window.innerWidth / 2)),
@@ -291,10 +291,8 @@ export const mountSplitDomElements = (
   document.body.appendChild(root)
   document.body.appendChild(leftOverlay)
 
-  void refreshGoToThemeFromStorage().then(() => {
-    applyGoToTheme(root)
-    syncGoToTheme()
-  })
+  applyGoToTheme(root)
+  syncGoToTheme()
 
   return {
     splitRoot: root,

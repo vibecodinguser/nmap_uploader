@@ -1,6 +1,5 @@
 // @vitest-environment happy-dom
 
-import type { ComponentProps } from 'react'
 import { afterEach, describe, it, vi } from 'vitest'
 import { Header } from '@/components/Header'
 import { NoteList as NoteListBase } from '@/components/notes_panel/NoteList'
@@ -21,8 +20,6 @@ afterEach(() => {
 })
 
 const settingsTabProps = {
-  themeMode: 'system' as const,
-  onThemeModeChange: noop,
   onBack: noop,
   strokeColor: {
     inputValue: 'ff0000',

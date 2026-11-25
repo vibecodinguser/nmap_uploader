@@ -1,16 +1,14 @@
 // @vitest-environment happy-dom
 
 /**
- * Панель заметок должна следовать за темой, выбранной в боковой панели.
+ * Панель заметок должна следовать за темой редактора.
  *
  * Регрессия: тема применялась один раз при загрузке iframe, а панель живёт
  * постоянно — после переключения на светлую она оставалась тёмной.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { browser } from 'wxt/browser'
-import { THEME_STORAGE_KEY } from '@/lib/theme'
-import { applyThemeTo, observeStoredTheme } from '@/lib/theme_bootstrap'
-import { resetBrowserMocks } from '@/tests/setup/browser_mock'
+import { setNativeTheme } from '@/lib/theme'
+import { applyThemeTo, observeTheme } from '@/lib/theme_bootstrap'
 
 const stubSystemTheme = (isDark: boolean): void => {
   vi.stubGlobal('matchMedia', () => ({
@@ -32,92 +30,69 @@ describe('applyThemeTo', () => {
   })
 })
 
-describe('observeStoredTheme', () => {
-  beforeEach(async () => {
-    await resetBrowserMocks()
+describe('observeTheme', () => {
+  beforeEach(() => {
     document.documentElement.className = ''
     vi.unstubAllGlobals()
   })
 
-  it('сообщает о смене темы в storage', async () => {
-    stubSystemTheme(false)
-    const changes: boolean[] = []
-    const stop = observeStoredTheme((isDark) => changes.push(isDark))
-
-    await browser.storage.local.set({ [THEME_STORAGE_KEY]: 'dark' })
-    await browser.storage.local.set({ [THEME_STORAGE_KEY]: 'light' })
-
-    expect(changes).toContain(true)
-    expect(changes.at(-1)).toBe(false)
-    stop()
-  })
-
-  it('в режиме «как в системе» слушает системную тему', async () => {
+  it('сообщает текущую тему сразу при подписке', () => {
     stubSystemTheme(true)
+    setNativeTheme('dark')
+
+    const onChange = vi.fn()
+    const stop = observeTheme(onChange)
+
+    expect(onChange).toHaveBeenLastCalledWith(true)
+    stop()
+  })
+
+  it('реагирует на смену темы редактора', () => {
+    stubSystemTheme(false)
+    setNativeTheme('light')
+
     const changes: boolean[] = []
+    const stop = observeTheme((isDark) => changes.push(isDark))
 
-    await browser.storage.local.set({ [THEME_STORAGE_KEY]: 'system' })
-    const stop = observeStoredTheme((isDark) => changes.push(isDark))
+    setNativeTheme('dark')
+    expect(changes.at(-1)).toBe(true)
 
-    // Явный выбор светлой темы перекрывает тёмную системную.
-    await browser.storage.local.set({ [THEME_STORAGE_KEY]: 'light' })
-
+    setNativeTheme('light')
     expect(changes.at(-1)).toBe(false)
     stop()
   })
 
-  it('после отписки больше не сообщает', async () => {
+  it('после отписки больше не сообщает', () => {
     stubSystemTheme(false)
-    const onChange = vi.fn()
-    const stop = observeStoredTheme(onChange)
-    stop()
-
-    await browser.storage.local.set({ [THEME_STORAGE_KEY]: 'dark' })
-
-    expect(onChange).not.toHaveBeenCalled()
-  })
-
-  it('поднимает сохранённую тему сразу при подписке', async () => {
-    stubSystemTheme(false)
-    await browser.storage.local.set({ [THEME_STORAGE_KEY]: 'dark' })
+    setNativeTheme('light')
 
     const onChange = vi.fn()
-    const stop = observeStoredTheme(onChange)
-
-    await vi.waitFor(() => expect(onChange).toHaveBeenLastCalledWith(true))
+    const stop = observeTheme(onChange)
     stop()
+
+    setNativeTheme('dark')
+
+    expect(onChange).toHaveBeenCalledTimes(1)
   })
 })
 
 describe('панель заметок и светлая тема', () => {
-  beforeEach(async () => {
-    await resetBrowserMocks()
+  beforeEach(() => {
     document.documentElement.className = ''
     vi.unstubAllGlobals()
-    stubSystemTheme(true)
   })
 
-  it('переключается с тёмной на светлую по выбору в боковой панели', async () => {
-    await browser.storage.local.set({ [THEME_STORAGE_KEY]: 'dark' })
-    const stop = observeStoredTheme((isDark) => applyThemeTo(document.documentElement, isDark))
+  it('переключается с тёмной на светлую вместе с редактором', () => {
+    stubSystemTheme(false)
+    setNativeTheme('dark')
 
-    await vi.waitFor(() => expect(document.documentElement.classList.contains('dark')).toBe(true))
+    const stop = observeTheme((isDark) => applyThemeTo(document.documentElement, isDark))
 
-    await browser.storage.local.set({ [THEME_STORAGE_KEY]: 'light' })
+    expect(document.documentElement.classList.contains('dark')).toBe(true)
 
-    await vi.waitFor(() => expect(document.documentElement.classList.contains('dark')).toBe(false))
-    stop()
-  })
+    setNativeTheme('light')
 
-  it('светлая тема не откатывается на системную', async () => {
-    // Система тёмная, пользователь выбрал светлую: побеждает выбор пользователя.
-    await browser.storage.local.set({ [THEME_STORAGE_KEY]: 'system' })
-    const stop = observeStoredTheme((isDark) => applyThemeTo(document.documentElement, isDark))
-    await vi.waitFor(() => expect(document.documentElement.classList.contains('dark')).toBe(true))
-
-    await browser.storage.local.set({ [THEME_STORAGE_KEY]: 'light' })
-
-    await vi.waitFor(() => expect(document.documentElement.classList.contains('dark')).toBe(false))
+    expect(document.documentElement.classList.contains('dark')).toBe(false)
     stop()
   })
 })
