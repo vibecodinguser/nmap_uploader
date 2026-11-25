@@ -3,7 +3,8 @@ import { Storage } from 'happy-dom'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll, beforeEach, expect } from 'vitest'
 import * as axeMatchers from 'vitest-axe/matchers'
-import { resetBrowserMocks } from './browser_mock'
+import { YANDEX_PERMISSION_REQUEST } from '@/lib/manifest/yandex_optional_hosts'
+import { permissionsMock, resetBrowserMocks } from './browser_mock'
 import { resetYandexMockState, yandexHandlers } from './yandex_handlers'
 
 /*
@@ -84,6 +85,14 @@ function stopMockServer(): void {
 
 async function resetMocksBeforeTest(): Promise<void> {
   await resetBrowserMocks()
+  /*
+   * Разрешения Яндекса — необязательные (ADR 0022): без выдачи любой вход,
+   * загрузка и заметки отвечали бы `PERMISSION_REQUIRED`. Тестам, которые
+   * проверяют бизнес-логику, этот шаг не нужен, поэтому в фикстуре
+   * разрешения выдаются по умолчанию, а отсутствие выдачи моделируется
+   * `permissionsMock.revoke(...)`.
+   */
+  permissionsMock.grant(...YANDEX_PERMISSION_REQUEST.origins)
 }
 
 beforeAll(startMockServer)

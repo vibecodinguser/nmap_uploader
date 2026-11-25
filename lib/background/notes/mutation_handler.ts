@@ -31,13 +31,14 @@ export const mutationHandler = <T>({
 }): MessageHandler =>
   guard(action, (message, _sender, sendResponse) => {
     const task = (async () => {
-      // Порты создаются до разбора: без входа в Яндекс ответ «нужна
-      // авторизация» важнее любой ошибки в полезной нагрузке.
-      const ports = await createPorts()
-      if (!ports) {
-        sendResponse({ ok: false, error: 'AUTH_REQUIRED' })
+      // Порты создаются до разбора: без разрешений браузера или входа
+      // ответ «нужна авторизация» важнее любой ошибки в полезной нагрузке.
+      const access = await createPorts()
+      if (!access.ok) {
+        sendResponse({ ok: false, error: access.error })
         return
       }
+      const ports = access.ports
 
       const parsed = parse(message)
       if (!parsed.ok) {

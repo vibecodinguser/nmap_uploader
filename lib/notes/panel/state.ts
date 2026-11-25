@@ -11,7 +11,12 @@ import { DEFAULT_NOTES_FILTER, type NotesFilter } from './filters'
  */
 
 export type NotesPanelMode = 'list' | 'properties'
-export type NotesPanelStatus = 'loading' | 'ready' | 'auth' | 'error'
+/**
+ * `permission` — вход возможен, но разрешения браузера на Яндекс ещё не
+ * выданы: их нужно запросить под клик, до этого сетевой запрос отклонит сам
+ * браузер (ADR 0022).
+ */
+export type NotesPanelStatus = 'loading' | 'ready' | 'auth' | 'permission' | 'error'
 export type GroupDeleteMode = 'keepNotes' | 'cascade'
 
 /** Удалённая заметка, которую ещё можно вернуть: тост живёт несколько секунд. */

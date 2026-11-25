@@ -47,6 +47,7 @@ export const useNotesPanel = () => {
     undo: store.state.undo,
     loadNotes: sync.loadNotes,
     login: sync.login,
+    grantPermission: sync.grantPermission,
     ...view,
     ...mutations,
     ...removal,

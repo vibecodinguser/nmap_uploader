@@ -2,6 +2,7 @@
  * Сервис обработки загрузки файлов в фоновом режиме.
  */
 import { getErrorMessage } from '@/lib/errors'
+import { getBackgroundLocale } from '@/lib/i18n'
 import type { ProcessedFileInput, UploadResult } from '@/lib/upload/types'
 import { uploadProcessedFilesToYandexDisk } from '@/lib/upload/yandex_upload'
 import { getBackgroundTranslator } from './background_auth_service'
@@ -28,11 +29,15 @@ export const processUpload = async (
 ): Promise<void> => {
   try {
     const { files, targetDate } = getUploadMessagePayload(message)
-    const result = await uploadProcessedFilesToYandexDisk({ files, targetDate })
+    const result = await uploadProcessedFilesToYandexDisk({
+      files,
+      targetDate,
+      locale: getBackgroundLocale(message),
+    })
     sendResponse(result)
   } catch (error: unknown) {
     console.error('[yamapper] upload failed:', error)
-    const t = await getBackgroundTranslator()
+    const t = getBackgroundTranslator(getBackgroundLocale(message))
     const uploadErrorFallback = t('auth.uploadError')
     sendResponse({
       ok: false,
@@ -51,8 +56,9 @@ export const processUpload = async (
 
 export const processUploadAccessDenied = async (
   sendResponse: (response: UploadResult) => void,
+  locale?: unknown,
 ): Promise<void> => {
-  const t = await getBackgroundTranslator()
+  const t = getBackgroundTranslator(getBackgroundLocale({ locale }))
   const accessDeniedMessage = t('common.accessDenied')
   sendResponse({
     ok: false,

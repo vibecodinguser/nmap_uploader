@@ -45,7 +45,7 @@ describe('useNspdButton', () => {
 
     expect(permissionsMock.request).toHaveBeenCalledWith({ origins: [...NSPD_HOST_PATTERNS] })
     expect(result.current.isEnabled).toBe(true)
-    expect(result.current.permissionDenied).toBe(false)
+    expect(result.current.permissionDenied).toBe(null)
     await expect(getStoredNspdButtonEnabled()).resolves.toBe(true)
     expect([...scriptingMock.registered.keys()]).toHaveLength(2)
   })
@@ -62,7 +62,7 @@ describe('useNspdButton', () => {
     // Кнопка по умолчанию включена: отказ в доступе не выключает саму настройку,
     // а предупреждение объясняет, почему переход в НСПД не сработает.
     expect(result.current.isEnabled).toBe(true)
-    expect(result.current.permissionDenied).toBe(true)
+    expect(result.current.permissionDenied).toBe('nspd')
     expect(scriptingMock.registered.size).toBe(0)
   })
 

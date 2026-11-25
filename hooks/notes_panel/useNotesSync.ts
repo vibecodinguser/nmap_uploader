@@ -12,7 +12,9 @@ import {
   type NotesLoadResponse,
   type NotesSnapshot,
 } from '@/lib/notes/protocol'
+import { PERMISSION_REQUIRED } from '@/lib/notes/storage/errors'
 import { NOTES_PANEL_SHOW_NOTE_MESSAGE } from '@/lib/notes_panel/host'
+import { requestYandexAccess } from '@/lib/yandex/disk_settings'
 import { useNotesAutoReload } from './useNotesAutoReload'
 import type { NotesPanelStore } from './useNotesPanelState'
 
@@ -61,7 +63,12 @@ export const useNotesSync = (
           }
           dispatch({
             type: 'statusChanged',
-            status: payload?.error === 'AUTH_REQUIRED' ? 'auth' : 'error',
+            status:
+              payload?.error === 'AUTH_REQUIRED'
+                ? 'auth'
+                : payload?.error === PERMISSION_REQUIRED
+                  ? 'permission'
+                  : 'error',
           })
         })
         .catch(() => dispatch({ type: 'statusChanged', status: 'error' }))
@@ -82,6 +89,30 @@ export const useNotesSync = (
       .sendMessage({ action: 'login' })
       .then(() => loadNotes({ silent: true }))
       .catch(() => dispatch({ type: 'statusChanged', status: 'auth' }))
+  }, [dispatch, loadNotes])
+
+  /**
+   * Разрешения браузера на Яндекс: спрашиваем их под клик, затем загружаем.
+   *
+   * Жест пользователя обязателен и не переживает сетевых запросов, поэтому
+   * порядок строгий: `permissions.request` первым, загрузка — после ответа
+   * диалога. Если разрешения не дали, панель остаётся в том же состоянии и
+   * предлагает попробовать снова.
+   */
+  const grantPermission = useCallback(() => {
+    dispatch({ type: 'statusChanged', status: 'loading' })
+    void (async () => {
+      try {
+        const granted = await requestYandexAccess()
+        if (!granted) {
+          dispatch({ type: 'statusChanged', status: 'permission' })
+          return
+        }
+        loadNotes({ silent: true })
+      } catch {
+        dispatch({ type: 'statusChanged', status: 'permission' })
+      }
+    })()
   }, [dispatch, loadNotes])
 
   // Снимки и события карты.
@@ -133,7 +164,7 @@ export const useNotesSync = (
     }
   }, [dispatch])
 
-  return { loadNotes, login }
+  return { loadNotes, login, grantPermission }
 }
 
 export type NotesSync = ReturnType<typeof useNotesSync>

@@ -17,13 +17,15 @@ export const handleNotesLoad: MessageHandler = guard(
   NOTES_LOAD_ACTION,
   (_message, _sender, sendResponse) => {
     const task = (async () => {
-      const ports = await createPorts()
-      if (!ports) {
-        // Диагностика: чаще всего это «панель открыта до входа в Яндекс».
-        console.debug('[yamapper notes] нет токена в storage, заметки недоступны')
-        sendResponse({ ok: false, error: 'AUTH_REQUIRED' })
+      const access = await createPorts()
+      if (!access.ok) {
+        // Диагностика: чаще всего это «панель открыта до входа в Яндекс»
+        // или «разрешения Яндекса ещё не выданы».
+        console.debug(`[yamapper notes] заметки недоступны: ${access.error}`)
+        sendResponse({ ok: false, error: access.error })
         return
       }
+      const ports = access.ports
 
       // Явная загрузка означает «покажи, что сейчас на Диске»: прочитанное
       // для прошлых правок больше не годится как источник истины.

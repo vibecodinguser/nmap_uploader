@@ -21,11 +21,12 @@ export const handleNotesUploadIcon: MessageHandler = guard(
         return
       }
 
-      const ports = await createPorts()
-      if (!ports) {
-        sendResponse({ ok: false, error: 'AUTH_REQUIRED' })
+      const access = await createPorts()
+      if (!access.ok) {
+        sendResponse({ ok: false, error: access.error })
         return
       }
+      const ports = access.ports
 
       const { fileName, contentType, bytes } = parsed.value
       try {

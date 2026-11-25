@@ -1,13 +1,9 @@
 declare module '@/lib/i18n/locale' {
-  import type { Locale, LocaleOption } from '@/lib/i18n/locale.types'
+  import type { Locale } from '@/lib/i18n/locale.types'
 
-  export type { Locale, LocaleOption }
+  export type { Locale }
 
   export const DEFAULT_LOCALE: Locale
-
-  export const LOCALE_STORAGE_KEY: string
-
-  export const LOCALE_OPTIONS: readonly LocaleOption[]
 
   export function isLocale(value: unknown): value is Locale
 
@@ -32,13 +28,6 @@ declare module '@/lib/i18n/upload_complete' {
 declare module '@/lib/i18n/upload_auth_logs' {
   export const sessionInvalidMarkers: readonly string[]
   export function hasUploadAuthErrorInLogs(messages: string[]): boolean
-}
-
-declare module '@/lib/i18n/locale_state' {
-  import type { Locale } from '@/lib/i18n/locale.types'
-
-  export function getRuntimeLocale(): Locale
-  export function setRuntimeLocale(locale: Locale): void
 }
 
 declare module 'shpjs' {

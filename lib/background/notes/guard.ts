@@ -13,11 +13,17 @@ import type { NotesData } from '@/lib/notes/protocol'
 import { NOTES_RENDER_ACTION, NOTES_SNAPSHOT_ACTION } from '@/lib/notes/protocol'
 import { createIndexedDbNotesCache } from '@/lib/notes/storage/cache'
 import { createCachingNotesRemote } from '@/lib/notes/storage/caching_remote'
+import {
+  AUTH_REQUIRED,
+  type DiskAccessError,
+  PERMISSION_REQUIRED,
+} from '@/lib/notes/storage/errors'
 import { readHiddenNoteIds, writeHiddenNoteIds } from '@/lib/notes/storage/hidden_ids'
 import { migrateLegacyNotesFolder } from '@/lib/notes/storage/migration'
 import { createDiskNotesRemote } from '@/lib/notes/storage/remote'
 import type { NotesPorts } from '@/lib/notes/storage/repository'
 import { getStoredAuth } from '@/lib/yandex/client'
+import { hasYandexPermissions } from '@/lib/yandex/permissions'
 
 /**
  * Общая обвязка фоновых обработчиков заметок.
@@ -56,14 +62,29 @@ export const resetNotesSession = async (): Promise<void> => {
   }
 }
 
-export const createPorts = async (): Promise<NotesPorts | null> => {
+export type NotesPortsAccess =
+  | { ok: true; ports: NotesPorts }
+  | { ok: false; error: DiskAccessError }
+
+/**
+ * Порты хранилища заметок текущего аккаунта.
+ *
+ * Различает две причины отказа: разрешения браузера на Яндекс ещё не выданы
+ * (`PERMISSION_REQUIRED` — их выдаёт только клик, фон сам ничего оказать не
+ * может) и входа нет (`AUTH_REQUIRED`).
+ */
+export const createPorts = async (): Promise<NotesPortsAccess> => {
+  if (!(await hasYandexPermissions())) {
+    return { ok: false, error: PERMISSION_REQUIRED }
+  }
+
   const auth = await getStoredAuth()
   if (!auth) {
     // Токен исчез между вызовами — сессия относится к прошлому аккаунту.
     if (session) await resetNotesSession()
-    return null
+    return { ok: false, error: AUTH_REQUIRED }
   }
-  if (session?.token === auth.token) return session.ports
+  if (session?.token === auth.token) return { ok: true, ports: session.ports }
 
   if (session) {
     // Другой токен — другой диск. Очистку делаем до новой сессии, чтобы
@@ -85,7 +106,7 @@ export const createPorts = async (): Promise<NotesPorts | null> => {
   const remote = createCachingNotesRemote(createDiskNotesRemote({ token: auth.token }))
   const ports: NotesPorts = { remote, cache: createIndexedDbNotesCache() }
   session = { token: auth.token, invalidate: remote.invalidate, ports }
-  return ports
+  return { ok: true, ports }
 }
 
 /**

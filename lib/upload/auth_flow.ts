@@ -1,6 +1,5 @@
 import { browser } from 'wxt/browser'
-import { createTranslator, syncLocaleFromStorage } from '@/lib/i18n'
-import { getRuntimeLocale } from '@/lib/i18n/locale_state'
+import { createTranslator, getNativeLocaleSnapshot } from '@/lib/i18n'
 import { hasUploadAuthErrorInLogs } from '@/lib/i18n/upload_auth_logs'
 import { requestEnsureAuth } from '@/lib/yandex/auth_message'
 import { createUploadLog } from './logs'
@@ -14,8 +13,11 @@ export const ensureUploadAuth = async ({
 }: {
   onAuthenticated?: () => void
 }): Promise<UploadAuthResult> => {
-  const t = createTranslator(getRuntimeLocale())
-  const authResponse = await requestEnsureAuth({ interactive: true })
+  const t = createTranslator(getNativeLocaleSnapshot())
+  const authResponse = await requestEnsureAuth({
+    interactive: true,
+    locale: getNativeLocaleSnapshot(),
+  })
   if (!authResponse.ok) {
     return {
       ok: false,
@@ -34,11 +36,7 @@ export const buildExpiredSessionLogs = async ({
   priorLogs: UploadLogEntry[]
   uploadLogs: UploadLogEntry[]
 }): Promise<UploadLogEntry[]> => {
-  const t = createTranslator(getRuntimeLocale())
-  await browser.runtime.sendMessage({ action: 'logout' })
+  const t = createTranslator(getNativeLocaleSnapshot())
+  await browser.runtime.sendMessage({ action: 'logout', locale: getNativeLocaleSnapshot() })
   return [...priorLogs, ...uploadLogs, createUploadLog('error', t('upload.sessionExpired'))]
-}
-
-export const prepareUploadLocale = async (): Promise<void> => {
-  await syncLocaleFromStorage()
 }

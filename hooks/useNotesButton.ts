@@ -6,12 +6,21 @@ import {
   NOTES_BUTTON_ENABLED_STORAGE_KEY,
   setStoredNotesButtonEnabled,
 } from '@/lib/notes_button'
+import { requestYandexAccess } from '@/lib/yandex/disk_settings'
 
+/**
+ * Кнопка «Заметки».
+ *
+ * Включение требует разрешений браузера на Яндекс.Диск: без них ни загрузка
+ * заметок, ни их сохранение невозможны. Запрос делается прямо в обработчике
+ * клика — вне жеста пользователя браузер отклоняет `permissions.request`.
+ */
 export function useNotesButton() {
   // Стартовое значение совпадает с умолчанием в хранилище: иначе кнопка на
   // мгновение появлялась бы выключенной, пока идёт чтение настройки.
   const [isEnabled, setIsEnabledState] = useState(true)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [permissionDenied, setPermissionDenied] = useState(false)
 
   useEffect(function getIsEnabledEffect() {
     const abortController = new AbortController()
@@ -51,8 +60,18 @@ export function useNotesButton() {
   }, [])
 
   const setIsEnabled = useCallback(function setIsEnabledCallback(enabled: boolean) {
-    ;(async function doAsync() {
+    void (async function doAsync() {
       try {
+        setPermissionDenied(false)
+
+        if (enabled) {
+          const granted = await requestYandexAccess()
+          if (!granted) {
+            setPermissionDenied(true)
+            return
+          }
+        }
+
         setIsEnabledState(enabled)
         await setStoredNotesButtonEnabled(enabled)
         await notifyMapTabsAboutGoToMenu()
@@ -62,5 +81,5 @@ export function useNotesButton() {
     })()
   }, [])
 
-  return { isEnabled, isLoaded, setIsEnabled }
+  return { isEnabled, isLoaded, setIsEnabled, permissionDenied }
 }

@@ -7,10 +7,11 @@ import type { MessageHandler } from '@/lib/background/message_router'
 import { processReloadEditor } from '@/lib/background/relay_sender'
 import { runBackgroundTask } from '@/lib/background/tasks'
 import { processGeoJsonData } from '@/lib/converters/geojson'
+import { getBackgroundLocale } from '@/lib/i18n'
 import { isTrustedNspdSender, isTrustedPanelSender, logRejectedMessage } from '@/lib/message_auth'
 import { resolveReloadAfterUploadPreference } from '@/lib/reload_after_upload'
 import { uploadProcessedFilesToYandexDisk } from '@/lib/upload/yandex_upload'
-import { getStoredAuth } from '@/lib/yandex/client'
+import { resolveDiskAccess } from './disk_access'
 
 export const UPLOAD_NSPD_GEOJSON_ACTION = 'UPLOAD_NSPD_GEOJSON'
 export const CLOSE_CURRENT_TAB_ACTION = 'CLOSE_CURRENT_TAB'
@@ -20,9 +21,9 @@ export const processUploadNspdGeoJson = async (
   sendResponse: (res: { ok: boolean; error?: string }) => void,
 ): Promise<void> => {
   try {
-    const auth = await getStoredAuth()
-    if (!auth?.user) {
-      sendResponse({ ok: false, error: 'NOT_AUTHENTICATED' })
+    const access = await resolveDiskAccess()
+    if (!access.ok) {
+      sendResponse({ ok: false, error: access.error })
       return
     }
 
@@ -37,6 +38,7 @@ export const processUploadNspdGeoJson = async (
 
     const uploadResult = await uploadProcessedFilesToYandexDisk({
       files: [{ name, result }],
+      locale: getBackgroundLocale(message),
     })
 
     if (!uploadResult.ok) {

@@ -2,6 +2,7 @@ import { fetchYandexUser, verifyDiskAccess } from './auth_client'
 import { launchYandexAuth } from './auth_flow'
 import { loadUserAvatarDataUrl } from './avatar'
 import type { AuthPayload, YandexUser } from './constants'
+import { hasYandexPermissions } from './permissions'
 import { clearAuth, getStoredAuth, isExplicitLogout, saveAuth } from './storage'
 
 export * from './auth_client'
@@ -43,6 +44,14 @@ export const buildAuthPayload = async (
   return { user: null, avatarDataUrl: null }
 }
 
+/**
+ * Восстанавливает сессию, не показывая экран входа.
+ *
+ * Без разрешений браузера на домены Яндекса сетевой запрос обречён, а
+ * `launchWebAuthFlow` без жеста пользователя откроет окно поверх страницы.
+ * Поэтому в этом состоянии расширение молчит: до включения «Блокнота» или
+ * «НСПД» оно не делает ни одного запроса к Яндексу (ADR 0022).
+ */
 export const ensureYandexAuth = async ({
   interactive = false,
 }: {
@@ -53,6 +62,12 @@ export const ensureYandexAuth = async ({
   }
 
   const stored = await getStoredAuth()
+  if (!interactive && !(await hasYandexPermissions())) {
+    // Токен остаётся в хранилище: как только разрешения выдадут, сессия
+    // восстановится без повторного входа.
+    return null
+  }
+
   if (stored && (await isStoredAuthValid({ token: stored.token }))) {
     const user = await refreshStoredUserProfile({ token: stored.token, user: stored.user })
     return { token: stored.token, user }

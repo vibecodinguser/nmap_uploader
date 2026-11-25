@@ -41,7 +41,7 @@ import {
   UPLOAD_NSPD_GEOJSON_ACTION,
 } from '@/lib/background'
 import { GO_TO_REFRESH_ACTION } from '@/lib/go_to_notify'
-import { syncLocaleFromStorage } from '@/lib/i18n'
+import { removeLegacyLocaleSetting } from '@/lib/i18n'
 import type { RuntimeMessageSender } from '@/lib/message_auth'
 import {
   NOTES_DELETE_GROUP_ACTION,
@@ -129,8 +129,8 @@ const initBackground = (): void => {
   const persistTask = persistYandexBrowserFlag()
   runBackgroundTask(persistTask, 'persistYandexBrowserFlag')
 
-  const localeTask = syncLocaleFromStorage()
-  runBackgroundTask(localeTask, 'syncLocaleFromStorage')
+  const localeTask = removeLegacyLocaleSetting()
+  runBackgroundTask(localeTask, 'removeLegacyLocaleSetting')
 
   // Перенос заметок из папки Блокнота не должен ждать, пока откроют панель:
   // пока папка `notes` лежит внутри Блокнота, трекер редактора падает на её

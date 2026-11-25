@@ -1,128 +1,47 @@
-import {
-  createContext,
-  type ReactNode,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
-import { browser } from 'wxt/browser'
-import {
-  createTranslator,
-  getStoredLocale,
-  type Locale,
-  setRuntimeLocale,
-  type TranslateFn,
-} from '@/lib/i18n'
-import { DEFAULT_LOCALE, isLocale, LOCALE_STORAGE_KEY } from '@/lib/i18n/locale'
-import { setStoredLocale } from '@/lib/i18n/locale_storage'
+import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react'
+import { createTranslator, type TranslateFn } from '@/lib/i18n'
+import type { Locale } from '@/lib/i18n/locale.types'
+import { getNativeLocaleSnapshot, subscribeNativeLocale } from '@/lib/native_locale'
 
 type LocaleContextValue = {
   locale: Locale
-  setLocale: (locale: Locale) => void
   t: TranslateFn
 }
 
-type StorageChanges = Record<string, { newValue?: unknown }>
-
-type StorageChangeListener = (changes: StorageChanges, area: string) => void
-
-type LocaleSetter = (locale: Locale) => void
-
 const LocaleContext = createContext<LocaleContextValue | null>(null)
 
-function applyLocaleChange(nextLocale: Locale, setLocaleState: LocaleSetter): void {
-  setLocaleState(nextLocale)
-  setRuntimeLocale(nextLocale)
-}
-
-async function loadStoredLocale(setLocaleState: LocaleSetter): Promise<void> {
-  const storedLocale = await getStoredLocale()
-  applyLocaleChange(storedLocale, setLocaleState)
-}
-
-function onStoredLocaleLoadError(error: unknown): void {
-  console.warn('[yamapper] locale load failed:', error)
-}
-
-function handleStoredLocaleLoad(task: Promise<void>): void {
-  task.catch(onStoredLocaleLoadError)
-}
-
-function applyLocaleStorageChange(changes: StorageChanges, setLocaleState: LocaleSetter): void {
-  const hasChange = LOCALE_STORAGE_KEY in changes
-  if (hasChange) {
-    const nextLocale = changes[LOCALE_STORAGE_KEY]?.newValue
-    if (isLocale(nextLocale)) {
-      applyLocaleChange(nextLocale, setLocaleState)
-    }
+/**
+ * Ставит `lang` на документ: панели живут в iframe'ах с захардкоженным
+ * `lang="ru"`, а язык следует за редактором (ADR 0021).
+ */
+function applyDocumentLang(locale: Locale): void {
+  if (document.documentElement.lang !== locale) {
+    document.documentElement.lang = locale
   }
-}
-
-function handleLocaleStorageChange(
-  setLocaleState: LocaleSetter,
-  changes: StorageChanges,
-  area: string,
-): void {
-  if (area === 'local') {
-    applyLocaleStorageChange(changes, setLocaleState)
-  }
-}
-
-function unsubscribeLocaleStorageChanges(listener: StorageChangeListener): void {
-  browser.storage.onChanged.removeListener(listener)
-}
-
-function subscribeLocaleStorageChanges(setLocaleState: LocaleSetter): () => void {
-  const listener = handleLocaleStorageChange.bind(
-    undefined,
-    setLocaleState,
-  ) as StorageChangeListener
-  browser.storage.onChanged.addListener(listener)
-  return unsubscribeLocaleStorageChanges.bind(undefined, listener)
-}
-
-function onStoredLocaleSaveComplete(): void {
-  // Promise completion handler; result is intentionally ignored.
-}
-
-function handleStoredLocaleSave(task: Promise<void>): void {
-  task.then(onStoredLocaleSaveComplete)
-}
-
-function createLocaleTranslator(locale: Locale): TranslateFn {
-  return createTranslator(locale)
 }
 
 export const LocaleProvider = ({ children }: { children: ReactNode }) => {
-  const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE)
+  const [locale, setLocaleState] = useState<Locale>(getNativeLocaleSnapshot)
 
-  useEffect(function localeLoadEffect() {
-    const loadTask = loadStoredLocale(setLocaleState)
-    handleStoredLocaleLoad(loadTask)
+  useEffect(function localeSubscribeEffect() {
+    return subscribeNativeLocale(setLocaleState)
   }, [])
 
-  useEffect(function localeStorageEffect() {
-    return subscribeLocaleStorageChanges(setLocaleState)
-  }, [])
-
-  const setLocale = useCallback(function setLocale(nextLocale: Locale) {
-    applyLocaleChange(nextLocale, setLocaleState)
-    const saveTask = setStoredLocale(nextLocale)
-    handleStoredLocaleSave(saveTask)
-  }, [])
-
-  const t = useMemo(
-    function localeTranslator() {
-      return createLocaleTranslator(locale)
+  useEffect(
+    function localeDocumentLangEffect() {
+      applyDocumentLang(locale)
     },
     [locale],
   )
 
-  return (
-    <LocaleContext.Provider value={{ locale, setLocale, t }}>{children}</LocaleContext.Provider>
+  const t = useMemo(
+    function localeTranslator() {
+      return createTranslator(locale)
+    },
+    [locale],
   )
+
+  return <LocaleContext.Provider value={{ locale, t }}>{children}</LocaleContext.Provider>
 }
 
 export const useLocale = (): LocaleContextValue => {

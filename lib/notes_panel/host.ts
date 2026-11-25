@@ -7,6 +7,8 @@
  */
 import { browser } from 'wxt/browser'
 import { ensureInjectedStyle, removeInjectedStyle } from '@/lib/injected_styles'
+import { withNativeLocaleParam } from '@/lib/locale_bridge'
+import { readNativeLocale } from '@/lib/native_locale'
 import { readNativeTheme } from '@/lib/native_theme'
 import { withNativeThemeParam } from '@/lib/theme_bridge'
 import { NOTES_PANEL_STYLES } from './styles'
@@ -249,7 +251,10 @@ export const createNotesPanelHost = ({
     frame = document.createElement('iframe')
     frame.id = NOTES_PANEL_FRAME_ID
     frame.title = 'Заметки'
-    frame.src = withNativeThemeParam(browser.runtime.getURL('/notes-panel.html'), readNativeTheme())
+    frame.src = withNativeLocaleParam(
+      withNativeThemeParam(browser.runtime.getURL('/notes-panel.html'), readNativeTheme()),
+      readNativeLocale(),
+    )
     frame.addEventListener('load', () => {
       postState()
       // Просьба показать заметку могла прийти до загрузки документа — тогда

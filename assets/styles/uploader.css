@@ -337,7 +337,6 @@ body {
 .btn-icon:focus-visible,
 .settings-back-btn:focus-visible,
 .settings-go-to-move-btn:focus-visible,
-.theme-mode-switch-option:has(.theme-mode-switch-input:focus-visible),
 .settings-go-to-toggle:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
@@ -1263,7 +1262,7 @@ body {
   cursor: pointer;
 }
 
-:is(.settings-toggle-input, .theme-mode-switch-input) {
+:is(.settings-toggle-input) {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -1387,7 +1386,7 @@ body {
   list-style: none;
 }
 
-:is(.settings-go-to-item, .theme-mode-switch) {
+:is(.settings-go-to-item) {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background-color: var(--muted);
@@ -1420,7 +1419,7 @@ body {
   background-color: var(--background);
 }
 
-:is(.settings-go-to-item-label, .theme-mode-switch-option) {
+:is(.settings-go-to-item-label) {
   display: flex;
   flex: 1;
   align-items: center;
@@ -1462,54 +1461,21 @@ body {
   cursor: not-allowed;
 }
 
-.theme-mode-switch {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  height: 40px;
-  padding: 0.1875rem;
-}
 
-.theme-mode-switch-option {
-  position: relative;
-  justify-content: center;
-  height: 100%;
-  border-radius: calc(var(--radius) - 2px);
-  transition:
-    background-color var(--transition-ui),
-    color var(--transition-ui),
-    box-shadow var(--transition-ui);
-}
 
-.theme-mode-switch-label {
-  padding: 0 0.375rem;
-  font-family: var(--font-family), sans-serif;
-  font-size: var(--text-xs);
-  font-weight: 500;
-  line-height: 1.25;
-  color: var(--muted-foreground);
-}
 
-.theme-mode-switch-option:hover .theme-mode-switch-label {
-  color: var(--foreground);
-}
 
-.theme-mode-switch-option:has(.theme-mode-switch-input:checked) {
-  background-color: var(--background);
-  box-shadow: var(--elevation-segment-checked);
-}
 
-.dark .theme-mode-switch-option:has(.theme-mode-switch-input:checked) {
-  box-shadow: var(--elevation-segment-checked);
-}
 
-.theme-mode-switch-option:has(.theme-mode-switch-input:checked) .theme-mode-switch-label {
-  color: var(--foreground);
-}
 
-.theme-mode-switch-option:has(.theme-mode-switch-input:checked:focus-visible) {
-  box-shadow: var(--elevation-segment-checked), var(--focus-ring);
-}
+
+
+
+
+
+
+
+
 
 @media (width <= 360px) {
   .coords-row--list {

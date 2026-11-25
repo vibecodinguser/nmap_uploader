@@ -3,11 +3,6 @@ export interface InterpolationParams {
 }
 
 export type Messages = {
-  locale: {
-    label: string
-    ru: string
-    en: string
-  }
   common: {
     back: string
     apply: string
@@ -105,8 +100,8 @@ export type Messages = {
     nspdButton: string
     nspdButtonAria: string
     nspdPermissionDenied: string
+    yandexPermissionDenied: string
     moderation: string
-    general: string
     suggestFeature: string
     editing: string
     style: string
@@ -131,7 +126,6 @@ export type Messages = {
     strokeColorValidation: string
     pointCounter: string
     pointCounterAria: string
-    languageAria: string
   }
   auth: {
     authError: string
@@ -167,6 +161,8 @@ export type Messages = {
     searchPlaceholder: string
     loading: string
     authRequired: string
+    permissionRequired: string
+    grantPermission: string
     login: string
     retry: string
     loadError: string

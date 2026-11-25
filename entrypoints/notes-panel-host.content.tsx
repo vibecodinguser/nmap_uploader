@@ -1,7 +1,7 @@
 import { browser } from 'wxt/browser'
 import { defineContentScript } from 'wxt/utils/define-content-script'
-import { createTranslator, getStoredLocale } from '@/lib/i18n'
-import { LOCALE_STORAGE_KEY } from '@/lib/i18n/locale'
+import { createTranslator, observeNativeLocale, readNativeLocale } from '@/lib/i18n'
+import type { Locale } from '@/lib/i18n/locale.types'
 import {
   NMAPS_CANCEL_PICK_POINT_EVENT,
   NMAPS_POINT_PICKED_EVENT,
@@ -78,7 +78,7 @@ export default defineContentScript({
     let selectedNoteId: string | null = null
     let drawingKind: DrawableKind | null = null
     let snapshot: NotesSnapshot | null = null
-    let editLabel = 'Редактировать'
+    let editLabel = createTranslator(readNativeLocale())('notesPanel.editButton')
 
     const renderSnapshot = (next: NotesSnapshot): void => {
       snapshot = next
@@ -127,23 +127,12 @@ export default defineContentScript({
       },
     })
 
-    const refreshLabel = async (): Promise<void> => {
-      const locale = await getStoredLocale()
+    const refreshLabel = (locale: Locale): void => {
       editLabel = createTranslator(locale)('notesPanel.editButton')
       syncEditButton()
     }
 
-    refreshLabel().catch(() => {})
-
-    const handleStorageChange = (
-      changes: Record<string, { newValue?: unknown }>,
-      area: string,
-    ): void => {
-      if (area === 'local' && LOCALE_STORAGE_KEY in changes) {
-        refreshLabel().catch(() => {})
-      }
-    }
-    browser.storage.onChanged.addListener(handleStorageChange)
+    const stopLocaleObserver = observeNativeLocale(refreshLabel)
 
     // Выбор заметки: и от карты, и от панели.
     const handleNoteSelected = (event: Event): void => {
@@ -265,7 +254,7 @@ export default defineContentScript({
 
     ctx.onInvalidated(() => {
       window.clearInterval(buttonSyncTimer)
-      browser.storage.onChanged.removeListener(handleStorageChange)
+      stopLocaleObserver()
       browser.runtime.onMessage.removeListener(handleRuntimeMessage)
       document.removeEventListener(NMAPS_NOTE_SELECTED_EVENT, handleNoteSelected)
       window.removeEventListener('message', handlePanelPreview)

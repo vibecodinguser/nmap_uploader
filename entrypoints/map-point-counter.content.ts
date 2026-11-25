@@ -1,5 +1,5 @@
 import { defineContentScript } from 'wxt/utils/define-content-script'
-import { createTranslator, type TranslateFn } from '@/lib/i18n'
+import { createTranslator, readNativeLocale, type TranslateFn } from '@/lib/i18n'
 import {
   isCounterResetTarget,
   isGeometryEditorActive,
@@ -19,9 +19,7 @@ export default defineContentScript({
   world: 'MAIN',
 
   main() {
-    const pageLang = document.documentElement.lang || navigator.language || 'ru'
-    const locale = pageLang.toLowerCase().startsWith('en') ? 'en' : 'ru'
-    const t: TranslateFn = createTranslator(locale)
+    const t: TranslateFn = createTranslator(readNativeLocale())
 
     const ui = new PointCounterUi(() => t)
     ui.ensureCreated()

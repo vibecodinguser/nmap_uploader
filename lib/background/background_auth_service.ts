@@ -4,12 +4,14 @@
 import { resetNotesSession } from '@/lib/background/notes/guard'
 import { runBackgroundTask } from '@/lib/background/tasks'
 import { getErrorMessage } from '@/lib/errors'
+import { getBackgroundLocale, type Locale } from '@/lib/i18n'
 import {
   type AuthPayload,
   buildAuthPayload,
   clearAuth,
   ensureYandexAuth,
   getStoredAuth,
+  hasYandexPermissions,
   listExistingDateFolders,
 } from '@/lib/yandex/client'
 import {
@@ -21,23 +23,30 @@ import {
 
 export * from './auth_message_response_helpers'
 
+export type AuthMessageOptions = {
+  interactive: boolean
+  sendResponse: (response: AuthMessageResponse) => void
+  logLabel: string
+  cancelError?: string
+  /** Язык вызвавшей панели; без него — язык браузера. */
+  locale?: unknown
+}
+
+const resolveAuthLocale = (locale: unknown): Locale => getBackgroundLocale({ locale })
+
 export const processYandexAuthMessage = async ({
   interactive,
   sendResponse,
   logLabel,
   cancelError,
-}: {
-  interactive: boolean
-  sendResponse: (response: AuthMessageResponse) => void
-  logLabel: string
-  cancelError?: string
-}): Promise<void> => {
+  locale,
+}: AuthMessageOptions): Promise<void> => {
   try {
     const auth = await ensureYandexAuth({ interactive })
     const payload = await buildAuthPayload(auth)
     await handleYandexAuthSuccess(payload, sendResponse, cancelError)
   } catch (error: unknown) {
-    await handleYandexAuthFailure(error, sendResponse, logLabel)
+    await handleYandexAuthFailure(error, sendResponse, logLabel, resolveAuthLocale(locale))
   }
 }
 
@@ -46,17 +55,14 @@ export const handleYandexAuthMessage = ({
   sendResponse,
   logLabel,
   cancelError,
-}: {
-  interactive: boolean
-  sendResponse: (response: AuthMessageResponse) => void
-  logLabel: string
-  cancelError?: string
-}): void => {
+  locale,
+}: AuthMessageOptions): void => {
   const authTask = processYandexAuthMessage({
     interactive,
     sendResponse,
     logLabel,
     cancelError,
+    locale,
   })
   runBackgroundTask(authTask, logLabel)
 }
@@ -65,7 +71,10 @@ export const processGetAuth = async (
   sendResponse: (response: AuthPayload | { user: null; avatarDataUrl: null }) => void,
 ): Promise<void> => {
   try {
-    const auth = await getStoredAuth()
+    // Токен без разрешений браузера бесполезен: userinfo, за которым идёт
+    // `buildAuthPayload`, вернёт сетевую ошибку. Отвечаем «гость» и лишь
+    // читаем кэш пользователя — без сети и без входного окна (ADR 0022).
+    const auth = (await hasYandexPermissions()) ? await getStoredAuth() : null
     const payload = await buildAuthPayload(auth)
     sendResponse(payload)
   } catch {
@@ -75,21 +84,24 @@ export const processGetAuth = async (
 
 export const processLogin = async (
   sendResponse: (response: AuthMessageResponse) => void,
+  locale?: unknown,
 ): Promise<void> => {
-  const t = await getBackgroundTranslator()
+  const t = getBackgroundTranslator(resolveAuthLocale(locale))
   const authCancelledMessage = t('auth.authCancelled')
   await processYandexAuthMessage({
     interactive: true,
     sendResponse,
     logLabel: 'login',
     cancelError: authCancelledMessage,
+    locale,
   })
 }
 
 export const processLoginAccessDenied = async (
   sendResponse: (response: AuthMessageResponse) => void,
+  locale?: unknown,
 ): Promise<void> => {
-  const t = await getBackgroundTranslator()
+  const t = getBackgroundTranslator(resolveAuthLocale(locale))
   const accessDeniedMessage = t('common.accessDenied')
   sendResponse({
     ok: false,
@@ -116,9 +128,12 @@ export const processLogout = async (
 
 export const processListOccupiedDates = async (
   sendResponse: (response: { ok: boolean; dates: string[]; error?: string }) => void,
+  locale?: unknown,
 ): Promise<void> => {
   try {
-    const auth = await getStoredAuth()
+    // Без разрешений Яндекса календарь остаётся пустым: список занятых дат —
+    // подсказка, а не отказ, и запрос на него впустую ходил бы в сеть.
+    const auth = (await hasYandexPermissions()) ? await getStoredAuth() : null
     if (auth) {
       const dates = await listExistingDateFolders({ token: auth.token })
       sendResponse({ ok: true, dates })
@@ -127,7 +142,7 @@ export const processListOccupiedDates = async (
     }
   } catch (error: unknown) {
     console.error('[yamapper] listOccupiedDates failed:', error)
-    const t = await getBackgroundTranslator()
+    const t = getBackgroundTranslator(resolveAuthLocale(locale))
     const folderReadErrorFallback = t('auth.folderReadError')
     sendResponse({
       ok: false,

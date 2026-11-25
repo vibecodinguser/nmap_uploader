@@ -12,7 +12,7 @@
  * как остальные, включая тёмную тему.
  */
 import { isElementVisible } from '@/lib/dom_visibility'
-import { createTranslator, getRuntimeLocale, type TranslateFn } from '@/lib/i18n'
+import { createTranslator, readNativeLocale, type TranslateFn } from '@/lib/i18n'
 import { ensureTrackerStyles } from './ui/styles'
 import { showTrackerToast } from './ui/toast'
 
@@ -422,7 +422,7 @@ export class ObjectTrackerNativeMenu {
   }
 
   private translate(): TranslateFn {
-    return this.options.translate ?? createTranslator(getRuntimeLocale())
+    return this.options.translate ?? createTranslator(readNativeLocale())
   }
 
   private removeMenuItem(): void {

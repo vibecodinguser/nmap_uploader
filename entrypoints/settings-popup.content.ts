@@ -1,7 +1,6 @@
 import { browser } from 'wxt/browser'
 import { defineContentScript } from 'wxt/utils/define-content-script'
-import { getStoredLocale } from '@/lib/i18n'
-import { LOCALE_STORAGE_KEY } from '@/lib/i18n/locale'
+import { observeNativeLocale, readNativeLocale } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n/locale.types'
 import {
   ensureSettingsButton,
@@ -41,7 +40,7 @@ export default defineContentScript({
   runAt: 'document_idle',
 
   main(ctx) {
-    let locale: Locale = 'ru'
+    let locale: Locale = readNativeLocale()
     let host: SettingsPopupHost
 
     const syncButton = (): void => {
@@ -69,24 +68,15 @@ export default defineContentScript({
 
     /**
      * Язык попапа берётся один раз при создании: iframe не пересоздаётся при
-     * смене языка, а кнопку и заголовок переводим на месте.
+     * смене языка, а кнопку и заголовок переводим на месте. Источник — язык
+     * редактора (ADR 0021), а не пользовательская настройка.
      */
-    const refreshLocale = async (): Promise<void> => {
-      locale = await getStoredLocale()
+    const refreshLocale = (next: Locale): void => {
+      locale = next
       syncButton()
     }
 
-    refreshLocale().catch(() => {})
-
-    const handleStorageChange = (
-      changes: Record<string, { newValue?: unknown }>,
-      area: string,
-    ): void => {
-      if (area === 'local' && LOCALE_STORAGE_KEY in changes) {
-        refreshLocale().catch(() => {})
-      }
-    }
-    browser.storage.onChanged.addListener(handleStorageChange)
+    const stopLocaleObserver = observeNativeLocale(refreshLocale)
 
     const handleRuntimeMessage = (message: Record<string, unknown>): void => {
       switch (message.action) {
@@ -125,7 +115,7 @@ export default defineContentScript({
 
     ctx.onInvalidated(() => {
       window.clearInterval(buttonSyncTimer)
-      browser.storage.onChanged.removeListener(handleStorageChange)
+      stopLocaleObserver()
       browser.runtime.onMessage.removeListener(handleRuntimeMessage)
       host.destroy()
       document.getElementById(SETTINGS_BUTTON_ID)?.remove()

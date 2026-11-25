@@ -6,7 +6,7 @@
  * только что открылась), его надо доставить через `scripting.executeScript`.
  */
 import { browser } from 'wxt/browser'
-import { createTranslator, syncLocaleFromStorage } from '@/lib/i18n'
+import { createTranslator, getBackgroundLocale } from '@/lib/i18n'
 import { isMapTabUrl } from '@/lib/map_tab'
 import { TOGGLE_SETTINGS_POPUP_ACTION } from '@/lib/settings_popup/protocol'
 import { sleep } from './tab_navigation'
@@ -39,8 +39,7 @@ export const toggleSettingsPopup = async (tabId: number, tabUrl?: string): Promi
     url = tab.url
   }
 
-  const locale = await syncLocaleFromStorage()
-  const t = createTranslator(locale)
+  const t = createTranslator(getBackgroundLocale())
 
   if (!isMapTabUrl(url)) {
     throw new Error(t('background.openMapAndRetry'))

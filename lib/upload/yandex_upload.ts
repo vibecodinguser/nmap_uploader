@@ -1,10 +1,11 @@
+import { resolveDiskAccess } from '@/lib/background/disk_access'
 import { getErrorMessage } from '@/lib/errors'
-import { createTranslator, syncLocaleFromStorage } from '@/lib/i18n'
+import { createTranslator, type Locale } from '@/lib/i18n'
 import { createNmapOutputTemplate, mergeNmapOutputTemplate } from '@/lib/nmap_index'
+import { PERMISSION_REQUIRED } from '@/lib/notes/storage/errors'
 import {
   downloadIndexJson,
   ensureUploadFolder,
-  getStoredAuth,
   uploadIndexJson,
   verifyDiskAccess,
 } from '@/lib/yandex/client'
@@ -15,11 +16,13 @@ import type { ProcessedFileInput, UploadLogEntry, UploadResult } from './types'
 export const uploadProcessedFilesToYandexDisk = async ({
   files,
   targetDate,
+  locale,
 }: {
   files: ProcessedFileInput[]
   targetDate?: string
+  /** Язык панели, отправившей загрузку: фон своего DOM редактора не видит. */
+  locale: Locale
 }): Promise<UploadResult> => {
-  const locale = await syncLocaleFromStorage()
   const t = createTranslator(locale)
   const logs: UploadLogEntry[] = []
   const pushLog = (level: UploadLogEntry['level'], message: string) => {
@@ -31,13 +34,15 @@ export const uploadProcessedFilesToYandexDisk = async ({
     return { ok: false, logs, processedCount: 0, skippedCount: 0 }
   }
 
-  const auth = await getStoredAuth()
-  if (!auth) {
-    pushLog('error', t('upload.authRequired'))
+  const access = await resolveDiskAccess()
+  if (!access.ok) {
+    const errorKey =
+      access.error === PERMISSION_REQUIRED ? 'upload.authDiskRequired' : 'upload.authRequired'
+    pushLog('error', t(errorKey))
     return { ok: false, logs, processedCount: 0, skippedCount: 0 }
   }
 
-  const { token } = auth
+  const { token } = access
 
   try {
     pushLog('info', t('upload.checkingDiskAccess'))

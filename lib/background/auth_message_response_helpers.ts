@@ -1,5 +1,5 @@
 import { getErrorMessage } from '@/lib/errors'
-import { createTranslator, syncLocaleFromStorage } from '@/lib/i18n'
+import { createTranslator, type Locale } from '@/lib/i18n'
 import { type AuthPayload, loadUserAvatarDataUrl, type YandexUser } from '@/lib/yandex/client'
 
 export type AuthMessageResponse = {
@@ -9,10 +9,12 @@ export type AuthMessageResponse = {
   error?: string
 }
 
-export const getBackgroundTranslator = async () => {
-  const locale = await syncLocaleFromStorage()
-  return createTranslator(locale)
-}
+/**
+ * Перевод строк фона: язык приходит от панели, которой адресован ответ.
+ *
+ * Своего языка у фона нет — страницу редактора он не видит (ADR 0021).
+ */
+export const getBackgroundTranslator = (locale: Locale) => createTranslator(locale)
 
 export const handleYandexAuthSuccess = async (
   auth: AuthPayload | null,
@@ -40,9 +42,10 @@ export const handleYandexAuthFailure = async (
   error: unknown,
   sendResponse: (response: AuthMessageResponse) => void,
   logLabel: string,
+  locale: Locale,
 ): Promise<void> => {
   console.error(`[yamapper] ${logLabel} failed:`, error)
-  const t = await getBackgroundTranslator()
+  const t = getBackgroundTranslator(locale)
   const authErrorFallback = t('auth.authError')
   const errorMessage = getErrorMessage(error, authErrorFallback)
   sendResponse({

@@ -1,9 +1,4 @@
 export const ruMessages = {
-  locale: {
-    label: 'Язык',
-    ru: 'Русский',
-    en: 'English',
-  },
   common: {
     back: 'Назад',
     apply: 'Применить',
@@ -104,6 +99,8 @@ export const ruMessages = {
     nspdButtonAria: 'НСПД',
     nspdPermissionDenied:
       'Без доступа к nspd.gov.ru кнопка не работает. Разрешите доступ в запросе браузера или в настройках расширения.',
+    yandexPermissionDenied:
+      'Без доступа к Яндекс.Диску функция не работает: файлы сохраняются в Блокнот. Разрешите доступ в запросе браузера или в настройках расширения.',
     moderation: 'Модерация',
     general: 'Оформление',
     suggestFeature: 'Предложить функцию',
@@ -130,7 +127,6 @@ export const ruMessages = {
     strokeColorApplied: 'Цвет контура применён',
     strokeColorApplyError: 'Не удалось применить цвет. Обновите страницу карты и попробуйте снова.',
     strokeColorValidation: 'Введите цвет в формате RGB или RRGGBB',
-    languageAria: 'Язык интерфейса',
   },
   auth: {
     authError: 'Ошибка авторизации',
@@ -166,6 +162,9 @@ export const ruMessages = {
     searchPlaceholder: 'Поиск по названию',
     loading: 'Загрузка заметок…',
     authRequired: 'Войдите в Яндекс, чтобы видеть свои заметки',
+    permissionRequired:
+      'Для работы с Яндекс.Диском нужно разрешение браузера. Оно выдаётся один раз при включении Блокнота или НСПД.',
+    grantPermission: 'Разрешить доступ',
     login: 'Войти',
     retry: 'Повторить',
     loadError: 'Не удалось загрузить заметки',

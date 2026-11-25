@@ -18,7 +18,6 @@ const CRITICAL_SELECTORS = [
   '.sidepanel-app',
   '.settings-toggle',
   '.settings-go-to-panel',
-  '.theme-mode-switch',
   '.yandex-tooltip-wrapper',
   '.upload-dropzone',
   '.manual-upload-container',

@@ -21,8 +21,8 @@ const buildProps = () => ({
   },
   reloadAfterUpload: { isEnabled: false, isLoaded: true, setIsEnabled: noop, canChange: true },
   splitViewButton: { isEnabled: true, isLoaded: true, setIsEnabled: noop },
-  notesButton: { isEnabled: true, isLoaded: true, setIsEnabled: noop },
-  nspdButton: { isEnabled: false, isLoaded: true, setIsEnabled: noop, permissionDenied: false },
+  notesButton: { isEnabled: true, isLoaded: true, setIsEnabled: noop, permissionDenied: false },
+  nspdButton: { isEnabled: false, isLoaded: true, setIsEnabled: noop, permissionDenied: null },
   feedsFilter: { isEnabled: true, isLoaded: true, setIsEnabled: noop },
   objectTracker: {
     isEnabled: true,
@@ -57,15 +57,14 @@ const expandSection = (name: string) => {
   return section
 }
 
-describe('SettingsTab: секция «Оформление»', () => {
+describe('SettingsTab: язык и тема', () => {
   afterEach(cleanup)
 
-  it('содержит переключатель языка', () => {
+  it('не предлагает ручной выбор языка: язык следует за редактором', () => {
     renderTab()
 
-    const section = sectionNames('Оформление')
-
-    expect(within(section).getByRole('radiogroup', { name: 'Язык интерфейса' })).toBeTruthy()
+    expect(screen.queryByRole('radiogroup')).toBeNull()
+    expect(screen.queryByText('Язык интерфейса')).toBeNull()
   })
 
   it('не предлагает ручной выбор темы', () => {
@@ -74,16 +73,7 @@ describe('SettingsTab: секция «Оформление»', () => {
     expect(screen.queryByRole('radiogroup', { name: 'Тема оформления' })).toBeNull()
   })
 
-  it('делает язык строкой внутри секции', () => {
-    renderTab()
-
-    const subheadings = screen.getAllByRole('heading', { level: 4 }).map((node) => node.textContent)
-
-    expect(subheadings).toContain('Язык')
-    expect(subheadings).not.toContain('Тема')
-  })
-
-  it('не выводит язык отдельной карточкой', () => {
+  it('не выводит пустую группу настроек', () => {
     renderTab()
 
     const standaloneSections = Array.from(
@@ -93,18 +83,18 @@ describe('SettingsTab: секция «Оформление»', () => {
     )
 
     expect(standaloneSections).toHaveLength(0)
+    expect(screen.queryByRole('region', { name: 'Оформление' })).toBeNull()
   })
 })
 
 describe('SettingsTab: раскрывающиеся секции', () => {
   afterEach(cleanup)
 
-  it('по умолчанию раскрыта только секция «Оформление»', () => {
+  it('по умолчанию раскрыта только секция «Редактирование»', () => {
     renderTab()
 
     const expected = [
-      ['Оформление', 'true'],
-      ['Редактирование', 'false'],
+      ['Редактирование', 'true'],
       ['Модерация', 'false'],
       ['Стиль', 'false'],
     ] as const
@@ -118,10 +108,10 @@ describe('SettingsTab: раскрывающиеся секции', () => {
   it('свёрнутая секция показывает только заголовок', () => {
     renderTab()
 
-    const section = sectionNames('Редактирование')
+    const section = sectionNames('Модерация')
 
-    expect(within(section).queryByRole('switch', { name: 'Счётчик вершин' })).toBeNull()
-    expect(screen.getByRole('heading', { level: 3, name: 'Редактирование' })).toBeTruthy()
+    expect(within(section).queryByRole('switch', { name: 'Фильтр истории правок' })).toBeNull()
+    expect(screen.getByRole('heading', { level: 3, name: 'Модерация' })).toBeTruthy()
   })
 
   it('раскрывает содержимое по клику', () => {

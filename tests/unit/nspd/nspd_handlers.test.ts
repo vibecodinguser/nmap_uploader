@@ -1,20 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { browser } from 'wxt/browser'
+import * as diskAccessModule from '@/lib/background/disk_access'
 import {
   handleCloseCurrentTab,
   handleUploadNspdGeoJson,
   processUploadNspdGeoJson,
 } from '@/lib/background/nspd_handlers'
 import * as uploadServiceModule from '@/lib/upload_service'
-import * as clientModule from '@/lib/yandex/client'
 
 describe('NSPD background handlers', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
   })
 
-  it('возвращает NOT_AUTHENTICATED если пользователь не авторизован', async () => {
-    vi.spyOn(clientModule, 'getStoredAuth').mockResolvedValue(null)
+  it('возвращает AUTH_REQUIRED если пользователь не авторизован', async () => {
+    vi.spyOn(diskAccessModule, 'resolveDiskAccess').mockResolvedValue({
+      ok: false,
+      error: 'AUTH_REQUIRED',
+    })
     const sendResponse = vi.fn()
 
     await processUploadNspdGeoJson(
@@ -36,15 +39,16 @@ describe('NSPD background handlers', () => {
 
     expect(sendResponse).toHaveBeenCalledWith({
       ok: false,
-      error: 'NOT_AUTHENTICATED',
+      error: 'AUTH_REQUIRED',
     })
   })
 
   it('успешно загружает валидный GeoJSON когда авторизован', async () => {
-    vi.spyOn(clientModule, 'getStoredAuth').mockResolvedValue({
+    vi.spyOn(diskAccessModule, 'resolveDiskAccess').mockResolvedValue({
+      ok: true,
       token: 'fake-token',
-      user: { id: 'user1', login: 'tester' },
-    } as any)
+      userId: 'user1',
+    })
 
     vi.spyOn(uploadServiceModule, 'uploadProcessedFilesToYandexDisk').mockResolvedValue({
       ok: true,

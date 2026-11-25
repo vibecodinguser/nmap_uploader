@@ -14,6 +14,8 @@ import { applyGoToTheme, syncGoToTheme } from '@/lib/go_to_theme'
 import type { Locale } from '@/lib/i18n/locale.types'
 import { createTranslator } from '@/lib/i18n/translate'
 import { ensureInjectedStyle, removeInjectedStyle } from '@/lib/injected_styles'
+import { withNativeLocaleParam } from '@/lib/locale_bridge'
+import { readNativeLocale } from '@/lib/native_locale'
 import { readNativeTheme } from '@/lib/native_theme'
 import { withNativeThemeParam } from '@/lib/theme_bridge'
 import { getSettingsButton, SETTINGS_APP_BAR_SELECTOR } from './button'
@@ -179,7 +181,10 @@ export const createSettingsPopupHost = ({
     const iframe = document.createElement('iframe')
     iframe.className = 'yamapper-settings-popup__iframe'
     iframe.title = title
-    iframe.src = withNativeThemeParam(browser.runtime.getURL(pagePath), readNativeTheme())
+    iframe.src = withNativeLocaleParam(
+      withNativeThemeParam(browser.runtime.getURL(pagePath), readNativeTheme()),
+      readNativeLocale(),
+    )
 
     content.appendChild(iframe)
     container.appendChild(content)

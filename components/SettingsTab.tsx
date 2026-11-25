@@ -1,9 +1,6 @@
 import { ArrowLeft } from 'lucide-react'
-import { useMemo } from 'react'
 import { GoToLinksSettings } from '@/components/GoToLinksSettings'
-import { SegmentedRadioGroup } from '@/components/SegmentedRadioGroup'
 import { SettingsAboutSection } from '@/components/SettingsAboutSection'
-import { SettingsFieldRow } from '@/components/SettingsFieldRow'
 import { SettingsGroupSection } from '@/components/SettingsGroupSection'
 import { SettingsToggleRow } from '@/components/SettingsToggleRow'
 import { StrokeColorSection, type StrokeColorSettingsProps } from '@/components/StrokeColorSection'
@@ -16,7 +13,6 @@ import type { useObjectTracker } from '@/hooks/useObjectTracker'
 import type { usePointCounter } from '@/hooks/usePointCounter'
 import type { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
 import type { useSplitViewButton } from '@/hooks/useSplitViewButton'
-import { LOCALE_OPTIONS } from '@/lib/i18n/locale'
 
 type ReloadAfterUploadSettings = Pick<
   ReturnType<typeof useReloadAfterUpload>,
@@ -41,7 +37,7 @@ type SplitViewButtonSettings = Pick<
 
 type NotesButtonSettings = Pick<
   ReturnType<typeof useNotesButton>,
-  'isEnabled' | 'isLoaded' | 'setIsEnabled'
+  'isEnabled' | 'isLoaded' | 'setIsEnabled' | 'permissionDenied'
 >
 
 type NspdButtonSettings = Pick<
@@ -91,7 +87,7 @@ export const SettingsTab = ({
   objectTracker,
   goToLinks,
 }: SettingsTabProps) => {
-  const { locale, setLocale, t } = useLocale()
+  const { t } = useLocale()
   const {
     isEnabled: isReloadAfterUploadEnabled,
     isLoaded: isReloadAfterUploadLoaded,
@@ -107,6 +103,7 @@ export const SettingsTab = ({
     isEnabled: isNotesButtonEnabled,
     isLoaded: isNotesButtonLoaded,
     setIsEnabled: setNotesButtonEnabled,
+    permissionDenied: isNotesPermissionDenied,
   } = notesButton
   const {
     isEnabled: isNspdButtonEnabled,
@@ -126,15 +123,6 @@ export const SettingsTab = ({
   const isPointCounterEnabled = pointCounter?.isEnabled ?? false
   const isPointCounterLoaded = pointCounter?.isLoaded ?? true
   const isPointCounterDisabled = !isPointCounterLoaded
-
-  const localeOptions = useMemo(
-    () =>
-      LOCALE_OPTIONS.map((opt) => ({
-        value: opt.value,
-        label: t(opt.labelKey),
-      })),
-    [t],
-  )
 
   const isSplitViewButtonDisabled = !isSplitViewButtonLoaded
   const isNotesButtonDisabled = !isNotesButtonLoaded
@@ -157,19 +145,7 @@ export const SettingsTab = ({
 
       <h2 className="settings-title">{t('settings.title')}</h2>
 
-      <SettingsGroupSection id="settings-general" title={t('settings.general')} defaultExpanded>
-        <SettingsFieldRow id="settings-language" title={t('locale.label')}>
-          <SegmentedRadioGroup
-            name="locale"
-            ariaLabel={t('settings.languageAria')}
-            value={locale}
-            options={localeOptions}
-            onChange={setLocale}
-          />
-        </SettingsFieldRow>
-      </SettingsGroupSection>
-
-      <SettingsGroupSection id="settings-editing" title={t('settings.editing')}>
+      <SettingsGroupSection id="settings-editing" title={t('settings.editing')} defaultExpanded>
         <SettingsToggleRow
           id="settings-split-view-button"
           variant="plain"
@@ -188,7 +164,13 @@ export const SettingsTab = ({
           checked={isNotesButtonEnabled}
           disabled={isNotesButtonDisabled}
           onChange={setNotesButtonEnabled}
-        />
+        >
+          {isNotesPermissionDenied ? (
+            <p className="settings-field-error" role="alert">
+              {t('settings.yandexPermissionDenied')}
+            </p>
+          ) : null}
+        </SettingsToggleRow>
 
         <SettingsToggleRow
           id="settings-nspd-button"
@@ -199,9 +181,14 @@ export const SettingsTab = ({
           disabled={isNspdButtonDisabled}
           onChange={setNspdButtonEnabled}
         >
-          {isNspdPermissionDenied ? (
+          {isNspdPermissionDenied === 'nspd' ? (
             <p className="settings-field-error" role="alert">
               {t('settings.nspdPermissionDenied')}
+            </p>
+          ) : null}
+          {isNspdPermissionDenied === 'yandex' ? (
+            <p className="settings-field-error" role="alert">
+              {t('settings.yandexPermissionDenied')}
             </p>
           ) : null}
         </SettingsToggleRow>

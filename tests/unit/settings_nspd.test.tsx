@@ -1,13 +1,14 @@
 // @vitest-environment happy-dom
 
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { SettingsTab } from '@/components/SettingsTab'
 import { LocaleProvider } from '@/hooks/useLocale'
+import type { NspdPermissionDeniedReason } from '@/hooks/useNspdButton'
 
 const noop = () => {}
 
-const buildProps = (permissionDenied: boolean) => ({
+const buildProps = (permissionDenied: NspdPermissionDeniedReason) => ({
   strokeColor: {
     inputValue: 'ff0000',
     effectiveColor: '#ff0000',
@@ -21,7 +22,7 @@ const buildProps = (permissionDenied: boolean) => ({
   },
   reloadAfterUpload: { isEnabled: false, isLoaded: true, setIsEnabled: noop, canChange: true },
   splitViewButton: { isEnabled: true, isLoaded: true, setIsEnabled: noop },
-  notesButton: { isEnabled: true, isLoaded: true, setIsEnabled: noop },
+  notesButton: { isEnabled: true, isLoaded: true, setIsEnabled: noop, permissionDenied: false },
   nspdButton: { isEnabled: false, isLoaded: true, setIsEnabled: noop, permissionDenied },
   pointCounter: { isEnabled: true, isLoaded: true, setIsEnabled: noop },
   goToLinks: {
@@ -35,13 +36,10 @@ const buildProps = (permissionDenied: boolean) => ({
   },
 })
 
-const renderTab = (permissionDenied: boolean) => {
+const renderTab = (permissionDenied: NspdPermissionDeniedReason) => {
   const result = render(<SettingsTab {...buildProps(permissionDenied)} />, {
     wrapper: LocaleProvider,
   })
-
-  const section = screen.getByRole('region', { name: 'Редактирование' })
-  fireEvent.click(within(section).getByRole('button', { name: 'Редактирование' }))
 
   return result
 }
@@ -50,25 +48,23 @@ describe('SettingsTab: доступ к НСПД', () => {
   afterEach(cleanup)
 
   it('не показывает ошибку, пока доступ не запрашивали', () => {
-    renderTab(false)
+    renderTab(null)
 
     expect(screen.queryByRole('alert')).toBeNull()
   })
 
   it('показывает ошибку, если пользователь отклонил запрос доступа', () => {
-    renderTab(true)
+    renderTab('nspd')
 
     expect(screen.getByRole('alert').textContent).toContain('nspd.gov.ru')
   })
 
   it('передаёт клик по тумблеру в обработчик настройки', () => {
     const setIsEnabled = vi.fn()
-    const props = buildProps(false)
+    const props = buildProps(null)
     props.nspdButton.setIsEnabled = setIsEnabled
 
     render(<SettingsTab {...props} />, { wrapper: LocaleProvider })
-    const section = screen.getByRole('region', { name: 'Редактирование' })
-    fireEvent.click(within(section).getByRole('button', { name: 'Редактирование' }))
     screen.getByRole('switch', { name: 'НСПД' }).click()
 
     expect(setIsEnabled).toHaveBeenCalledWith(true)

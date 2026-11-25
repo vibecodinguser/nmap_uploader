@@ -14,7 +14,6 @@ import {
   buildExpiredSessionLogs,
   ensureUploadAuth,
   hasUploadAuthError,
-  prepareUploadLocale,
 } from '@/lib/upload_auth_flow'
 import { createUploadLog, deriveUploadStatus, type UploadStatus } from '@/lib/upload_logs'
 import type { UploadLogEntry } from '@/lib/upload_service'
@@ -207,8 +206,6 @@ async function runPointUpload({
   setIsUploading,
   setUploadStatus,
 }: RunPointUploadParams) {
-  await prepareUploadLocale()
-
   const onBegin = createBeginUploadHandler({ setIsUploading, setUploadStatus })
   const started = await beginUploadSession({ isUploadingRef, onBegin })
   if (started) {

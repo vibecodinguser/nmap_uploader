@@ -6,6 +6,7 @@ import {
   type ManifestWithPermissions,
   moveNspdHostPermissionsToOptional,
 } from './lib/manifest/nspd_optional_hosts'
+import { moveYandexPermissionsToOptional } from './lib/manifest/yandex_optional_hosts'
 import { patchReactDomForAmo } from './lib/vite_patch_react_dom_amo'
 import packageJson from './package.json'
 
@@ -16,8 +17,8 @@ const extensionIcons = {
   128: '/icon/128.png',
 } as const
 
-const CHROME_PERMISSIONS = ['storage', 'scripting', 'activeTab', 'identity', 'tabs'] as const
-const FIREFOX_PERMISSIONS = ['storage', 'scripting', 'activeTab', 'identity', 'tabs'] as const
+const CHROME_PERMISSIONS = ['storage', 'scripting', 'activeTab', 'tabs'] as const
+const FIREFOX_PERMISSIONS = ['storage', 'scripting', 'activeTab', 'tabs'] as const
 
 const URI_SCHEME = 'https'
 
@@ -36,14 +37,14 @@ const baseManifest = {
   version: packageJson.version,
   description: '__MSG_extDescription__',
   default_locale: 'ru',
+  /*
+   * Обязательным остаётся только домен редактора: туда подключаются доки,
+   * панели кнопок и приёмник разрешений. Домены Яндекса и `identity`
+   * переносятся в необязательные хуком `moveYandexPermissionsToOptional` —
+   * выдача запрашивается по кнопке, при включении «Блокнота» или «НСПД».
+   */
   host_permissions: [
     manifestHostPattern('n.maps.yandex.ru/*'),
-    manifestHostPattern('cloud-api.yandex.net/*'),
-    manifestHostPattern('*.disk.yandex.ru/*'),
-    manifestHostPattern('oauth.yandex.ru/*'),
-    manifestHostPattern('passport.yandex.ru/*'),
-    manifestHostPattern('login.yandex.ru/*'),
-    manifestHostPattern('avatars.yandex.net/*'),
     manifestHostPattern('nakarte.me/*'),
   ],
   web_accessible_resources: [
@@ -148,6 +149,7 @@ export default defineConfig({
   vite: configureVite,
   hooks: {
     'build:manifestGenerated': (_wxt, manifest) => {
+      moveYandexPermissionsToOptional(manifest as ManifestWithPermissions)
       moveNspdHostPermissionsToOptional(manifest as ManifestWithPermissions)
     },
   },

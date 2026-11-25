@@ -104,9 +104,11 @@ export const handleUploadNspdObjects = async (
       }, 700)
     } else {
       const errorMsg =
-        response?.error === 'NOT_AUTHENTICATED'
-          ? 'Для сохранения в Блокнот картографа необходимо войти через Яндекс ID в расширении.'
-          : (response?.error ?? 'Ошибка загрузки полигона')
+        response?.error === 'PERMISSION_REQUIRED'
+          ? 'Разрешите расширению доступ к Яндекс.Диску: включите Блокнот или НСПД в настройках на карте.'
+          : response?.error === 'AUTH_REQUIRED'
+            ? 'Для сохранения в Блокнот картографа необходимо войти через Яндекс ID в расширении.'
+            : (response?.error ?? 'Ошибка загрузки полигона')
       showNspdToast(errorMsg, 'error')
     }
   } catch (err: unknown) {

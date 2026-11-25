@@ -196,7 +196,10 @@ describe('смена аккаунта', () => {
     const second = await createPorts()
 
     // Тот же объект портов: кэш чтений продолжает работать.
-    expect(second).toBe(first)
+    expect(second.ok).toBe(true)
+    expect(first.ok).toBe(true)
+    if (!first.ok || !second.ok) throw new Error('expected granted access')
+    expect(second.ports).toBe(first.ports)
     expect(store.clearedCaches).toBe(0)
   })
 

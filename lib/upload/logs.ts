@@ -1,5 +1,4 @@
-import { createTranslator, type Locale } from '@/lib/i18n'
-import { getRuntimeLocale } from '@/lib/i18n/locale_state'
+import { createTranslator, getNativeLocaleSnapshot, type Locale } from '@/lib/i18n'
 import { isUploadCompleteMessage } from '@/lib/i18n/upload_complete'
 import type { UploadLogEntry, UploadLogLevel, UploadStatus } from './types'
 
@@ -11,7 +10,7 @@ export const createUploadLog = (level: UploadLogLevel, message: string): UploadL
 
 export const deriveUploadStatus = (
   logs: UploadLogEntry[],
-  locale: Locale = getRuntimeLocale(),
+  locale: Locale = getNativeLocaleSnapshot(),
 ): UploadStatus => {
   const t = createTranslator(locale)
   const errorLog = [...logs].reverse().find((log) => log.level === 'error')

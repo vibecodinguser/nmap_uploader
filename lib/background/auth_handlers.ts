@@ -1,8 +1,10 @@
 /**
  * Обработчики аутентификации и работы с Яндекс Диском для background message router.
  */
+
 import type { MessageHandler } from '@/lib/background/message_router'
 import { runBackgroundTask } from '@/lib/background/tasks'
+import { getBackgroundLocale } from '@/lib/i18n'
 import {
   isTrustedNmapsContentSender,
   isTrustedPanelSender,
@@ -38,6 +40,7 @@ export const handleEnsureAuth: MessageHandler = (message, sender, sendResponse) 
       interactive: Boolean(message.interactive),
       sendResponse,
       logLabel: 'ensureAuth',
+      locale: message.locale ?? getBackgroundLocale(),
     })
   } else {
     logRejectedMessage('ensureAuth', sender)
@@ -46,13 +49,13 @@ export const handleEnsureAuth: MessageHandler = (message, sender, sendResponse) 
   return true
 }
 
-export const handleLogin: MessageHandler = (_message, sender, sendResponse) => {
+export const handleLogin: MessageHandler = (message, sender, sendResponse) => {
   if (isTrustedPanelSender(sender)) {
-    const loginTask = processLogin(sendResponse)
+    const loginTask = processLogin(sendResponse, message.locale)
     runBackgroundTask(loginTask, 'login')
   } else {
     logRejectedMessage('login', sender)
-    const accessDeniedTask = processLoginAccessDenied(sendResponse)
+    const accessDeniedTask = processLoginAccessDenied(sendResponse, message.locale)
     runBackgroundTask(accessDeniedTask, 'login')
   }
   return true
@@ -69,9 +72,9 @@ export const handleLogout: MessageHandler = (_message, sender, sendResponse) => 
   return true
 }
 
-export const handleListOccupiedDates: MessageHandler = (_message, sender, sendResponse) => {
+export const handleListOccupiedDates: MessageHandler = (message, sender, sendResponse) => {
   if (isTrustedPanelSender(sender) || isTrustedNmapsContentSender(sender)) {
-    const listDatesTask = processListOccupiedDates(sendResponse)
+    const listDatesTask = processListOccupiedDates(sendResponse, message.locale)
     runBackgroundTask(listDatesTask, 'listOccupiedDates')
   } else {
     logRejectedMessage('listOccupiedDates', sender)
@@ -80,13 +83,23 @@ export const handleListOccupiedDates: MessageHandler = (_message, sender, sendRe
   return true
 }
 
+/**
+ * Язык вызвавшей панели в поле `locale` сообщения: сам фон языка редактора не
+ * видит (ADR 0021), а строки он переводит сам и отправляет обратно. Без поля
+ * (например, от content script) остаётся язык браузера.
+ */
+const withLocale = (message: Record<string, unknown>): Record<string, unknown> => {
+  if ((message as { locale?: unknown }).locale !== undefined) return message
+  return { locale: getBackgroundLocale(), ...message }
+}
+
 export const handleUpload: MessageHandler = (message, sender, sendResponse) => {
   if (isTrustedPanelSender(sender)) {
-    const uploadTask = processUpload(message, sendResponse)
+    const uploadTask = processUpload(withLocale(message), sendResponse)
     runBackgroundTask(uploadTask, 'uploadProcessedFiles')
   } else {
     logRejectedMessage('uploadProcessedFiles', sender)
-    const accessDeniedTask = processUploadAccessDenied(sendResponse)
+    const accessDeniedTask = processUploadAccessDenied(sendResponse, message.locale)
     runBackgroundTask(accessDeniedTask, 'uploadProcessedFiles')
   }
   return true

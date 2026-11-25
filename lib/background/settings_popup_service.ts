@@ -7,7 +7,7 @@
  */
 import { type Browser, browser } from 'wxt/browser'
 import { isYandexBrowser } from '@/lib/browser'
-import { createTranslator, syncLocaleFromStorage } from '@/lib/i18n'
+import { createTranslator, getBackgroundLocale } from '@/lib/i18n'
 import { isMapTabUrl } from '@/lib/map_tab'
 import { toggleSettingsPopup } from './settings_popup_injector'
 import { resolveClickedTab, resolveMapTargetTab, waitForTabReady } from './tab_navigation'
@@ -52,8 +52,7 @@ export const openSettingsPopup = async (tab: Browser.tabs.Tab): Promise<void> =>
   const clickedTab = await resolveClickedTab(tab)
   if (!clickedTab?.id) return
 
-  const locale = await syncLocaleFromStorage()
-  const t = createTranslator(locale)
+  const t = createTranslator(getBackgroundLocale())
 
   const targetTab = await resolveMapTargetTab(clickedTab)
   if (!targetTab.id) {

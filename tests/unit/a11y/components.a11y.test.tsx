@@ -47,12 +47,13 @@ const settingsTabProps = {
     isEnabled: true,
     isLoaded: true,
     setIsEnabled: noop,
+    permissionDenied: false,
   },
   nspdButton: {
     isEnabled: false,
     isLoaded: true,
     setIsEnabled: noop,
-    permissionDenied: false,
+    permissionDenied: null,
   },
   pointCounter: {
     isEnabled: true,
@@ -162,7 +163,7 @@ describe('a11y: SettingsTab', () => {
     const { container } = renderA11y(
       <SettingsTab
         {...settingsTabProps}
-        nspdButton={{ ...settingsTabProps.nspdButton, permissionDenied: true }}
+        nspdButton={{ ...settingsTabProps.nspdButton, permissionDenied: 'nspd' }}
       />,
     )
 

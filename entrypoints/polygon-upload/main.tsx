@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import '@/assets/styles/uploader.css'
 import '@/assets/styles/polygon_upload_popup.css'
 import { LocaleProvider } from '@/hooks/useLocale'
+import { initNativeLocaleBridge } from '@/lib/locale_bootstrap'
 import { applyThemeTo, initNativeThemeBridge, observeTheme } from '@/lib/theme_bootstrap'
 import { PolygonUploadApp } from './App'
 
@@ -10,6 +11,7 @@ initNativeThemeBridge()
 observeTheme((isDark) => {
   applyThemeTo(document.documentElement, isDark)
 })
+initNativeLocaleBridge()
 
 const root = document.getElementById('root')
 if (!root) {

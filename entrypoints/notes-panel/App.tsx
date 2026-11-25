@@ -82,6 +82,7 @@ export const NotesPanelApp = () => {
         <PanelStatus
           status={panel.status}
           onLogin={panel.login}
+          onGrantPermission={panel.grantPermission}
           onRetry={() => panel.loadNotes()}
         />
 

@@ -9,7 +9,7 @@ import {
   resolveAnchor,
 } from '@/lib/go_to'
 import { runWhenAnyElementExists } from '@/lib/go_to_dom'
-import { createTranslator, getStoredLocale, type TranslateFn } from '@/lib/i18n'
+import { createTranslator, readNativeLocale, type TranslateFn } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n/locale.types'
 
 export class GoToToolbarMountManager {
@@ -27,8 +27,8 @@ export class GoToToolbarMountManager {
     return this.contentLocale
   }
 
-  public async refreshContentLocale(): Promise<void> {
-    this.contentLocale = await getStoredLocale()
+  public refreshContentLocale(): void {
+    this.contentLocale = readNativeLocale()
     this.contentTranslator = createTranslator(this.contentLocale)
 
     const splitButton = getSplitButton()

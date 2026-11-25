@@ -13,7 +13,7 @@ import {
 } from '@/lib/go_to_split_button'
 import { ensureGoToStyles, removeGoToStyles } from '@/lib/go_to_styles'
 import { observeGoToTheme } from '@/lib/go_to_theme'
-import { LOCALE_STORAGE_KEY } from '@/lib/i18n/locale'
+import { observeNativeLocale } from '@/lib/i18n'
 import { getStoredNotesButtonEnabled, NOTES_BUTTON_ENABLED_STORAGE_KEY } from '@/lib/notes_button'
 import { NSPD_BUTTON_ENABLED_STORAGE_KEY } from '@/lib/nspd/nspd_button'
 import { type GoToLifecycleOptions, hasGoToRefreshStorageChange } from './lifecycle_contracts'
@@ -26,6 +26,7 @@ export * from './toolbar_mount_manager'
 
 export class GoToToolbarLifecycleManager {
   private cleanupThemeObserver?: () => void
+  private cleanupLocaleObserver?: () => void
   private cleanupVisibilityListeners?: () => void
   private refreshPromise?: Promise<void>
   private isRefreshScheduled = false
@@ -54,7 +55,12 @@ export class GoToToolbarLifecycleManager {
   public async start(): Promise<void> {
     ensureGoToStyles()
     this.cleanupThemeObserver = observeGoToTheme()
-    await this.mountManager.refreshContentLocale()
+    this.mountManager.refreshContentLocale()
+    // Язык редактора можно сменить без перезагрузки: подписи кнопок, меню и
+    // попапов следуют за ним так же, как раньше шли за ключом `locale`.
+    this.cleanupLocaleObserver = observeNativeLocale(() => {
+      this.scheduleRefresh()
+    })
 
     this.cleanupVisibilityListeners = attachPageVisibilityListeners({
       onPageResume: this.scheduleRefresh,
@@ -73,6 +79,9 @@ export class GoToToolbarLifecycleManager {
   public stop(): void {
     try {
       this.cleanupThemeObserver?.()
+    } catch {}
+    try {
+      this.cleanupLocaleObserver?.()
     } catch {}
 
     if (this.cleanupVisibilityListeners) {
@@ -93,7 +102,7 @@ export class GoToToolbarLifecycleManager {
   }
 
   public async refreshContentLocale(): Promise<void> {
-    await this.mountManager.refreshContentLocale()
+    this.mountManager.refreshContentLocale()
   }
 
   public mountToolbarAtAnchor(
@@ -200,10 +209,6 @@ export class GoToToolbarLifecycleManager {
           this.controller.removeNspdButton()
         }
       }
-    }
-
-    if (LOCALE_STORAGE_KEY in changes) {
-      void this.refreshContentLocale().then(() => this.scheduleRefresh())
     }
 
     if (GO_TO_MENU_ENABLED_STORAGE_KEY in changes) {

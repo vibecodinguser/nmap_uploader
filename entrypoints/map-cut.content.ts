@@ -7,7 +7,7 @@
  */
 import { defineContentScript } from 'wxt/utils/define-content-script'
 import { CutController, removeCutMessage, setCutState, showCutMessage } from '@/lib/cut'
-import { createTranslator, type TranslateFn } from '@/lib/i18n'
+import { createTranslator, readNativeLocale, type TranslateFn } from '@/lib/i18n'
 
 // noinspection JSUnusedGlobalSymbols
 export default defineContentScript({
@@ -17,9 +17,9 @@ export default defineContentScript({
 
   main() {
     try {
-      const pageLang = document.documentElement.lang || navigator.language || 'ru'
-      const locale = pageLang.toLowerCase().startsWith('en') ? 'en' : 'ru'
-      const t: TranslateFn = createTranslator(locale)
+      // MAIN-мир видит настоящий `<html lang>` редактора: это тот же язык,
+      // которому следует всё расширение (ADR 0021).
+      const t: TranslateFn = createTranslator(readNativeLocale())
 
       const controller = new CutController({
         getTranslator: () => t,

@@ -7,11 +7,14 @@ import {
   NSPD_BUTTON_ENABLED_STORAGE_KEY,
   setStoredNspdButtonEnabled,
 } from '@/lib/nspd/nspd_button'
+import { requestYandexAccess } from '@/lib/yandex/disk_settings'
+
+export type NspdPermissionDeniedReason = 'nspd' | 'yandex' | null
 
 export function useNspdButton() {
   const [isEnabled, setIsEnabledState] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
-  const [permissionDenied, setPermissionDenied] = useState(false)
+  const [permissionDenied, setPermissionDenied] = useState<NspdPermissionDeniedReason>(null)
 
   useEffect(function getIsEnabledEffect() {
     const abortController = new AbortController()
@@ -51,20 +54,28 @@ export function useNspdButton() {
   }, [])
 
   /**
-   * Включает функцию только после выдачи доступа к nspd.gov.ru.
+   * Включает функцию после выдачи двух наборов разрешений.
    *
-   * Доступ необязательный, поэтому запрос делается прямо в обработчике клика:
-   * вне user gesture браузер отклоняет `permissions.request`.
+   * Первым — доступ к nspd.gov.ru (без него нет самой кнопки на сайте НСПД),
+   * вторым — доступ к Яндексу: объекты из НСПД сохраняются в Блокнот на
+   * Диске. Оба запроса идут из обработчика клика: вне жеста пользователя
+   * браузер отклоняет `permissions.request`.
    */
   const setIsEnabled = useCallback(function setIsEnabledCallback(enabled: boolean) {
     ;(async function doAsync() {
       try {
-        setPermissionDenied(false)
+        setPermissionDenied(null)
 
         if (enabled) {
-          const granted = await requestNspdHostAccess()
-          if (!granted) {
-            setPermissionDenied(true)
+          const hostGranted = await requestNspdHostAccess()
+          if (!hostGranted) {
+            setPermissionDenied('nspd')
+            return
+          }
+
+          const yandexGranted = await requestYandexAccess()
+          if (!yandexGranted) {
+            setPermissionDenied('yandex')
             return
           }
         }

@@ -2,7 +2,7 @@
  * Вспомогательные утилиты управления вкладками для background сервисов.
  */
 import { type Browser, browser } from 'wxt/browser'
-import { createTranslator, syncLocaleFromStorage } from '@/lib/i18n'
+import { createTranslator, getBackgroundLocale } from '@/lib/i18n'
 import { isMapTabUrl, MAP_ORIGIN, MAP_TAB_URL_PATTERN } from '@/lib/map_tab'
 
 export const MAP_HOME = `${MAP_ORIGIN}/` as const
@@ -17,8 +17,7 @@ export const sleep = (ms: number): Promise<void> => {
 
 export const waitForTabReady = async (tabId: number, maxMs = 15_000): Promise<Browser.tabs.Tab> => {
   const started = Date.now()
-  const locale = await syncLocaleFromStorage()
-  const t = createTranslator(locale)
+  const t = createTranslator(getBackgroundLocale())
 
   while (Date.now() - started < maxMs) {
     const tab = await browser.tabs.get(tabId)
@@ -70,8 +69,7 @@ export const resolveMapTargetTab = async (
       } else {
         const created = await browser.tabs.create({ url: MAP_HOME, active: true })
         if (!created.id) {
-          const locale = await syncLocaleFromStorage()
-          const t = createTranslator(locale)
+          const t = createTranslator(getBackgroundLocale())
           const openMapFailedMessage = t('background.openMapFailed')
           throw new Error(openMapFailedMessage)
         }

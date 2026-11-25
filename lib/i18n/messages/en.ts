@@ -1,9 +1,4 @@
 export const enMessages = {
-  locale: {
-    label: 'Language',
-    ru: 'Русский',
-    en: 'English',
-  },
   common: {
     back: 'Back',
     apply: 'Apply',
@@ -104,8 +99,9 @@ export const enMessages = {
     nspdButtonAria: 'NSPD',
     nspdPermissionDenied:
       'The button does not work without access to nspd.gov.ru. Allow access in the browser prompt or in the extension settings.',
+    yandexPermissionDenied:
+      'The feature does not work without access to Yandex Disk: files are saved to the Notebook. Allow access in the browser prompt or in the extension settings.',
     moderation: 'Moderation',
-    general: 'Appearance',
     suggestFeature: 'Suggest a feature',
     editing: 'Editing',
     style: 'Style',
@@ -130,7 +126,6 @@ export const enMessages = {
     strokeColorApplied: 'Stroke color applied',
     strokeColorApplyError: 'Failed to apply color. Reload the map page and try again.',
     strokeColorValidation: 'Enter a color in RGB or RRGGBB format',
-    languageAria: 'Interface language',
   },
   auth: {
     authError: 'Authentication error',
@@ -166,6 +161,9 @@ export const enMessages = {
     searchPlaceholder: 'Search by name',
     loading: 'Loading notes…',
     authRequired: 'Sign in to Yandex to see your own notes',
+    permissionRequired:
+      'Working with Yandex Disk needs a browser permission. It is requested once when you enable Notebook or NSPD.',
+    grantPermission: 'Allow access',
     login: 'Sign in',
     retry: 'Retry',
     loadError: 'Failed to load notes',

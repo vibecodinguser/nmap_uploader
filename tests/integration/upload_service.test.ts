@@ -33,6 +33,7 @@ async function saveDefaultAuth(): Promise<void> {
 async function uploadsSingleFileSuccessfully(): Promise<void> {
   const result = await uploadProcessedFilesToYandexDisk({
     files: [{ name: 'test.geojson', result: createProcessResult() }],
+    locale: 'ru',
   })
 
   assert.equal(result.ok, true)
@@ -43,7 +44,7 @@ async function uploadsSingleFileSuccessfully(): Promise<void> {
 }
 
 async function returnsErrorWhenNoFiles(): Promise<void> {
-  const result = await uploadProcessedFilesToYandexDisk({ files: [] })
+  const result = await uploadProcessedFilesToYandexDisk({ files: [], locale: 'ru' })
 
   assert.equal(result.ok, false)
 
@@ -58,6 +59,7 @@ async function returnsErrorWhenNotAuthenticated(): Promise<void> {
 
   const result = await uploadProcessedFilesToYandexDisk({
     files: [{ name: 'test.geojson', result: createProcessResult() }],
+    locale: 'ru',
   })
 
   assert.equal(result.ok, false)
@@ -76,6 +78,7 @@ async function expiredTokenError(): Promise<void> {
 
   const result = await uploadProcessedFilesToYandexDisk({
     files: [{ name: 'test.geojson', result: createProcessResult() }],
+    locale: 'ru',
   })
 
   assert.equal(result.ok, false)
