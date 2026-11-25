@@ -4,8 +4,11 @@ import * as diskAccessModule from '@/lib/background/disk_access'
 import {
   handleCloseCurrentTab,
   handleUploadNspdGeoJson,
+  processOpenNspdTarget,
   processUploadNspdGeoJson,
 } from '@/lib/background/nspd_handlers'
+import * as settingsPopupModule from '@/lib/background/settings_popup_injector'
+import * as nspdAccessModule from '@/lib/nspd/content_scripts'
 import * as uploadServiceModule from '@/lib/upload_service'
 
 describe('NSPD background handlers', () => {
@@ -109,5 +112,43 @@ describe('NSPD background handlers', () => {
       expect(removeSpy).toHaveBeenCalledWith(202)
       expect(sendResponse).toHaveBeenCalledWith({ ok: true })
     })
+  })
+})
+
+describe('processOpenNspdTarget', () => {
+  const sender = { tab: { id: 7, url: 'https://n.maps.yandex.ru/#!/?z=12' } }
+
+  beforeEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('открывает сайт НСПД во вкладке при выданном доступе', async () => {
+    vi.spyOn(nspdAccessModule, 'hasNspdHostAccess').mockResolvedValue(true)
+    const create = vi.spyOn(browser.tabs, 'create').mockResolvedValue({} as never)
+    const openSettings = vi
+      .spyOn(settingsPopupModule, 'openSettingsPopupOnTab')
+      .mockResolvedValue(undefined)
+    const sendResponse = vi.fn()
+
+    await processOpenNspdTarget({ url: 'https://nspd.gov.ru/map?x=1' }, sender, sendResponse)
+
+    expect(create).toHaveBeenCalledWith({ url: 'https://nspd.gov.ru/map?x=1', active: true })
+    expect(openSettings).not.toHaveBeenCalled()
+    expect(sendResponse).toHaveBeenCalledWith({ ok: true })
+  })
+
+  it('открывает настройки с подсветкой доступа при отсутствии доступа', async () => {
+    vi.spyOn(nspdAccessModule, 'hasNspdHostAccess').mockResolvedValue(false)
+    const create = vi.spyOn(browser.tabs, 'create').mockResolvedValue({} as never)
+    const openSettings = vi
+      .spyOn(settingsPopupModule, 'openSettingsPopupOnTab')
+      .mockResolvedValue(undefined)
+    const sendResponse = vi.fn()
+
+    await processOpenNspdTarget({ url: 'https://nspd.gov.ru/map?x=1' }, sender, sendResponse)
+
+    expect(create).not.toHaveBeenCalled()
+    expect(openSettings).toHaveBeenCalledWith(7, sender.tab.url, true)
+    expect(sendResponse).toHaveBeenCalledWith({ ok: true })
   })
 })

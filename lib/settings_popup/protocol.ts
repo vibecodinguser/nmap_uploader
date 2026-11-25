@@ -19,6 +19,17 @@ export const SETTINGS_POPUP_TITLE_REF: MessageKey = 'settings.title'
 
 /** Сообщение background → вкладка редактора: переключить попап. */
 export const TOGGLE_SETTINGS_POPUP_ACTION = 'toggleSettingsPopup' as const
+/**
+ * Сообщение background → вкладка редактора: открыть попап (не переключать).
+ * `focus: 'nspd'` прокручивает попап к строке доступа к НСПД.
+ */
+export const OPEN_SETTINGS_POPUP_ACTION = 'openSettingsPopup' as const
+/** Значение `focus` открытия: подсветить строку доступа к НСПД. */
+export const SETTINGS_POPUP_FOCUS_NSPD = 'nspd' as const
+/** Параметр URL iframe: попап открыт кнопкой НСПД и должен подсветить доступ. */
+export const SETTINGS_POPUP_FOCUS_QUERY_PARAM = 'focus' as const
+/** Сообщение хост попапа → панель: подсветить строку доступа к НСПД. */
+export const FOCUS_NSPD_ACCESS_MESSAGE = 'FOCUS_NSPD_ACCESS' as const
 /** Сообщение панели → хост попапа: закрыть. */
 export const CLOSE_SETTINGS_POPUP_ACTION = 'closeSettingsPopup' as const
 /** Сообщение панели → хост попапа: подогнать высоту под содержимое. */

@@ -27,6 +27,7 @@ import {
   handleNotesSelect,
   handleNotesStartDraw,
   handleNotesUploadIcon,
+  handleOpenNspdTarget,
   handlePointPicked,
   handleReloadEditor,
   handleSetTrackerDate,
@@ -35,6 +36,7 @@ import {
   handleUploadNspdGeoJson,
   type MessageHandler,
   migrateLegacyNotesFolderOnStartup,
+  OPEN_NSPD_TARGET_ACTION,
   openSettingsPopup,
   persistYandexBrowserFlag,
   runBackgroundTask,
@@ -113,6 +115,7 @@ const messageHandlers: Record<string, MessageHandler> = {
   SET_TRACKER_DATE: handleSetTrackerDate,
   [UPLOAD_NSPD_GEOJSON_ACTION]: handleUploadNspdGeoJson,
   [CLOSE_CURRENT_TAB_ACTION]: handleCloseCurrentTab,
+  [OPEN_NSPD_TARGET_ACTION]: handleOpenNspdTarget,
 }
 
 const backgroundMessageRouter = createMessageRouter({ handlers: messageHandlers })

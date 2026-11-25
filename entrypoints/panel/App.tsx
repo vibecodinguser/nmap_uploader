@@ -11,6 +11,10 @@ import { usePointCounter } from '@/hooks/usePointCounter'
 import { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
 import { useSplitViewButton } from '@/hooks/useSplitViewButton'
 import { useStrokeColor } from '@/hooks/useStrokeColor'
+import {
+  SETTINGS_POPUP_FOCUS_NSPD,
+  SETTINGS_POPUP_FOCUS_QUERY_PARAM,
+} from '@/lib/settings_popup/protocol'
 
 export const App = () => {
   const strokeColor = useStrokeColor()
@@ -23,6 +27,11 @@ export const App = () => {
   const pointCounter = usePointCounter()
   const objectTracker = useObjectTracker()
   const goToLinks = useGoToLinks()
+
+  // Попап открыт кнопкой НСПД без доступа: подсветить строку «Разрешить доступ».
+  const focusNspdAccess =
+    new URLSearchParams(window.location.search).get(SETTINGS_POPUP_FOCUS_QUERY_PARAM) ===
+    SETTINGS_POPUP_FOCUS_NSPD
 
   const triggerLogin = async () => {
     await handleLogin()
@@ -45,6 +54,7 @@ export const App = () => {
           splitViewButton={splitViewButton}
           notesButton={notesButton}
           nspdButton={nspdButton}
+          focusNspdAccess={focusNspdAccess}
           feedsFilter={feedsFilter}
           pointCounter={pointCounter}
           objectTracker={objectTracker}

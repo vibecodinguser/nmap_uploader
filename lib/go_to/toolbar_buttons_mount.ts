@@ -19,6 +19,7 @@ import type { TranslateFn } from '@/lib/i18n'
 import { createNotesButton } from '@/lib/notes_button'
 import { notifyToggleNotesPanel } from '@/lib/notes_panel/events'
 import { buildNspdMapUrl, createNspdButton } from '@/lib/nspd/nspd_button'
+import { openNspdTarget } from '@/lib/nspd/open_target'
 import { createPolygonUploadButton } from '@/lib/polygon_upload_button'
 import { closePolygonUploadPopup, togglePolygonUploadPopup } from '@/lib/polygon_upload_popup'
 
@@ -182,7 +183,9 @@ export const mountNspdButtonView = ({ getTranslator, onHideMenu }: ToolbarAction
       const nspdUrl =
         buildNspdMapUrl(window.location.href) ??
         'https://nspd.gov.ru/map?thematic=PKK&theme_id=1&baseLayerId=235&is_copy_url=true&active_layers=875831'
-      window.open(nspdUrl, '_blank')
+      // Решение принимает background: сайт НСПД при выданном доступе или
+      // настройки с кнопкой «Разрешить доступ», если доступа ещё нет.
+      void openNspdTarget(nspdUrl)
     })
 
     button.addEventListener('mouseover', (e) => {

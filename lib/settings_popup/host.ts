@@ -21,7 +21,10 @@ import { withNativeThemeParam } from '@/lib/theme_bridge'
 import { getSettingsButton, SETTINGS_APP_BAR_SELECTOR } from './button'
 import {
   CLOSE_SETTINGS_POPUP_ACTION,
+  FOCUS_NSPD_ACCESS_MESSAGE,
   SETTINGS_POPUP_FIT_HEIGHT_MESSAGE,
+  SETTINGS_POPUP_FOCUS_NSPD,
+  SETTINGS_POPUP_FOCUS_QUERY_PARAM,
   SETTINGS_POPUP_ID,
   SETTINGS_POPUP_STYLES_ID,
   SETTINGS_POPUP_TITLE_REF,
@@ -58,10 +61,13 @@ export type SettingsPopupHostOptions = {
 }
 
 export type SettingsPopupHost = {
-  open: () => void
+  /** Открыть попап; `options.focusNspd` прокручивает к строке доступа НСПД. */
+  open: (options?: { focusNspd?: boolean }) => void
   close: () => void
   toggle: () => void
   isOpen: () => boolean
+  /** Подсветить строку доступа НСПД в уже открытом попапе. */
+  focusNspd: () => void
   destroy: () => void
 }
 
@@ -98,6 +104,15 @@ export const measureSettingsPopupRect = (
   }
 }
 
+/** Добавляет параметр `focus=nspd` к URL iframe (сохраняя hash). */
+const appendFocusParam = (url: string): string => {
+  const hashIndex = url.indexOf('#')
+  const base = hashIndex === -1 ? url : url.slice(0, hashIndex)
+  const hash = hashIndex === -1 ? '' : url.slice(hashIndex)
+  const separator = base.includes('?') ? '&' : '?'
+  return `${base}${separator}${SETTINGS_POPUP_FOCUS_QUERY_PARAM}=${SETTINGS_POPUP_FOCUS_NSPD}${hash}`
+}
+
 export const createSettingsPopupHost = ({
   pagePath,
   locale,
@@ -109,6 +124,8 @@ export const createSettingsPopupHost = ({
   /** Высота под содержимое; `null` — занять всё доступное место. */
   let fittedHeight: number | null = null
   let created = false
+  /** Открыться с прокруткой к строке доступа НСПД (задаётся до сборки iframe). */
+  let focusNspdOnBuild = false
 
   const isOpen = (): boolean => popup?.isConnected === true
 
@@ -185,6 +202,10 @@ export const createSettingsPopupHost = ({
       withNativeThemeParam(browser.runtime.getURL(pagePath), readNativeTheme()),
       readNativeLocale(),
     )
+    if (focusNspdOnBuild) {
+      iframe.src = appendFocusParam(iframe.src)
+      focusNspdOnBuild = false
+    }
 
     content.appendChild(iframe)
     container.appendChild(content)
@@ -209,6 +230,11 @@ export const createSettingsPopupHost = ({
     window.removeEventListener('message', handleFrameMessage)
   }
 
+  /** Послать в iframe команду подсветить строку доступа НСПД. */
+  const focusNspdInFrame = (): void => {
+    frame?.contentWindow?.postMessage({ action: FOCUS_NSPD_ACCESS_MESSAGE }, '*')
+  }
+
   const close = (): void => {
     if (!popup) {
       return
@@ -222,11 +248,15 @@ export const createSettingsPopupHost = ({
     getSettingsButton()?.focus()
   }
 
-  const open = (): void => {
+  const open = (options?: { focusNspd?: boolean }): void => {
     if (isOpen()) {
+      if (options?.focusNspd) {
+        focusNspdInFrame()
+      }
       return
     }
 
+    focusNspdOnBuild = options?.focusNspd === true
     // Тема могла смениться, пока попап был закрыт: перекрашиваем до показа,
     // иначе белая вспышка на тёмной странице.
     ensureSettingsPopupStyles()
@@ -255,6 +285,14 @@ export const createSettingsPopupHost = ({
     }
   }
 
+  const focusNspd = (): void => {
+    if (isOpen()) {
+      focusNspdInFrame()
+    } else {
+      open({ focusNspd: true })
+    }
+  }
+
   return {
     open,
     close,
@@ -266,6 +304,7 @@ export const createSettingsPopupHost = ({
       }
     },
     isOpen,
+    focusNspd,
     destroy,
   }
 }

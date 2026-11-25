@@ -5,10 +5,17 @@ import type { FeatureCollection } from 'geojson'
 import { browser } from 'wxt/browser'
 import type { MessageHandler } from '@/lib/background/message_router'
 import { processReloadEditor } from '@/lib/background/relay_sender'
+import { openSettingsPopupOnTab } from '@/lib/background/settings_popup_injector'
 import { runBackgroundTask } from '@/lib/background/tasks'
 import { processGeoJsonData } from '@/lib/converters/geojson'
 import { getBackgroundLocale } from '@/lib/i18n'
-import { isTrustedNspdSender, isTrustedPanelSender, logRejectedMessage } from '@/lib/message_auth'
+import {
+  isTrustedNmapsContentSender,
+  isTrustedNspdSender,
+  isTrustedPanelSender,
+  logRejectedMessage,
+} from '@/lib/message_auth'
+import { hasNspdHostAccess } from '@/lib/nspd/content_scripts'
 import { resolveReloadAfterUploadPreference } from '@/lib/reload_after_upload'
 import { uploadProcessedFilesToYandexDisk } from '@/lib/upload/yandex_upload'
 import { resolveDiskAccess } from './disk_access'
@@ -101,6 +108,58 @@ export const handleCloseCurrentTab: MessageHandler = (_message, sender, sendResp
   } else {
     logRejectedMessage(CLOSE_CURRENT_TAB_ACTION, sender)
     sendResponse({ ok: false })
+  }
+  return true
+}
+
+/**
+ * Открытие цели кнопки НСПД: сайт НСПД при выданном доступе или попап настроек
+ * с подсветкой строки доступа, если его нет.
+ *
+ * Кнопку на карте рисует content script, а `chrome.permissions` в нём
+ * недоступен (как и `tabs`). Поэтому решение и открытие вкладки/попапа
+ * принимает background: он видит `permissions.contains` и умеет `tabs.create`.
+ */
+export const OPEN_NSPD_TARGET_ACTION = 'OPEN_NSPD_TARGET'
+
+export const processOpenNspdTarget = async (
+  message: Record<string, unknown>,
+  sender: { tab?: { id?: number; url?: string } },
+  sendResponse: (res: { ok: boolean; error?: string }) => void,
+): Promise<void> => {
+  try {
+    const tabId = sender.tab?.id
+    if (tabId === undefined) {
+      sendResponse({ ok: false, error: 'NO_TAB' })
+      return
+    }
+
+    if (await hasNspdHostAccess()) {
+      const url = typeof message.url === 'string' && message.url ? message.url : null
+      if (url) {
+        await browser.tabs.create({ url, active: true })
+      }
+      sendResponse({ ok: true })
+      return
+    }
+
+    // Доступа нет: кнопка на сайте НСПД всё равно не появится, поэтому
+    // открываем настройки на строке «Разрешить доступ».
+    await openSettingsPopupOnTab(tabId, sender.tab?.url, true)
+    sendResponse({ ok: true })
+  } catch (err: unknown) {
+    console.error('[yamapper] processOpenNspdTarget error:', err)
+    sendResponse({ ok: false, error: 'INTERNAL_ERROR' })
+  }
+}
+
+export const handleOpenNspdTarget: MessageHandler = (message, sender, sendResponse) => {
+  if (isTrustedNmapsContentSender(sender)) {
+    const task = processOpenNspdTarget(message, sender, sendResponse)
+    runBackgroundTask(task, OPEN_NSPD_TARGET_ACTION)
+  } else {
+    logRejectedMessage(OPEN_NSPD_TARGET_ACTION, sender)
+    sendResponse({ ok: false, error: 'ACCESS_DENIED' })
   }
   return true
 }

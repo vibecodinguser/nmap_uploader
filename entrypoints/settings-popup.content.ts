@@ -14,7 +14,9 @@ import {
 } from '@/lib/settings_popup/host'
 import {
   CLOSE_SETTINGS_POPUP_ACTION,
+  OPEN_SETTINGS_POPUP_ACTION,
   SETTINGS_BUTTON_ID,
+  SETTINGS_POPUP_FOCUS_NSPD,
   SETTINGS_POPUP_ID,
   TOGGLE_SETTINGS_POPUP_ACTION,
 } from '@/lib/settings_popup/protocol'
@@ -82,6 +84,11 @@ export default defineContentScript({
       switch (message.action) {
         case TOGGLE_SETTINGS_POPUP_ACTION:
           host.toggle()
+          break
+        case OPEN_SETTINGS_POPUP_ACTION:
+          // Открыть, даже если попап уже открыт: не переключать на закрытие.
+          // `open` сам подсветит строку НСПД, если попап уже был открыт.
+          host.open({ focusNspd: message.focus === SETTINGS_POPUP_FOCUS_NSPD })
           break
         case CLOSE_SETTINGS_POPUP_ACTION:
           host.close()

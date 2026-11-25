@@ -3,6 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { browser } from 'wxt/browser'
 import mapGoToScript from '@/entrypoints/map-go-to.content'
+import { OPEN_NSPD_TARGET_ACTION } from '@/lib/background/nspd_handlers'
 import { GO_TO_MENU_ITEM_ID_PREFIX, MENU_ID, MENU_ITEMS_ID } from '@/lib/go_to/menu_dom'
 import { GO_TO_REFRESH_ACTION } from '@/lib/go_to_notify'
 import { GO_TO_SERVICE_BUTTON_ID } from '@/lib/go_to_service_button'
@@ -143,18 +144,26 @@ describe('map-go-to.content', () => {
     expect(document.getElementById(NSPD_BUTTON_ID)).toBeNull()
   })
 
-  it('открывает вкладку nspd.gov.ru по клику на кнопку NSPD', async () => {
+  it('просит background открыть вкладку nspd.gov.ru по клику на кнопку NSPD', async () => {
     await browser.storage.local.set({
       [NSPD_BUTTON_ENABLED_STORAGE_KEY]: true,
     })
-    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+    const sendMessageSpy = vi
+      .spyOn(browser.runtime, 'sendMessage')
+      .mockResolvedValue(undefined as never)
     mountNmapsToolbarAnchor()
     mapGoToScript.main?.(ctx)
 
     await vi.waitFor(() => expect(document.getElementById(NSPD_BUTTON_ID)).not.toBeNull())
 
     document.getElementById(NSPD_BUTTON_ID)?.click()
-    expect(openSpy).toHaveBeenCalled()
+    await vi.waitFor(() =>
+      expect(sendMessageSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ action: OPEN_NSPD_TARGET_ACTION }),
+      ),
+    )
+    const message = sendMessageSpy.mock.calls[0]?.[0] as { url?: string }
+    expect(message.url).toContain('nspd.gov.ru')
   })
 
   it('ставит кнопку заметок справа от загрузки и сигналит панели о переключении', async () => {

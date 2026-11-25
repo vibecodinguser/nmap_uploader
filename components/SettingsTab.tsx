@@ -1,4 +1,5 @@
 import { ArrowLeft } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { GoToLinksSettings } from '@/components/GoToLinksSettings'
 import { SettingsAboutSection } from '@/components/SettingsAboutSection'
 import { SettingsGroupSection } from '@/components/SettingsGroupSection'
@@ -13,6 +14,7 @@ import type { useObjectTracker } from '@/hooks/useObjectTracker'
 import type { usePointCounter } from '@/hooks/usePointCounter'
 import type { useReloadAfterUpload } from '@/hooks/useReloadAfterUpload'
 import type { useSplitViewButton } from '@/hooks/useSplitViewButton'
+import { FOCUS_NSPD_ACCESS_MESSAGE } from '@/lib/settings_popup/protocol'
 
 type ReloadAfterUploadSettings = Pick<
   ReturnType<typeof useReloadAfterUpload>,
@@ -69,6 +71,8 @@ type SettingsTabProps = {
   splitViewButton: SplitViewButtonSettings
   notesButton: NotesButtonSettings
   nspdButton: NspdButtonSettings
+  /** Подсветить строку «Разрешить доступ» к НСПД после рендера. */
+  focusNspdAccess?: boolean
   feedsFilter?: FeedsFilterSettings
   pointCounter?: PointCounterSettings
   objectTracker?: ObjectTrackerSettings
@@ -86,6 +90,7 @@ export const SettingsTab = ({
   pointCounter,
   objectTracker,
   goToLinks,
+  focusNspdAccess = false,
 }: SettingsTabProps) => {
   const { t } = useLocale()
   const {
@@ -112,6 +117,43 @@ export const SettingsTab = ({
     permissionDenied: isNspdPermissionDenied,
     requestAccess: requestNspdAccess,
   } = nspdButton
+
+  const nspdGrantButtonRef = useRef<HTMLButtonElement>(null)
+  /** Счётчик запросов подсветки из хоста попапа (попап уже был открыт). */
+  const [nspdFocusRequest, setNspdFocusRequest] = useState(0)
+
+  // Хост попапа просит подсветить доступ к НСПД: попап уже был открыт и
+  // заново не собирался, поэтому параметр URL не сработал бы.
+  useEffect(function subscribeNspdFocusMessage() {
+    const handleMessage = (event: MessageEvent): void => {
+      if (event.data?.action !== FOCUS_NSPD_ACCESS_MESSAGE) {
+        return
+      }
+      setNspdFocusRequest((count) => count + 1)
+    }
+    window.addEventListener('message', handleMessage)
+    return function cleanup() {
+      window.removeEventListener('message', handleMessage)
+    }
+  }, [])
+
+  useEffect(
+    function focusNspdGrantButtonEffect() {
+      if (!focusNspdAccess || isNspdPermissionDenied !== 'nspd') {
+        return
+      }
+      const button = nspdGrantButtonRef.current
+      if (!button) {
+        return
+      }
+      // `nspdFocusRequest` в зависимостях: хост может попросить подсветить
+      // строку повторно, когда попап уже открыт и iframe заново не собирался.
+      void nspdFocusRequest
+      button.scrollIntoView({ block: 'center' })
+      button.focus()
+    },
+    [focusNspdAccess, isNspdPermissionDenied, nspdFocusRequest],
+  )
 
   const isFeedsFilterEnabled = feedsFilter?.isEnabled ?? false
   const isFeedsFilterLoaded = feedsFilter?.isLoaded ?? true
@@ -188,6 +230,7 @@ export const SettingsTab = ({
                 {t('settings.nspdPermissionDenied')}
               </p>
               <button
+                ref={nspdGrantButtonRef}
                 type="button"
                 className="settings-grant-access-btn"
                 onClick={requestNspdAccess}

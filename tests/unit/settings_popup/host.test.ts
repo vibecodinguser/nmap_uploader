@@ -7,7 +7,7 @@ import {
   measureSettingsPopupRect,
   SETTINGS_POPUP_WIDTH,
 } from '@/lib/settings_popup/host'
-import { SETTINGS_POPUP_ID } from '@/lib/settings_popup/protocol'
+import { FOCUS_NSPD_ACCESS_MESSAGE, SETTINGS_POPUP_ID } from '@/lib/settings_popup/protocol'
 
 const renderAppBar = (): HTMLElement => {
   document.body.innerHTML = `
@@ -172,6 +172,51 @@ describe('хост попапа настроек', () => {
     expect(popup?.style.width).toBe(`${SETTINGS_POPUP_WIDTH}px`)
     expect(popup?.style.left).toBe(`${expected.left}px`)
     expect(popup?.style.top).toBe('70px')
+    host.destroy()
+  })
+})
+
+describe('подсветка доступа к НСПД', () => {
+  it('открывает попап с параметром focus=nspd', async () => {
+    renderAppBar()
+    const host = createSettingsPopupHost({ pagePath: '/panel.html', locale: 'ru' })
+
+    host.open({ focusNspd: true })
+    await vi.waitFor(() => expect(getPopup()).not.toBeNull())
+
+    const iframe = getPopup()?.querySelector('iframe')
+    expect(iframe?.getAttribute('src')).toContain('focus=nspd')
+    host.destroy()
+  })
+
+  it('в уже открытом попапе посылает сообщение о подсветке', async () => {
+    renderAppBar()
+    const host = createSettingsPopupHost({ pagePath: '/panel.html', locale: 'ru' })
+    host.open()
+    await vi.waitFor(() => expect(getPopup()).not.toBeNull())
+
+    const frame = getPopup()?.querySelector('iframe')
+    const postMessage = vi.fn()
+    Object.defineProperty(frame as HTMLIFrameElement, 'contentWindow', {
+      value: { postMessage },
+      configurable: true,
+    })
+
+    host.focusNspd()
+
+    expect(postMessage).toHaveBeenCalledWith({ action: FOCUS_NSPD_ACCESS_MESSAGE }, '*')
+    host.destroy()
+  })
+
+  it('focusNspd открывает закрытый попап с параметром', async () => {
+    renderAppBar()
+    const host = createSettingsPopupHost({ pagePath: '/panel.html', locale: 'ru' })
+
+    host.focusNspd()
+    await vi.waitFor(() => expect(getPopup()).not.toBeNull())
+
+    const iframe = getPopup()?.querySelector('iframe')
+    expect(iframe?.getAttribute('src')).toContain('focus=nspd')
     host.destroy()
   })
 })

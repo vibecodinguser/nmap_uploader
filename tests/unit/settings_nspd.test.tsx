@@ -31,6 +31,7 @@ const buildProps = (permissionDenied: NspdPermissionDeniedReason) => ({
     requestAccess: noop,
   },
   pointCounter: { isEnabled: true, isLoaded: true, setIsEnabled: noop },
+  focusNspdAccess: false,
   goToLinks: {
     isMenuEnabled: true,
     isLoaded: true,
@@ -95,4 +96,17 @@ describe('SettingsTab: доступ к НСПД', () => {
 
     expect(setIsEnabled).toHaveBeenCalledWith(true)
   })
+})
+
+it('подсвечивает кнопку «Разрешить доступ» при focusNspdAccess', () => {
+  const props = buildProps('nspd')
+  props.nspdButton.isEnabled = true
+  props.focusNspdAccess = true
+
+  const { container } = render(<SettingsTab {...props} />, { wrapper: LocaleProvider })
+
+  const button = container.querySelector('.settings-grant-access-btn') as HTMLButtonElement
+  expect(button).toBeTruthy()
+  // scrollIntoView в happy-dom — заглушка; проверяем, что кнопка в фокусе.
+  expect(document.activeElement).toBe(button)
 })
