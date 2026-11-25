@@ -198,16 +198,18 @@ describe('feeds_filter date parsing and threshold', () => {
     })
 
     it('извлекает текст даты из .nk-date-time.nk-event-view__date при отсутствии title', () => {
+      const fixedNow = new Date('2026-10-26T20:00:00.000').getTime()
       const card = document.createElement('div')
       card.className = 'nk-event-view'
       card.innerHTML = `
         <span class="nk-date-time nk-date-time_mode_relative nk-event-view__date">вчера, 18:32</span>
       `
       expect(getEventCardDateText(card)).toBe('вчера, 18:32')
-      expect(getEventCardDayAge(card)).toBe(1)
+      expect(getEventCardDayAge(card, fixedNow)).toBe(1)
     })
 
     it('определяет давность 0 дней для событий за сегодня ("только что", минуты, часы назад, "сегодня", "HH:MM")', () => {
+      const fixedNow = new Date('2026-10-26T20:00:00.000').getTime()
       const makeCard = (text: string) => {
         const card = document.createElement('div')
         card.className = 'nk-event-view'
@@ -215,12 +217,14 @@ describe('feeds_filter date parsing and threshold', () => {
         return card
       }
 
-      expect(getEventCardDayAge(makeCard('только что'))).toBe(0)
-      expect(getEventCardDayAge(makeCard('15 минут назад'))).toBe(0)
-      expect(getEventCardDayAge(makeCard('3 часа назад'))).toBe(0)
-      expect(getEventCardDayAge(makeCard('сегодня, 14:20'))).toBe(0)
-      expect(getEventCardDayAge(makeCard('14:20'))).toBe(0)
-      expect(getEventCardDayAge(makeCard('в 09:05'))).toBe(0)
+      // Опорное время — середина дня: от полуночи «15 минут назад» уезжает
+      // во вчера, и тест падал бы в первые минуты каждых суток.
+      expect(getEventCardDayAge(makeCard('только что'), fixedNow)).toBe(0)
+      expect(getEventCardDayAge(makeCard('15 минут назад'), fixedNow)).toBe(0)
+      expect(getEventCardDayAge(makeCard('3 часа назад'), fixedNow)).toBe(0)
+      expect(getEventCardDayAge(makeCard('сегодня, 14:20'), fixedNow)).toBe(0)
+      expect(getEventCardDayAge(makeCard('14:20'), fixedNow)).toBe(0)
+      expect(getEventCardDayAge(makeCard('в 09:05'), fixedNow)).toBe(0)
     })
 
     it('определяет давность 1 день для "вчера, хх:хх"', () => {

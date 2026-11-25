@@ -96,6 +96,10 @@ describe('feeds_filter daily_loader and scroll_scanner', () => {
     })
 
     it('начинает дозагрузку, если передан autoStart: true и последняя карточка относится к сегодняшнему дню', () => {
+      // Опорное время — середина дня: «1 час назад» от полуночи уезжает во
+      // вчера, и тест падал бы в первые часы каждых суток.
+      const now = Date.now()
+      vi.setSystemTime(new Date('2026-10-26T20:00:00.000'))
       const container = document.createElement('div')
       container.className = 'nk-user-feeds-view'
 
@@ -111,6 +115,7 @@ describe('feeds_filter daily_loader and scroll_scanner', () => {
       })
       expect(loader.isLoading()).toBe(true)
       loader.teardown()
+      vi.setSystemTime(now)
     })
 
     it('корректно очищает слушатели и останавливает загрузку при вызове teardown', async () => {
@@ -267,6 +272,9 @@ describe('feeds_filter daily_loader and scroll_scanner', () => {
 
       beforeEach(() => {
         vi.useFakeTimers()
+        // Фиксируем время в середине дня: «1 час назад» от полуночи уезжает во
+        // вчера, и тесты падали бы в первые часы каждых суток.
+        vi.setSystemTime(new Date('2026-10-26T20:00:00.000'))
       })
 
       afterEach(() => {
