@@ -54,6 +54,7 @@ const settingsTabProps = {
     isLoaded: true,
     setIsEnabled: noop,
     permissionDenied: null,
+    requestAccess: noop,
   },
   pointCounter: {
     isEnabled: true,

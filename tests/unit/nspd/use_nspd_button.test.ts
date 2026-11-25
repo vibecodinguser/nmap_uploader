@@ -95,4 +95,44 @@ describe('useNspdButton', () => {
 
     expect(result.current.isEnabled).toBe(true)
   })
+
+  it('при включённом тумблере без доступа сообщает об отказе уже на загрузке', async () => {
+    const { result } = renderHook(() => useNspdButton())
+    await flushEffects()
+
+    // Тумблер включён по умолчанию, а доступ к nspd.gov.ru не выдан — подсказка
+    // появляется сразу, чтобы показать кнопку «Разрешить доступ» без выключения.
+    expect(result.current.isEnabled).toBe(true)
+    expect(result.current.permissionDenied).toBe('nspd')
+    expect(scriptingMock.registered.size).toBe(0)
+  })
+
+  it('requestAccess запрашивает доступ, не трогая тумблер, и регистрирует скрипты', async () => {
+    const { result } = renderHook(() => useNspdButton())
+    await flushEffects()
+    expect(result.current.permissionDenied).toBe('nspd')
+
+    await act(async () => {
+      await result.current.requestAccess()
+    })
+
+    expect(permissionsMock.request).toHaveBeenCalledWith({ origins: [...NSPD_HOST_PATTERNS] })
+    expect(result.current.isEnabled).toBe(true)
+    expect(result.current.permissionDenied).toBe('yandex')
+    expect(scriptingMock.registered.size).toBe(2)
+  })
+
+  it('requestAccess при отказе оставляет подсказку и не выключает тумблер', async () => {
+    const { result } = renderHook(() => useNspdButton())
+    await flushEffects()
+
+    permissionsMock.denyNextRequest()
+    await act(async () => {
+      await result.current.requestAccess()
+    })
+
+    expect(result.current.isEnabled).toBe(true)
+    expect(result.current.permissionDenied).toBe('nspd')
+    expect(scriptingMock.registered.size).toBe(0)
+  })
 })

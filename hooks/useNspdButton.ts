@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { browser } from 'wxt/browser'
 import { notifyMapTabsAboutGoToMenu } from '@/lib/go_to_notify'
-import { requestNspdHostAccess, syncNspdContentScripts } from '@/lib/nspd/content_scripts'
+import {
+  hasNspdHostAccess,
+  requestNspdHostAccess,
+  syncNspdContentScripts,
+} from '@/lib/nspd/content_scripts'
 import {
   getStoredNspdButtonEnabled,
   NSPD_BUTTON_ENABLED_STORAGE_KEY,
@@ -9,6 +13,13 @@ import {
 } from '@/lib/nspd/nspd_button'
 import { hasYandexPermissions } from '@/lib/yandex/permissions'
 
+/**
+ * Состояние строки настроек НСПД.
+ *
+ * `'nspd'` означает «тумблер включён, но доступа к nspd.gov.ru нет»: функция
+ * должна работать, а не требовать выключить-включить тумблер, поэтому рядом
+ * показывается кнопка «Разрешить доступ».
+ */
 export type NspdPermissionDeniedReason = 'nspd' | 'yandex' | null
 
 export function useNspdButton() {
@@ -23,10 +34,16 @@ export function useNspdButton() {
     ;(async function getIsEnabled() {
       try {
         const enabled = await getStoredNspdButtonEnabled()
-        if (!abortController.signal.aborted) {
-          setIsEnabledState(enabled)
-          setIsLoaded(true)
+        if (abortController.signal.aborted) return
+        setIsEnabledState(enabled)
+
+        // Тумблер включён по умолчанию, но доступ к nspd.gov.ru необязательный и
+        // сам по себе не выдаётся. При включённой настройке без доступа показываем
+        // кнопку «Разрешить доступ», а не требуем выключить-включить тумблер.
+        if (enabled && !(await hasNspdHostAccess())) {
+          setPermissionDenied('nspd')
         }
+        setIsLoaded(true)
       } catch (error: unknown) {
         console.warn('[yamapper] getNspdEnabled failed:', error)
       }
@@ -95,5 +112,35 @@ export function useNspdButton() {
     })()
   }, [])
 
-  return { isEnabled, isLoaded, setIsEnabled, permissionDenied }
+  /**
+   * Запрашивает доступ к nspd.gov.ru без переключения тумблера.
+   *
+   * Нужно, когда тумблер уже включён (по умолчанию или остался включённым после
+   * отзыва доступа), но доступа к домену нет. Вызывается из обработчика клика по
+   * кнопке «Разрешить доступ» на странице расширения — жест сохраняется.
+   *
+   * Доступ к Яндексу, как и в `setIsEnabled`, здесь не просим: для кнопки НСПД
+   * Диск необязателен. Если его нет, просто показываем подсказку.
+   */
+  const requestAccess = useCallback(function requestAccessCallback() {
+    ;(async function doAsync() {
+      try {
+        setPermissionDenied(null)
+        const hostGranted = await requestNspdHostAccess()
+        if (!hostGranted) {
+          setPermissionDenied('nspd')
+          return
+        }
+        await syncNspdContentScripts(true)
+        await notifyMapTabsAboutGoToMenu()
+        if (!(await hasYandexPermissions())) {
+          setPermissionDenied('yandex')
+        }
+      } catch (error: unknown) {
+        console.warn('[yamapper] nspd requestAccess failed:', error)
+      }
+    })()
+  }, [])
+
+  return { isEnabled, isLoaded, setIsEnabled, permissionDenied, requestAccess }
 }

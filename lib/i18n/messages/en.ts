@@ -97,8 +97,8 @@ export const enMessages = {
     notesButtonAria: 'Notes',
     nspdButton: 'Button: NSPD',
     nspdButtonAria: 'NSPD',
-    nspdPermissionDenied:
-      'The button does not work without access to nspd.gov.ru. Allow access in the browser prompt or in the extension settings.',
+    nspdPermissionDenied: 'The button does not work without access to nspd.gov.ru.',
+    grantNspdAccess: 'Allow access',
     yandexPermissionDenied:
       'The feature does not work without access to Yandex Disk: files are saved to the Notebook. Allow access in the browser prompt or in the extension settings.',
     moderation: 'Moderation',

@@ -100,6 +100,7 @@ export type Messages = {
     nspdButton: string
     nspdButtonAria: string
     nspdPermissionDenied: string
+    grantNspdAccess: string
     yandexPermissionDenied: string
     moderation: string
     suggestFeature: string

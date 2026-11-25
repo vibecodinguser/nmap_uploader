@@ -42,7 +42,7 @@ type NotesButtonSettings = Pick<
 
 type NspdButtonSettings = Pick<
   ReturnType<typeof useNspdButton>,
-  'isEnabled' | 'isLoaded' | 'setIsEnabled' | 'permissionDenied'
+  'isEnabled' | 'isLoaded' | 'setIsEnabled' | 'permissionDenied' | 'requestAccess'
 >
 
 type FeedsFilterSettings = Pick<
@@ -110,6 +110,7 @@ export const SettingsTab = ({
     isLoaded: isNspdButtonLoaded,
     setIsEnabled: setNspdButtonEnabled,
     permissionDenied: isNspdPermissionDenied,
+    requestAccess: requestNspdAccess,
   } = nspdButton
 
   const isFeedsFilterEnabled = feedsFilter?.isEnabled ?? false
@@ -182,9 +183,18 @@ export const SettingsTab = ({
           onChange={setNspdButtonEnabled}
         >
           {isNspdPermissionDenied === 'nspd' ? (
-            <p className="settings-field-error" role="alert">
-              {t('settings.nspdPermissionDenied')}
-            </p>
+            <div className="settings-permission-hint">
+              <p className="settings-field-error" role="alert">
+                {t('settings.nspdPermissionDenied')}
+              </p>
+              <button
+                type="button"
+                className="settings-grant-access-btn"
+                onClick={requestNspdAccess}
+              >
+                {t('settings.grantNspdAccess')}
+              </button>
+            </div>
           ) : null}
           {isNspdPermissionDenied === 'yandex' ? (
             <p className="settings-field-error" role="alert">

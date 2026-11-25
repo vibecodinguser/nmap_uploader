@@ -97,8 +97,8 @@ export const ruMessages = {
     notesButtonAria: 'Заметки',
     nspdButton: 'Кнопка: НСПД',
     nspdButtonAria: 'НСПД',
-    nspdPermissionDenied:
-      'Без доступа к nspd.gov.ru кнопка не работает. Разрешите доступ в запросе браузера или в настройках расширения.',
+    nspdPermissionDenied: 'Без доступа к nspd.gov.ru кнопка не работает.',
+    grantNspdAccess: 'Разрешить доступ',
     yandexPermissionDenied:
       'Без доступа к Яндекс.Диску функция не работает: файлы сохраняются в Блокнот. Разрешите доступ в запросе браузера или в настройках расширения.',
     moderation: 'Модерация',

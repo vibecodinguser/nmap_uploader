@@ -23,7 +23,13 @@ const buildProps = (permissionDenied: NspdPermissionDeniedReason) => ({
   reloadAfterUpload: { isEnabled: false, isLoaded: true, setIsEnabled: noop, canChange: true },
   splitViewButton: { isEnabled: true, isLoaded: true, setIsEnabled: noop },
   notesButton: { isEnabled: true, isLoaded: true, setIsEnabled: noop, permissionDenied: false },
-  nspdButton: { isEnabled: false, isLoaded: true, setIsEnabled: noop, permissionDenied },
+  nspdButton: {
+    isEnabled: false,
+    isLoaded: true,
+    setIsEnabled: noop,
+    permissionDenied,
+    requestAccess: noop,
+  },
   pointCounter: { isEnabled: true, isLoaded: true, setIsEnabled: noop },
   goToLinks: {
     isMenuEnabled: true,
@@ -57,6 +63,26 @@ describe('SettingsTab: доступ к НСПД', () => {
     renderTab('nspd')
 
     expect(screen.getByRole('alert').textContent).toContain('nspd.gov.ru')
+  })
+
+  it('показывает кнопку «Разрешить доступ» при включённом тумблере без доступа', () => {
+    const props = buildProps('nspd')
+    props.nspdButton.isEnabled = true
+
+    render(<SettingsTab {...props} />, { wrapper: LocaleProvider })
+
+    expect(screen.getByRole('button', { name: 'Разрешить доступ' })).toBeTruthy()
+  })
+
+  it('клик по «Разрешить доступ» вызывает requestAccess', () => {
+    const requestAccess = vi.fn()
+    const props = buildProps('nspd')
+    props.nspdButton.requestAccess = requestAccess
+
+    render(<SettingsTab {...props} />, { wrapper: LocaleProvider })
+    screen.getByRole('button', { name: 'Разрешить доступ' }).click()
+
+    expect(requestAccess).toHaveBeenCalledOnce()
   })
 
   it('передаёт клик по тумблеру в обработчик настройки', () => {

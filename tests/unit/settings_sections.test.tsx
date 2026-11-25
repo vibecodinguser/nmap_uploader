@@ -22,7 +22,13 @@ const buildProps = () => ({
   reloadAfterUpload: { isEnabled: false, isLoaded: true, setIsEnabled: noop, canChange: true },
   splitViewButton: { isEnabled: true, isLoaded: true, setIsEnabled: noop },
   notesButton: { isEnabled: true, isLoaded: true, setIsEnabled: noop, permissionDenied: false },
-  nspdButton: { isEnabled: false, isLoaded: true, setIsEnabled: noop, permissionDenied: null },
+  nspdButton: {
+    isEnabled: false,
+    isLoaded: true,
+    setIsEnabled: noop,
+    permissionDenied: null,
+    requestAccess: noop,
+  },
   feedsFilter: { isEnabled: true, isLoaded: true, setIsEnabled: noop },
   objectTracker: {
     isEnabled: true,
