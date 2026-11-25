@@ -34,17 +34,13 @@ export default defineConfig({
         },
         {
           text: 'Форматы и геометрии',
-          items: [
-            { text: 'Поддерживаемые форматы', link: '/guide/formats' },
-          ],
+          items: [{ text: 'Поддерживаемые форматы', link: '/guide/formats' }],
         },
       ],
       '/dev/': [
         {
           text: 'Разработчикам',
-          items: [
-            { text: 'Обзор', link: '/dev/' },
-          ],
+          items: [{ text: 'Обзор', link: '/dev/' }],
         },
       ],
     },
