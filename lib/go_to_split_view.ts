@@ -25,7 +25,7 @@ import {
   updateSplitButtonState,
 } from '@/lib/go_to_split_view/index'
 import { notifyNmapsMapResize } from '@/lib/nmaps_map_resize_notify'
-import { requestClosePanelSidebar } from '@/lib/panel_sidebar_notify'
+import { removeSettingsPopupFromDom } from '@/lib/settings_popup_notify'
 
 export * from '@/lib/go_to_split_view/index'
 
@@ -80,7 +80,9 @@ const mountSplitView = async (): Promise<boolean> => {
     const savedSettings = await getStoredNakarteViewSettings()
     if (status !== 'opening') return false
 
-    requestClosePanelSidebar()
+    // Попап настроек закрывается: split view занимает правую половину экрана,
+    // и попап поверх неё — это два конкурирующих слоя.
+    removeSettingsPopupFromDom()
 
     layoutState = applySplitLayout()
     domElements = mountSplitDomElements(buildNakarteUrl(location, savedSettings), () => {

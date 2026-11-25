@@ -139,10 +139,14 @@ body {
   text-align: center;
 }
 
+/*
+ * Корень настроек. `height: 100%` — потому что страница открывается в iframe
+ * попапа фиксированной высоты; `min-height` не нужен: в высоком окне попап
+ * ниже `100%` и просто не растягивает содержимое.
+ */
 .sidepanel-app {
   position: relative;
   height: 100%;
-  min-height: 100%;
   background-color: var(--background);
 }
 
@@ -412,12 +416,17 @@ body {
   color: var(--error);
 }
 
+/*
+ * Отступ снизу — запас под плавающие элементы панели (раньше там стояло
+ * нижнее меню сайдбара). В попапе `main` единственный скроллящийся слой.
+ */
 .sidepanel-main {
   padding: 1rem 1rem 4.5rem;
   gap: 1rem;
   overflow: hidden auto;
   scrollbar-gutter: stable;
   flex: 1;
+  min-height: 0;
 }
 
 .tabs {

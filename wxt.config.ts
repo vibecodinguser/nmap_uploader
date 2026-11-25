@@ -16,14 +16,7 @@ const extensionIcons = {
   128: '/icon/128.png',
 } as const
 
-const CHROME_PERMISSIONS = [
-  'sidePanel',
-  'storage',
-  'scripting',
-  'activeTab',
-  'identity',
-  'tabs',
-] as const
+const CHROME_PERMISSIONS = ['storage', 'scripting', 'activeTab', 'identity', 'tabs'] as const
 const FIREFOX_PERMISSIONS = ['storage', 'scripting', 'activeTab', 'identity', 'tabs'] as const
 
 const URI_SCHEME = 'https'

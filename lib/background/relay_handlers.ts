@@ -5,7 +5,6 @@ import type { MessageHandler } from '@/lib/background/message_router'
 import { runBackgroundTask } from '@/lib/background/tasks'
 import { GO_TO_REFRESH_ACTION } from '@/lib/go_to_notify'
 import { isTrustedNmapsOrPanelSender, logRejectedMessage } from '@/lib/message_auth'
-import { CLOSE_PANEL_SIDEBAR_ACTION } from '@/lib/panel_sidebar_notify'
 import {
   CANCEL_POINT_PICKING_ACTION,
   POINT_PICKED_ACTION,
@@ -33,18 +32,6 @@ export const handleGoToRefresh: MessageHandler = (_message, sender, sendResponse
     runBackgroundTask(relayTask, GO_TO_REFRESH_ACTION)
   } else {
     logRejectedMessage(GO_TO_REFRESH_ACTION, sender)
-    sendResponse({ ok: false })
-  }
-  return true
-}
-
-export const handleClosePanel: MessageHandler = (_message, sender, sendResponse) => {
-  if (isTrustedNmapsOrPanelSender(sender)) {
-    const relayMessage = { action: CLOSE_PANEL_SIDEBAR_ACTION }
-    const relayTask = processRelayToMapTabs(sender, relayMessage, sendResponse, 'closePanelSidebar')
-    runBackgroundTask(relayTask, CLOSE_PANEL_SIDEBAR_ACTION)
-  } else {
-    logRejectedMessage(CLOSE_PANEL_SIDEBAR_ACTION, sender)
     sendResponse({ ok: false })
   }
   return true

@@ -97,6 +97,7 @@ export type Messages = {
   }
   settings: {
     title: string
+    openAria: string
     appearance: string
     themeAria: string
     themeDark: string

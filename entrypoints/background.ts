@@ -2,15 +2,12 @@ import { type Browser, browser } from 'wxt/browser'
 import { defineBackground } from 'wxt/utils/define-background'
 import {
   CLOSE_CURRENT_TAB_ACTION,
-  configureInstalledSidePanel,
   createMessageRouter,
-  ensurePanelSidebarRegistered,
   getToolbarActionApi,
   handleApplyStrokeColor,
   handleCancelPointPicking,
   handleCenterMap,
   handleCloseCurrentTab,
-  handleClosePanel,
   handleEnsureAuth,
   handleGetAuth,
   handleGoToRefresh,
@@ -38,7 +35,7 @@ import {
   handleUploadNspdGeoJson,
   type MessageHandler,
   migrateLegacyNotesFolderOnStartup,
-  openPanel,
+  openSettingsPopup,
   persistYandexBrowserFlag,
   runBackgroundTask,
   UPLOAD_NSPD_GEOJSON_ACTION,
@@ -65,7 +62,6 @@ import {
   initNspdContentScriptSync,
   syncNspdContentScriptsFromStorage,
 } from '@/lib/nspd/content_scripts'
-import { CLOSE_PANEL_SIDEBAR_ACTION } from '@/lib/panel_sidebar_notify'
 import {
   CANCEL_POINT_PICKING_ACTION,
   POINT_PICKED_ACTION,
@@ -74,19 +70,13 @@ import {
 import { installWxtDevLogFilter } from '@/lib/wxt_dev_log_filter'
 
 const handleToolbarClick = (tab: Browser.tabs.Tab): void => {
-  const panelTask = openPanel(tab)
-  runBackgroundTask(panelTask, 'openPanel')
+  const panelTask = openSettingsPopup(tab)
+  runBackgroundTask(panelTask, 'openSettingsPopup')
 }
 
 const handleInstalled = (): void => {
   const persistTask = persistYandexBrowserFlag()
   runBackgroundTask(persistTask, 'persistYandexBrowserFlag')
-
-  const registerTask = ensurePanelSidebarRegistered()
-  runBackgroundTask(registerTask, 'ensurePanelSidebarRegistered')
-
-  const configureTask = configureInstalledSidePanel()
-  runBackgroundTask(configureTask, 'shouldUseNativeSidePanel')
 
   // Браузер очищает динамические content scripts при обновлении — регистрируем заново.
   const nspdTask = syncNspdContentScriptsFromStorage()
@@ -115,7 +105,6 @@ const messageHandlers: Record<string, MessageHandler> = {
   [NOTES_HIDDEN_CHANGED_ACTION]: handleNotesHiddenChanged,
   reloadEditorPage: handleReloadEditor,
   [GO_TO_REFRESH_ACTION]: handleGoToRefresh,
-  [CLOSE_PANEL_SIDEBAR_ACTION]: handleClosePanel,
   [START_POINT_PICKING_ACTION]: handleStartPointPicking,
   [CANCEL_POINT_PICKING_ACTION]: handleCancelPointPicking,
   [POINT_PICKED_ACTION]: handlePointPicked,
@@ -139,9 +128,6 @@ const onMessageHandler = (
 const initBackground = (): void => {
   const persistTask = persistYandexBrowserFlag()
   runBackgroundTask(persistTask, 'persistYandexBrowserFlag')
-
-  const registerTask = ensurePanelSidebarRegistered()
-  runBackgroundTask(registerTask, 'ensurePanelSidebarRegistered')
 
   const localeTask = syncLocaleFromStorage()
   runBackgroundTask(localeTask, 'syncLocaleFromStorage')

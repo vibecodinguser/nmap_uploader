@@ -95,6 +95,7 @@ export const enMessages = {
   },
   settings: {
     title: 'Settings',
+    openAria: 'Extension settings',
     appearance: 'Theme',
     themeAria: 'Theme',
     themeDark: 'Dark',

@@ -3,17 +3,16 @@
 /**
  * Кнопка закрытия в шапке панели расширения.
  *
- * Панель живёт в iframe внутри страницы карты, поэтому сама убрать себя из DOM
- * не может: она просит background передать сообщение на вкладку карты, а там
- * content script убирает контейнер. Тест проверяет именно это — что кнопка
- * отправляет нужное действие, а не просто рисуется.
+ * Панель живёт в iframe попапа внутри страницы карты, поэтому сама убрать себя
+ * из DOM не может: она посылает `postMessage` родителю, а хост попапа убирает
+ * узел. Тест проверяет именно это — что кнопка просит закрыть попап, а не
+ * просто рисуется.
  */
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { browser } from 'wxt/browser'
 import { Header } from '@/components/Header'
 import { LocaleProvider } from '@/hooks/useLocale'
-import { CLOSE_PANEL_SIDEBAR_ACTION } from '@/lib/panel_sidebar_notify'
+import { CLOSE_SETTINGS_POPUP_ACTION } from '@/lib/settings_popup/protocol'
 import { resetBrowserMocks } from '@/tests/setup/browser_mock'
 
 const noop = () => {}
@@ -31,16 +30,13 @@ const renderHeader = (user: null | { id: string; login: string } = null) =>
     </LocaleProvider>,
   )
 
-let sent: Array<Record<string, unknown>> = []
+let posted: Array<Record<string, unknown>> = []
 
 beforeEach(async () => {
   await resetBrowserMocks()
-  sent = []
-  vi.spyOn(browser.runtime, 'sendMessage').mockImplementation(((
-    message: Record<string, unknown>,
-  ) => {
-    sent.push(message)
-    return Promise.resolve({ ok: true })
+  posted = []
+  vi.spyOn(window.parent, 'postMessage').mockImplementation(((message: Record<string, unknown>) => {
+    posted.push(message)
   }) as never)
 })
 
@@ -63,12 +59,12 @@ describe('закрытие панели из шапки', () => {
     expect(container.querySelector('.header-container .header-close-btn')).not.toBeNull()
   })
 
-  it('клик отправляет действие закрытия сайдбара', () => {
+  it('клик просит хост закрыть попап', () => {
     renderHeader()
 
     fireEvent.click(screen.getByRole('button', { name: 'Закрыть панель' }))
 
-    expect(sent.map((message) => message.action)).toContain(CLOSE_PANEL_SIDEBAR_ACTION)
+    expect(posted.map((message) => message.action)).toContain(CLOSE_SETTINGS_POPUP_ACTION)
   })
 
   it('кнопка есть и у авторизованного пользователя', () => {

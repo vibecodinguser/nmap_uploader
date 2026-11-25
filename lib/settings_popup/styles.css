@@ -1,0 +1,46 @@
+/*
+ * Контейнер попапа настроек.
+ *
+ * Вид — по живому редактору: замер `.nk-popup` даёт радиус `4px` и тень
+ * `0 0 0 1px rgba(0,0,0,.1), 0 10px 20px -5px rgba(0,0,0,.4)`. Фон `#333333`
+ * в тёмной теме тот же, что у остальных наших попапов, поэтому цвета приходят
+ * инлайновыми свойствами из `applyGoToTheme` — тем же способом, что у меню
+ * «Перейти» и попапа полигонов.
+ *
+ * Геометрия (позиция, ширина, максимум высоты) считается в JS: она зависит от
+ * размера окна и открытой выезжающей панели, поэтому живёт в `host.ts`.
+ */
+.yamapper-settings-popup {
+  position: fixed;
+  box-sizing: border-box;
+  display: block;
+  z-index: 11000;
+  border-radius: var(--nmap-radius-sm, 4px);
+  overflow: hidden;
+}
+
+.yamapper-settings-popup__content {
+  width: 100%;
+  height: 100%;
+  max-height: inherit;
+  overflow: hidden;
+}
+
+.yamapper-settings-popup__iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/*
+ * Кнопка настроек в шапке. Шаг между нативными кнопками — 8px: он живёт в
+ * `margin-left` их view-классов, которых у нашей кнопки нет.
+ *
+ * Селектор из двух классов: `.nk-button { margin: 0 }` в бандле редактора
+ * может подключиться позже нашего `<style>` и при равной специфичности
+ * обнулить отступ.
+ */
+.nk-app-bar-view > .yamapper-settings-button {
+  margin-left: 8px;
+}

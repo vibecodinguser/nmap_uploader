@@ -31,6 +31,15 @@ export const ensureInjectedStyle = (id: string, css: string): void => {
     return
   }
 
+  // На старте content script у страницы может ещё не быть `head` — вставлять
+  // некуда, и вызывающий модуль повторно приходит сюда при следующей
+  // синхронизации. Молча выходим вместо исключения: упавший `main()` уносит
+  // с собой всё, что скрипт должен был сделать.
+  const styleHost = document.head ?? document.documentElement
+  if (!styleHost) {
+    return
+  }
+
   // Токены нужны любому листу, поэтому подключаются здесь, а не в каждом
   // вызывающем модуле: забыть их невозможно.
   if (id !== INJECTED_TOKENS_ID) {
@@ -48,7 +57,7 @@ export const ensureInjectedStyle = (id: string, css: string): void => {
   const style = document.createElement('style')
   style.id = id
   style.textContent = css
-  ;(document.head ?? document.documentElement).appendChild(style)
+  styleHost.appendChild(style)
 }
 
 /** Удаляет ранее вставленный стиль; безопасен при повторном вызове. */

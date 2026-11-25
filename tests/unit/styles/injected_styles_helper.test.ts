@@ -60,6 +60,20 @@ describe('injected_styles', () => {
     expect(document.querySelectorAll(`#${INJECTED_TOKENS_ID}`)).toHaveLength(1)
   })
 
+  it('не падает, когда у документа ещё нет head', () => {
+    // Старт content script: head может появиться позже, и ронять main() на
+    // этом нельзя — стиль просто доедет следующей синхронизацией.
+    document.head.innerHTML = ''
+    const head = document.head
+    head.remove()
+
+    expect(() => ensureInjectedStyle('nmap-early', '.a { color: red; }')).not.toThrow()
+
+    document.documentElement.prepend(head)
+    ensureInjectedStyle('nmap-early', '.a { color: red; }')
+    expect(styleById('nmap-early')?.textContent).toBe('.a { color: red; }')
+  })
+
   it('токены не подключают сами себя рекурсивно', () => {
     ensureInjectedTokens()
     ensureInjectedTokens()
