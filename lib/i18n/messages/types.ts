@@ -4,50 +4,16 @@ export interface InterpolationParams {
 
 export type Messages = {
   common: {
-    back: string
     apply: string
     upload: string
     uploading: string
-    sending: string
-    settings: string
     version: string
     list: string
     accessDenied: string
-    unknownError: string
     invalidDateFormat: string
   }
   header: {
     closeSidebar: string
-  }
-  tabs: {
-    polygons: string
-    points: string
-    inputModeAria: string
-    openSettingsAria: string
-    backToUploadAria: string
-  }
-  points: {
-    manualEntry: string
-    batchUpload: string
-    modeAria: string
-    manualSectionAria: string
-    batchSectionAria: string
-    descriptionPlaceholder: string
-    descriptionAria: string
-    latitude: string
-    longitude: string
-    manualHint: string
-    batchHint: string
-    coordinatesMissing: string
-    coordinatesOutOfRange: string
-    pointUploadError: string
-    pointsUploadError: string
-    preparingPoint: string
-    noFilesSelected: string
-    onlyTxtAllowed: string
-    noPointsInFiles: string
-    pointsNotFound: string
-    pointsCount: string
   }
   dateField: {
     label: string
@@ -58,7 +24,6 @@ export type Messages = {
     occupiedLegend: string
   }
   upload: {
-    dropzoneAria: string
     dropzoneTitle: string
     dropzoneSubtitleLine1: string
     dropzoneSubtitleLine2: string
@@ -138,8 +103,6 @@ export type Messages = {
     notes: string
     openNspd: string
     externalGeoservices: string
-    mapLocationError: string
-    nakarteCompareError: string
   }
   goToSources: {
     Rosreestr: string
@@ -221,8 +184,6 @@ export type Messages = {
     groupColor: string
     icon: string
     iconNone: string
-    sectionMain: string
-    sectionAppearance: string
     groupStroke: string
     filterKind: string
     filterGroup: string
@@ -250,8 +211,6 @@ export type Messages = {
   mapPointCounter: {
     points: string
     pointsLeft: string
-    keyPressed: string
-    doubleClick: string
     limitReached: string
     limitExceeded: string
   }
