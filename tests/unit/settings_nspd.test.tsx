@@ -61,10 +61,43 @@ describe('SettingsTab: доступ к НСПД', () => {
     expect(screen.queryByRole('alert')).toBeNull()
   })
 
-  it('показывает ошибку, если пользователь отклонил запрос доступа', () => {
+  it('не показывает текст ошибки: подсказкой служит сама кнопка', () => {
     renderTab('nspd')
 
-    expect(screen.getByRole('alert').textContent).toContain('nspd.gov.ru')
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Разрешить доступ' })).toBeTruthy()
+  })
+
+  it('без доступа к Диску показывает ту же кнопку, но с подписью про Диск', () => {
+    renderTab('yandex')
+
+    expect(screen.queryByRole('alert')).toBeNull()
+    const button = screen.getByRole('button', { name: 'Разрешить доступ к Яндекс.Диску' })
+    expect(button.textContent).toBe('Разрешить доступ')
+    expect(button.getAttribute('title')).toBe('Разрешить доступ к Яндекс.Диску')
+  })
+
+  it('клик по кнопке без доступа к Диску тоже вызывает requestAccess', () => {
+    const requestAccess = vi.fn()
+    const props = buildProps('yandex')
+    props.nspdButton.requestAccess = requestAccess
+
+    render(<SettingsTab {...props} />, { wrapper: LocaleProvider })
+    screen.getByRole('button', { name: 'Разрешить доступ к Яндекс.Диску' }).click()
+
+    expect(requestAccess).toHaveBeenCalledOnce()
+  })
+
+  it('ставит кнопку в строку настройки, перед тумблером', () => {
+    const { container } = renderTab('nspd')
+
+    const row = container.querySelector('#settings-nspd-button')?.closest('.settings-toggle-row')
+    const button = row?.querySelector('.settings-grant-access-btn')
+    const toggle = row?.querySelector('.settings-toggle')
+
+    expect(button).toBeTruthy()
+    expect(toggle).toBeTruthy()
+    expect(button?.nextElementSibling).toBe(toggle)
   })
 
   it('показывает кнопку «Разрешить доступ» при включённом тумблере без доступа', () => {

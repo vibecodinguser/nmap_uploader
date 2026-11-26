@@ -56,8 +56,8 @@ export const ruMessages = {
     notesButtonAria: 'Заметки',
     nspdButton: 'Загрузка из НСПД',
     nspdButtonAria: 'Загрузка из НСПД',
-    nspdPermissionDenied: 'Без доступа к nspd.gov.ru кнопка не работает.',
     grantNspdAccess: 'Разрешить доступ',
+    grantYandexAccessAria: 'Разрешить доступ к Яндекс.Диску',
     yandexPermissionDenied:
       'Без доступа к Яндекс.Диску функция не работает: файлы сохраняются в Блокнот. Разрешите доступ в запросе браузера или в настройках расширения.',
     moderation: 'Модерация',

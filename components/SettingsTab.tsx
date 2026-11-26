@@ -233,28 +233,32 @@ export const SettingsTab = ({
         checked={isNspdButtonEnabled}
         disabled={isNspdButtonDisabled}
         onChange={setNspdButtonEnabled}
-      >
-        {isNspdPermissionDenied === 'nspd' ? (
-          <div className="settings-permission-hint">
-            <p className="settings-field-error" role="alert">
-              {t('settings.nspdPermissionDenied')}
-            </p>
+        // Одна кнопка на две причины отказа: без доступа к nspd.gov.ru она
+        // просит домен НСПД, без доступа к Диску — разрешения Яндекса. Текстом
+        // отказ не дублируем: сама кнопка и есть подсказка.
+        action={
+          isNspdPermissionDenied === null ? null : (
             <button
               ref={nspdGrantButtonRef}
               type="button"
               className="settings-grant-access-btn"
               onClick={requestNspdAccess}
+              aria-label={
+                isNspdPermissionDenied === 'yandex'
+                  ? t('settings.grantYandexAccessAria')
+                  : undefined
+              }
+              title={
+                isNspdPermissionDenied === 'yandex'
+                  ? t('settings.grantYandexAccessAria')
+                  : undefined
+              }
             >
               {t('settings.grantNspdAccess')}
             </button>
-          </div>
-        ) : null}
-        {isNspdPermissionDenied === 'yandex' ? (
-          <p className="settings-field-error" role="alert">
-            {t('settings.yandexPermissionDenied')}
-          </p>
-        ) : null}
-      </SettingsToggleRow>
+          )
+        }
+      />
 
       <GoToLinksSettings {...goToLinks} variant="plain" />
 

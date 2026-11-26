@@ -8,6 +8,8 @@ type SettingsToggleRowProps = Readonly<{
   disabled: boolean
   onChange: (checked: boolean) => void
   children?: ReactNode
+  /** Действие в самой строке, между заголовком и тумблером (например, «Разрешить доступ»). */
+  action?: ReactNode
   /** `card` — самостоятельная карточка настроек, `plain` — строка внутри общей секции. */
   variant?: 'card' | 'plain'
 }>
@@ -20,6 +22,7 @@ export const SettingsToggleRow = ({
   disabled,
   onChange,
   children,
+  action,
   variant = 'card',
 }: SettingsToggleRowProps) => {
   const headingId = `${id}-heading`
@@ -31,6 +34,7 @@ export const SettingsToggleRow = ({
         <HeadingTag id={headingId} className="settings-section-title">
           {title}
         </HeadingTag>
+        {action}
         <label className="settings-toggle" htmlFor={id}>
           <input
             id={id}

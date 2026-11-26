@@ -11,14 +11,17 @@ import {
   NSPD_BUTTON_ENABLED_STORAGE_KEY,
   setStoredNspdButtonEnabled,
 } from '@/lib/nspd/nspd_button'
+import { requestYandexAccess } from '@/lib/yandex/disk_settings'
 import { hasYandexPermissions } from '@/lib/yandex/permissions'
 
 /**
  * Состояние строки настроек НСПД.
  *
- * `'nspd'` означает «тумблер включён, но доступа к nspd.gov.ru нет»: функция
- * должна работать, а не требовать выключить-включить тумблер, поэтому рядом
- * показывается кнопка «Разрешить доступ».
+ * `'nspd'` означает «тумблер включён, но доступа к nspd.gov.ru нет», `'yandex'`
+ * — «кнопка НСПД работает, но без доступа к Диску объект не сохранить». В обоих
+ * случаях функция не должна требовать выключить-включить тумблер, поэтому рядом
+ * показывается одна кнопка «Разрешить доступ»: она просит то разрешение, которого
+ * не хватает.
  */
 export type NspdPermissionDeniedReason = 'nspd' | 'yandex' | null
 
@@ -74,15 +77,15 @@ export function useNspdButton() {
    * Включает кнопку НСПД на сайте.
    *
    * Доступ к nspd.gov.ru обязателен: без него нет ни самой кнопки на сайте, ни
-   * перехвата данных. Отказ оставляет тумблер выключенным и показывает подсказку.
+   * перехвата данных. Отказ оставляет тумблер как был и показывает кнопку доступа.
    *
    * Доступ к Яндексу необязателен и не блокирует включение: кнопка на сайте
-   * НСПД, выбор объекта и загрузка работают и без Диска — выгрузка в Блокнот
-   * просто ответит `PERMISSION_REQUIRED`. Спрашивать Диск вторым диалогом здесь
-   * же нельзя: жест пользователя живёт один стек вызовов, и второй
-   * `permissions.request` после ожидания первого уже не считается жестом —
-   * браузер отклоняет его без диалога. Поэтому Диск запрашивается отдельно, при
-   * включении «Блокнота», а здесь только сообщаем, если он ещё не выдан.
+   * НСПД, выбор объекта работают и без Диска — выгрузка в Блокнот просто ответит
+   * `PERMISSION_REQUIRED`. Спрашивать Диск вторым диалогом здесь же нельзя: жест
+   * пользователя живёт один стек вызовов, и второй `permissions.request` после
+   * ожидания первого уже не считается жестом — браузер отклоняет его без
+   * диалога. Поэтому при отсутствии Диска строка показывает ту же кнопку доступа,
+   * и отдельный клик по ней просит уже разрешения Яндекса.
    */
   const setIsEnabled = useCallback(function setIsEnabledCallback(enabled: boolean) {
     ;(async function doAsync() {
@@ -113,34 +116,46 @@ export function useNspdButton() {
   }, [])
 
   /**
-   * Запрашивает доступ к nspd.gov.ru без переключения тумблера.
+   * Запрашивает недостающий доступ без переключения тумблера.
    *
    * Нужно, когда тумблер уже включён (по умолчанию или остался включённым после
-   * отзыва доступа), но доступа к домену нет. Вызывается из обработчика клика по
-   * кнопке «Разрешить доступ» на странице расширения — жест сохраняется.
+   * отзыва доступа), но функция всё равно не работает. Вызывается из обработчика
+   * клика по кнопке «Разрешить доступ» на странице расширения — жест сохраняется.
    *
-   * Доступ к Яндексу, как и в `setIsEnabled`, здесь не просим: для кнопки НСПД
-   * Диск необязателен. Если его нет, просто показываем подсказку.
+   * Причина отказа выбирает, что именно просить: без домена НСПД — `nspd.gov.ru`,
+   * без Диска — разрешения Яндекса. Два запроса одним кликом невозможны: жест
+   * живёт один стек вызовов, и второй `permissions.request` после ожидания
+   * первого браузер отклоняет без диалога.
    */
-  const requestAccess = useCallback(function requestAccessCallback() {
-    ;(async function doAsync() {
-      try {
-        setPermissionDenied(null)
-        const hostGranted = await requestNspdHostAccess()
-        if (!hostGranted) {
-          setPermissionDenied('nspd')
-          return
+  const requestAccess = useCallback(
+    function requestAccessCallback() {
+      ;(async function doAsync() {
+        try {
+          if (permissionDenied === 'yandex') {
+            if (await requestYandexAccess()) {
+              setPermissionDenied(null)
+            }
+            return
+          }
+
+          setPermissionDenied(null)
+          const hostGranted = await requestNspdHostAccess()
+          if (!hostGranted) {
+            setPermissionDenied('nspd')
+            return
+          }
+          await syncNspdContentScripts(true)
+          await notifyMapTabsAboutGoToMenu()
+          if (!(await hasYandexPermissions())) {
+            setPermissionDenied('yandex')
+          }
+        } catch (error: unknown) {
+          console.warn('[yamapper] nspd requestAccess failed:', error)
         }
-        await syncNspdContentScripts(true)
-        await notifyMapTabsAboutGoToMenu()
-        if (!(await hasYandexPermissions())) {
-          setPermissionDenied('yandex')
-        }
-      } catch (error: unknown) {
-        console.warn('[yamapper] nspd requestAccess failed:', error)
-      }
-    })()
-  }, [])
+      })()
+    },
+    [permissionDenied],
+  )
 
   return { isEnabled, isLoaded, setIsEnabled, permissionDenied, requestAccess }
 }

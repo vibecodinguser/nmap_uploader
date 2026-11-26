@@ -42,7 +42,8 @@ describe('включение функций просит разрешения Я
     expect(calls).toHaveLength(1)
     expect(calls[0]?.origins).toEqual([...NSPD_HOST_PATTERNS])
     // Второй `permissions.request` после ожидания первого уже не считается
-    // жестом пользователя, поэтому Диск спрашивают отдельно, в «Блокноте».
+    // жестом пользователя, поэтому Диск спрашивают отдельно — кнопкой
+    // «Разрешить доступ» в строке НСПД или в «Заметках».
     await expect(getStoredNspdButtonEnabled()).resolves.toBe(true)
     expect(result.current.permissionDenied).toBe('yandex')
   })

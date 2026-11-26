@@ -60,8 +60,8 @@ export type Messages = {
     notesButtonAria: string
     nspdButton: string
     nspdButtonAria: string
-    nspdPermissionDenied: string
     grantNspdAccess: string
+    grantYandexAccessAria: string
     yandexPermissionDenied: string
     moderation: string
     suggestFeature: string

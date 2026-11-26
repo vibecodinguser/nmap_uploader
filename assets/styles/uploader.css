@@ -1020,14 +1020,6 @@ body {
   color: var(--success);
 }
 
-/* Подсказка с действием: текст ошибки и кнопка запроса доступа рядом. */
-.settings-permission-hint {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 0.75rem;
-}
-
 .settings-grant-access-btn {
   padding: 0.25rem 0.75rem;
   border: 1px solid var(--border);
@@ -1050,6 +1042,16 @@ body {
 .settings-grant-access-btn:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
+}
+
+/*
+ * Кнопка доступа живёт в строке настройки, между заголовком и тумблером.
+ * Заголовок забирает остаток ширины и при нехватке места переносится, а кнопка
+ * и тумблер остаются неразрывными.
+ */
+.settings-toggle-row .settings-grant-access-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .settings-toggle-group {

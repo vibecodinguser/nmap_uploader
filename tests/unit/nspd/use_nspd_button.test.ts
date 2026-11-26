@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { browser } from 'wxt/browser'
 import { useNspdButton } from '@/hooks/useNspdButton'
 import { NSPD_HOST_PATTERNS } from '@/lib/manifest/nspd_optional_hosts'
+import { YANDEX_PERMISSION_REQUEST } from '@/lib/manifest/yandex_optional_hosts'
 import {
   getStoredNspdButtonEnabled,
   NSPD_BUTTON_ENABLED_STORAGE_KEY,
@@ -46,7 +47,7 @@ describe('useNspdButton', () => {
     expect(permissionsMock.request).toHaveBeenCalledWith({ origins: [...NSPD_HOST_PATTERNS] })
     expect(result.current.isEnabled).toBe(true)
     // Доступ к Яндексу не просили: кнопка НСПД работает и без Диска, поэтому
-    // подсказка «нужен Диск» не мешает включению.
+    // кнопка доступа к Диску не мешает включению.
     expect(result.current.permissionDenied).toBe('yandex')
     await expect(getStoredNspdButtonEnabled()).resolves.toBe(true)
     expect([...scriptingMock.registered.keys()]).toHaveLength(2)
@@ -62,7 +63,7 @@ describe('useNspdButton', () => {
     })
 
     // Кнопка по умолчанию включена: отказ в доступе не выключает саму настройку,
-    // а предупреждение объясняет, почему переход в НСПД не сработает.
+    // а кнопка доступа объясняет, почему переход в НСПД не сработает.
     expect(result.current.isEnabled).toBe(true)
     expect(result.current.permissionDenied).toBe('nspd')
     expect(scriptingMock.registered.size).toBe(0)
@@ -134,5 +135,42 @@ describe('useNspdButton', () => {
     expect(result.current.isEnabled).toBe(true)
     expect(result.current.permissionDenied).toBe('nspd')
     expect(scriptingMock.registered.size).toBe(0)
+  })
+
+  it('requestAccess без доступа к Диску просит разрешения Яндекса', async () => {
+    const { result } = renderHook(() => useNspdButton())
+    await flushEffects()
+    expect(result.current.permissionDenied).toBe('nspd')
+
+    await act(async () => {
+      await result.current.requestAccess()
+    })
+    expect(result.current.permissionDenied).toBe('yandex')
+
+    permissionsMock.request.mockClear()
+    await act(async () => {
+      await result.current.requestAccess()
+    })
+
+    expect(permissionsMock.request.mock.calls.map(([request]) => request)).toEqual([
+      YANDEX_PERMISSION_REQUEST,
+    ])
+    expect(result.current.permissionDenied).toBeNull()
+  })
+
+  it('отказ в доступе к Диску оставляет кнопку доступа', async () => {
+    const { result } = renderHook(() => useNspdButton())
+    await flushEffects()
+    await act(async () => {
+      await result.current.requestAccess()
+    })
+    expect(result.current.permissionDenied).toBe('yandex')
+
+    permissionsMock.denyNextRequest()
+    await act(async () => {
+      await result.current.requestAccess()
+    })
+
+    expect(result.current.permissionDenied).toBe('yandex')
   })
 })
