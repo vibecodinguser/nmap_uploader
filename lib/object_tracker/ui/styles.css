@@ -4,7 +4,7 @@
       flex-direction: column;
       gap: 12px;
       padding: 12px;
-      font-family: var(--nk-user-bar-font-family, "Yandex Sans Text", "YS Text", -apple-system, BlinkMacSystemFont, Arial, sans-serif);
+      font-family: "Yandex Sans Text", "YS Text", -apple-system, BlinkMacSystemFont, Arial, sans-serif;
       font-size: 13px;
       line-height: 1.35;
       color: inherit;
@@ -387,7 +387,7 @@
   border-radius: var(--nmap-radius-sm);
   background: rgba(32, 33, 36, 0.92);
   color: #ffffff;
-  font-family: var(--nk-user-bar-font-family, "Yandex Sans Text", "YS Text", -apple-system, BlinkMacSystemFont, Arial, sans-serif);
+  font-family: "Yandex Sans Text", "YS Text", -apple-system, BlinkMacSystemFont, Arial, sans-serif;
   font-size: 13px;
   line-height: 1.35;
   text-align: left;

@@ -14,10 +14,6 @@
   --text-md: var(--font-size-sm);
   --text-title: var(--font-size-title);
   --text-lg: var(--font-size-title);
-  --nk-user-bar-font-size: var(--font-size-sm);
-  --nk-user-bar-line-height: var(--line-height-block);
-  --nk-user-bar-font-weight: 400;
-  --nk-user-bar-font-family: var(--font-family);
 }
 
 *,

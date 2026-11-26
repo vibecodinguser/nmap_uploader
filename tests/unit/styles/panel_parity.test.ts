@@ -78,17 +78,11 @@ describe('паритет панели с редактором', () => {
       ].map((match) => match[1]),
     )
     /*
-     * Часть токенов приходит в рантайме: типографика `nk-user-bar` снимается
-     * с хоста (`lib/nk_user_bar_typography.ts`), локальные `--check-*` и
-     * `--rdp-*` объявлены внутри своих правил, а `--notes-*` — в токенах заметок.
+     * Часть токенов приходит в рантайме: геометрия нативного селекта ленты,
+     * локальные `--check-*` и `--rdp-*` объявлены внутри своих правил,
+     * а `--notes-*` — в токенах заметок.
      */
-    const runtimeProvided = new Set([
-      '--control',
-      '--nk-user-bar-font-size',
-      '--nk-user-bar-line-height',
-      '--nk-user-bar-font-weight',
-      '--nk-user-bar-font-family',
-    ])
+    const runtimeProvided = new Set(['--control'])
     const localScope = /^--(check-|rdp-|notes-|text-)/
 
     const missing: string[] = []
