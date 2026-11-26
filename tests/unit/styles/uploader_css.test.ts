@@ -20,15 +20,16 @@ const CRITICAL_SELECTORS = [
   '.settings-go-to-panel',
   '.yandex-tooltip-wrapper',
   '.upload-dropzone',
-  '.manual-upload-container',
-  '.point-tabs',
+  '.coords-row--polygon',
+  '.point-date-trigger',
   '.tab-panel',
 ]
 
 describe('uploader.css', () => {
   it('сохраняет объём правил', () => {
-    // Было ~262 правила до удаления заметок; нижняя граница ловит потерю сотен строк.
-    expect(ruleCount(uploaderCss)).toBeGreaterThan(200)
+    // Было ~262 правила до удаления заметок, ~207 до удаления вкладок загрузки;
+    // нижняя граница ловит потерю сотен строк.
+    expect(ruleCount(uploaderCss)).toBeGreaterThan(180)
   })
 
   it('содержит все ключевые селекторы панели', () => {
@@ -39,5 +40,20 @@ describe('uploader.css', () => {
   it('не содержит остатков удалённого попапа заметок', () => {
     expect(uploaderCss).not.toContain('.notes-list-item')
     expect(uploaderCss).not.toContain('.notes-popup-app')
+  })
+
+  it('не содержит стилей удалённых вкладок загрузки', () => {
+    const removedSelectors = [
+      '.manual-form',
+      '.manual-upload-container',
+      '.coords-row--manual',
+      '.coords-row--list',
+      '.points-form',
+      '.points-section',
+      '.point-tabs',
+      '.point-description-input',
+    ]
+    const leftovers = removedSelectors.filter((selector) => uploaderCss.includes(selector))
+    expect(leftovers).toEqual([])
   })
 })

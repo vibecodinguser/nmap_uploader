@@ -6,7 +6,6 @@ import { NoteList as NoteListBase } from '@/components/notes_panel/NoteList'
 import { NoteProperties } from '@/components/notes_panel/NoteProperties'
 import { PoligonTab } from '@/components/PoligonTab'
 import { SettingsTab } from '@/components/SettingsTab'
-import { TabBar } from '@/components/TabBar'
 import { UploadStatusMessage } from '@/components/UploadStatusMessage'
 import type { Note } from '@/lib/notes/model/types'
 import { cleanupA11y, expectNoA11yViolations, renderA11y } from '@/tests/setup/a11y'
@@ -81,24 +80,6 @@ const settingsTabProps = {
  * только в отдельных тестах, и там они передаются явно.
  */
 const NoteList = (props: Partial<NoteListProps>) => <NoteListBase {...listProps(props)} />
-
-describe('a11y: TabBar', () => {
-  it('без нарушений доступности', async () => {
-    const { container } = renderA11y(
-      <TabBar
-        tabs={[
-          { id: 'upload', label: 'Полигоны' },
-          { id: 'manual', label: 'Точки' },
-        ]}
-        activeId="upload"
-        onChange={noop}
-        ariaLabel="Режим ввода"
-      />,
-    )
-
-    await expectNoA11yViolations(container)
-  })
-})
 
 describe('a11y: Header', () => {
   it('без нарушений', async () => {
