@@ -50,6 +50,7 @@ export const useCollapsedGroupsPersistence = ({ state, dispatch }: NotesPanelSto
     }
   }, [dispatch])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: зависимость — строка id, а не массив groupIds
   useEffect(() => {
     if (!restored.current) return
     // Пока снимок не пришёл, состав групп неизвестен, и чистка выбросила бы
