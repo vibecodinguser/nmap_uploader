@@ -2,13 +2,24 @@ import { resolve } from 'node:path'
 import { loadEnv } from 'vite'
 import { defineConfig } from 'wxt'
 import { FIREFOX_EXTENSION_ID } from './lib/firefox_extension_id'
+import { chromeDevManifestKey } from './lib/manifest/chrome_dev_key'
 import {
   type ManifestWithPermissions,
   moveNspdHostPermissionsToOptional,
 } from './lib/manifest/nspd_optional_hosts'
 import { moveYandexPermissionsToOptional } from './lib/manifest/yandex_optional_hosts'
+import { RELEASES_URL_DEFAULT } from './lib/releases_url'
 import { patchReactDomForAmo } from './lib/vite_patch_react_dom_amo'
 import packageJson from './package.json'
+
+/*
+ * Пауза перед пересборкой dev-сервера. Без неё каждое сохранение перезагружает
+ * вкладку карты по разу на content script (их 15), и Яндекс начинает отвечать
+ * 429 на свои же запросы. WXT читает переменную из process.env уже после
+ * загрузки конфига, поэтому значение по умолчанию выставляется здесь;
+ * переопределяется переменной окружения WXT_WATCH_DEBOUNCE.
+ */
+process.env.WXT_WATCH_DEBOUNCE ??= '1500'
 
 const extensionIcons = {
   16: '/icon/16.png',
@@ -96,33 +107,18 @@ function getFirefoxSettings(browser: string) {
   return settings
 }
 
-function getChromeDevKey(browser: string, command: string) {
-  let keySettings = {}
-  if (browser === 'chrome' && command === 'serve') {
-    if (process.env.CHROME_EXTENSION_KEY) {
-      keySettings = { key: process.env.CHROME_EXTENSION_KEY }
-    } else {
-      console.warn(
-        '[yamapper] CHROME_EXTENSION_KEY не задан: id расширения будет случайным, ' +
-          'авторизация Яндекса не сработает. Скопируйте .env из основного каталога репозитория.',
-      )
-    }
-  }
-  return keySettings
-}
-
 function buildManifest({ browser, command }: { browser: string; command: string }) {
   return {
     ...baseManifest,
     permissions: getPermissions(browser),
     ...getFirefoxSettings(browser),
-    ...getChromeDevKey(browser, command),
+    ...chromeDevManifestKey(browser, command),
   }
 }
 
 function configureVite({ mode }: { mode: string }) {
   const env = loadEnv(mode, import.meta.dirname, '')
-  const releasesUrl = env.RELEASES_URL?.trim() ?? ''
+  const releasesUrl = env.RELEASES_URL?.trim() || RELEASES_URL_DEFAULT
 
   return {
     envPrefix: ['VITE_', 'WXT_', 'YANDEX_', 'RELEASES_'],

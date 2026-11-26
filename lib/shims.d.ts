@@ -60,7 +60,6 @@ interface ImportMetaEnv {
   /** Команда WXT: `serve` в dev-режиме, `build` в релизной сборке. */
   readonly COMMAND?: 'build' | 'serve'
   readonly BROWSER?: 'chrome' | 'firefox' | 'safari' | 'edge'
-  readonly YANDEX_CLIENT_ID?: string
   readonly YANDEX_REDIRECT_URI?: string
 }
 
@@ -68,5 +67,5 @@ interface ImportMeta {
   readonly env: ImportMetaEnv
 }
 
-/** URL релизов из .env — подставляется в wxt.config.ts через define. */
+/** URL релизов: переменная RELEASES_URL либо значение по умолчанию из `lib/releases_url.ts`. */
 declare const __RELEASES_URL__: string

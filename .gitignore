@@ -28,7 +28,6 @@ pnpm-debug.log*
 # Переменные окружения и секреты
 .env
 .env.*
-!.env.example
 
 # web-ext (локальная конфигурация, не коммитить)
 .webextrc
