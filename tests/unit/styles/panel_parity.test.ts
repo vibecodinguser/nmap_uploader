@@ -112,16 +112,21 @@ describe('паритет панели с редактором', () => {
    * В редакторе жирного начертания нет: `font-weight` в его бандле встречается
    * только у чата (`500`) и уведомлений (`700`). В нашем шрифте объявлены
    * 400/500/700, поэтому `600` браузер рисует `700`-м — «полужирный» заголовок
-   * становится жирным. Тест держит правило: `600`/`700` в панели не пишем.
+   * становится жирным. Тест держит правило на всех листах панели, включая
+   * заметки: `600`/`700` не пишем.
    */
   it('не использует жирного начертания, которого нет в редакторе', () => {
-    // `@font-face` объявляет начертания 400/500/700 — это не выбор веса для текста.
-    const textCss = withoutComments(uploaderCss).replace(/@font-face\s*\{[^}]*\}/g, '')
-    const bold = [...textCss.matchAll(/font-weight:\s*([^;]+);/g)]
-      .map((match) => match[1].trim())
-      .filter((value) => /^(600|700|bold|bolder)$/.test(value))
+    const offenders: string[] = []
+    for (const [name, css] of Object.entries(PANEL_SHEETS)) {
+      // `@font-face` объявляет начертания 400/500/700 — это не выбор веса для текста.
+      const textCss = withoutComments(css).replace(/@font-face\s*\{[^}]*\}/g, '')
+      for (const match of textCss.matchAll(/font-weight:\s*([^;]+);/g)) {
+        const value = match[1].trim()
+        if (/^(600|700|bold|bolder)$/.test(value)) offenders.push(`${name}: font-weight: ${value}`)
+      }
+    }
 
-    expect(bold).toEqual([])
+    expect(offenders).toEqual([])
   })
 
   /*
@@ -140,6 +145,19 @@ describe('паритет панели с редактором', () => {
       )
       .map(([name]) => name)
     expect(offenders).toEqual([])
+  })
+
+  /*
+   * `react-day-picker` подключается собственным `style.css` и рисует заголовок
+   * месяца и выбранный день жирным. Его правила не входят в `PANEL_SHEETS`,
+   * поэтому проверяем отдельно: оба селектора переопределены на 400 в панели.
+   */
+  it('переопределяет жирный шрифт календаря react-day-picker', () => {
+    const block =
+      /\.point-date-popover \.rdp-month_caption,\s*\.point-date-popover \.rdp-selected\s*\{([^}]*)\}/.exec(
+        withoutComments(uploaderCss),
+      )?.[1] ?? ''
+    expect(block).toContain('font-weight: 400')
   })
 
   /*

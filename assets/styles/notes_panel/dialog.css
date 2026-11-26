@@ -26,7 +26,7 @@
 .notes-panel__dialog-title {
   margin: 0 0 8px;
   font-size: var(--font-size-title);
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .notes-panel__dialog-text {

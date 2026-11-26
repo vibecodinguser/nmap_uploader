@@ -26,7 +26,7 @@
   background: transparent;
   color: inherit;
   font: inherit;
-  font-weight: 600;
+  font-weight: 400;
   text-align: left;
   cursor: pointer;
 }
@@ -69,7 +69,7 @@
   background: var(--background, #ffffff);
   color: inherit;
   font: inherit;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 /*
@@ -95,7 +95,7 @@
   margin-left: 4px;
   color: var(--muted-foreground, #6b6b6b);
   font-size: var(--font-size-xs);
-  font-weight: 600;
+  font-weight: 400;
   font-variant-numeric: tabular-nums;
   background: color-mix(in srgb, var(--foreground, #1f1f1f) 8%, transparent);
   border-radius: 10px;

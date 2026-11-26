@@ -211,6 +211,24 @@ describe('инжектируемые стили', () => {
     expect(offenders).toEqual([])
   })
 
+  /*
+   * В шрифте редактора объявлены только 400/500/700, поэтому `600` браузер
+   * рисует `700`-м начертанием — «полужирный» в CSS превращается в жирный на
+   * экране. Жирного текста в редакторе нет: `700` у него только в уведомлениях.
+   * Тест держит правило для всех листов, которые инжектятся в страницу.
+   */
+  it('не использует жирного начертания, которого нет в шрифте', () => {
+    const offenders: string[] = []
+    for (const [name, css] of Object.entries(SHEETS)) {
+      const textCss = css.replace(/\/\*[\s\S]*?\*\//g, '').replace(/@font-face\s*\{[^}]*\}/g, '')
+      for (const match of textCss.matchAll(/font-weight:\s*([^;!]+)/g)) {
+        const value = match[1].trim()
+        if (/^(600|700|bold|bolder)$/.test(value)) offenders.push(`${name}: font-weight: ${value}`)
+      }
+    }
+    expect(offenders).toEqual([])
+  })
+
   it('правила хоста применяются только к нашим элементам', () => {
     const offenders: string[] = []
 

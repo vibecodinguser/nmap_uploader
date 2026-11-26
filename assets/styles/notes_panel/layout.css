@@ -39,7 +39,7 @@ body {
 .notes-panel__title {
   margin: 0;
   font-size: var(--font-size-title);
-  font-weight: 600;
+  font-weight: 400;
   white-space: nowrap;
 }
 
@@ -556,7 +556,7 @@ body {
 }
 
 .notes-panel__selection-count {
-  font-weight: 600;
+  font-weight: 400;
 }
 
 /* «Снять отметки» — выход из режима, поэтому стоит отдельно справа. */
@@ -628,7 +628,7 @@ body {
   border-color: var(--notes-accent, #ffdb4d);
   background: var(--notes-accent, #ffdb4d);
   color: #1f1f1f;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .notes-panel__button--primary:hover {

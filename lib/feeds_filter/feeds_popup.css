@@ -172,7 +172,7 @@
       align-items: center !important;
       justify-content: space-between !important;
       font-size: 11px !important;
-      font-weight: 600 !important;
+      font-weight: 400 !important;
       opacity: 0.65 !important;
       margin-bottom: 6px !important;
       text-transform: uppercase !important;
@@ -208,7 +208,7 @@
       background: rgba(255, 204, 0, 0.15) !important;
       border-color: var(--nmap-accent-strong) !important;
       color: var(--nmap-accent-strong) !important;
-      font-weight: 600 !important;
+      font-weight: 500 !important;
     }
     .nmap-feeds-period-status-row {
       display: flex !important;

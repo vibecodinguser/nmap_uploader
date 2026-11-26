@@ -796,6 +796,16 @@ body {
     0 0 0 2px var(--background),
     0 0 0 4px var(--ring);
 }
+
+/*
+ * `react-day-picker` рисует заголовок месяца и выбранный день жирным
+ * (`font-weight: bold` в его `style.css`). В нашем шрифте жирного начертания
+ * нет, поэтому `bold` дорисовывается `700`-м — как и `600`. Панель держит 400.
+ */
+.point-date-popover .rdp-month_caption,
+.point-date-popover .rdp-selected {
+  font-weight: 400;
+}
 /* stylelint-enable selector-class-pattern, custom-property-pattern */
 
 .manual-upload-container > .point-description-input {
