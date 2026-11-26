@@ -10,8 +10,6 @@ import {
 import {
   injectRecolorStyles as injectRecolorStylesDom,
   installCanvasMagentaRecolor as installCanvasMagentaRecolorInternal,
-  isMagentaColor,
-  RECOLOR_STYLE_ID,
   recolorKnownStrokeElements,
   recolorMagentaStrokes as recolorMagentaStrokesDom,
   recolorPreviouslyStyledElements,
@@ -19,17 +17,15 @@ import {
   removeRecolorStyles,
 } from '@/lib/stroke_color/index'
 
-export { isMagentaColor, RECOLOR_STYLE_ID, removeRecolorStyles }
-
 let currentTargetStroke = DEFAULT_STROKE_COLOR
 
-export const getTargetStroke = (): string => readStrokeColorFromPage() ?? currentTargetStroke
+const getTargetStroke = (): string => readStrokeColorFromPage() ?? currentTargetStroke
 
-export const injectRecolorStyles = (targetStroke: string = getTargetStroke()): void => {
+const injectRecolorStyles = (targetStroke: string = getTargetStroke()): void => {
   injectRecolorStylesDom(targetStroke)
 }
 
-export const recolorMagentaStrokes = (documentRoot: Document): void => {
+const recolorMagentaStrokes = (documentRoot: Document): void => {
   recolorMagentaStrokesDom(documentRoot, getTargetStroke())
 }
 

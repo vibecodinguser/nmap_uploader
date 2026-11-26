@@ -10,7 +10,7 @@ const TABS_CONTAINER_CLASS = 'nk-tabs-bar__tabs'
 const SELECTION_CLASS = 'nk-tabs-bar__selection'
 const SELECTION_INITED_CLASS = 'nk-tabs-bar__selection_inited'
 
-export interface TrackerSidebarOptions {
+interface TrackerSidebarOptions {
   /** Вызывается при открытии нашей вкладки. */
   onActivate: () => void
 }

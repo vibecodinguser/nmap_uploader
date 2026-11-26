@@ -5,7 +5,7 @@ import { assertDiskWriteScope, fetchYandexUser, verifyDiskAccess } from './auth_
 import { YANDEX_CLIENT_ID, YANDEX_DISK_SCOPES, type YandexUser } from './constants'
 import { FIREFOX_OAUTH_REDIRECT_URI, getOAuthRedirectUri } from './oauth_redirect'
 
-export const buildAuthUrl = ({
+const buildAuthUrl = ({
   forceConfirm = false,
 }: {
   forceConfirm?: boolean
@@ -31,7 +31,7 @@ export const buildAuthUrl = ({
   return { authUrl, redirectUri, launchUrl }
 }
 
-export const parseAuthResponseUrl = async (
+const parseAuthResponseUrl = async (
   responseUrl: string,
 ): Promise<{ token: string; user: YandexUser }> => {
   const urlObj = new URL(responseUrl)

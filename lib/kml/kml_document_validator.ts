@@ -61,7 +61,7 @@ const hasLonLatGeometryForTag = (root: Element, parentTag: string): boolean => {
   return false
 }
 
-export const hasKmlGeometry = (root: Element): boolean => {
+const hasKmlGeometry = (root: Element): boolean => {
   const coordinateElements = getKmlElementsByLocalName(root, 'coordinates')
   if (coordinateElements.length > 0) {
     return true

@@ -55,9 +55,5 @@ export const selectFilteredNotes = (state: NotesPanelState): Note[] =>
 export const selectHasNarrowing = (state: NotesPanelState): boolean =>
   state.query.trim() !== '' || hasActiveFilters(state.filters)
 
-/** Сколько заметок скрыто фильтрами и поиском — для подписи под панелью. */
-export const selectHiddenByFilters = (state: NotesPanelState): number =>
-  selectNotes(state).length - selectFilteredNotes(state).length
-
 export const selectSelectedNote = (state: NotesPanelState): Note | null =>
   selectNotes(state).find((note) => note.id === state.selectedId) ?? null

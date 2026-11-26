@@ -22,7 +22,7 @@ export const persistYandexBrowserFlag = async (): Promise<void> => {
   }
 }
 
-export type ToolbarActionApi = {
+type ToolbarActionApi = {
   onClicked: {
     addListener: (callback: (tab: Browser.tabs.Tab) => void) => void
   }

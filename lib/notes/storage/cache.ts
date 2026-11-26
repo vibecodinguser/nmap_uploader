@@ -20,8 +20,8 @@ export type NotesCache = {
   clear: () => Promise<void>
 }
 
-export const NOTES_CACHE_DB_NAME = 'nmap-notes'
-export const NOTES_CACHE_DB_VERSION = 1
+const NOTES_CACHE_DB_NAME = 'nmap-notes'
+const NOTES_CACHE_DB_VERSION = 1
 
 const MANIFEST_STORE = 'manifest'
 const SHARDS_STORE = 'shards'

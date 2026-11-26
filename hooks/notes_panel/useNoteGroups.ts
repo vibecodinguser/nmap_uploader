@@ -156,5 +156,3 @@ export const useNoteGroups = (
 
   return { createGroup, renameGroup, recolorGroup, removeGroup, moveNoteToGroup }
 }
-
-export type NoteGroups = ReturnType<typeof useNoteGroups>

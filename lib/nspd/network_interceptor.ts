@@ -55,55 +55,6 @@ export const installFetchAndXhrInterceptor = (postData: (data: unknown) => void)
   }
 }
 
-/** Код инъекции для автономного внедрения (если требуется). */
-export const NSPD_PAGE_INTERCEPTOR_SCRIPT = `
-(function() {
-  if (window.__nmapNspdInterceptorInjected) return;
-  window.__nmapNspdInterceptorInjected = true;
-
-  function postData(data) {
-    try {
-      window.postMessage({ source: '${NSPD_INTERCEPTOR_SOURCE}', data: data }, '*');
-    } catch (e) {}
-  }
-
-  var origFetch = window.fetch;
-  if (typeof origFetch === 'function') {
-    window.fetch = async function() {
-      var res = await origFetch.apply(this, arguments);
-      try {
-        var clone = res.clone();
-        clone.json().then(function(json) {
-          if (json && typeof json === 'object') {
-            postData(json);
-          }
-        }).catch(function() {});
-      } catch (e) {}
-      return res;
-    };
-  }
-
-  var origOpen = XMLHttpRequest.prototype.open;
-  var origSend = XMLHttpRequest.prototype.send;
-  XMLHttpRequest.prototype.open = function() {
-    return origOpen.apply(this, arguments);
-  };
-  XMLHttpRequest.prototype.send = function() {
-    this.addEventListener('load', function() {
-      try {
-        if (this.responseText && (this.responseType === '' || this.responseType === 'text')) {
-          var json = JSON.parse(this.responseText);
-          if (json && typeof json === 'object') {
-            postData(json);
-          }
-        }
-      } catch (e) {}
-    });
-    return origSend.apply(this, arguments);
-  };
-})();
-`
-
 /** Парсит произвольный JSON-объект и сохраняет найденные геометрии в хранилище. */
 export const inspectAndStorePayload = (payload: unknown): number => {
   if (!payload || typeof payload !== 'object') return 0

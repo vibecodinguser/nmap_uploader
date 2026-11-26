@@ -2,7 +2,7 @@ import { parseStaticSvg } from '@/lib/parse_static_svg'
 import { FEEDS_FILTER_POPUP_ID, HISTORY_PERIOD_OPTIONS, STATUS_FILTER_OPTIONS } from './constants'
 import type { FeedStatusId } from './core'
 
-export interface DropdownMenuItemState {
+interface DropdownMenuItemState {
   itemElement: HTMLElement
   countBadge: HTMLSpanElement
 }
@@ -14,14 +14,14 @@ export interface DropdownPeriodDisplayState {
   loadedCardsCount: number
 }
 
-export interface DropdownMenuComponent {
+interface DropdownMenuComponent {
   popupElement: HTMLElement
   menuElement: HTMLElement
   itemMap: Map<FeedStatusId, DropdownMenuItemState>
   updatePeriodDisplay: (state: DropdownPeriodDisplayState) => void
 }
 
-export interface DropdownMenuOptions {
+interface DropdownMenuOptions {
   initialFilter: FeedStatusId
   initialDays?: number
   onSelect: (status: FeedStatusId) => void

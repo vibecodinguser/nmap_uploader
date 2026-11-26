@@ -108,5 +108,3 @@ export const useNotesMutations = (
 
   return { createNote, updateNote }
 }
-
-export type NotesMutations = ReturnType<typeof useNotesMutations>

@@ -35,12 +35,12 @@ export const computeNewCommits = (
   return result
 }
 
-export interface PollDeps {
+interface PollDeps {
   transport: BatchTransport
   token: string
 }
 
-export interface PollResult {
+interface PollResult {
   /** Первая страница истории по каждому объекту. */
   commitsByObject: Record<string, ObjectCommit[]>
   /** Новые коммиты, ещё не показанные пользователю. */

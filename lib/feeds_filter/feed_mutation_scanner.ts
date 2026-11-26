@@ -5,7 +5,7 @@ import {
   isEditsModeSelected,
 } from './index'
 
-export interface MutationAnalysisResult {
+interface MutationAnalysisResult {
   hasNewEventCards: boolean
   shouldCheckPlacement: boolean
 }

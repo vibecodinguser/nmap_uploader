@@ -104,7 +104,7 @@ export const parseCommitsResult = (
   return { commits, totalCount, page, perPage }
 }
 
-export interface GeoObjectInfo {
+interface GeoObjectInfo {
   exists: boolean
   errorType?: string
   title: string | null

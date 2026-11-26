@@ -1,13 +1,5 @@
 /** Поддерживаемые расширения (как в nmaputils_website). */
-export const ALLOWED_EXTENSIONS = new Set([
-  'zip',
-  'geojson',
-  'gpx',
-  'kml',
-  'kmz',
-  'topojson',
-  'wkt',
-])
+const ALLOWED_EXTENSIONS = new Set(['zip', 'geojson', 'gpx', 'kml', 'kmz', 'topojson', 'wkt'])
 
 export const ACCEPTED_FORMATS = '.zip,.gpx,.kml,.kmz,.geojson,.topojson,.wkt'
 

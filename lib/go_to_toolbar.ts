@@ -8,7 +8,7 @@ import { POLYGON_UPLOAD_BUTTON_ID } from '@/lib/polygon_upload_button'
 
 const GO_TO_ICON_SELECTOR = '.yamapper-goto-icon'
 
-export type GoToToolbarMountState = {
+type GoToToolbarMountState = {
   goToCount: number
   splitCount: number
   uploadCount: number
@@ -65,7 +65,7 @@ export const removeAllGoToToolbarButtons = (): void => {
 }
 
 /** Восстанавливает SVG внутри host-элемента, если он пропал после перерисовки страницы. */
-export const repairGoToIconHost = (iconHost: Element | null, iconSvg: string): boolean => {
+const repairGoToIconHost = (iconHost: Element | null, iconSvg: string): boolean => {
   if (!(iconHost instanceof HTMLElement)) {
     return false
   }

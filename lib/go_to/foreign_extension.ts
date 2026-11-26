@@ -10,7 +10,7 @@ const FOREIGN_GOTO_SELECTORS = ['#goToButton', '#goToLinksMenu'] as const
 
 let warned = false
 
-export const hasForeignGoToExtension = (): boolean =>
+const hasForeignGoToExtension = (): boolean =>
   FOREIGN_GOTO_SELECTORS.some((selector) => document.querySelector(selector) !== null)
 
 /** Пишет одно предупреждение за жизнь страницы, если найдено чужое расширение. */

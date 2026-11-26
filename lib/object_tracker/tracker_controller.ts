@@ -9,7 +9,7 @@ import {
   parseGeoObjectResult,
   RateLimitedError,
 } from './batch_api'
-import { getCsrfToken, hasCsrfToken, onCsrfTokenAvailable, resetCsrfToken } from './csrf_token'
+import { getCsrfToken, onCsrfTokenAvailable, resetCsrfToken } from './csrf_token'
 import { ObjectTrackerNativeMenu } from './native_menu'
 import { buildReadMarks, mergeCachedCommits, pollTrackedObjects } from './poller'
 import {
@@ -35,7 +35,7 @@ import { ObjectTrackerSidebar } from './ui/mount'
 import { removeTrackerStyles } from './ui/styles'
 import { hideTrackerToast } from './ui/toast'
 
-export interface TrackerControllerOptions {
+interface TrackerControllerOptions {
   /** Транспорт подменяется в тестах. */
   transport?: BatchTransport
   /** Источник текущего токена подменяется в тестах. */
@@ -70,7 +70,7 @@ const getActionApi = (): ActionApi | null => {
 }
 
 /** Ставит число новых правок на иконку расширения. */
-export const setTrackerBadge = async (count: number): Promise<void> => {
+const setTrackerBadge = async (count: number): Promise<void> => {
   const action = getActionApi()
   if (!action?.setBadgeText) {
     return
@@ -649,6 +649,3 @@ export class ObjectTrackerController {
     this.storageListener = null
   }
 }
-
-/** Проверяет, есть ли перехваченный токен: используется в UI-подсказке. */
-export const isTrackerReady = (): boolean => hasCsrfToken()

@@ -9,7 +9,7 @@ import { Eye, EyeOff, LocateFixed, Trash2 } from 'lucide-react'
  */
 const NATIVE_ICON = 'nk-icon nk-icon_align_auto nk-icon_interactive'
 
-export const ROW_ICON_CLASS = {
+const ROW_ICON_CLASS = {
   hide: NATIVE_ICON,
   show: NATIVE_ICON,
   locate: `${NATIVE_ICON} nk-icon_id_center nk-tracker-settings-view__pos-by-bounds`,

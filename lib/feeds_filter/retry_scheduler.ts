@@ -1,6 +1,6 @@
 import { STARTUP_RETRY_DELAYS_MS } from './lifecycle_config'
 
-export interface RetrySchedulerOptions {
+interface RetrySchedulerOptions {
   onRetry: () => void
   onHeartbeatTick: () => void
   heartbeatIntervalMs?: number

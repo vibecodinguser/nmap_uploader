@@ -64,9 +64,6 @@ export const pruneCollapsedKeys = (
   return [...new Set(kept)]
 }
 
-/** Заголовок «Без группы» всегда последний: корень идёт после групп. */
-export const isUngroupedHeader = (row: GroupHeaderRow): boolean => row.groupId === null
-
 /**
  * Раскладка списка: заголовки групп и заметки под ними.
  *
@@ -131,10 +128,10 @@ export const buildListRows = ({
 }
 
 /** Высота строки: заголовки ниже строк заметки. */
-export const rowHeight = (row: NoteListRow): number =>
+const rowHeight = (row: NoteListRow): number =>
   row.type === 'group' ? GROUP_HEADER_HEIGHT : NOTE_ROW_HEIGHT
 
-export type PositionedRow = { row: NoteListRow; top: number; height: number }
+type PositionedRow = { row: NoteListRow; top: number; height: number }
 
 /** Раскладка с вертикальными смещениями — вход для виртуализации. */
 export const positionRows = (rows: readonly NoteListRow[]): PositionedRow[] => {

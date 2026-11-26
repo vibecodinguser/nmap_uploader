@@ -1,6 +1,6 @@
 import { repairToolbarIcons } from '@/lib/go_to'
 
-export interface PageVisibilityHandlersOptions {
+interface PageVisibilityHandlersOptions {
   onPageResume: () => void
 }
 

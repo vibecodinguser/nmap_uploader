@@ -23,10 +23,7 @@ const SELECTED_TAB_CLASS = 'nk-tabs-bar__tab_selected'
  * `left + (width - 1) / 2` и растягивается через `scaleX`, потому что
  * `transform-origin` по умолчанию — центр.
  */
-export const syncSettingsTabSelection = (
-  bar: HTMLElement | null,
-  active: HTMLElement | null,
-): void => {
+const syncSettingsTabSelection = (bar: HTMLElement | null, active: HTMLElement | null): void => {
   if (!bar || !active) {
     return
   }

@@ -47,18 +47,6 @@ export const YANDEX_HOST_PATTERNS = [
  */
 export const NMAPS_HOST_PATTERN = `${hostPattern('n.maps.yandex.ru/*')}`
 
-/** Широкий доступ к домену карты: без него не работают панели и вход. */
-export const NMAPS_ORIGIN_PATTERN = NMAPS_HOST_PATTERN
-
-/**
- * Все необязательные хосты расширения.
- *
- * В MV3 попадают в `optional_host_permissions`, в MV2 — в
- * `optional_permissions` вместе с `identity`: отдельного поля для
- * необязательных хостов в MV2 нет.
- */
-export const OPTIONAL_HOST_PERMISSIONS = YANDEX_HOST_PATTERNS
-
 export type ManifestPermissions = {
   manifest_version?: number
   permissions?: string[]

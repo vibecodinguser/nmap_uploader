@@ -45,7 +45,7 @@ export const STROKE_COLOR_CHANGED_EVENT = 'nmap-stroke-color-changed'
 export const STROKE_COLOR_MESSAGE_TYPE = 'nmap:stroke-color'
 
 /** Запрос текущего цвета из MAIN мира к изолированному. */
-export const STROKE_COLOR_REQUEST_TYPE = 'nmap:stroke-color-request'
+const STROKE_COLOR_REQUEST_TYPE = 'nmap:stroke-color-request'
 
 type StrokeColorMessage = {
   type: typeof STROKE_COLOR_MESSAGE_TYPE

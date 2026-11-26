@@ -553,7 +553,7 @@ export const BUILTIN_ICONS: readonly BuiltinIcon[] = [
 ]
 
 /** id всех встроенных иконок — для проверки значения из манифеста. */
-export const BUILTIN_ICON_IDS: readonly string[] = BUILTIN_ICONS.map((icon) => icon.id)
+const BUILTIN_ICON_IDS: readonly string[] = BUILTIN_ICONS.map((icon) => icon.id)
 
 export const isBuiltinIconId = (value: unknown): value is string =>
   typeof value === 'string' && BUILTIN_ICON_IDS.includes(value)

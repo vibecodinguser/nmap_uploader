@@ -219,7 +219,7 @@ export const hookMultiGeometryPrototype = (
   return true
 }
 
-export type YmapsModulesLike = {
+type YmapsModulesLike = {
   require?: (
     modules: string[],
     successCallback: (...modules: unknown[]) => void,
@@ -227,8 +227,8 @@ export type YmapsModulesLike = {
   ) => void
 }
 
-export const EDITOR_HOOK_POLL_MS = 500
-export const EDITOR_HOOK_TIMEOUT_MS = 30_000
+const EDITOR_HOOK_POLL_MS = 500
+const EDITOR_HOOK_TIMEOUT_MS = 30_000
 
 const defaultGetYmaps = (): unknown => (globalThis as Record<string, unknown>).ymaps
 

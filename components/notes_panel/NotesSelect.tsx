@@ -9,7 +9,7 @@ import {
 } from 'react'
 import { createPortal } from 'react-dom'
 
-export interface NotesSelectOption {
+interface NotesSelectOption {
   value: string
   label: string
 }

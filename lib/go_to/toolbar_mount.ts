@@ -26,7 +26,7 @@ export const BUTTON_ANCHOR_SELECTORS = [
   '.nk-icon_id_ymaps',
 ] as const
 
-export const REGION_BUTTON_CLASSES = [
+const REGION_BUTTON_CLASSES = [
   'nk-map-region-view__button',
   'nk-map-region-view__button_id_goto',
 ] as const
@@ -69,7 +69,7 @@ export const getNotesButton = (): HTMLButtonElement | null =>
 export const getNspdButton = (): HTMLButtonElement | null =>
   getOwnedElementById(NSPD_BUTTON_ID) as HTMLButtonElement | null
 
-export const isButtonMountedInToolbar = (button: HTMLElement, anchor: Element): boolean => {
+const isButtonMountedInToolbar = (button: HTMLElement, anchor: Element): boolean => {
   const goToServiceButton = getServiceButton()
   if (!goToServiceButton) return false
 

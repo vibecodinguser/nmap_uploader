@@ -66,7 +66,7 @@ const toShapefileComponentSets = (
 }
 
 /** Извлекает наборы .shp/.shx/.dbf с общим префиксом из ZIP. */
-export const extractShapefileComponentSets = (
+const extractShapefileComponentSets = (
   entries: ReadonlyMap<string, ArrayBuffer>,
 ): ShapefileComponentSet[] => {
   const byBasename = collectShapefilePartsByBasename(entries)

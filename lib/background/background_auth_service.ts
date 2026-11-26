@@ -23,7 +23,7 @@ import {
 
 export * from './auth_message_response_helpers'
 
-export type AuthMessageOptions = {
+type AuthMessageOptions = {
   interactive: boolean
   sendResponse: (response: AuthMessageResponse) => void
   logLabel: string
@@ -34,7 +34,7 @@ export type AuthMessageOptions = {
 
 const resolveAuthLocale = (locale: unknown): Locale => getBackgroundLocale({ locale })
 
-export const processYandexAuthMessage = async ({
+const processYandexAuthMessage = async ({
   interactive,
   sendResponse,
   logLabel,

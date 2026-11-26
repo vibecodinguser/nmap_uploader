@@ -18,7 +18,7 @@ import { withNativeLocaleParam } from '@/lib/locale_bridge'
 import { readNativeLocale } from '@/lib/native_locale'
 import { readNativeTheme } from '@/lib/native_theme'
 import { withNativeThemeParam } from '@/lib/theme_bridge'
-import { getSettingsButton, SETTINGS_APP_BAR_SELECTOR } from './button'
+import { getSettingsButton } from './button'
 import {
   CLOSE_SETTINGS_POPUP_ACTION,
   FOCUS_NSPD_ACCESS_MESSAGE,
@@ -52,7 +52,7 @@ const DRAWER_WIDTH = 350
  */
 export const SETTINGS_POPUP_WIDTH = 408
 
-export type SettingsPopupHostOptions = {
+type SettingsPopupHostOptions = {
   pagePath: '/panel.html'
   /** Язык названия попапа для скринридеров. */
   locale: Locale
@@ -80,7 +80,7 @@ export const ensureSettingsPopupStyles = (): void => {
   ensureInjectedStyle(SETTINGS_POPUP_STYLES_ID, SETTINGS_POPUP_STYLES)
 }
 
-export type SettingsPopupRect = {
+type SettingsPopupRect = {
   left: number
   top: number
   maxHeight: number
@@ -308,5 +308,3 @@ export const createSettingsPopupHost = ({
     destroy,
   }
 }
-
-export { SETTINGS_APP_BAR_SELECTOR }

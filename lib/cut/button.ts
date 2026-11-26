@@ -30,10 +30,10 @@ const BUTTON_CLASSES = [
   'nk-on-map-toolbar__item',
 ]
 
-export const ON_MAP_TOOLBAR_SELECTOR = '.nk-on-map-toolbar'
+const ON_MAP_TOOLBAR_SELECTOR = '.nk-on-map-toolbar'
 
 /** Нативная кнопка разрезания: после неё встаёт наша. */
-export const NATIVE_SPLIT_ICON_SELECTOR = '[class*="nk-icon_id_split"]'
+const NATIVE_SPLIT_ICON_SELECTOR = '[class*="nk-icon_id_split"]'
 
 export const findOnMapToolbar = (): HTMLElement | null =>
   document.querySelector<HTMLElement>(ON_MAP_TOOLBAR_SELECTOR)
@@ -75,7 +75,7 @@ export const removeAllCutButtons = (targets: readonly CutTarget[]): void => {
   for (const target of targets) removeCutButton(target)
 }
 
-export type EnsureCutButtonOptions = {
+type EnsureCutButtonOptions = {
   target: CutTarget
   label: string
   onClick: (button: HTMLButtonElement) => void

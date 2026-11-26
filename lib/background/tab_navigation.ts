@@ -5,8 +5,8 @@ import { type Browser, browser } from 'wxt/browser'
 import { createTranslator, getBackgroundLocale } from '@/lib/i18n'
 import { isMapTabUrl, MAP_ORIGIN, MAP_TAB_URL_PATTERN } from '@/lib/map_tab'
 
-export const MAP_HOME = `${MAP_ORIGIN}/` as const
-export const MAP_URL_PATTERN = MAP_TAB_URL_PATTERN
+const MAP_HOME = `${MAP_ORIGIN}/` as const
+const MAP_URL_PATTERN = MAP_TAB_URL_PATTERN
 
 export const sleep = (ms: number): Promise<void> => {
   const resolveAfterDelay = (resolve: () => void) => {
@@ -32,7 +32,7 @@ export const waitForTabReady = async (tabId: number, maxMs = 15_000): Promise<Br
   throw new Error(message)
 }
 
-export const focusTab = async (tab: Browser.tabs.Tab): Promise<void> => {
+const focusTab = async (tab: Browser.tabs.Tab): Promise<void> => {
   if (tab.id) {
     await browser.tabs.update(tab.id, { active: true })
     if (tab.windowId) {
@@ -41,7 +41,7 @@ export const focusTab = async (tab: Browser.tabs.Tab): Promise<void> => {
   }
 }
 
-export const hasDefinedTabId = (tab: Browser.tabs.Tab): boolean => tab.id !== undefined
+const hasDefinedTabId = (tab: Browser.tabs.Tab): boolean => tab.id !== undefined
 
 export const resolveMapTargetTab = async (
   clickedTab: Browser.tabs.Tab,

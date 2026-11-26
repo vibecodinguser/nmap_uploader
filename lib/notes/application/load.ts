@@ -29,7 +29,7 @@ export const forgetSnapshot = (): void => {
  * Кэш и память отдаются до сети — панель открывается мгновенно, а свежие
  * данные доезжают широковещательным снимком.
  */
-export type NotesLoadPlan = {
+type NotesLoadPlan = {
   cached: NotesData | null
   fresh: () => Promise<NotesData>
 }

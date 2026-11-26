@@ -35,7 +35,7 @@ export const isContourSelectionText = (text: string | null | undefined): boolean
  * Ищет видимое системное приглашение выбрать контур.
  * Возвращает элемент приглашения или null.
  */
-export const findContourSelectionPrompt = (
+const findContourSelectionPrompt = (
   root: ParentNode = typeof document !== 'undefined' ? document : ({} as ParentNode),
 ): Element | null => {
   if (!root || typeof root.querySelectorAll !== 'function') return null

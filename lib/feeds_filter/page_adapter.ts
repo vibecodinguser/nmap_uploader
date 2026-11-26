@@ -28,17 +28,17 @@ export const findEventCards = (container: HTMLElement): HTMLElement[] => {
   )
 }
 
-export type ApplyFeedFilterInput = {
+type ApplyFeedFilterInput = {
   container: HTMLElement
   filter: FeedStatusId
 }
 
-export type CombinedFeedStats = {
+type CombinedFeedStats = {
   statusStats: FeedStats
   actionStats: FeedActionsStats
 }
 
-export type ApplyCombinedFeedFilterInput = {
+type ApplyCombinedFeedFilterInput = {
   container: HTMLElement
   statusFilter?: FeedStatusId
   actionFilter?: FeedActionId

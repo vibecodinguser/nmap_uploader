@@ -26,7 +26,7 @@ import {
  * иконки едут вместе, перечислять и перезагружать файлы не нужно.
  */
 
-export type NotesMigrationResult = 'none' | 'moved' | 'archived'
+type NotesMigrationResult = 'none' | 'moved' | 'archived'
 
 export type NotesMigrationClient = {
   exists: (logicalPath: string) => Promise<boolean>

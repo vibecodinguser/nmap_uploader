@@ -28,7 +28,7 @@ export const GEOJSON_GEOMETRY_TYPES = new Set([
   'GeometryCollection',
 ])
 
-export const validateLinearRing = (ring: unknown, context: string): void => {
+const validateLinearRing = (ring: unknown, context: string): void => {
   if (!Array.isArray(ring)) {
     throw toProcessingError(`${context}: linear ring должен быть массивом позиций`)
   }

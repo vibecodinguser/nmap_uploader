@@ -30,10 +30,10 @@ export const CUT_STATE_ATTR = 'data-nmap-veg-cut'
  * Журнал запусков активностей для разбора проблем: последние 50 записей.
  * Ведётся только при включённой отладке (`CUT_DEBUG_FLAG`).
  */
-export const CUT_LOG_KEY = '__nmapVegCutLog'
+const CUT_LOG_KEY = '__nmapVegCutLog'
 
 /** Ключ `localStorage`: значение `'1'` включает журнал и подробный лог. */
-export const CUT_DEBUG_FLAG = 'nmap-veg-cut-debug'
+const CUT_DEBUG_FLAG = 'nmap-veg-cut-debug'
 
 export type CutLogEntry = {
   categoryId: string | null

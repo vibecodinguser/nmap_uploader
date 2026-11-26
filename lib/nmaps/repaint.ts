@@ -1,6 +1,6 @@
 import { findActiveMap, type YmapsMapLike, type YmapsMapWithContainer } from './map_discovery'
 
-export const dispatchWindowResize = (): void => {
+const dispatchWindowResize = (): void => {
   if (typeof globalThis === 'undefined') return
   try {
     globalThis.dispatchEvent(new Event('resize'))

@@ -17,7 +17,7 @@ const isSamePoint = (left: number[], right: number[]): boolean =>
   left[0] === right[0] && left[1] === right[1]
 
 /** Проверяет, что кольцо замкнуто (первая и последняя точки совпадают). */
-export const isClosedRing = (coords: RingCoordinates): boolean =>
+const isClosedRing = (coords: RingCoordinates): boolean =>
   coords.length > 1 && isSamePoint(coords[0], coords[coords.length - 1])
 
 /**

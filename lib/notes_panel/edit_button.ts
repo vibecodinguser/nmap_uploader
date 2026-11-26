@@ -12,7 +12,7 @@ export const NOTES_EDIT_BUTTON_ID = 'yamapper-notes-edit-button'
 export const NOTES_EDIT_BUTTON_WRAPPER_ID = 'yamapper-notes-edit-button-wrapper'
 export const BOTTOM_CONTROLS_SELECTOR = '.nk-map-bottom-controls-view'
 
-export const NOTES_EDIT_BUTTON_ICON_SVG =
+const NOTES_EDIT_BUTTON_ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M14 6.5 17.5 10" stroke="currentColor" stroke-width="2"/></svg>'
 
 /**

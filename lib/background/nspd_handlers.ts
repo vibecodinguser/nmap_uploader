@@ -77,7 +77,7 @@ export const handleUploadNspdGeoJson: MessageHandler = (message, sender, sendRes
   return true
 }
 
-export const processCloseCurrentTab = async (
+const processCloseCurrentTab = async (
   sender: { tab?: { id?: number } },
   sendResponse: (res: { ok: boolean }) => void,
 ): Promise<void> => {

@@ -84,10 +84,7 @@ export const getMapLocationFromUrl = (href: string): MapLocation | null => {
   }
 }
 
-export const resolveMapLocationForSource = (
-  location: MapLocation,
-  source: GoToSource,
-): MapLocation => {
+const resolveMapLocationForSource = (location: MapLocation, source: GoToSource): MapLocation => {
   const zoom = applyZoomTransform(location.zoom, source.countZoom, source.maxZoom)
   if (!source.convert) {
     return { ...location, zoom }
@@ -101,7 +98,7 @@ export const resolveMapLocationForSource = (
   }
 }
 
-export type BuildGoToLinkInput = {
+type BuildGoToLinkInput = {
   source: GoToSource
   location: MapLocation
   now?: Date

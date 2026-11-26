@@ -23,7 +23,7 @@ declare global {
 let stopRecolor: (() => void) | undefined
 let cleanupListeners: (() => void) | undefined
 
-export const applyStrokeColorOnPage = (color: string): void => {
+const applyStrokeColorOnPage = (color: string): void => {
   const normalized = getEffectiveStrokeColor(color)
   publishStrokeColorToPage(normalized)
   setTargetStroke(normalized)

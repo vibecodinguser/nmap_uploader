@@ -127,5 +127,3 @@ export const useNoteRemoval = (
 
   return { removeNote, undoRemove }
 }
-
-export type NoteRemoval = ReturnType<typeof useNoteRemoval>

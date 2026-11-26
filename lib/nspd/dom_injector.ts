@@ -30,7 +30,7 @@ export {
 }
 
 /** Пытается запросить геометрию объекта у API НСПД по кадастровому номеру, если она еще не перехвачена. */
-export const tryFetchNspdGeometry = async (cadNum: string): Promise<boolean> => {
+const tryFetchNspdGeometry = async (cadNum: string): Promise<boolean> => {
   const cleanNum = cadNum.trim()
   const searchEndpoints = [
     `/api/geoportal/v2/search/features?query=${encodeURIComponent(cleanNum)}`,
@@ -51,7 +51,7 @@ export const tryFetchNspdGeometry = async (cadNum: string): Promise<boolean> => 
 }
 
 /** Выполняет отправку полигонов в расширение и завершает работу с вкладкой. */
-export const handleUploadNspdObjects = async (
+const handleUploadNspdObjects = async (
   identifier: string | null,
   btn: HTMLButtonElement,
 ): Promise<void> => {
@@ -155,7 +155,7 @@ export const findCadastralElements = (): Array<{ element: HTMLElement; cadNum: s
 }
 
 /** Синхронизирует плавающий виджет с последним выбранным объектом или кадастровым номером. */
-export const syncFloatingWidgetWithRecent = (): void => {
+const syncFloatingWidgetWithRecent = (): void => {
   const items = findCadastralElements()
   if (items.length > 0) {
     updateFloatingWidget(items[0].cadNum)

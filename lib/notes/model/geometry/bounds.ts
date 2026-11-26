@@ -2,10 +2,10 @@ import type { LonLat, NoteGeometry } from '../types'
 import { circleRing } from './circle'
 import { squareFromCorners } from './square'
 
-export type BoundingBox = [number, number, number, number]
+type BoundingBox = [number, number, number, number]
 
 /** Точки, по которым считается охват: круг разворачивается в короткое кольцо. */
-export const geometryCoordinates = (geometry: NoteGeometry): LonLat[] => {
+const geometryCoordinates = (geometry: NoteGeometry): LonLat[] => {
   switch (geometry.kind) {
     case 'Point':
       return [geometry.coords]

@@ -99,9 +99,3 @@ export const isFilledKind = (kind: NoteKind): boolean =>
  * поля остаются (формат на Диске заморожен), но для точки не применяются.
  */
 export const hasAdjustableStroke = (kind: NoteKind): boolean => kind !== 'Point'
-
-/**
- * Своя картинка вместо иконки из набора разрешена только точкам: у линии и
- * полигона иконка стоит в центре и означает категорию, а не сам объект.
- */
-export const supportsCustomIcon = (kind: NoteKind): boolean => kind === 'Point'

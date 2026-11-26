@@ -47,12 +47,12 @@ export const getKmlElementsByLocalName = (
 }
 
 /** longitude для WGS84 (Annex B, geodetic longitude). */
-export const isValidKmlLongitude = (value: number): boolean => value >= -180 && value < 180
+const isValidKmlLongitude = (value: number): boolean => value >= -180 && value < 180
 
 /** latitude для WGS84 (Annex B, geodetic latitude). */
-export const isValidKmlLatitude = (value: number): boolean => value >= -90 && value <= 90
+const isValidKmlLatitude = (value: number): boolean => value >= -90 && value <= 90
 
-export const assertFiniteCoordinate = (value: number, context: string): void => {
+const assertFiniteCoordinate = (value: number, context: string): void => {
   if (!Number.isFinite(value)) {
     throw toProcessingError(`${context}: недопустимое значение координаты (NaN или Infinity)`)
   }

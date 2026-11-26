@@ -166,5 +166,3 @@ export const useNotesSync = (
 
   return { loadNotes, login, grantPermission }
 }
-
-export type NotesSync = ReturnType<typeof useNotesSync>

@@ -16,7 +16,6 @@ export {
   getSystemBannerContainer,
   HIDER_ATTR,
   HIDER_STYLE_ID,
-  hideSystemBannerElement,
   restoreSystemBanners,
   setSystemBannerSuppressed,
 }
@@ -179,7 +178,7 @@ export const isGeometryEditorActive = (
 /**
  * Проверяет, не скрыт ли системный баннер Яндексом (через БЭМ-модификаторы или атрибуты).
  */
-export const isBannerElementActive = (el: Element): boolean => {
+const isBannerElementActive = (el: Element): boolean => {
   if (!el?.isConnected) return false
 
   const hiddenAncestor = el.closest('.is-hidden, [class*="_hidden"], [class*="--hidden"], [hidden]')

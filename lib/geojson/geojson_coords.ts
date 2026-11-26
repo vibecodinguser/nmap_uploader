@@ -20,7 +20,7 @@ export const isValidGeoJsonLongitude = (value: number): boolean => value >= -180
 /** latitude WGS84 (RFC 7946, §4). */
 export const isValidGeoJsonLatitude = (value: number): boolean => value >= -90 && value <= 90
 
-export const assertFiniteNumber = (value: number, context: string): void => {
+const assertFiniteNumber = (value: number, context: string): void => {
   if (!Number.isFinite(value)) {
     throw toProcessingError(`${context}: недопустимое число (NaN или Infinity)`)
   }

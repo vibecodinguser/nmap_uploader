@@ -18,7 +18,7 @@ type MapIframePopupOptions = {
   iframeClassName: string
 }
 
-export type MapIframePopup = {
+type MapIframePopup = {
   isOpen: () => boolean
   close: () => void
   toggle: (button: HTMLElement) => void

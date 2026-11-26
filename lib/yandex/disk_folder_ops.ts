@@ -18,7 +18,7 @@ export * from './disk_dir_client'
 export * from './disk_path_resolver'
 export * from './disk_segment_creator'
 
-export const ensureApplicationsFolder = async ({ token }: { token: string }): Promise<void> => {
+const ensureApplicationsFolder = async ({ token }: { token: string }): Promise<void> => {
   const headers = getHeaders(token)
 
   if (await directoryExistsOnDisk({ logicalPath: APPLICATIONS_FOLDER, headers })) {

@@ -19,7 +19,7 @@ import {
   START_POINT_PICKING_ACTION,
 } from '@/lib/pick_point_action'
 
-export type CenterMapParams = {
+type CenterMapParams = {
   latitude: number
   longitude: number
   zoom: number
@@ -122,7 +122,7 @@ export const checkAndNotifyTrackerDate = ({
  *
  * Редактор не даёт API для выбора даты, поэтому повторяем жест пользователя.
  */
-export const setTrackerDateInDom = (
+const setTrackerDateInDom = (
   nkDate: string,
   onComplete?: () => void,
 ): ReturnType<typeof setInterval> | null => {
@@ -190,14 +190,14 @@ export const setTrackerDateInDom = (
   return checkInterval
 }
 
-export type MapBridgeOptions = {
+type MapBridgeOptions = {
   /** Период опроса даты трекера: редактор не присылает событий о её смене. */
   trackerPollIntervalMs?: number
   /** Куда отдать новую дату (раньше — в iframe панели настроек). */
   onTrackerDateChange?: (date: string) => void
 }
 
-export type MapBridge = {
+type MapBridge = {
   handleRuntimeMessage: (message: Record<string, unknown>) => void
   dispose: () => void
 }

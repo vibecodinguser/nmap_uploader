@@ -9,7 +9,7 @@ import type { NoteIcon } from '@/lib/notes/model/types'
  * данными, поэтому одна и та же иконка выглядит одинаково в списке и на карте.
  * Толщина обводки здесь тоньше карты: в панели иконка мелкая.
  */
-export const BuiltinIconGlyph = ({
+const BuiltinIconGlyph = ({
   icon,
   size = BUILTIN_ICON_VIEWBOX,
 }: {

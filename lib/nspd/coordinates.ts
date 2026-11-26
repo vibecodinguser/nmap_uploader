@@ -41,7 +41,7 @@ export const normalizeCoordinatesToWgs84 = (coords: unknown): unknown => {
 }
 
 /** Приводит геометрию GeoJSON к координатам WGS84. */
-export const normalizeGeometryToWgs84 = <G extends Geometry>(geometry: G): G => {
+const normalizeGeometryToWgs84 = <G extends Geometry>(geometry: G): G => {
   if ('coordinates' in geometry && Array.isArray(geometry.coordinates)) {
     return {
       ...geometry,
@@ -52,7 +52,7 @@ export const normalizeGeometryToWgs84 = <G extends Geometry>(geometry: G): G => 
 }
 
 /** Приводит Feature к координатам WGS84. */
-export const normalizeFeatureToWgs84 = (feature: Feature): Feature => {
+const normalizeFeatureToWgs84 = (feature: Feature): Feature => {
   if (!feature.geometry) return feature
   return {
     ...feature,

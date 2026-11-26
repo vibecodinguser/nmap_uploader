@@ -3,8 +3,6 @@ import { CLOSE_SETTINGS_POPUP_ACTION, SETTINGS_POPUP_ID } from '@/lib/settings_p
 /** Узел попапа в DOM хоста; панель внутри iframe его видеть не может. */
 const getSettingsPopup = (): HTMLElement | null => document.getElementById(SETTINGS_POPUP_ID)
 
-export const isSettingsPopupMountedInDom = (): boolean => getSettingsPopup() !== null
-
 /** Убирает попап из DOM (работает из любого content script на вкладке НЯК). */
 export const removeSettingsPopupFromDom = (): void => {
   getSettingsPopup()?.remove()

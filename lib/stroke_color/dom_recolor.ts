@@ -8,11 +8,7 @@ import { collectRoots } from './dom_roots_collector'
 export * from './dom_recolor_styles'
 export * from './dom_roots_collector'
 
-export const applyTargetColor = (
-  element: SVGElement,
-  prop: 'stroke' | 'fill',
-  color: string,
-): void => {
+const applyTargetColor = (element: SVGElement, prop: 'stroke' | 'fill', color: string): void => {
   element.setAttribute(prop, color)
   element.style.setProperty(prop, color, 'important')
   element.setAttribute(RECOLOR_MARKER, '1')
@@ -63,7 +59,7 @@ export const recolorSvgElement = (element: Element, targetStroke: string): void 
   }
 }
 
-export const updateMarkedElementColor = (element: Element, toColor: string): void => {
+const updateMarkedElementColor = (element: Element, toColor: string): void => {
   if (!(element instanceof SVGElement)) return
   if (isExtensionShadowNode(element)) return
   if (element.getAttribute(RECOLOR_MARKER) !== '1') return
@@ -96,7 +92,7 @@ export const updateMarkedElementColor = (element: Element, toColor: string): voi
   }
 }
 
-export const recolorMagentaStrokesInRoot = (root: ParentNode, targetStroke: string): void => {
+const recolorMagentaStrokesInRoot = (root: ParentNode, targetStroke: string): void => {
   if (root instanceof Element && isExtensionShadowNode(root)) return
 
   const scope =

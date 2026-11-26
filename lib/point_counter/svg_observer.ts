@@ -51,7 +51,7 @@ export const isMapDrawingSvgElement = (el: Element | null): boolean => {
   return true
 }
 
-export interface SvgCounterObserverOptions {
+interface SvgCounterObserverOptions {
   ui: PointCounterUi
   getLastMapInteractionTime: () => number
   isCounterEnabled?: () => boolean

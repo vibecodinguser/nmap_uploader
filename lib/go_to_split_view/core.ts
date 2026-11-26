@@ -23,7 +23,7 @@ export const URL_POLL_INTERVAL_MS = 120
 export const WHEEL_ZOOM_STEP_THRESHOLD = 50
 export const NAKARTE_ZOOM_PUSH_GRACE_MS = 450
 export const SPLIT_OPENING_GRACE_MS = 800
-export const STALE_ZOOM_CENTER_EPSILON = 1e-4
+const STALE_ZOOM_CENTER_EPSILON = 1e-4
 export const SPLIT_RESIZED_ATTR = 'data-yamapper-split-resized'
 export const CURSOR_MARKER_RADIUS = 8
 

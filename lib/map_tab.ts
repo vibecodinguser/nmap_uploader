@@ -38,7 +38,7 @@ export const collectMapTabIds = async (preferredTabId?: number): Promise<number[
   return [...ids]
 }
 
-export const getActiveMapTabId = async (): Promise<number | undefined> => {
+const getActiveMapTabId = async (): Promise<number | undefined> => {
   const results = await Promise.allSettled([
     browser.tabs.query({ active: true, lastFocusedWindow: true }),
     browser.tabs.query({ active: true, currentWindow: true }),

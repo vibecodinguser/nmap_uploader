@@ -9,8 +9,8 @@ import {
 
 export const TRACKER_ENABLED_KEY = 'object_tracker_enabled'
 export const TRACKER_OBJECTS_KEY = 'object_tracker_objects'
-export const TRACKER_READ_MARKS_KEY = 'object_tracker_read_marks'
-export const TRACKER_CACHED_COMMITS_KEY = 'object_tracker_cached_commits'
+const TRACKER_READ_MARKS_KEY = 'object_tracker_read_marks'
+const TRACKER_CACHED_COMMITS_KEY = 'object_tracker_cached_commits'
 
 /** id объекта в редакторе — числовая строка. */
 export const isValidObjectId = (value: string): boolean => /^\d{1,20}$/.test(value.trim())

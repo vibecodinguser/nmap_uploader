@@ -39,7 +39,7 @@ export const isPanelSender = (sender: RuntimeMessageSender): boolean => {
 export const isNmapsContentSender = (sender: RuntimeMessageSender): boolean =>
   sender.tab?.url?.startsWith(NMAPS_TAB_URL_PREFIX) ?? false
 
-export const isNspdContentSender = (sender: RuntimeMessageSender): boolean => {
+const isNspdContentSender = (sender: RuntimeMessageSender): boolean => {
   const tabUrl = sender.tab?.url
   if (!tabUrl) return false
   return tabUrl.startsWith('https://nspd.gov.ru/') || tabUrl.startsWith('https://www.nspd.gov.ru/')

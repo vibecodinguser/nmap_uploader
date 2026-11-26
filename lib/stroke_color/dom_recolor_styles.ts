@@ -25,7 +25,7 @@ export const rememberStrokeColor = (color: string): void => {
   window[KNOWN_COLORS_KEY] = knownColors
 }
 
-export const isKnownStrokeColor = (value: string | null | undefined): boolean => {
+const isKnownStrokeColor = (value: string | null | undefined): boolean => {
   if (!value || typeof window === 'undefined') return false
 
   const key = colorToKey(value)

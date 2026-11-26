@@ -6,7 +6,7 @@ export type MessageHandler = (
   sendResponse: (response: any) => void,
 ) => boolean
 
-export interface MessageRouter {
+interface MessageRouter {
   register: (action: string, handler: MessageHandler) => void
   dispatch: (
     message: unknown,
@@ -16,7 +16,7 @@ export interface MessageRouter {
   getHandlers: () => Readonly<Record<string, MessageHandler>>
 }
 
-export type CreateMessageRouterOptions = {
+type CreateMessageRouterOptions = {
   handlers?: Record<string, MessageHandler>
 }
 

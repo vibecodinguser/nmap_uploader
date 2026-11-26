@@ -1,7 +1,7 @@
 import { browser } from 'wxt/browser'
 import { YANDEX_PERMISSION_REQUEST } from '@/lib/manifest/yandex_optional_hosts'
 
-export type YandexPermissionState = 'granted' | 'denied' | 'unknown'
+type YandexPermissionState = 'granted' | 'denied' | 'unknown'
 
 /**
  * Выданы ли расширению разрешения на домены Яндекса и `identity`.

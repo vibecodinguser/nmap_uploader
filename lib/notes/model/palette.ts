@@ -25,10 +25,6 @@ export const DEFAULT_NOTE_COLOR = NOTE_PALETTE[7]
 
 export const HATCH_PATTERNS = ['diagonal', 'backDiagonal', 'grid', 'dots', 'horizontal'] as const
 
-export const DEFAULT_HATCH = {
-  pattern: 'diagonal',
-} as const
-
 /** Толщина линий узора: одна и та же у всех, чтобы штриховка не «жирнела». */
 export const HATCH_LINE_WIDTH = 2
 

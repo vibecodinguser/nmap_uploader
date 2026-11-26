@@ -1,4 +1,3 @@
-import { PERMISSION_REQUIRED } from '@/lib/notes/storage/errors'
 import { requestYandexPermissions } from '@/lib/permissions/panel_requester'
 import { hasYandexPermissions } from '@/lib/yandex/permissions'
 
@@ -35,4 +34,3 @@ export const requestYandexAccess = async (): Promise<boolean> => {
  * Одна и та же константа и для фона, и для панели: по ней UI различает
  * «нажмите, чтобы разрешить» и «войдите в Яндекс».
  */
-export { PERMISSION_REQUIRED }

@@ -1,7 +1,7 @@
 import { ERR_SHAPEFILE, ProcessingError } from '@/lib/errors'
 import { isValidGeoJsonLatitude, isValidGeoJsonLongitude } from '@/lib/geojson/geojson_spec'
 
-export type TopoJsonTransform = {
+type TopoJsonTransform = {
   scale: [number, number]
   translate: [number, number]
 }
@@ -17,17 +17,17 @@ export const isPlainObject = (value: unknown): value is Record<string, unknown> 
   return false
 }
 
-export const isLength2Array = (value: unknown): value is [unknown, unknown] => {
+const isLength2Array = (value: unknown): value is [unknown, unknown] => {
   return Array.isArray(value) && value.length === 2
 }
 
-export const assertFiniteNumber = (value: number, context: string): void => {
+const assertFiniteNumber = (value: number, context: string): void => {
   if (!Number.isFinite(value)) {
     throw toProcessingError(`${context}: недопустимое число (NaN или Infinity)`)
   }
 }
 
-export const assertInteger32 = (value: number, context: string): void => {
+const assertInteger32 = (value: number, context: string): void => {
   if (!Number.isInteger(value)) {
     throw toProcessingError(`${context}: квантованная позиция должна быть целым числом`)
   }
@@ -100,7 +100,7 @@ export const validateTopoJsonTransform = (
   throw toProcessingError(`${context}: transform должен быть объектом`)
 }
 
-export const isValidTopoJsonBboxLength = (length: number): boolean => {
+const isValidTopoJsonBboxLength = (length: number): boolean => {
   return length === 4 || length === 6
 }
 

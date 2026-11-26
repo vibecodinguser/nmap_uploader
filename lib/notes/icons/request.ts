@@ -9,7 +9,7 @@ import { isAllowedIconFileName, NOTES_ICON_ALLOWED_TYPES, NOTES_ICON_MAX_BYTES }
  * проверяется, проверяется до обращения к Диску.
  */
 
-export type IconUploadRequest = { fileName: string; contentType: string; bytes: Uint8Array }
+type IconUploadRequest = { fileName: string; contentType: string; bytes: Uint8Array }
 
 const decodeBase64 = (value: string): Uint8Array => {
   const binary = atob(value)

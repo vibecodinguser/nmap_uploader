@@ -12,10 +12,8 @@ import {
   processZip,
 } from './format_processors'
 
-export type { GeoConvertError, GeoConvertResult, ProcessGeoFileInput } from '@/lib/geo_converters'
-export { processGeoFile } from '@/lib/geo_converters'
 export * from './format_processors'
-export { processGeoJsonData } from './geojson'
+
 export * from './zip_handler'
 
 type FileProcessor = (input: ConverterInput) => Promise<ProcessResult>
@@ -30,7 +28,7 @@ const extensionProcessors: Record<string, FileProcessor> = {
   wkt: processWkt,
 }
 
-export type UploadFileInput = {
+type UploadFileInput = {
   name: string
   buffer: ArrayBuffer | BinaryPayload
 }

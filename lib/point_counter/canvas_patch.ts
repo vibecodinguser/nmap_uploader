@@ -8,7 +8,7 @@ import { isExternalCounterDisabled } from './counter_source'
 import type { PointCounterUi } from './dom_ui'
 import { getThrottledSystemRemainingVertices, isGeometryEditorActive } from './system_banner'
 
-export interface CanvasCounterPatchOptions {
+interface CanvasCounterPatchOptions {
   ui: PointCounterUi
   getLastMapInteractionTime: () => number
   isEnabled?: () => boolean

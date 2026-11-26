@@ -2,21 +2,20 @@ import type { MapLocation } from '@/lib/go_to_link'
 
 const TILE_SIZE = 256
 
-export type MapViewPixels = {
+type MapViewPixels = {
   width: number
   height: number
 }
 
-export const lngToPixelX = (lng: number, zoom: number): number =>
+const lngToPixelX = (lng: number, zoom: number): number =>
   ((lng + 180) / 360) * TILE_SIZE * 2 ** zoom
 
-export const pixelToLng = (x: number, zoom: number): number =>
-  (x / (TILE_SIZE * 2 ** zoom)) * 360 - 180
+const pixelToLng = (x: number, zoom: number): number => (x / (TILE_SIZE * 2 ** zoom)) * 360 - 180
 
 const R = 6378137.0
 const EQUATOR = 40075016.685578488
 
-export const latToPixelY = (
+const latToPixelY = (
   lat: number,
   zoom: number,
   projection: 'spherical' | 'elliptical' = 'spherical',
@@ -40,7 +39,7 @@ export const latToPixelY = (
   return y * TILE_SIZE * 2 ** zoom
 }
 
-export const pixelToLat = (
+const pixelToLat = (
   y: number,
   zoom: number,
   projection: 'spherical' | 'elliptical' = 'spherical',

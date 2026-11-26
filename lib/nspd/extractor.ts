@@ -5,9 +5,9 @@ import type { Feature, FeatureCollection, Geometry } from 'geojson'
 import { normalizeFeatureCollectionToWgs84 } from '@/lib/nspd/coordinates'
 
 export const CADASTRAL_NUMBER_REGEX = /\b\d{1,2}\s*:\s*\d{1,2}\s*:\s*\d{6,7}\s*:\s*\d+\b/
-export const REGISTRY_NUMBER_REGEX = /\b\d{1,2}\s*:\s*\d{1,2}\s*-\s*[\d.]+\b/
+const REGISTRY_NUMBER_REGEX = /\b\d{1,2}\s*:\s*\d{1,2}\s*-\s*[\d.]+\b/
 
-export const REGISTRY_PROPERTY_KEYS = [
+const REGISTRY_PROPERTY_KEYS = [
   'reg_num',
   'reg_number',
   'registry_number',

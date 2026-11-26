@@ -1,5 +1,4 @@
 import { useLocale } from '@/hooks/useLocale'
-import type { DrawableNoteKind } from '@/lib/notes/protocol'
 import { useCollapsedGroupsPersistence } from './notes_panel/useCollapsedGroupsPersistence'
 import { useNoteGroups } from './notes_panel/useNoteGroups'
 import { useNoteRemoval } from './notes_panel/useNoteRemoval'
@@ -10,9 +9,6 @@ import { useNotesPanelState } from './notes_panel/useNotesPanelState'
 import { useNotesSync } from './notes_panel/useNotesSync'
 import { useNotesView } from './notes_panel/useNotesView'
 import { useNotesWrites } from './notes_panel/useNotesWrites'
-
-export type { NotesPanelMode } from '@/lib/notes/panel/state'
-export type DrawableKind = DrawableNoteKind
 
 /**
  * Состояние панели заметок.

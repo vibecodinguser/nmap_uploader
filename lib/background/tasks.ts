@@ -5,10 +5,7 @@ export const logBackgroundTaskFailure = (label: string, error: unknown): void =>
   console.warn(`[yamapper] ${label} failed:`, error)
 }
 
-export const executeBackgroundTask = async (
-  task: Promise<unknown>,
-  label: string,
-): Promise<void> => {
+const executeBackgroundTask = async (task: Promise<unknown>, label: string): Promise<void> => {
   try {
     await task
   } catch (error: unknown) {

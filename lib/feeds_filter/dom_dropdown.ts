@@ -15,7 +15,7 @@ export * from './dropdown_popup_position'
 export * from './dropdown_styles'
 export * from './dropdown_theme'
 
-export interface FilterDropdownOptions {
+interface FilterDropdownOptions {
   initialDays?: number
   onPeriodChange?: (days: number) => void
   onStopLoading?: () => void

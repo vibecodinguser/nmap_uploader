@@ -1,12 +1,12 @@
 /**
  * Чистая логика детекции цветов, парсинга RGB и сопоставления с magenta.
  */
-export const MAGENTA_NAMES = new Set(['magenta', '#f0f', '#ff00ff'])
+const MAGENTA_NAMES = new Set(['magenta', '#f0f', '#ff00ff'])
 export const RECOLOR_MARKER = 'data-nmap-recolored'
 export const RECOLOR_STYLE_ID = 'nmap-stroke-recolor'
 export const KNOWN_COLORS_KEY = '__NMAP_KNOWN_STROKE_COLORS__'
 
-export type RgbColor = {
+type RgbColor = {
   r: number
   g: number
   b: number

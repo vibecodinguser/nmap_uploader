@@ -9,7 +9,7 @@
  * тот же пользовательский ввод, и второй «Новая группа » рядом с «Новая
  * группа» читался бы как дубль.
  */
-export const uniqueName = (base: string, existingNames: readonly string[]): string => {
+const uniqueName = (base: string, existingNames: readonly string[]): string => {
   const trimmedBase = base.trim()
   const taken = new Set(existingNames.map((name) => name.trim()))
 

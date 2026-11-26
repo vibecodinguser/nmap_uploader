@@ -7,13 +7,13 @@ export * from './card_scanner'
 export * from './card_waiter'
 export * from './scroll_scanner'
 
-export interface FeedDailyLoaderProgress {
+interface FeedDailyLoaderProgress {
   loadedCardsCount: number
   targetDays: number
   isFinished: boolean
 }
 
-export interface FeedDailyLoaderOptions {
+interface FeedDailyLoaderOptions {
   maxStepsPerDay?: number
   stepDelayMs?: number
   initialDays?: number

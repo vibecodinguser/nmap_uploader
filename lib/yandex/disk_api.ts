@@ -1,38 +1,18 @@
 import type { NmapIndex } from '@/lib/nmap_index'
 import { getHeaders } from './auth'
 import { fetchDiskListOffset } from './disk_folder_lister'
-import {
-  ensureApplicationsFolder as ensureApps,
-  ensureFolderExists as ensureFolder,
-  resolveFolderPath as resolveFolder,
-} from './disk_folder_ops'
+import { ensureFolderExists, resolveFolderPath as resolveFolder } from './disk_folder_ops'
 import {
   downloadIndexJson as downloadIndex,
   uploadIndexJson as uploadIndex,
 } from './disk_index_storage'
-import {
-  fromDiskApiPath,
-  getDiskApiPathVariants,
-  getParentLogicalPath,
-  isApplicationsFolder,
-  toDiskApiPath,
-} from './disk_path_utils'
 
 export * from './disk_folder_lister'
 export * from './disk_folder_ops'
 export * from './disk_index_storage'
 export * from './disk_path_utils'
-export {
-  fromDiskApiPath,
-  getDiskApiPathVariants,
-  getParentLogicalPath,
-  isApplicationsFolder,
-  toDiskApiPath,
-}
 
 export const resolveFolderPath = resolveFolder
-export const ensureFolderExists = ensureFolder
-export const ensureApplicationsFolder = ensureApps
 
 export const listExistingDateFolders = async ({ token }: { token: string }): Promise<string[]> => {
   const basePath = resolveFolderPath({ includeToday: false })

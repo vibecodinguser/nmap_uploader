@@ -1,7 +1,7 @@
 import { COMMIT_STATE_ICONS } from '@/lib/nmaps_commit_state_icons'
 import type { FeedActionId, FeedStatusId } from './core'
 
-export interface StatusFilterOption {
+interface StatusFilterOption {
   readonly id: FeedStatusId
   readonly label: string
   readonly iconClass?: string
@@ -9,7 +9,7 @@ export interface StatusFilterOption {
   readonly colorClass?: string
 }
 
-export interface ActionFilterOption {
+interface ActionFilterOption {
   readonly id: FeedActionId
   readonly label: string
   readonly color?: string
@@ -17,7 +17,6 @@ export interface ActionFilterOption {
 }
 
 export const FEEDS_FILTER_SELECT_ID = 'yamapper-feeds-filter-select'
-export const FEEDS_FILTER_BAR_ID = FEEDS_FILTER_SELECT_ID
 export const FEEDS_FILTER_POPUP_ID = 'yamapper-feeds-filter-popup'
 export const FEEDS_ACTION_FILTER_SELECT_ID = 'yamapper-feeds-action-filter-select'
 export const FEEDS_ACTION_FILTER_POPUP_ID = 'yamapper-feeds-action-filter-popup'
@@ -25,9 +24,6 @@ export const FEEDS_FILTER_STYLES_ID = 'yamapper-feeds-filter-styles'
 export const FEED_HIDDEN_CLASS = 'yamapper-feed-event-hidden'
 
 export const HISTORY_PERIOD_OPTIONS = [1, 3, 7] as const
-export type HistoryPeriodDays = (typeof HISTORY_PERIOD_OPTIONS)[number]
-export const DEFAULT_HISTORY_PERIOD_DAYS: HistoryPeriodDays = 1
-
 export const ACTION_FILTER_OPTIONS: readonly ActionFilterOption[] = [
   { id: 'all', label: 'Все действия' },
   { id: 'delete', label: 'Удаления', color: '#ff6464', colorClass: 'nk-badge_color_red' },

@@ -17,9 +17,9 @@ const sizeFor = (count: number): number => {
 }
 
 /** Склонение не нужно: в значке только число, поэтому форма одна. */
-export const clusterLabel = (count: number): string => String(count)
+const clusterLabel = (count: number): string => String(count)
 
-export const buildClusterIconHref = ({ count }: { count: number }): string => {
+const buildClusterIconHref = ({ count }: { count: number }): string => {
   const size = sizeFor(count)
   const radius = size / 2
   const fontSize = size <= 26 ? 12 : size <= 38 ? 13 : 14

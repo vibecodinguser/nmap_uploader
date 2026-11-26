@@ -8,7 +8,7 @@ import { clearAuth, getStoredAuth, isExplicitLogout, saveAuth } from './storage'
 export * from './auth_client'
 export * from './auth_flow'
 
-export const isStoredAuthValid = async ({ token }: { token: string }): Promise<boolean> => {
+const isStoredAuthValid = async ({ token }: { token: string }): Promise<boolean> => {
   try {
     await verifyDiskAccess({ token })
     return true
@@ -17,7 +17,7 @@ export const isStoredAuthValid = async ({ token }: { token: string }): Promise<b
   }
 }
 
-export const refreshStoredUserProfile = async ({
+const refreshStoredUserProfile = async ({
   token,
   user,
 }: {

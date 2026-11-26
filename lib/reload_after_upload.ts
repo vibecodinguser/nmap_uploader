@@ -81,7 +81,3 @@ export const triggerEditorReloadIfNeeded = async ({
     console.warn('[yamapper] editor page reload failed:', error)
   }
 }
-
-export const reloadEditorPage = async (): Promise<void> => {
-  await triggerEditorReloadIfNeeded({ reloadAfterUpload: true, uploadOk: true })
-}

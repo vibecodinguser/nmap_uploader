@@ -3,12 +3,10 @@
  */
 export const MAX_POINTS_LIMIT = 500
 export const MAX_OBSERVED_POINTS = 1000
-export const WARNING_POINTS_THRESHOLD = 100
-export const DANGER_POINTS_THRESHOLD = 50
+const WARNING_POINTS_THRESHOLD = 100
+const DANGER_POINTS_THRESHOLD = 50
 export const MAP_INTERACTION_TIMEOUT_MS = 120000
-export const PRE_RENDERED_TRACK_MIN_POINTS = 15
-
-export type CounterThemeStyle = {
+type CounterThemeStyle = {
   backgroundColor: string
   color: string
 }

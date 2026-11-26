@@ -1,6 +1,5 @@
 import { browser } from 'wxt/browser'
 import { YANDEX_PERMISSION_REQUEST } from '@/lib/manifest/yandex_optional_hosts'
-import { hasYandexPermissions } from '@/lib/yandex/permissions'
 
 /**
  * Запрос необязательных разрешений Яндекса из страницы расширения.
@@ -34,5 +33,3 @@ export const requestYandexPermissions = async (): Promise<boolean> => {
     return false
   }
 }
-
-export { hasYandexPermissions }

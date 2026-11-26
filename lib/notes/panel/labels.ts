@@ -7,7 +7,7 @@ import type { NoteKind } from '../model/types'
  * `notesPanel.kindPoint`: сопоставление нужно и свойствам, и автоимени, и
  * списку, поэтому живёт в одном месте.
  */
-export type KindLabelKey =
+type KindLabelKey =
   | 'notesPanel.kindPoint'
   | 'notesPanel.kindLine'
   | 'notesPanel.kindPolygon'

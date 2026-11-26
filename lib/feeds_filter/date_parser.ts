@@ -2,7 +2,7 @@ import { calculateDayAgeFromDateText, parseEventDateString } from './date_string
 
 export * from './date_string_parser'
 
-export const TARGET_EVENT_DATE_SELECTORS = [
+const TARGET_EVENT_DATE_SELECTORS = [
   '.nk-date-time.nk-date-time_mode_relative.nk-event-view__date',
   '.nk-date-time.nk-event-view__date',
   '.nk-event-view__date',
@@ -17,7 +17,7 @@ export const TARGET_EVENT_DATE_SELECTORS = [
 /**
  * Находит основной DOM-элемент даты в карточке события.
  */
-export const findEventCardDateElement = (card: HTMLElement): HTMLElement | null => {
+const findEventCardDateElement = (card: HTMLElement): HTMLElement | null => {
   for (const selector of TARGET_EVENT_DATE_SELECTORS) {
     const el = card.querySelector<HTMLElement>(selector)
     if (el) {

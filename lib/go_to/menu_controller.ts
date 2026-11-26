@@ -13,14 +13,14 @@ import { getOwnedElementById } from '@/lib/go_to/ownership'
 import { getServiceButton } from '@/lib/go_to/toolbar_mount'
 import { hideGoToTooltip } from '@/lib/go_to_dom'
 import { buildGoToLink, getMapLocationFromUrl } from '@/lib/go_to_link'
-import { type GoToItem, getActiveGoToItems, getStoredGoToItems } from '@/lib/go_to_settings'
+import { type GoToItem, getActiveGoToItems } from '@/lib/go_to_settings'
 import { GO_TO_SOURCES, getGoToSourceIconUrl } from '@/lib/go_to_sources'
 import { GO_TO_MENU_ITEM_HOVERED_CLASS, GO_TO_POPUP_VISIBLE_CLASS } from '@/lib/go_to_styles'
 import { syncGoToTheme } from '@/lib/go_to_theme'
 import type { Locale } from '@/lib/i18n/locale.types'
 
-export const getMenu = (): HTMLElement | null => getOwnedElementById(MENU_ID)
-export const getMenuItems = (): HTMLElement | null => getOwnedElementById(MENU_ITEMS_ID)
+const getMenu = (): HTMLElement | null => getOwnedElementById(MENU_ID)
+const getMenuItems = (): HTMLElement | null => getOwnedElementById(MENU_ITEMS_ID)
 
 export const openGoToLink = (
   sourceName: string,
@@ -153,11 +153,4 @@ export const showGoToMenu = (): void => {
   window.addEventListener('resize', positionMenu)
 
   hideGoToTooltip()
-}
-
-export const refreshGoToMenuItems = async (locale: Locale): Promise<void> => {
-  const items = await getStoredGoToItems()
-  renderMenuItems(items, locale, (sourceName, keepFocus) => {
-    openGoToLink(sourceName, keepFocus, hideGoToMenu)
-  })
 }

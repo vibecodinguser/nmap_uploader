@@ -7,7 +7,7 @@ import {
   YAMAPPER_MSG_SOURCE,
 } from '@/lib/go_to_map_sync'
 
-export const readLayersFromNakarteHash = (hash: string): string => {
+const readLayersFromNakarteHash = (hash: string): string => {
   const layersMatch = hash.match(/(?:^|&)l=([^&]+)/u)
   return layersMatch?.[1] ?? 'S/K'
 }

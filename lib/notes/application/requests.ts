@@ -13,7 +13,7 @@ export type Parsed<T> = { ok: true; value: T } | { ok: false; error: string }
 
 const invalid = (): { ok: false; error: string } => ({ ok: false, error: 'INVALID_PAYLOAD' })
 
-export type SaveNoteRequest = { note: Note; geometry: NoteGeometry }
+type SaveNoteRequest = { note: Note; geometry: NoteGeometry }
 
 export const parseSaveNoteRequest = (message: Record<string, unknown>): Parsed<SaveNoteRequest> => {
   const note = normalizeNote(message.note)
@@ -22,7 +22,7 @@ export const parseSaveNoteRequest = (message: Record<string, unknown>): Parsed<S
   return { ok: true, value: { note, geometry } }
 }
 
-export type DeleteNoteRequest = { noteId: string; date?: string }
+type DeleteNoteRequest = { noteId: string; date?: string }
 
 export const parseDeleteNoteRequest = (
   message: Record<string, unknown>,
@@ -32,7 +32,7 @@ export const parseDeleteNoteRequest = (
   return { ok: true, value: { noteId: message.noteId, date } }
 }
 
-export type SaveGroupRequest = { group: NoteGroup }
+type SaveGroupRequest = { group: NoteGroup }
 
 export const parseSaveGroupRequest = (
   message: Record<string, unknown>,
@@ -42,7 +42,7 @@ export const parseSaveGroupRequest = (
   return { ok: true, value: { group } }
 }
 
-export type DeleteGroupRequest = { groupId: string; mode: 'keepNotes' | 'cascade' }
+type DeleteGroupRequest = { groupId: string; mode: 'keepNotes' | 'cascade' }
 
 export const parseDeleteGroupRequest = (
   message: Record<string, unknown>,
@@ -61,7 +61,7 @@ export const parseNoteIds = (message: Record<string, unknown>): Parsed<string[]>
   return { ok: true, value: noteIds }
 }
 
-export type MoveNotesRequest = { noteIds: string[]; groupId: string | null }
+type MoveNotesRequest = { noteIds: string[]; groupId: string | null }
 
 export const parseMoveNotesRequest = (
   message: Record<string, unknown>,
@@ -72,7 +72,7 @@ export const parseMoveNotesRequest = (
   return { ok: true, value: { noteIds: noteIds.value, groupId } }
 }
 
-export type MoveNoteRequest = { noteId: string; groupId: string | null }
+type MoveNoteRequest = { noteId: string; groupId: string | null }
 
 export const parseMoveNoteRequest = (message: Record<string, unknown>): Parsed<MoveNoteRequest> => {
   if (typeof message.noteId !== 'string') return invalid()

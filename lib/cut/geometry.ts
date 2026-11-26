@@ -18,7 +18,7 @@ export type LineCoordinates = number[][]
 export type Point2 = [number, number]
 
 /** Ближайшая к клику точка на линии. */
-export type LineCut = {
+type LineCut = {
   /** Индекс отрезка, на который попал клик. */
   segmentIndex: number
   /** Доля вдоль отрезка: 0 — начало, 1 — конец. */
@@ -28,13 +28,13 @@ export type LineCut = {
 }
 
 /** Минимальное число вершин в части: часть из одной точки не редактируется. */
-export const MIN_PART_POINTS = 2
+const MIN_PART_POINTS = 2
 
 /** Минимальная длина части в метрах: короче — это уже не часть, а обрубок. */
-export const MIN_PART_LENGTH_METERS = 1
+const MIN_PART_LENGTH_METERS = 1
 
 /** Насколько близко к вершине должен попасть разрез, чтобы не добавлять точку. */
-export const VERTEX_SNAP_RATIO = 0.02
+const VERTEX_SNAP_RATIO = 0.02
 
 const SAME_POINT_EPS = 1e-12
 const EARTH_RADIUS_METERS = 6_371_008.8
@@ -145,7 +145,7 @@ const isValidPart = (
   return lineLengthMeters(part) >= minLengthMeters
 }
 
-export type SplitLineOptions = {
+type SplitLineOptions = {
   minPartPoints?: number
   minPartLengthMeters?: number
 }

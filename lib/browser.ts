@@ -1,11 +1,8 @@
-/** Сборка или runtime Firefox (Side Panel). */
-export const isFirefox = (): boolean => import.meta.env.BROWSER === 'firefox'
-
 /**
  * Self-contained Yandex Browser check for the service worker and executeScript injection.
  * Must not rely on module closures so it can be serialized into a page context.
  */
-export function detectYandexBrowserInPageContext(): boolean {
+function detectYandexBrowserInPageContext(): boolean {
   const brands = (navigator as Navigator & { userAgentData?: { brands?: { brand: string }[] } })
     .userAgentData?.brands
 

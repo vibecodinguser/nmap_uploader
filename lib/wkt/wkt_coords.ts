@@ -24,7 +24,7 @@ const assertFiniteCoordinate = (value: number, context: string): void => {
   throw toProcessingError(`${context}: ${ERR_FINITE_COORDINATE}`)
 }
 
-export const validatePosition = (position: Position, context: string): void => {
+const validatePosition = (position: Position, context: string): void => {
   if (position.length < 2) {
     throw toProcessingError(`${context}: ${ERR_POSITION_MIN_XY}`)
   }
@@ -42,7 +42,7 @@ export const validatePosition = (position: Position, context: string): void => {
   }
 }
 
-export const validatePositionList = (positions: Position[], context: string): void => {
+const validatePositionList = (positions: Position[], context: string): void => {
   for (let index = 0; index < positions.length; index += 1) {
     validatePosition(positions[index], `${context}[${index}]`)
   }

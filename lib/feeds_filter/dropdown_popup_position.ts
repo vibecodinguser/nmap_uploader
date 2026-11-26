@@ -1,4 +1,4 @@
-export interface PopupPositionOptions {
+interface PopupPositionOptions {
   referenceElement: HTMLElement
   popupElement: HTMLElement
   offsetY?: number

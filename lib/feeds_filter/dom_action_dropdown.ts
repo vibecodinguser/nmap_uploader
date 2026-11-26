@@ -19,7 +19,7 @@ export interface ActionFilterDropdownController {
 /**
  * Создает DOM-структуру селекта фильтра действий правок.
  */
-export const createActionDropdownButtonElements = (selectId: string) => {
+const createActionDropdownButtonElements = (selectId: string) => {
   const selectHost = document.createElement('span')
   selectHost.id = selectId
   selectHost.className =
@@ -66,7 +66,7 @@ export const createActionDropdownButtonElements = (selectId: string) => {
 /**
  * Создает выпадающее меню действий.
  */
-export const createActionDropdownMenu = ({
+const createActionDropdownMenu = ({
   initialFilter,
   onSelect,
 }: {

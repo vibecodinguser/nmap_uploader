@@ -29,10 +29,10 @@ import {
 import { isLineCategory } from './targets'
 
 /** Допуск попадания клика по линии, пиксели. */
-export const CUT_TOLERANCE_PX = 10
+const CUT_TOLERANCE_PX = 10
 
 /** Минимальное расстояние от точки разреза до конца линии, метры. */
-export const MIN_CUT_GAP_METERS = 1
+const MIN_CUT_GAP_METERS = 1
 
 /**
  * Допуск при сверке начала линии с запомненной первой границей, градусы
@@ -62,7 +62,7 @@ type ProjectionLike = {
   toGlobalPixels: (coords: number[], zoom: number) => number[]
 }
 
-export type CutModeOptions = {
+type CutModeOptions = {
   /** Текущий редактор; `null`, когда редактор закрыт. */
   getEditor: () => CutEditor | null
   /** Допуск попадания в пикселях; по умолчанию `CUT_TOLERANCE_PX`. */

@@ -1,6 +1,6 @@
 import { CLICK_RETRY_DELAYS_MS, isFeedTriggerClick } from './lifecycle_config'
 
-export interface FeedFilterListenersOptions {
+interface FeedFilterListenersOptions {
   isFeatureEnabled: () => boolean
   checkAndAttachFilter: () => void
   syncHeight: () => void

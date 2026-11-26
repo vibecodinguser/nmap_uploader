@@ -1,16 +1,16 @@
 /**
  * Чистая математика меркаторских проекций для Народной карты Яндекса.
  */
-export const R_EARTH = 6378137
-export const E_ECCENTRICITY = 0
-export const EQUATOR_CIRCUMFERENCE = 40075016.685578488
+const R_EARTH = 6378137
+const E_ECCENTRICITY = 0
+const EQUATOR_CIRCUMFERENCE = 40075016.685578488
 
-export type MercatorPoint = {
+type MercatorPoint = {
   x: number
   y: number
 }
 
-export type LatLon = {
+type LatLon = {
   lat: number
   lon: number
 }

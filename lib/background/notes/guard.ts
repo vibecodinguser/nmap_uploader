@@ -62,9 +62,7 @@ export const resetNotesSession = async (): Promise<void> => {
   }
 }
 
-export type NotesPortsAccess =
-  | { ok: true; ports: NotesPorts }
-  | { ok: false; error: DiskAccessError }
+type NotesPortsAccess = { ok: true; ports: NotesPorts } | { ok: false; error: DiskAccessError }
 
 /**
  * Порты хранилища заметок текущего аккаунта.

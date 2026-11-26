@@ -1,13 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocale } from '@/hooks/useLocale'
 import type { Note, NoteGroup } from '@/lib/notes/model/types'
-import {
-  buildListRows,
-  type PositionedRow,
-  positionRows,
-  totalHeight,
-  visibleSlice,
-} from '@/lib/notes/panel/rows'
+import { buildListRows, positionRows, totalHeight, visibleSlice } from '@/lib/notes/panel/rows'
 
 const DEFAULT_VIEWPORT = 420
 
@@ -75,14 +69,4 @@ export const useVirtualRows = ({
   }
 
   return { viewportRef, items, height, onScroll, rows, positioned }
-}
-
-export type VirtualRows = {
-  items: PositionedRow[]
-  /** Полный набор строк, а не только видимое окно: нужен клавиатуре. */
-  rows: ReturnType<typeof buildListRows>
-  positioned: PositionedRow[]
-  height: number
-  viewportRef: React.RefObject<HTMLDivElement | null>
-  onScroll: (event: React.UIEvent<HTMLDivElement>) => void
 }

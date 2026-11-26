@@ -26,7 +26,7 @@ const isGoToItem = (value: unknown): value is GoToItem => {
 /**
  * Приводит устаревшие форматы хранения к списку { name, active }.
  */
-export const convertLegacyGoToItems = (stored: unknown): GoToItem[] => {
+const convertLegacyGoToItems = (stored: unknown): GoToItem[] => {
   if (!Array.isArray(stored) || stored.length === 0) return []
 
   if (typeof stored[0] === 'string') {

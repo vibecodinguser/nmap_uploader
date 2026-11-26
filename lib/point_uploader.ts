@@ -1,10 +1,10 @@
 import type { NmapIndex, NmapPoint } from '@/lib/nmap_index'
 
-export const MIN_LAT = -90
-export const MAX_LAT = 90
-export const MIN_LON = -180
-export const MAX_LON = 180
-export const POINT_DESCRIPTION_MAX_LENGTH = 150
+const MIN_LAT = -90
+const MAX_LAT = 90
+const MIN_LON = -180
+const MAX_LON = 180
+const POINT_DESCRIPTION_MAX_LENGTH = 150
 
 /** Проверяет, что координаты в допустимых диапазонах. */
 export const areCoordinatesValid = ({

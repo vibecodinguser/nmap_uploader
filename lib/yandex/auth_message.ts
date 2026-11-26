@@ -2,7 +2,7 @@ import { browser } from 'wxt/browser'
 import type { Locale } from '@/lib/i18n/locale.types'
 import type { YandexUser } from './client'
 
-export type EnsureAuthResponse = {
+type EnsureAuthResponse = {
   ok: boolean
   user?: YandexUser | null
   avatarDataUrl?: string | null

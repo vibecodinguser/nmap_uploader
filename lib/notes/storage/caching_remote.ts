@@ -17,12 +17,12 @@ import type { NotesRemote } from './remote'
  * при явной загрузке снимка (`NOTES_LOAD`), при смене аккаунта и при любой
  * ошибке записи: после ошибки доверять прочитанному нельзя.
  */
-export type CachingNotesRemote = NotesRemote & {
+type CachingNotesRemote = NotesRemote & {
   /** Забыть всё прочитанное: следующий вызов пойдёт на Диск. */
   invalidate: () => void
 }
 
-export type CachingNotesRemoteOptions = {
+type CachingNotesRemoteOptions = {
   /** Сколько миллисекунд прочитанное считается свежим. */
   ttlMs?: number
   now?: () => number

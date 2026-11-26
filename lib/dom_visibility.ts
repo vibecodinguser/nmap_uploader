@@ -36,11 +36,3 @@ export const isElementVisible = (element: HTMLElement | null): boolean => {
 
   return true
 }
-
-/** Возвращает первый видимый элемент, иначе первый непустой. */
-export const pickVisibleFirst = (
-  candidates: readonly (HTMLElement | null)[],
-): HTMLElement | null => {
-  const list = candidates.filter((item): item is HTMLElement => item !== null)
-  return list.find(isElementVisible) ?? list[0] ?? null
-}

@@ -2,8 +2,8 @@ import type { LonLat } from '../types'
 
 const METERS_PER_DEGREE = 111_320
 const EARTH_RADIUS_METERS = 6_371_000
-export const CIRCLE_SEGMENTS = 72
-export const CIRCLE_MIN_RADIUS_METERS = 5
+const CIRCLE_SEGMENTS = 72
+const CIRCLE_MIN_RADIUS_METERS = 5
 
 /** Длина одного градуса долготы на широте: к полюсам она стремится к нулю. */
 const metersPerDegreeLon = (latitude: number): number => {

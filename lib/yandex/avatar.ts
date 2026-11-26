@@ -1,6 +1,6 @@
 import type { YandexAvatarSize, YandexUser } from './constants'
 
-export const getYandexAvatarUrl = ({
+const getYandexAvatarUrl = ({
   avatarId,
   size = 'islands-small',
 }: {

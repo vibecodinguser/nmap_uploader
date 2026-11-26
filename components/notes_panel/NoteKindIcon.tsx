@@ -7,7 +7,7 @@ import type { NoteKind } from '@/lib/notes/model/types'
  * фигуры должна быть одного размера, иначе элементы выглядят из разных
  * наборов. 22 px — размер строки списка.
  */
-export const NOTE_KIND_ICON_SIZE = 22
+const NOTE_KIND_ICON_SIZE = 22
 
 /**
  * Иконка строки списка.

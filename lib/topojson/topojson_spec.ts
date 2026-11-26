@@ -35,7 +35,7 @@ const objectHasConvertibleGeometry = (topology: Topology, objectName: string): b
 }
 
 /** Проверяет наличие конвертируемой геометрии после topojson-client. */
-export const assertTopoJsonHasConvertibleGeometry = (topology: Topology): void => {
+const assertTopoJsonHasConvertibleGeometry = (topology: Topology): void => {
   const objects = topology.objects ?? {}
   const objectNames = Object.keys(objects)
   let hasGeometry = false
@@ -58,7 +58,7 @@ const hasUtf8Bom = (bytes: Uint8Array): boolean => {
 }
 
 /** Декодирует UTF-8 TopoJSON с удалением BOM. */
-export const decodeUtf8TopoJsonText = (buffer: ArrayBuffer): string => {
+const decodeUtf8TopoJsonText = (buffer: ArrayBuffer): string => {
   const bytes = new Uint8Array(buffer)
   const payload = hasUtf8Bom(bytes) ? bytes.subarray(3) : bytes
   const decoder = new TextDecoder('utf-8')

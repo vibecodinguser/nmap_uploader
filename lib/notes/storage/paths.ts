@@ -13,7 +13,7 @@ export const NOTES_ROOT_FOLDER = 'Приложения/Nmap Uploader'
 export const NOTES_FOLDER = `${NOTES_ROOT_FOLDER}/notes`
 export const NOTES_MANIFEST_PATH = `${NOTES_FOLDER}/index.json`
 export const NOTES_GEOMETRY_FOLDER = `${NOTES_FOLDER}/geometry`
-export const NOTES_ICONS_FOLDER = `${NOTES_FOLDER}/icons`
+const NOTES_ICONS_FOLDER = `${NOTES_FOLDER}/icons`
 
 /**
  * Прежнее место заметок — внутри папки Блокнота.
@@ -24,10 +24,10 @@ export const NOTES_ICONS_FOLDER = `${NOTES_FOLDER}/icons`
  */
 export const LEGACY_NOTES_FOLDER = `${YANDEX_DISK_FOLDER}/notes`
 export const LEGACY_NOTES_MANIFEST_PATH = `${LEGACY_NOTES_FOLDER}/index.json`
-export const LEGACY_NOTES_GEOMETRY_FOLDER = `${LEGACY_NOTES_FOLDER}/geometry`
-export const LEGACY_NOTES_ICONS_FOLDER = `${LEGACY_NOTES_FOLDER}/icons`
+const LEGACY_NOTES_GEOMETRY_FOLDER = `${LEGACY_NOTES_FOLDER}/geometry`
+const LEGACY_NOTES_ICONS_FOLDER = `${LEGACY_NOTES_FOLDER}/icons`
 
-export type NotesStorageLocation = 'current' | 'legacy'
+type NotesStorageLocation = 'current' | 'legacy'
 
 let storageLocation: NotesStorageLocation = 'current'
 
@@ -35,8 +35,6 @@ let storageLocation: NotesStorageLocation = 'current'
 export const setNotesStorageLocation = (location: NotesStorageLocation): void => {
   storageLocation = location
 }
-
-export const getNotesStorageLocation = (): NotesStorageLocation => storageLocation
 
 const isLegacy = (): boolean => storageLocation === 'legacy'
 

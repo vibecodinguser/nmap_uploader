@@ -132,5 +132,3 @@ export const useNotesView = ({ state, dispatch }: NotesPanelStore) => {
     setMode: (mode: typeof state.mode) => dispatch({ type: 'modeChanged', mode }),
   }
 }
-
-export type NotesView = ReturnType<typeof useNotesView>

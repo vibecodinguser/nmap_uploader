@@ -1,6 +1,5 @@
 import { browser } from 'wxt/browser'
 import {
-  convertLegacyGoToItems,
   GO_TO_ITEMS_STORAGE_KEY,
   GO_TO_MENU_ENABLED_STORAGE_KEY,
   type GoToItem,
@@ -11,7 +10,6 @@ import {
 
 export type { GoToItem }
 export {
-  convertLegacyGoToItems,
   GO_TO_ITEMS_STORAGE_KEY,
   GO_TO_MENU_ENABLED_STORAGE_KEY,
   getActiveGoToItems,

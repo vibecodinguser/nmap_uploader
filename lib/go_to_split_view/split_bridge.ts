@@ -13,7 +13,7 @@ import {
 import { GO_TO_SPLIT_BUTTON_ID } from '@/lib/go_to_split_button'
 import { GO_TO_SPLIT_BUTTON_ACTIVE_CLASS } from '@/lib/go_to_styles'
 
-export const getSplitButton = (): HTMLButtonElement | null =>
+const getSplitButton = (): HTMLButtonElement | null =>
   getOwnedElementById(GO_TO_SPLIT_BUTTON_ID) as HTMLButtonElement | null
 
 export const updateSplitButtonState = (isOpen: boolean): void => {

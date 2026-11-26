@@ -1,11 +1,11 @@
 import { observeNativeTheme, readNativeTheme } from '@/lib/native_theme'
 import type { Theme } from '@/lib/theme'
 
-export const GO_TO_MENU_ITEM_HOVER_VAR = '--yamapper-menu-item-hover-bg'
+const GO_TO_MENU_ITEM_HOVER_VAR = '--yamapper-menu-item-hover-bg'
 
 const GO_TO_THEME_TARGETS = '.yamapper-popup:not(.yamapper-popup--tooltip), .yamapper-split'
 
-export type GoToThemeColors = {
+type GoToThemeColors = {
   background: string
   color: string
   hoverBackground: string
@@ -34,7 +34,7 @@ const GO_TO_THEME_DARK: GoToThemeColors = {
 export const resolveGoToThemeColors = (theme: Theme): GoToThemeColors =>
   theme === 'dark' ? GO_TO_THEME_DARK : GO_TO_THEME_LIGHT
 
-export const readGoToThemeColors = (): GoToThemeColors => {
+const readGoToThemeColors = (): GoToThemeColors => {
   return resolveGoToThemeColors(readNativeTheme())
 }
 

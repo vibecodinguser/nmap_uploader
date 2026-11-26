@@ -50,7 +50,7 @@ const matchesAnyKeyword = (text: string, keywords: readonly string[]): boolean =
 /**
  * Проверяет, является ли кнопка действием Undo (отмена последней операции на тулбаре карты).
  */
-export const isUndoToolbarAction = (target: HTMLElement | null): boolean => {
+const isUndoToolbarAction = (target: HTMLElement | null): boolean => {
   if (!target) return false
   const buttonEl = (target.closest('button, .nk-button, [role="button"]') || target) as HTMLElement
 

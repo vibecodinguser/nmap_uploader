@@ -9,7 +9,7 @@ const arePointsEqual = (p1: number[], p2: number[]): boolean => {
 }
 
 /** Удаляет последовательные дубликаты координат. */
-export const validateDuplicate = (coords: Position[], closeRing = false): number[][] => {
+const validateDuplicate = (coords: Position[], closeRing = false): number[][] => {
   let result: number[][] = []
   if (coords.length) {
     const cleaned: number[][] = [[Number(coords[0][0]), Number(coords[0][1])]]

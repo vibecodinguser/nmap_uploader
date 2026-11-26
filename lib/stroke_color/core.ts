@@ -1,10 +1,4 @@
 export const DEFAULT_STROKE_COLOR = '#ff00ff'
-export const DEFAULT_STROKE_COLOR_INPUT = 'ff00ff'
-export const STROKE_COLOR_STORAGE_KEY = 'editorStrokeColor'
-export const STROKE_COLOR_WINDOW_KEY = '__NMAP_STROKE_COLOR__'
-export const STROKE_COLOR_CHANGED_EVENT = 'nmap-stroke-color-changed'
-export const STROKE_COLOR_MESSAGE_TYPE = 'nmap:stroke-color'
-export const STROKE_COLOR_REQUEST_TYPE = 'nmap:stroke-color-request'
 
 /**
  * Нормализует hex-цвет (RGB / RRGGBB, с # или без) или возвращает null (чистая функция).

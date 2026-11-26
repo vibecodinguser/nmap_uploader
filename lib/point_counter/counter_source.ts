@@ -60,12 +60,6 @@ export const markGeometryEditorDrawing = (editor: object, drawing: boolean): voi
   drawingEditors.delete(editor)
 }
 
-/** Возвращает true, если хотя бы один редактор геометрии сейчас активен. */
-export const isAnyGeometryEditorEditing = (): boolean => editingEditors.size > 0
-
-/** Возвращает true, если хотя бы один редактор сейчас рисует геометрию. */
-export const isAnyGeometryEditorDrawing = (): boolean => drawingEditors.size > 0
-
 /**
  * Разрешён ли подсчёт по canvas/SVG.
  *
@@ -73,7 +67,7 @@ export const isAnyGeometryEditorDrawing = (): boolean => drawingEditors.size > 0
  * считаем только во время активного рисования: перерисовка карты при панорамировании
  * не должна давать число.
  */
-export const isCanvasCounterAllowed = (): boolean => !editorHooksReady || drawingEditors.size > 0
+const isCanvasCounterAllowed = (): boolean => !editorHooksReady || drawingEditors.size > 0
 
 /**
  * Возвращает true, когда внешние источники не должны показывать своё значение:

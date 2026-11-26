@@ -1,6 +1,6 @@
 import type { Coordinate, NativeTracingMap, SegmentSnap } from './types'
 
-export const snapToSegment = (
+const snapToSegment = (
   point: number[],
   start: number[],
   end: number[],

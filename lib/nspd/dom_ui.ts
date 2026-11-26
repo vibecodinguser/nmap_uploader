@@ -10,7 +10,7 @@ export const NSPD_TOAST_CONTAINER_ID = 'nmapNspdToastContainer'
 export const NSPD_FLOATING_WIDGET_ID = 'nmapNspdFloatingWidget'
 export const NSPD_FLOATING_LABEL_ID = 'nmapNspdFloatingWidgetLabel'
 
-export type NspdToastType = 'success' | 'error' | 'info'
+type NspdToastType = 'success' | 'error' | 'info'
 
 const TOAST_BG_COLORS: Record<NspdToastType, string> = {
   success: '#2e7d32',

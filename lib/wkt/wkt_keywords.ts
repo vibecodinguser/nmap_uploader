@@ -10,7 +10,7 @@ export const WKT_GEOMETRY_TYPES = [
   'GEOMETRYCOLLECTION',
 ] as const
 
-export const WKT2_CRS_KEYWORDS = new Set([
+const WKT2_CRS_KEYWORDS = new Set([
   'ABRIDGEDTRANSFORMATION',
   'ANCHOR',
   'ANCHOREPOCH',
@@ -100,7 +100,7 @@ export const WKT2_CRS_KEYWORDS = new Set([
   'VERTICALUNIT',
 ])
 
-export const WKT1_CRS_KEYWORDS = new Set([
+const WKT1_CRS_KEYWORDS = new Set([
   'GEOGCS',
   'PROJCS',
   'GEOCCS',
@@ -116,7 +116,7 @@ export const WKT1_CRS_KEYWORDS = new Set([
   'TOWGS84',
 ])
 
-export const GEOMETRY_KEYWORD_PATTERN =
+const GEOMETRY_KEYWORD_PATTERN =
   /^(POINT|LINESTRING|POLYGON|MULTIPOINT|MULTILINESTRING|MULTIPOLYGON|GEOMETRYCOLLECTION)(?:\s+(?:ZM|Z|M))?\b/i
 
 export const DECIMAL_COMMA_PATTERN = /(^|[\s([])-?\d+,\d+($|[\s)\]])/
@@ -124,7 +124,7 @@ export const DECIMAL_COMMA_PATTERN = /(^|[\s([])-?\d+,\d+($|[\s)\]])/
 export const toProcessingError = (message: string): ProcessingError =>
   new ProcessingError(ERR_SHAPEFILE, message)
 
-export const normalizeWktKeyword = (keyword: string): string => {
+const normalizeWktKeyword = (keyword: string): string => {
   const withoutUnderscores = keyword.replace(/_/g, '')
   return withoutUnderscores.toUpperCase()
 }

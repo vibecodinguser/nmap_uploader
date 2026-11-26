@@ -3,7 +3,7 @@ import { getStoredSplitButtonEnabled } from '@/lib/go_to_split_button'
 import { getStoredNotesButtonEnabled } from '@/lib/notes_button'
 import { getStoredNspdButtonEnabled } from '@/lib/nspd/nspd_button'
 
-export type GoToToolbarSettings = readonly [boolean, boolean, boolean, boolean]
+type GoToToolbarSettings = readonly [boolean, boolean, boolean, boolean]
 
 /**
  * Загружает настройки тулбара Перейти (меню геосервисов, кнопка сплита, кнопка заметок, кнопка НСПД).

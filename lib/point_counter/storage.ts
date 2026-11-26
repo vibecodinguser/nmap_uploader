@@ -5,12 +5,12 @@ export const POINT_COUNTER_ENABLED_STORAGE_KEY = 'point_counter_enabled'
 export const POINT_COUNTER_STATE_MSG = 'nmap:point-counter-state'
 export const POINT_COUNTER_REQUEST_MSG = 'nmap:point-counter-request'
 
-export type PointCounterStateMessage = {
+type PointCounterStateMessage = {
   type: typeof POINT_COUNTER_STATE_MSG
   enabled: boolean
 }
 
-export type PointCounterRequestMessage = {
+type PointCounterRequestMessage = {
   type: typeof POINT_COUNTER_REQUEST_MSG
 }
 

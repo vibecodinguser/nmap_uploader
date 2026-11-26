@@ -18,7 +18,7 @@ import type {
  * а не `setSnapshot`. Так одно действие одинаково понимают оптимистичный
  * сценарий и ответ Диска.
  */
-export type NotesPanelAction =
+type NotesPanelAction =
   | { type: 'loaded'; snapshot: NotesSnapshot }
   | { type: 'merged'; snapshot: NotesSnapshot }
   | { type: 'statusChanged'; status: NotesPanelStatus }

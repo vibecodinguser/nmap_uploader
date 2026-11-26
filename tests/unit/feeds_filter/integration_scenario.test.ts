@@ -1,20 +1,10 @@
 // @vitest-environment happy-dom
 
 import { beforeEach, describe, expect, it } from 'vitest'
-import { getEventCardStatus } from '@/lib/feeds_filter/card_status_detector'
 import { FEEDS_FILTER_POPUP_ID, FEEDS_FILTER_SELECT_ID } from '@/lib/feeds_filter/constants'
-import { findFeedContainer } from '@/lib/feeds_filter/container_finder'
-import { parseEventDateString } from '@/lib/feeds_filter/date_string_parser'
-import {
-  attachFilterDropdownToDom,
-  findTargetSelect,
-} from '@/lib/feeds_filter/dom_mount'
 import { createFilterDropdownElement } from '@/lib/feeds_filter/dom_dropdown'
+import { attachFilterDropdownToDom } from '@/lib/feeds_filter/dom_mount'
 import { applyFeedFilterToDom } from '@/lib/feeds_filter/page_adapter'
-import {
-  getStoredFeedsFilterEnabled,
-  setStoredFeedsFilterEnabled,
-} from '@/lib/feeds_filter/storage'
 import { resetBrowserMocks } from '../../setup/browser_mock'
 
 describe('feeds_filter integration', () => {

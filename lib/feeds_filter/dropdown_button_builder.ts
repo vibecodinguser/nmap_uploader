@@ -2,7 +2,7 @@ import { parseStaticSvg } from '@/lib/parse_static_svg'
 import { STATUS_FILTER_OPTIONS } from './constants'
 import type { FeedStats, FeedStatusId } from './core'
 
-export interface DropdownButtonElements {
+interface DropdownButtonElements {
   selectHost: HTMLSpanElement
   button: HTMLButtonElement
   buttonLabel: HTMLSpanElement

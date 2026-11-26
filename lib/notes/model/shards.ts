@@ -9,7 +9,7 @@ import type { NoteGeometry } from './types'
  * переписывает манифест и максимум один шард, а не всю геометрию. Имя шарда
  * выводится из даты, поэтому отдельный реестр ссылок не нужен.
  */
-export const NOTES_SHARD_VERSION = 1
+const NOTES_SHARD_VERSION = 1
 
 export type GeometryShard = {
   version: number

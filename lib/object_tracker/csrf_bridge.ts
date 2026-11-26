@@ -7,7 +7,7 @@
 
 export const CSRF_MESSAGE_SOURCE = 'NMAP_CSRF_TOKEN'
 
-export interface CsrfMessage {
+interface CsrfMessage {
   source: typeof CSRF_MESSAGE_SOURCE
   token: string
 }

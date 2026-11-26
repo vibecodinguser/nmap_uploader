@@ -1,10 +1,10 @@
-export type DiskApiError = {
+type DiskApiError = {
   error?: string
   message?: string
   description?: string
 }
 
-export const parseDiskApiError = (body: string): DiskApiError => {
+const parseDiskApiError = (body: string): DiskApiError => {
   try {
     return JSON.parse(body) as DiskApiError
   } catch {

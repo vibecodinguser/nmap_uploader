@@ -15,8 +15,7 @@ export type NotesRemote = {
   writeIcon: (fileName: string, bytes: Uint8Array, contentType: string) => Promise<void>
 }
 
-export const NOTES_MANIFEST_CORRUPT = 'NOTES_MANIFEST_CORRUPT'
-export const NOTES_SHARD_CORRUPT = 'NOTES_SHARD_CORRUPT'
+const NOTES_SHARD_CORRUPT = 'NOTES_SHARD_CORRUPT'
 
 const parseJson = (text: string, label: string): unknown => {
   try {

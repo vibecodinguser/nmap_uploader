@@ -4,10 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { FEEDS_FILTER_SELECT_ID } from '@/lib/feeds_filter/constants'
 import { findFeedContainer, findFeedHeader } from '@/lib/feeds_filter/container_finder'
 import { createFilterDropdownElement } from '@/lib/feeds_filter/dom_dropdown'
-import {
-  attachFilterDropdownToDom,
-  findTargetSelect,
-} from '@/lib/feeds_filter/dom_mount'
+import { attachFilterDropdownToDom, findTargetSelect } from '@/lib/feeds_filter/dom_mount'
 import { syncFilterDropdownHeight } from '@/lib/feeds_filter/dropdown_theme'
 import { isEditsModeSelected } from '@/lib/feeds_filter/target_select_validator'
 

@@ -28,7 +28,7 @@ const getErrorMessage = (error: unknown): string => {
 }
 
 /** Проверяет корневой GeoJSON object (RFC 7946, §2–3). */
-export const validateGeoJsonObject = (value: unknown): void => {
+const validateGeoJsonObject = (value: unknown): void => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw toProcessingError('GeoJSON должен быть JSON-объектом')
   }
@@ -78,7 +78,7 @@ const featureHasGeometry = (feature: Feature): boolean => {
 }
 
 /** Проверяет наличие конвертируемой геометрии. */
-export const assertGeoJsonHasGeometry = (data: Feature | FeatureCollection): void => {
+const assertGeoJsonHasGeometry = (data: Feature | FeatureCollection): void => {
   const features = data.type === 'Feature' ? [data] : data.features
   let hasGeometry = false
 
@@ -101,7 +101,7 @@ const hasUtf8Bom = (bytes: Uint8Array): boolean => {
 }
 
 /** Декодирует UTF-8 GeoJSON с удалением BOM (RFC 7946, §11.1). */
-export const decodeUtf8GeoJsonText = (buffer: ArrayBuffer): string => {
+const decodeUtf8GeoJsonText = (buffer: ArrayBuffer): string => {
   const bytes = new Uint8Array(buffer)
   const payload = hasUtf8Bom(bytes) ? bytes.subarray(3) : bytes
   const decoder = new TextDecoder('utf-8')

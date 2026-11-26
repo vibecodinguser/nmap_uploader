@@ -26,5 +26,3 @@ export const useNotesDrawing = ({ state, dispatch }: NotesPanelStore) => {
 
   return { drawingKind: state.drawingKind, startDrawing, cancelDrawing }
 }
-
-export type NotesDrawing = ReturnType<typeof useNotesDrawing>

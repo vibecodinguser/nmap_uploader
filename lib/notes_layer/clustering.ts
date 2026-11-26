@@ -26,7 +26,7 @@ export type ClusterPoint = {
 }
 
 /** Радиус объединения на экране, в пикселях. */
-export const CLUSTER_RADIUS_PX = 44
+const CLUSTER_RADIUS_PX = 44
 
 /** До какого зума точки объединяются: с 15 видно отдельные объекты. */
 export const CLUSTER_MAX_ZOOM = 14

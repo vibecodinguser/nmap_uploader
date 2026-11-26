@@ -16,8 +16,8 @@ import { NOTES_PANEL_STYLES } from './styles'
 export const NOTES_PANEL_HOST_ID = 'yamapper-notes-panel'
 export const NOTES_PANEL_FRAME_ID = 'yamapper-notes-panel-frame'
 export const NOTES_PANEL_HANDLE_ID = 'yamapper-notes-panel-handle'
-export const NOTES_PANEL_STYLES_ID = 'yamapper-notes-panel-styles'
-export const NOTES_PANEL_HEIGHT_STORAGE_KEY = 'notes_panel_height_px'
+const NOTES_PANEL_STYLES_ID = 'yamapper-notes-panel-styles'
+const NOTES_PANEL_HEIGHT_STORAGE_KEY = 'notes_panel_height_px'
 
 /** Сообщения iframe → хост. */
 export const NOTES_PANEL_LAYOUT_MESSAGE = 'NOTES_PANEL_LAYOUT'
@@ -36,12 +36,12 @@ export const NOTES_PANEL_PREVIEW_MESSAGE = 'NOTES_PANEL_PREVIEW'
  */
 export const NOTES_PANEL_FIT_HEIGHT_MESSAGE = 'NOTES_PANEL_FIT_HEIGHT'
 
-export type NotesPanelLayout = 'compact' | 'full'
+type NotesPanelLayout = 'compact' | 'full'
 
 const MIN_RATIO = 0.25
 const DEFAULT_RATIO = 0.25
 
-export type NotesPanelHost = {
+type NotesPanelHost = {
   open: () => void
   close: () => void
   toggle: () => void
@@ -64,7 +64,7 @@ export const removeNotesPanelStyles = (): void => {
   removeInjectedStyle(NOTES_PANEL_STYLES_ID)
 }
 
-export type NotesPanelHostOptions = {
+type NotesPanelHostOptions = {
   /** Панель открылась или закрылась: хост сообщает, чтобы убрать «Редактировать». */
   onVisibilityChange?: (open: boolean) => void
 }

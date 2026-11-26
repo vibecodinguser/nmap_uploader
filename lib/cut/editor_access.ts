@@ -13,7 +13,7 @@
  * все редакторы наследуют обёртку.
  */
 
-export const WEBPACK_CHUNK_NAME = 'webpackChunknmaps'
+const WEBPACK_CHUNK_NAME = 'webpackChunknmaps'
 
 const HOOK_MARKER = '__nmapCutActivityHooked__'
 
@@ -40,7 +40,7 @@ type ActivityPrototype = {
 
 type ActivityClass = { prototype: ActivityPrototype }
 
-export type ActivityHooks = {
+type ActivityHooks = {
   /** Активность запущена и сообщила, что она активна. */
   onStart: (activity: unknown) => void
   /** Активность остановлена (закрытие редактора, смена объекта). */
@@ -195,13 +195,13 @@ export const hookModuleExports = (
   return hooked
 }
 
-export type ObserveWebpackModulesFn = (
+type ObserveWebpackModulesFn = (
   globalObject: Record<string, unknown>,
   chunkName: string,
   onModule: (exports: unknown, moduleId: string) => void,
 ) => () => void
 
-export type InstallActivityHookOptions = {
+type InstallActivityHookOptions = {
   globalObject?: Record<string, unknown>
   /** Подменяется в тестах: реальная подписка на webpack-чанки НЯК. */
   observe?: ObserveWebpackModulesFn

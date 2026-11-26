@@ -7,7 +7,7 @@
  * храним здесь и переиспользуем в фильтре ленты и в наблюдении за объектами.
  */
 
-export interface NmapsIcon {
+interface NmapsIcon {
   /** Классы span-обёртки. */
   className: string
   /** Содержимое: инлайн-SVG. */
@@ -42,7 +42,7 @@ export const COMMIT_STATE_ICONS = {
   },
 } as const satisfies Record<string, NmapsIcon>
 
-export type CommitStateIconId = keyof typeof COMMIT_STATE_ICONS
+type CommitStateIconId = keyof typeof COMMIT_STATE_ICONS
 
 /** Иконка модератора рядом с именем автора правки. */
 export const MODERATOR_ICON: NmapsIcon = {

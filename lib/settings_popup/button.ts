@@ -24,7 +24,7 @@ export const SETTINGS_BUTTON_OWN_CLASS = 'yamapper-settings-button'
 
 export const SETTINGS_APP_BAR_SELECTOR = '.nk-app-bar-view'
 
-export type SettingsButtonOptions = {
+type SettingsButtonOptions = {
   /** Язык подписи: кнопка живёт в интерфейсе редактора, не в панели. */
   locale: Locale
   onClick: () => void
@@ -34,7 +34,7 @@ export const getSettingsButton = (): HTMLButtonElement | null =>
   getOwnedElementById(SETTINGS_BUTTON_ID) as HTMLButtonElement | null
 
 /** Шапка редактора; её может не быть в чужой раскладке или без прав записи. */
-export const resolveSettingsAppBar = (): HTMLElement | null => {
+const resolveSettingsAppBar = (): HTMLElement | null => {
   const bar = document.querySelector(SETTINGS_APP_BAR_SELECTOR)
   return bar instanceof HTMLElement ? bar : null
 }
@@ -59,10 +59,7 @@ const applyLabel = (button: HTMLButtonElement, locale: Locale): void => {
   button.title = label
 }
 
-export const createSettingsButton = ({
-  locale,
-  onClick,
-}: SettingsButtonOptions): HTMLButtonElement => {
+const createSettingsButton = ({ locale, onClick }: SettingsButtonOptions): HTMLButtonElement => {
   const button = document.createElement('button')
   button.type = 'button'
   button.id = SETTINGS_BUTTON_ID

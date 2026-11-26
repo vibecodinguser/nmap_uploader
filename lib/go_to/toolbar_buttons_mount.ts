@@ -23,7 +23,7 @@ import { openNspdTarget } from '@/lib/nspd/open_target'
 import { createPolygonUploadButton } from '@/lib/polygon_upload_button'
 import { closePolygonUploadPopup, togglePolygonUploadPopup } from '@/lib/polygon_upload_popup'
 
-export interface ToolbarActionContext {
+interface ToolbarActionContext {
   getTranslator: () => TranslateFn
   onHideMenu: () => void
 }

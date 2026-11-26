@@ -5,9 +5,6 @@
 import { isValidMapView } from '@/lib/nmaps/projection'
 import { notifyNmapsBoundsChange } from '@/lib/nmaps_bounds_notify'
 
-export const MAP_DISCOVERY_POLL_MS = 500
-export const MAP_DISCOVERY_TIMEOUT_MS = 30_000
-
 export type YmapsMapLike = {
   getCenter: () => [number, number]
   getZoom: () => number
@@ -17,7 +14,7 @@ export type YmapsMapLike = {
   }
 }
 
-export type YmapsModulesLike = {
+type YmapsModulesLike = {
   require: (
     modules: string[],
     successCallback: (MapConstructor: unknown) => void,
@@ -25,7 +22,7 @@ export type YmapsModulesLike = {
   ) => void
 }
 
-export type YmapsGlobal = {
+type YmapsGlobal = {
   Map?: new (...args: unknown[]) => YmapsMapLike
   ready?: (callback: () => void) => void
   modules?: YmapsModulesLike
@@ -110,7 +107,7 @@ export const findMapInElement = (element: Element): YmapsMapLike | null => {
   return null
 }
 
-export const findMapInSelector = (selector: string): YmapsMapLike | null => {
+const findMapInSelector = (selector: string): YmapsMapLike | null => {
   const elements = document.querySelectorAll(selector)
   for (let index = 0; index < elements.length; index += 1) {
     const candidate = findMapInElement(elements[index])
@@ -121,7 +118,7 @@ export const findMapInSelector = (selector: string): YmapsMapLike | null => {
   return null
 }
 
-export const findMapInstanceFromDom = (): YmapsMapLike | null => {
+const findMapInstanceFromDom = (): YmapsMapLike | null => {
   const selectors = [
     "[class*='ymaps-2'][class*='-map']",
     "[class*='ymaps'][class*='map']",
@@ -140,7 +137,7 @@ export const findMapInstanceFromDom = (): YmapsMapLike | null => {
   return null
 }
 
-export const findMapFromGlobalYmaps = (): YmapsMapLike | null => {
+const findMapFromGlobalYmaps = (): YmapsMapLike | null => {
   const windowRecord = globalThis as unknown as Record<string, unknown>
   const ymaps = windowRecord.ymaps as YmapsGlobal | undefined
   if (ymaps) {

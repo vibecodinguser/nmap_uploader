@@ -29,7 +29,7 @@ export type RenderedNote = {
   properties: Record<string, unknown>
 }
 
-export type RenderNoteInput = {
+type RenderNoteInput = {
   note: Note
   geometry: NoteGeometry
   group: NoteGroup | null
@@ -43,17 +43,17 @@ export type RenderNoteInput = {
   zoom?: number
 }
 
-export const SELECTED_STROKE_BONUS = 2
+const SELECTED_STROKE_BONUS = 2
 export const LABEL_MIN_ZOOM = 13
 
-export const POINT_ICON_SIZE = 20
+const POINT_ICON_SIZE = 20
 /** Иконка заметки крупнее кружка: глиф должен читаться на карте. */
-export const NOTE_ICON_SIZE = 26
+const NOTE_ICON_SIZE = 26
 const LABEL_OFFSET_POINT = 20
 const LABEL_OFFSET_SHAPE = 12
 
 /** Прозрачная картинка 1×1 — основа подписи без иконки. */
-export const TRANSPARENT_PIXEL =
+const TRANSPARENT_PIXEL =
   'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
 
 const escapeXml = (value: string): string =>
@@ -89,7 +89,7 @@ const iconHrefOf = ({
  * с остальными объектами. Прозрачность не применяется: у точки её нет в
  * интерфейсе, и полупрозрачная иконка осталась бы без способа это исправить.
  */
-export const buildPointIconHref = (style: ResolvedNoteStyle): string => {
+const buildPointIconHref = (style: ResolvedNoteStyle): string => {
   const size = POINT_ICON_SIZE
   const radius = size / 2 - 3
 

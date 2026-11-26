@@ -1,4 +1,4 @@
-export type WebpackModuleObserver = (exports: unknown, moduleId: string) => void
+type WebpackModuleObserver = (exports: unknown, moduleId: string) => void
 
 type WebpackModule = {
   exports: unknown

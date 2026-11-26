@@ -133,5 +133,3 @@ export const useNoteSelection = (
     moveCheckedToGroup,
   }
 }
-
-export type NoteSelection = ReturnType<typeof useNoteSelection>

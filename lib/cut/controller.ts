@@ -38,7 +38,7 @@ import { type CutMapLike, CutMode, type CutOutcome, readPageGlobalPixels } from 
 import { type CutPins, createCutPins } from './pins'
 import { CUT_TARGETS, type CutTarget, isCutTargetCategory, isLineCategory } from './targets'
 
-export type CutControllerOptions = {
+type CutControllerOptions = {
   getTranslator: () => TranslateFn
   /** Показ сообщения пользователю; подменяется в тестах. */
   onMessage?: (text: string) => void
@@ -86,10 +86,7 @@ const isMapSurfaceTarget = (target: EventTarget | null, map: CutMapLike): boolea
 }
 
 export {
-  CUT_DEBUG_FLAG,
-  CUT_LOG_KEY,
   CUT_STATE_ATTR,
-  type CutLogEntry,
   setCutState,
 } from './diagnostics'
 

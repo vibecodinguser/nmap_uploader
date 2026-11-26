@@ -25,7 +25,7 @@ export const NATIVE_MENU_ITEM_DISABLED_CLASS = 'nmap-ot-menu-item_disabled'
  * Именно шапка: в карточке есть вторая такая иконка — разворачиватель списка
  * атрибутов (`.nk-labeled-list-layout__expand-control`), у неё своё меню.
  */
-export const NATIVE_MORE_ICON_SELECTORS = [
+const NATIVE_MORE_ICON_SELECTORS = [
   '.nk-geoobject-viewer-view .nk-sidebar-header-view .nk-icon_id_more',
   '.nk-sidebar-header-view .nk-icon_id_more',
 ] as const
@@ -37,14 +37,9 @@ export const NATIVE_MORE_ICON_SELECTORS = [
  * такого набора пунктов в них нет. У водоёмов и АТД редактор не показывает
  * часть действий, поэтому достаточно любого из пунктов.
  */
-export const NATIVE_OBJECT_MENU_MARKERS = [
-  'Копировать',
-  'Поделиться',
-  'Сообщить об ошибке',
-] as const
+const NATIVE_OBJECT_MENU_MARKERS = ['Копировать', 'Поделиться', 'Сообщить об ошибке'] as const
 
-export const NATIVE_OBJECT_TITLE_SELECTOR =
-  '.nk-geoobject-viewer-view .nk-sidebar-header-view__title'
+const NATIVE_OBJECT_TITLE_SELECTOR = '.nk-geoobject-viewer-view .nk-sidebar-header-view__title'
 
 const OBJECT_HASH_RE = /#!?\/objects\/(\d{1,20})/u
 /** Меню открывается асинхронно: пробуем несколько раз, пока попап не появится. */
@@ -72,12 +67,12 @@ const isMenuMutation = (record: MutationRecord): boolean => {
   )
 }
 
-export type NativeMenuActionResult = {
+type NativeMenuActionResult = {
   ok: boolean
   error?: string
 }
 
-export type ObjectTrackerNativeMenuOptions = {
+type ObjectTrackerNativeMenuOptions = {
   /** Объект уже наблюдается: пункт предлагает убрать его из наблюдения. */
   isTracked: (objectId: string) => boolean
   /** Есть место в списке наблюдения. */
@@ -90,7 +85,7 @@ export type ObjectTrackerNativeMenuOptions = {
   translate?: TranslateFn
 }
 
-export type NativeMenuContext = {
+type NativeMenuContext = {
   objectId: string
   title: string
 }
@@ -162,7 +157,7 @@ export const findObjectMenu = (
 }
 
 /** Клик пришёлся по иконке «Ещё» в карточке объекта. */
-export const isMoreIconTarget = (target: EventTarget | null): boolean => {
+const isMoreIconTarget = (target: EventTarget | null): boolean => {
   if (!(target instanceof Element)) return false
   return NATIVE_MORE_ICON_SELECTORS.some((selector) => Boolean(target.closest(selector)))
 }

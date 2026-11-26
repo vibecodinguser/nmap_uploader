@@ -18,7 +18,7 @@ import type { NoteListRow } from '@/lib/notes/panel/rows'
  * События снимаются, если фокус внутри поля ввода: иначе стрелки в поле
  * названия двигали бы список вместо курсора.
  */
-export type NoteListKeyboardHandlers = {
+type NoteListKeyboardHandlers = {
   /** id заметки, к которой относится текущий курсор. */
   activeId: string | null
   onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => void

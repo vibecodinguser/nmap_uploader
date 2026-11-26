@@ -1,7 +1,7 @@
 import { browser } from 'wxt/browser'
 
 /** Прежний пользовательский язык: с ADR 0021 язык следует за редактором. */
-export const LEGACY_LOCALE_STORAGE_KEY = 'locale'
+const LEGACY_LOCALE_STORAGE_KEY = 'locale'
 
 /**
  * Убирает ключ ручного языка из хранилища.

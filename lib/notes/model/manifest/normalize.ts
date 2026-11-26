@@ -42,7 +42,7 @@ const clamp = (value: unknown, min: number, max: number, fallback: number): numb
 
 const DISPLAY_DATE_PATTERN = /^\d{2}-\d{2}-\d{4}$/
 
-export const isDisplayDate = (value: unknown): value is string =>
+const isDisplayDate = (value: unknown): value is string =>
   typeof value === 'string' && DISPLAY_DATE_PATTERN.test(value)
 
 const normalizeHatch = (value: unknown): NoteHatch | null => {
@@ -129,7 +129,7 @@ const isIsoTimestamp = (value: unknown): value is string =>
  * Битое надгробие отбрасывается: без даты удаления его нельзя сравнить с
  * правкой, и оно либо удаляло бы заметку навсегда, либо ничего не делало.
  */
-export const normalizeTombstone = (value: unknown): NoteTombstone | null => {
+const normalizeTombstone = (value: unknown): NoteTombstone | null => {
   if (!isRecord(value)) return null
   if (typeof value.id !== 'string' || value.id === '') return null
   if (!isIsoTimestamp(value.deletedAt)) return null

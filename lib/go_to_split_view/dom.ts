@@ -21,7 +21,7 @@ import {
 import { GO_TO_SPLIT_ACTIVE_CLASS } from '@/lib/go_to_styles'
 import { applyGoToTheme, syncGoToTheme } from '@/lib/go_to_theme'
 
-export const getSplitPanelSize = (): PanelDimensions => ({
+const getSplitPanelSize = (): PanelDimensions => ({
   width: Math.max(1, Math.round(window.innerWidth / 2)),
   height: Math.max(1, window.innerHeight),
 })
@@ -29,7 +29,7 @@ export const getSplitPanelSize = (): PanelDimensions => ({
 export const getLeftPanelSize = (): PanelDimensions => getSplitPanelSize()
 export const getRightPanelSize = (): PanelDimensions => getSplitPanelSize()
 
-export type NmapsViewportBounds = {
+type NmapsViewportBounds = {
   cx: number
   cy: number
   width: number
@@ -303,7 +303,7 @@ export const mountSplitDomElements = (
   }
 }
 
-export const findHeaderContainer = (): HTMLElement | null => {
+const findHeaderContainer = (): HTMLElement | null => {
   for (const selector of SPLIT_HEADER_SELECTORS) {
     const el = document.querySelector<HTMLElement>(selector)
     if (el) return el

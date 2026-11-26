@@ -43,10 +43,8 @@ import {
   readClickPixels,
 } from './ring_geometry'
 
-export type { EditorHookHandlers }
-
 /** Возвращает кольца (контуры) модели многоугольника. */
-export const readModelRings = (model: EditorModelLike | null): RingCoordinates[] => {
+const readModelRings = (model: EditorModelLike | null): RingCoordinates[] => {
   if (!model || typeof model.getPathModels !== 'function') return []
   try {
     return model.getPathModels().map((ring) => ring.geometry.getCoordinates())
@@ -56,7 +54,7 @@ export const readModelRings = (model: EditorModelLike | null): RingCoordinates[]
 }
 
 /** Читает дочерние редакторы многочастного объекта. */
-export const readChildEditors = (editor: GeometryEditorLike | null): GeometryEditorLike[] => {
+const readChildEditors = (editor: GeometryEditorLike | null): GeometryEditorLike[] => {
   const subEditors = editor?._subEditors
   if (!subEditors || typeof subEditors !== 'object') return []
 
@@ -68,7 +66,7 @@ export const readChildEditors = (editor: GeometryEditorLike | null): GeometryEdi
 }
 
 /** Редактор создан как зависимая часть многочастного объекта. */
-export const isDependentEditor = (editor: GeometryEditorLike | null): boolean => {
+const isDependentEditor = (editor: GeometryEditorLike | null): boolean => {
   if (!editor?.options || typeof editor.options.get !== 'function') return false
   try {
     return Boolean(editor.options.get(DEPENDED_EDITOR_OPTION))
@@ -83,7 +81,7 @@ export const isDependentEditor = (editor: GeometryEditorLike | null): boolean =>
  * Объект берётся из опций редактора, а если редактор открыт для отдельной части —
  * ищется по карте: сравниваются геометрии частей с геометрией редактора.
  */
-export const isMultiSegmentLinearObject = (
+const isMultiSegmentLinearObject = (
   editor: GeometryEditorLike | null,
   map?: EditorMapLike | null,
 ): boolean => {
@@ -103,7 +101,7 @@ type GeoObjectLike = {
 }
 
 /** Определяет тип геометрии объекта, которому принадлежит редактор. */
-export const readOwningGeometryType = (
+const readOwningGeometryType = (
   editor: GeometryEditorLike | null,
   map?: EditorMapLike | null,
 ): string | null => {
@@ -161,7 +159,7 @@ const readMapGeoObjects = (map?: EditorMapLike | null): GeoObjectLike[] => {
   return result
 }
 
-export interface MultipartEditorCounterOptions {
+interface MultipartEditorCounterOptions {
   ui: PointCounterUi
   isEnabled?: () => boolean
 }

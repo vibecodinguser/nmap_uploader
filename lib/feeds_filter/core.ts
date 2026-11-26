@@ -25,15 +25,9 @@ export interface FeedEventItem {
   action?: FeedItemAction
 }
 
-export type FilterFeedEventsInput = {
+type FilterFeedEventsInput = {
   events: readonly FeedEventItem[]
   filter: FeedStatusId
-}
-
-export type FilterCombinedFeedEventsInput = {
-  events: readonly FeedEventItem[]
-  statusFilter: FeedStatusId
-  actionFilter: FeedActionId
 }
 
 /**
