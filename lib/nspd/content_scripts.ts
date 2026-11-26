@@ -100,31 +100,75 @@ const enqueueSync = (task: () => Promise<void>): Promise<void> => {
 }
 
 /**
+ * Отличает гонку от настоящей ошибки: так браузер сообщает, что id занят.
+ *
+ * Формулировка у Chromium и Firefox одна и та же — «Duplicate script ID '…'»,
+ * поэтому сверка по тексту здесь надёжнее, чем попытка угадать по коду ошибки.
+ */
+const isDuplicateScriptIdError = (error: unknown): boolean => {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.toLowerCase().includes('duplicate script id')
+}
+
+/**
+ * Пробует зарегистрировать скрипты и возвращает те, которых так и нет.
+ *
+ * Список перечитывается после отказа: часть пакета мог успеть поставить другой
+ * контекст. Ошибку, не похожую на дубликат, пробрасывает сразу — её нельзя
+ * вылечить повторной регистрацией.
+ */
+const tryRegisterNspdScripts = async (
+  scripts: RegisteredNspdScript[],
+): Promise<RegisteredNspdScript[]> => {
+  try {
+    await browser.scripting.registerContentScripts(scripts)
+    return []
+  } catch (error: unknown) {
+    const registeredIds = await getRegisteredNspdIds()
+    const stillMissing = scripts.filter((script) => !registeredIds.includes(script.id))
+    if (stillMissing.length === 0) return []
+    if (!isDuplicateScriptIdError(error)) throw error
+    return stillMissing
+  }
+}
+
+/** Снимает регистрацию по id, не падая, если скриптов уже нет. */
+const unregisterNspdScripts = async (ids: string[]): Promise<void> => {
+  if (ids.length === 0) return
+  try {
+    await browser.scripting.unregisterContentScripts({ ids })
+  } catch {
+    // Скрипт мог исчезнуть вместе с отзывом доступа — цель всё равно достигнута.
+  }
+}
+
+/**
  * Регистрирует недостающие скрипты НСПД.
  *
  * Идемпотентна и устойчива к гонке: панель настроек и background могут
- * синхронизировать состояние одновременно. Если браузер отклонил пакет
- * («Duplicate script ID»), перечитываем список и регистрируем только остаток.
+ * синхронизировать состояние одновременно. Дубликат id от такого набега — не
+ * сбой, а сигнал «этот скрипт уже ставит другой контекст», поэтому он никогда
+ * не всплывает наружу: функция доводит состояние до нужного или бросает
+ * настоящую ошибку.
  */
 export const registerNspdContentScripts = async (): Promise<void> => {
   const registeredIds = await getRegisteredNspdIds()
-  const toRegister = NSPD_REGISTERED_SCRIPTS.filter((script) => !registeredIds.includes(script.id))
-  if (toRegister.length === 0) return
+  const missing = NSPD_REGISTERED_SCRIPTS.filter((script) => !registeredIds.includes(script.id))
+  if (missing.length === 0) return
 
-  try {
-    await browser.scripting.registerContentScripts(toRegister)
-  } catch (error: unknown) {
-    // Гонка с другим контекстом: часть скриптов уже успели зарегистрировать,
-    // и браузер отклонил весь пакет. Перечитываем и досоздаём остаток —
-    // но только если он реально остался, иначе это настоящая ошибка.
-    const idsAfterFailure = await getRegisteredNspdIds()
-    const stillMissing = toRegister.filter((script) => !idsAfterFailure.includes(script.id))
+  const afterFirstAttempt = await tryRegisterNspdScripts(missing)
+  if (afterFirstAttempt.length === 0) return
 
-    if (stillMissing.length === 0) return
-    if (stillMissing.length === toRegister.length) throw error
+  // «Duplicate script ID» при пустом списке зарегистрированных значит, что id
+  // держит другой контекст, а `getRegisteredContentScripts` ещё не показывает
+  // его. Снимаем заявку и ставим заново — иначе гонка выглядела бы в панели
+  // настроек как настоящий сбой сохранения.
+  await unregisterNspdScripts(afterFirstAttempt.map((script) => script.id))
+  const afterSecondAttempt = await tryRegisterNspdScripts(afterFirstAttempt)
+  if (afterSecondAttempt.length === 0) return
 
-    await browser.scripting.registerContentScripts(stillMissing)
-  }
+  const ids = afterSecondAttempt.map((script) => script.id).join(', ')
+  throw new Error(`Не удалось зарегистрировать content scripts НСПД: ${ids}`)
 }
 
 /** Снимает регистрацию скриптов НСПД. Идемпотентна. */

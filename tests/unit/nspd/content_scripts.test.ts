@@ -285,4 +285,29 @@ describe('NSPD content scripts', () => {
     await expect(registerNspdContentScripts()).resolves.toBeUndefined()
     expect(scriptingMock.registered.size).toBe(2)
   })
+
+  it('чинит гонку, когда браузер считает id занятым, а список регистраций пуст', async () => {
+    permissionsMock.grant(...NSPD_HOST_PATTERNS)
+
+    // Реальный случай из панели настроек: `Duplicate script ID` приходит, а
+    // `getRegisteredContentScripts` ещё не показывает чужую регистрацию.
+    // Ошибка не должна всплывать как сбой сохранения настройки.
+    scriptingMock.registerContentScripts.mockRejectedValueOnce(
+      new Error(`Duplicate script ID '${NSPD_COLLECTOR_SCRIPT_ID}'`),
+    )
+
+    await expect(registerNspdContentScripts()).resolves.toBeUndefined()
+    expect([...scriptingMock.registered.keys()].sort()).toEqual(
+      [NSPD_COLLECTOR_SCRIPT_ID, NSPD_INTERCEPTOR_SCRIPT_ID].sort(),
+    )
+    expect(scriptingMock.unregisterContentScripts).toHaveBeenCalled()
+  })
+
+  it('пробрасывает настоящую ошибку регистрации, а не выдаёт её за гонку', async () => {
+    permissionsMock.grant(...NSPD_HOST_PATTERNS)
+    scriptingMock.registerContentScripts.mockRejectedValueOnce(new Error('permission denied'))
+
+    await expect(registerNspdContentScripts()).rejects.toThrow('permission denied')
+    expect(scriptingMock.registered.size).toBe(0)
+  })
 })
