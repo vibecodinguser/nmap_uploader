@@ -1,5 +1,6 @@
 /* noinspection CssUnusedSymbol — классы используются в components и entrypoints/panel/App.tsx */
 @import "./theme_tokens.css";
+@import "./nk_fonts.css";
 
 /*
  * Алиасы прежней шкалы на общую типографику из `theme_tokens.css`.

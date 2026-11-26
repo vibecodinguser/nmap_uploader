@@ -1,0 +1,39 @@
+/*
+ * Веб-шрифт редактора Народной карты.
+ *
+ * Панель, попап настроек и «Блокнот» живут в iframe страницы расширения, а
+ * `@font-face` из CSS редактора в чужой документ не переезжает. Без этих
+ * правил `--font-family` упирается в Arial, и «Настройки» в шапке выглядят
+ * иначе, чем нативная шапка: другие буквы и строка уже на 4%.
+ *
+ * Здесь те же файлы, что грузит редактор, — начертания 400/500/700 с
+ * официального CDN Яндекса. Замер строки «Настройки» в 16px:
+ * 81.78 / 82.98 / 83.95px — ровно как в редакторе; Arial даёт 78.45px.
+ *
+ * `font-display: swap`: пока файл едет, текст рисуется Arial и не ждёт;
+ * если CDN недоступен, панель просто остаётся на Arial и ничего не ломается.
+ * Никаких данных запрос не передаёт — это обычная загрузка шрифта по https.
+ */
+@font-face {
+  font-family: "Yandex Sans Text";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("https://yastatic.net/s3/home/fonts/ys/1/text-regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Yandex Sans Text";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("https://yastatic.net/s3/home/fonts/ys/1/text-medium.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Yandex Sans Text";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("https://yastatic.net/s3/home/fonts/ys/1/text-bold.woff2") format("woff2");
+}

@@ -8,6 +8,7 @@
  * размерами шрифта в трёх видах записи (`rem`, сырые `px`, токены).
  */
 import { describe, expect, it } from 'vitest'
+import nkFontsCss from '@/assets/styles/nk_fonts.css?inline'
 import dialogCss from '@/assets/styles/notes_panel/dialog.css?inline'
 import groupHeaderCss from '@/assets/styles/notes_panel/group_header.css?inline'
 import layoutCss from '@/assets/styles/notes_panel/layout.css?inline'
@@ -21,6 +22,7 @@ import uploaderCss from '@/assets/styles/uploader.css?inline'
 const PANEL_SHEETS: Record<string, string> = {
   'uploader.css': uploaderCss,
   'theme_tokens.css': themeTokensCss,
+  'nk_fonts.css': nkFontsCss,
   'notes_panel.css': notesPanelCss,
   'notes_panel/layout.css': layoutCss,
   'notes_panel/note_list.css': noteListCss,
@@ -104,5 +106,27 @@ describe('паритет панели с редактором', () => {
   it('держит единый тёмный фон для всех браузеров', () => {
     expect(themeTokensCss).toContain('--dark-surface: #333333;')
     expect(themeTokensCss).not.toContain('#3c3c3c')
+  })
+
+  /*
+   * Панель живёт в iframe страницы расширения, поэтому `@font-face` редактора
+   * в неё не переезжает: `--font-family` начинается с «Yandex Sans Text», и без
+   * собственных правил этот первый вариант молча превращается в Arial. Тест
+   * держит связь между токеном и объявлением шрифта, чтобы заголовки не начали
+   * тихо отличаться от нативных.
+   */
+  it('объявляет веб-шрифт редактора для начертаний шкалы', () => {
+    const family = /--font-family:\s*([^;]+);/.exec(themeTokensCss)?.[1].trim()
+    const primary = /^"([^"]+)"/.exec(family ?? '')?.[1]
+    expect(primary).toBe('Yandex Sans Text')
+
+    const faces = [...nkFontsCss.matchAll(/@font-face\s*\{([^}]*)\}/g)].map((match) => match[1])
+    const weights = faces.map((body) => /font-weight:\s*(\d+)/.exec(body)?.[1])
+
+    expect(weights.sort()).toEqual(['400', '500', '700'])
+    for (const body of faces) {
+      expect(/font-family:\s*"([^"]+)"/.exec(body)?.[1]).toBe(primary)
+      expect(/url\("(https:\/\/yastatic\.net\/[^"]+\.woff2)"\)/.exec(body)?.[1]).toBeTruthy()
+    }
   })
 })
