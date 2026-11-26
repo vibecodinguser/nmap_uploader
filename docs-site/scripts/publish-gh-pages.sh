@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Публикация сайта справки в ветку gh-pages без GitHub Actions.
+# Публикация сайта справки в ветку gh-pages.
 #
-# Зачем: аккаунт заблокирован для запуска Actions из-за биллинговой проблемы,
-# а сайту надо выходить в интернет. Скрипт собирает docs-site и складывает
-# готовую статику в отдельную ветку gh-pages, из которой GitHub Pages
-# раздаёт файлы (Settings → Pages → Source = "Deploy from a branch").
+# GitHub Actions в проекте не используется: сайт собирается и публикуется
+# с локальной машины. Скрипт собирает docs-site и складывает готовую статику
+# в отдельную ветку gh-pages, из которой GitHub Pages раздаёт файлы
+# (Settings → Pages → Source = "Deploy from a branch").
 #
 # Запуск из любой папки:
 #   docs-site/scripts/publish-gh-pages.sh
