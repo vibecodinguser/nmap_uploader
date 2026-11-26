@@ -147,6 +147,21 @@ function configureVite({ mode }: { mode: string }) {
 export default defineConfig({
   modules: ['@wxt-dev/module-react'],
   vite: configureVite,
+  dev: {
+    /*
+     * Порт 3000 только один. Без явного `port` WXT при занятом 3000 сам
+     * берёт 3001 и пишет в ту же папку `.output/*-dev`: HTML-точки входа и
+     * `background.js` начинают ссылаться на два разных сервера, и панель в
+     * iframe грузится с мёртвого порта — правки не видны до перезапуска.
+     * WXT при этом не перезаписывает HTML, который не менялся, поэтому
+     * чужой порт остаётся в нём навсегда.
+     *
+     * `strictPort` действует только вместе с явным `port`: без него WXT
+     * ищет свободный порт в диапазоне 3001–3010. С ними второй сервер
+     * падает с ошибкой «порт занят» вместо тихой поломки сборки.
+     */
+    server: { port: 3000, strictPort: true },
+  },
   hooks: {
     'build:manifestGenerated': (_wxt, manifest) => {
       moveYandexPermissionsToOptional(manifest as ManifestWithPermissions)
