@@ -68,6 +68,19 @@ describe('шапка панели', () => {
     expect(container.querySelector('.header-close-btn')).toBe(button)
   })
 
+  it('рисует нативный глиф креста, а не свой штрих', () => {
+    const { container } = renderHeader()
+
+    const svg = container.querySelector('.header-close-icon')
+    const path = svg?.querySelector('path')
+
+    expect(svg?.getAttribute('viewBox')).toBe('0 0 22 22')
+    expect(path?.getAttribute('fill')).toBe('currentColor')
+    // Дословный контур нативного `nk-icon_id_close` из редактора.
+    expect(path?.getAttribute('d')).toContain('m9.586 11-5.44-5.44')
+    expect(path?.getAttribute('stroke')).toBeNull()
+  })
+
   it('клик просит хост закрыть попап', () => {
     renderHeader()
 

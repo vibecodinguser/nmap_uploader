@@ -102,6 +102,7 @@ export type Messages = {
     suggestFeature: string
     editing: string
     style: string
+    sectionsAria: string
     feedsFilter: string
     feedsFilterAria: string
     objectTracker: string

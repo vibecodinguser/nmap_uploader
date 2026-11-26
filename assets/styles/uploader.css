@@ -172,10 +172,11 @@ body {
 
 /*
  * Закрытие панели — нативная иконка `.nk-icon_id_close`: бокс 22px в колонке
- * 24px, базовый цвет `#999`, при наведении только цвет (`.nk-icon_interactive`),
- * без подложки и рамки. Классы `nk-icon*` в разметке повторяют нативные, но их
- * стили живут в CSS редактора, недоступном в iframe панели, поэтому вид задан
- * здесь.
+ * 24px, базовый цвет `#999` в обеих темах, при наведении только цвет
+ * (`#333` в светлой, `#e6e6e6` в тёмной), без подложки, рамки и перехода —
+ * в редакторе `transition-duration` равен нулю. Классы `nk-icon*` в разметке
+ * повторяют нативные, но их стили живут в CSS редактора, недоступном в iframe
+ * панели, поэтому вид задан здесь.
  */
 .header-close-btn {
   display: inline-flex;
@@ -183,14 +184,13 @@ body {
   width: 24px;
   height: 22px;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   margin-left: 8px;
   padding: 0;
   border: none;
   background: transparent;
   color: #999;
   cursor: pointer;
-  transition: color var(--transition-ui);
 }
 
 .header-close-btn:hover {
@@ -206,6 +206,7 @@ body {
   display: block;
   width: 22px;
   height: 22px;
+  fill: currentcolor;
 }
 
 :is(.btn-icon, .settings-go-to-move-btn, .point-date-trigger) {
@@ -255,7 +256,6 @@ body {
 }
 
 .btn-icon:focus-visible,
-.settings-back-btn:focus-visible,
 .settings-go-to-move-btn:focus-visible,
 .settings-go-to-toggle:focus-visible {
   outline: none;
@@ -860,17 +860,129 @@ body {
     0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
+/*
+ * Настройки — вкладки в нативном стиле: полоса вкладок от края до края,
+ * прокручивается только содержимое активной вкладки, блок «О версии» закреплён
+ * снизу. Поэтому `main` в этом случае не даёт ни отступов, ни скролла.
+ *
+ * `scrollbar-gutter: auto` обязателен: базовое правило резервирует место под
+ * скроллбар, а скроллится теперь панель вкладки. С `overflow: hidden` полоса
+ * брони осталась бы неиспользованной — справа от вкладок белела бы полоса
+ * ~15px.
+ */
 .sidepanel-main:has(> .settings-tab) {
   overflow: hidden;
-  padding-bottom: 1rem;
+  padding: 0;
+  scrollbar-gutter: auto;
 }
 
 .settings-tab {
-  gap: 1.25rem;
+  gap: 0;
   flex: 1;
   min-height: 0;
+  overflow: hidden;
+}
+
+/*
+ * Полоса вкладок повторяет нативный `.nk-tabs-bar`: серый фон `#f2f2f2`
+ * (`#4d4d4d` в тёмной теме), разделитель сверху `1px` (`#e6e6e6` / `#999`),
+ * отступы `0 8px`, вкладки с отступами `12px 8px` и строкой `15px` — итого
+ * `40px` с разделителем. Классы `nk-tabs-bar*` в разметке нативные, но их
+ * стили живут в CSS редактора, недоступном в iframe панели, поэтому вид задан
+ * здесь — как у шапки панели.
+ */
+.settings-tabs-bar {
+  position: relative;
+  flex-shrink: 0;
+  padding: 0 8px;
+  border-top: 1px solid var(--tabs-bar-border-color);
+  background-color: var(--tabs-bar-bg-color);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-tabs);
+  white-space: nowrap;
+}
+
+.settings-tabs-bar .nk-tabs-bar__tabs {
+  display: flex;
+}
+
+.settings-tabs-bar .nk-tabs-bar__tab {
+  display: block;
+  margin: 0;
+  padding: 12px 8px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-tabs);
+  color: var(--tabs-bar-font-color);
+  text-align: start;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+/*
+ * Выбранная вкладка помечена `aria-selected`, а не только нативным классом
+ * `nk-tabs-bar__tab_selected`: подчёркивание в имени не проходит линтер
+ * классов, а состояние у нас всё равно живёт в ARIA.
+ */
+.settings-tabs-bar .nk-tabs-bar__tab:hover,
+.settings-tabs-bar .nk-tabs-bar__tab[aria-selected='true'] {
+  color: var(--tabs-bar-selected-font-color);
+}
+
+.settings-tabs-bar .nk-tabs-bar__tab[aria-selected='true'] {
+  cursor: default;
+}
+
+.settings-tabs-bar .nk-tabs-bar__tab:focus-visible {
+  outline: none;
+  border-radius: var(--radius);
+  box-shadow: var(--focus-ring);
+}
+
+/*
+ * Полоса выбранной вкладки: элемент шириной 1px, который сдвигается на
+ * `left + (width - 1) / 2` и растягивается через `scaleX`. Геометрию считает
+ * `syncSettingsTabSelection` в `components/SettingsTabBar.tsx`.
+ */
+.settings-tabs-bar .nk-tabs-bar__selection {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  display: block;
+  width: 1px;
+  height: 2px;
+  background: var(--tabs-bar-selection-color);
+  transition: transform 0.3s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-tabs-bar .nk-tabs-bar__selection {
+    transition: none;
+  }
+}
+
+/*
+ * Прокрутка — только у содержимого вкладки. `scrollbar-gutter` не резервируем:
+ * бронь добавляла бы 15px справа и отступы становились бы 16/31 вместо 16/16.
+ * У нативного списка редактора такой брони тоже нет.
+ */
+.settings-tab__panel {
+  flex: 1;
+  min-height: 0;
+  padding: 1rem;
   overflow-y: auto;
-  scrollbar-gutter: stable;
+}
+
+/* «О версии» стоит вне прокрутки и не уезжает под ней. */
+.settings-tab > .settings-section--about {
+  flex-shrink: 0;
+  margin: 0 1rem 1rem;
 }
 
 .settings-section--about {
@@ -937,28 +1049,6 @@ body {
   opacity: 0.8;
 }
 
-.settings-back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  align-self: flex-start;
-  padding: 0.375rem 0.625rem;
-  margin: -0.375rem 0 0 -0.625rem;
-  border: none;
-  border-radius: var(--radius);
-  background: transparent;
-  color: var(--muted-foreground);
-  font-family: var(--font-family), sans-serif;
-  font-size: var(--text-sm);
-  font-weight: 500;
-  cursor: pointer;
-  transition: color var(--transition-ui);
-}
-
-.settings-back-btn:hover {
-  color: var(--foreground);
-}
-
 .settings-section-title {
   margin: 0;
   font-size: var(--text-sm);
@@ -982,57 +1072,6 @@ body {
   gap: 0.75rem;
   padding: 1rem;
   border-radius: 0.5rem;
-}
-
-.settings-section--group {
-  gap: 1rem;
-}
-
-.settings-section--group > .settings-section-title {
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.settings-section--collapsed > .settings-section-title {
-  padding-bottom: 0;
-  border-bottom: none;
-}
-
-.settings-section-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 0;
-  border: none;
-  background-color: transparent;
-  font-family: var(--font-family), sans-serif;
-  font-size: inherit;
-  font-weight: inherit;
-  line-height: inherit;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.settings-section-toggle:focus-visible {
-  outline: none;
-  border-radius: var(--radius);
-  box-shadow: var(--focus-ring);
-}
-
-.settings-section-toggle-icon {
-  flex-shrink: 0;
-  transition: transform var(--transition-ui);
-}
-
-.settings-section-toggle-icon--expanded {
-  transform: rotate(90deg);
-}
-
-.settings-section-toggle-label {
-  flex: 1;
-  min-width: 0;
 }
 
 .settings-field {

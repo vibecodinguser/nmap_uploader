@@ -38,20 +38,15 @@ export const Header = () => {
         aria-label={t('header.closeSidebar')}
         onClick={requestCloseSettingsPopup}
       >
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 22 22"
-          aria-hidden="true"
-          focusable="false"
-          className="header-close-icon"
-        >
+        {/*
+         * Глиф — дословно нативный `nk-icon_id_close`: тонкий крест `1px` на
+         * боксе 22px, залитый `currentColor`. Свой крест штрихом рисовал
+         * заметно более толстую и короткую иконку, чем в редакторе.
+         */}
+        <svg viewBox="0 0 22 22" aria-hidden="true" focusable="false" className="header-close-icon">
           <path
-            d="M6 6 16 16M16 6 6 16"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
+            d="m9.586 11-5.44-5.44a.5.5 0 0 1 0-.706l.708-.708a.5.5 0 0 1 .707 0L11 9.586l5.44-5.44a.5.5 0 0 1 .706 0l.708.708a.5.5 0 0 1 0 .707L12.414 11l5.44 5.44a.5.5 0 0 1 0 .706l-.708.708a.5.5 0 0 1-.707 0L11 12.414l-5.44 5.44a.5.5 0 0 1-.706 0l-.708-.708a.5.5 0 0 1 0-.707z"
+            fill="currentColor"
           />
         </svg>
       </button>

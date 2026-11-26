@@ -20,7 +20,6 @@ afterEach(() => {
 })
 
 const settingsTabProps = {
-  onBack: noop,
   strokeColor: {
     inputValue: 'ff0000',
     effectiveColor: '#ff0000',

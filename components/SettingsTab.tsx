@@ -1,8 +1,7 @@
-import { ArrowLeft } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { GoToLinksSettings } from '@/components/GoToLinksSettings'
 import { SettingsAboutSection } from '@/components/SettingsAboutSection'
-import { SettingsGroupSection } from '@/components/SettingsGroupSection'
+import { SettingsTabBar, type SettingsTabDescriptor } from '@/components/SettingsTabBar'
 import { SettingsToggleRow } from '@/components/SettingsToggleRow'
 import { StrokeColorSection, type StrokeColorSettingsProps } from '@/components/StrokeColorSection'
 import type { useFeedsFilter } from '@/hooks/useFeedsFilter'
@@ -62,10 +61,7 @@ type ObjectTrackerSettings = Pick<
   'isEnabled' | 'isLoaded' | 'setIsEnabled'
 >
 
-const SETTINGS_BACK_ICON_SIZE = 18
-
 type SettingsTabProps = {
-  onBack?: () => void
   strokeColor: StrokeColorSettingsProps
   reloadAfterUpload: ReloadAfterUploadSettings
   splitViewButton: SplitViewButtonSettings
@@ -80,7 +76,6 @@ type SettingsTabProps = {
 }
 
 export const SettingsTab = ({
-  onBack,
   strokeColor,
   reloadAfterUpload,
   splitViewButton,
@@ -118,17 +113,38 @@ export const SettingsTab = ({
     requestAccess: requestNspdAccess,
   } = nspdButton
 
-  const nspdGrantButtonRef = useRef<HTMLButtonElement>(null)
-  /** Счётчик запросов подсветки из хоста попапа (попап уже был открыт). */
-  const [nspdFocusRequest, setNspdFocusRequest] = useState(0)
+  const tabs: readonly SettingsTabDescriptor[] = [
+    { id: 'editing', label: t('settings.editing') },
+    { id: 'moderation', label: t('settings.moderation') },
+    { id: 'style', label: t('settings.style') },
+  ]
 
-  // Хост попапа просит подсветить доступ к НСПД: попап уже был открыт и
-  // заново не собирался, поэтому параметр URL не сработал бы.
+  // Активная вкладка не запоминается: попап собирается заново при каждом
+  // открытии, и каждый раз начинается с «Редактирования».
+  const [activeTab, setActiveTab] = useState(tabs[0]?.id ?? 'editing')
+  const nspdGrantButtonRef = useRef<HTMLButtonElement>(null)
+  /** Счётчик запросов подсветки доступа к НСПД: параметр URL, сообщение хоста. */
+  const [nspdFocusRequest, setNspdFocusRequest] = useState(0)
+  /** Какой запрос подсветки уже обработан: повторный рендер не должен драться за фокус. */
+  const handledNspdFocusRef = useRef(0)
+
+  // Открытие по параметру URL просит подсветку один раз; если хост попросит
+  // позже (попап уже открыт), счётчик увеличит обработчик сообщения.
+  useEffect(
+    function requestFocusFromProp() {
+      if (focusNspdAccess) {
+        setNspdFocusRequest((count) => count + 1)
+      }
+    },
+    [focusNspdAccess],
+  )
+
   useEffect(function subscribeNspdFocusMessage() {
     const handleMessage = (event: MessageEvent): void => {
       if (event.data?.action !== FOCUS_NSPD_ACCESS_MESSAGE) {
         return
       }
+      setActiveTab('editing')
       setNspdFocusRequest((count) => count + 1)
     }
     window.addEventListener('message', handleMessage)
@@ -137,22 +153,31 @@ export const SettingsTab = ({
     }
   }, [])
 
+  // Строка «Разрешить доступ» живёт во вкладке «Редактирование»: сначала
+  // переключаем вкладку, затем (после её монтирования) скроллим и фокусируем.
+  // Состояние разрешения приходит асинхронно, поэтому без `nspd` запрос не
+  // закрываем — эффект вернётся, когда оно догрузится.
   useEffect(
     function focusNspdGrantButtonEffect() {
-      if (!focusNspdAccess || isNspdPermissionDenied !== 'nspd') {
+      if (nspdFocusRequest === 0 || nspdFocusRequest === handledNspdFocusRef.current) {
+        return
+      }
+      if (activeTab !== 'editing') {
+        setActiveTab('editing')
+        return
+      }
+      if (isNspdPermissionDenied !== 'nspd') {
         return
       }
       const button = nspdGrantButtonRef.current
       if (!button) {
         return
       }
-      // `nspdFocusRequest` в зависимостях: хост может попросить подсветить
-      // строку повторно, когда попап уже открыт и iframe заново не собирался.
-      void nspdFocusRequest
+      handledNspdFocusRef.current = nspdFocusRequest
       button.scrollIntoView({ block: 'center' })
       button.focus()
     },
-    [focusNspdAccess, isNspdPermissionDenied, nspdFocusRequest],
+    [nspdFocusRequest, activeTab, isNspdPermissionDenied],
   )
 
   const isFeedsFilterEnabled = feedsFilter?.isEnabled ?? false
@@ -172,126 +197,137 @@ export const SettingsTab = ({
   const isNspdButtonDisabled = !isNspdButtonLoaded
   const isReloadAfterUploadDisabled = !isReloadAfterUploadLoaded || !canChangeReloadAfterUpload
 
+  const editingPanel = (
+    <>
+      <SettingsToggleRow
+        id="settings-split-view-button"
+        variant="plain"
+        title={t('settings.splitViewButton')}
+        ariaLabel={t('settings.splitViewAria')}
+        checked={isSplitViewButtonEnabled}
+        disabled={isSplitViewButtonDisabled}
+        onChange={setSplitViewButtonEnabled}
+      />
+
+      <SettingsToggleRow
+        id="settings-notes-button"
+        variant="plain"
+        title={t('settings.notesButton')}
+        ariaLabel={t('settings.notesButtonAria')}
+        checked={isNotesButtonEnabled}
+        disabled={isNotesButtonDisabled}
+        onChange={setNotesButtonEnabled}
+      >
+        {isNotesPermissionDenied ? (
+          <p className="settings-field-error" role="alert">
+            {t('settings.yandexPermissionDenied')}
+          </p>
+        ) : null}
+      </SettingsToggleRow>
+
+      <SettingsToggleRow
+        id="settings-nspd-button"
+        variant="plain"
+        title={t('settings.nspdButton')}
+        ariaLabel={t('settings.nspdButtonAria')}
+        checked={isNspdButtonEnabled}
+        disabled={isNspdButtonDisabled}
+        onChange={setNspdButtonEnabled}
+      >
+        {isNspdPermissionDenied === 'nspd' ? (
+          <div className="settings-permission-hint">
+            <p className="settings-field-error" role="alert">
+              {t('settings.nspdPermissionDenied')}
+            </p>
+            <button
+              ref={nspdGrantButtonRef}
+              type="button"
+              className="settings-grant-access-btn"
+              onClick={requestNspdAccess}
+            >
+              {t('settings.grantNspdAccess')}
+            </button>
+          </div>
+        ) : null}
+        {isNspdPermissionDenied === 'yandex' ? (
+          <p className="settings-field-error" role="alert">
+            {t('settings.yandexPermissionDenied')}
+          </p>
+        ) : null}
+      </SettingsToggleRow>
+
+      <GoToLinksSettings {...goToLinks} variant="plain" />
+
+      <SettingsToggleRow
+        id="settings-point-counter"
+        variant="plain"
+        title={t('settings.pointCounter')}
+        ariaLabel={t('settings.pointCounterAria')}
+        checked={isPointCounterEnabled}
+        disabled={isPointCounterDisabled}
+        onChange={(checked) => pointCounter?.setIsEnabled(checked)}
+      />
+
+      <SettingsToggleRow
+        id="settings-reload-after-upload"
+        variant="plain"
+        title={t('settings.reloadAfterUpload')}
+        ariaLabel={t('settings.reloadAfterUploadAria')}
+        checked={isReloadAfterUploadEnabled}
+        disabled={isReloadAfterUploadDisabled}
+        onChange={setReloadAfterUploadEnabled}
+      />
+    </>
+  )
+
+  const moderationPanel = (
+    <>
+      <SettingsToggleRow
+        id="settings-feeds-filter-button"
+        variant="plain"
+        title={t('settings.feedsFilter')}
+        ariaLabel={t('settings.feedsFilterAria')}
+        checked={isFeedsFilterEnabled}
+        disabled={isFeedsFilterDisabled}
+        onChange={(checked) => feedsFilter?.setIsEnabled(checked)}
+      />
+
+      <SettingsToggleRow
+        id="settings-object-tracker"
+        variant="plain"
+        title={t('settings.objectTracker')}
+        ariaLabel={t('settings.objectTrackerAria')}
+        checked={isObjectTrackerEnabled}
+        disabled={isObjectTrackerDisabled}
+        onChange={(checked) => objectTracker?.setIsEnabled(checked)}
+      />
+    </>
+  )
+
+  const stylePanel = <StrokeColorSection {...strokeColor} variant="plain" />
+
+  const panelContent =
+    activeTab === 'moderation' ? moderationPanel : activeTab === 'style' ? stylePanel : editingPanel
+
   return (
     <div className="tab-panel settings-tab">
-      {onBack ? (
-        <button
-          type="button"
-          className="settings-back-btn"
-          onClick={onBack}
-          aria-label={t('tabs.backToUploadAria')}
-        >
-          <ArrowLeft size={SETTINGS_BACK_ICON_SIZE} aria-hidden />
-          <span>{t('common.back')}</span>
-        </button>
-      ) : null}
+      <SettingsTabBar
+        tabs={tabs}
+        activeId={activeTab}
+        ariaLabel={t('settings.sectionsAria')}
+        onChange={setActiveTab}
+      />
 
-      <SettingsGroupSection id="settings-editing" title={t('settings.editing')} defaultExpanded>
-        <SettingsToggleRow
-          id="settings-split-view-button"
-          variant="plain"
-          title={t('settings.splitViewButton')}
-          ariaLabel={t('settings.splitViewAria')}
-          checked={isSplitViewButtonEnabled}
-          disabled={isSplitViewButtonDisabled}
-          onChange={setSplitViewButtonEnabled}
-        />
-
-        <SettingsToggleRow
-          id="settings-notes-button"
-          variant="plain"
-          title={t('settings.notesButton')}
-          ariaLabel={t('settings.notesButtonAria')}
-          checked={isNotesButtonEnabled}
-          disabled={isNotesButtonDisabled}
-          onChange={setNotesButtonEnabled}
-        >
-          {isNotesPermissionDenied ? (
-            <p className="settings-field-error" role="alert">
-              {t('settings.yandexPermissionDenied')}
-            </p>
-          ) : null}
-        </SettingsToggleRow>
-
-        <SettingsToggleRow
-          id="settings-nspd-button"
-          variant="plain"
-          title={t('settings.nspdButton')}
-          ariaLabel={t('settings.nspdButtonAria')}
-          checked={isNspdButtonEnabled}
-          disabled={isNspdButtonDisabled}
-          onChange={setNspdButtonEnabled}
-        >
-          {isNspdPermissionDenied === 'nspd' ? (
-            <div className="settings-permission-hint">
-              <p className="settings-field-error" role="alert">
-                {t('settings.nspdPermissionDenied')}
-              </p>
-              <button
-                ref={nspdGrantButtonRef}
-                type="button"
-                className="settings-grant-access-btn"
-                onClick={requestNspdAccess}
-              >
-                {t('settings.grantNspdAccess')}
-              </button>
-            </div>
-          ) : null}
-          {isNspdPermissionDenied === 'yandex' ? (
-            <p className="settings-field-error" role="alert">
-              {t('settings.yandexPermissionDenied')}
-            </p>
-          ) : null}
-        </SettingsToggleRow>
-
-        <GoToLinksSettings {...goToLinks} variant="plain" />
-
-        <SettingsToggleRow
-          id="settings-point-counter"
-          variant="plain"
-          title={t('settings.pointCounter')}
-          ariaLabel={t('settings.pointCounterAria')}
-          checked={isPointCounterEnabled}
-          disabled={isPointCounterDisabled}
-          onChange={(checked) => pointCounter?.setIsEnabled(checked)}
-        />
-
-        <SettingsToggleRow
-          id="settings-reload-after-upload"
-          variant="plain"
-          title={t('settings.reloadAfterUpload')}
-          ariaLabel={t('settings.reloadAfterUploadAria')}
-          checked={isReloadAfterUploadEnabled}
-          disabled={isReloadAfterUploadDisabled}
-          onChange={setReloadAfterUploadEnabled}
-        />
-      </SettingsGroupSection>
-
-      <SettingsGroupSection id="settings-moderation" title={t('settings.moderation')}>
-        <SettingsToggleRow
-          id="settings-feeds-filter-button"
-          variant="plain"
-          title={t('settings.feedsFilter')}
-          ariaLabel={t('settings.feedsFilterAria')}
-          checked={isFeedsFilterEnabled}
-          disabled={isFeedsFilterDisabled}
-          onChange={(checked) => feedsFilter?.setIsEnabled(checked)}
-        />
-
-        <SettingsToggleRow
-          id="settings-object-tracker"
-          variant="plain"
-          title={t('settings.objectTracker')}
-          ariaLabel={t('settings.objectTrackerAria')}
-          checked={isObjectTrackerEnabled}
-          disabled={isObjectTrackerDisabled}
-          onChange={(checked) => objectTracker?.setIsEnabled(checked)}
-        />
-      </SettingsGroupSection>
-
-      <SettingsGroupSection id="settings-style" title={t('settings.style')}>
-        <StrokeColorSection {...strokeColor} variant="plain" />
-      </SettingsGroupSection>
+      {/* `key` пересоздаёт панель: прокрутка новой вкладки начинается с начала. */}
+      <div
+        key={activeTab}
+        id={`settings-panel-${activeTab}`}
+        role="tabpanel"
+        aria-labelledby={`settings-tab-${activeTab}`}
+        className="settings-tab__panel"
+      >
+        <div className="settings-toggle-group">{panelContent}</div>
+      </div>
 
       <SettingsAboutSection />
     </div>

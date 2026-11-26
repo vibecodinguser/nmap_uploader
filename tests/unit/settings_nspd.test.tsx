@@ -1,10 +1,11 @@
 // @vitest-environment happy-dom
 
-import { cleanup, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { SettingsTab } from '@/components/SettingsTab'
 import { LocaleProvider } from '@/hooks/useLocale'
 import type { NspdPermissionDeniedReason } from '@/hooks/useNspdButton'
+import { FOCUS_NSPD_ACCESS_MESSAGE } from '@/lib/settings_popup/protocol'
 
 const noop = () => {}
 
@@ -92,11 +93,13 @@ describe('SettingsTab: доступ к НСПД', () => {
     props.nspdButton.setIsEnabled = setIsEnabled
 
     render(<SettingsTab {...props} />, { wrapper: LocaleProvider })
-    screen.getByRole('switch', { name: 'НСПД' }).click()
+    screen.getByRole('switch', { name: 'Загрузка из НСПД' }).click()
 
     expect(setIsEnabled).toHaveBeenCalledWith(true)
   })
 })
+
+afterEach(cleanup)
 
 it('подсвечивает кнопку «Разрешить доступ» при focusNspdAccess', () => {
   const props = buildProps('nspd')
@@ -109,4 +112,38 @@ it('подсвечивает кнопку «Разрешить доступ» п
   expect(button).toBeTruthy()
   // scrollIntoView в happy-dom — заглушка; проверяем, что кнопка в фокусе.
   expect(document.activeElement).toBe(button)
+})
+
+it('переключает на «Редактор» по сообщению хоста и фокусирует доступ', () => {
+  const props = buildProps('nspd')
+  props.nspdButton.isEnabled = true
+
+  const { container } = render(<SettingsTab {...props} />, { wrapper: LocaleProvider })
+  fireEvent.click(screen.getByRole('tab', { name: 'Стиль' }))
+  expect(screen.getByRole('tabpanel').id).toBe('settings-panel-style')
+
+  act(() => {
+    window.dispatchEvent(
+      new MessageEvent('message', { data: { action: FOCUS_NSPD_ACCESS_MESSAGE } }),
+    )
+  })
+
+  expect(screen.getByRole('tab', { name: 'Редактор' }).getAttribute('aria-selected')).toBe('true')
+  expect(document.activeElement).toBe(container.querySelector('.settings-grant-access-btn'))
+})
+
+it('не закрывает запрос подсветки, пока состояние доступа не загружено', () => {
+  const props = buildProps(null)
+  props.nspdButton.isEnabled = true
+  props.focusNspdAccess = true
+
+  const { container, rerender } = render(<SettingsTab {...props} />, { wrapper: LocaleProvider })
+
+  expect(document.activeElement).not.toBe(container.querySelector('.settings-grant-access-btn'))
+
+  rerender(
+    <SettingsTab {...props} nspdButton={{ ...props.nspdButton, permissionDenied: 'nspd' }} />,
+  )
+
+  expect(document.activeElement).toBe(container.querySelector('.settings-grant-access-btn'))
 })
