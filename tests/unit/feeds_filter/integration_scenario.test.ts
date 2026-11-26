@@ -1,39 +1,26 @@
 // @vitest-environment happy-dom
 
 import { beforeEach, describe, expect, it } from 'vitest'
+import { getEventCardStatus } from '@/lib/feeds_filter/card_status_detector'
+import { FEEDS_FILTER_POPUP_ID, FEEDS_FILTER_SELECT_ID } from '@/lib/feeds_filter/constants'
+import { findFeedContainer } from '@/lib/feeds_filter/container_finder'
+import { parseEventDateString } from '@/lib/feeds_filter/date_string_parser'
 import {
-  applyFeedFilter,
   attachFilterDropdownToDom,
-  createFeedDailyLoader,
-  createFilterDropdownElement,
-  FEEDS_FILTER_POPUP_ID,
-  FEEDS_FILTER_SELECT_ID,
-  findFeedContainer,
   findTargetSelect,
-  getEventCardStatus,
+} from '@/lib/feeds_filter/dom_mount'
+import { createFilterDropdownElement } from '@/lib/feeds_filter/dom_dropdown'
+import { applyFeedFilterToDom } from '@/lib/feeds_filter/page_adapter'
+import {
   getStoredFeedsFilterEnabled,
-  parseEventDateString,
   setStoredFeedsFilterEnabled,
-} from '@/lib/user_feeds_filter'
-import { resetBrowserMocks } from '../setup/browser_mock'
+} from '@/lib/feeds_filter/storage'
+import { resetBrowserMocks } from '../../setup/browser_mock'
 
-describe('user_feeds_filter integration facade', () => {
+describe('feeds_filter integration', () => {
   beforeEach(async () => {
     await resetBrowserMocks()
     document.body.innerHTML = ''
-  })
-
-  it('экспортирует целостный публичный фасад фильтрации ленты', () => {
-    expect(typeof applyFeedFilter).toBe('function')
-    expect(typeof attachFilterDropdownToDom).toBe('function')
-    expect(typeof createFeedDailyLoader).toBe('function')
-    expect(typeof createFilterDropdownElement).toBe('function')
-    expect(typeof findFeedContainer).toBe('function')
-    expect(typeof findTargetSelect).toBe('function')
-    expect(typeof getEventCardStatus).toBe('function')
-    expect(typeof parseEventDateString).toBe('function')
-    expect(typeof getStoredFeedsFilterEnabled).toBe('function')
-    expect(typeof setStoredFeedsFilterEnabled).toBe('function')
   })
 
   it('полный сценарий интеграции: монтирование дропдауна, фильтрация карточек и очистка', () => {
@@ -68,7 +55,7 @@ describe('user_feeds_filter integration facade', () => {
     let currentStatus = 'all'
     const controller = createFilterDropdownElement((status) => {
       currentStatus = status
-      applyFeedFilter(container, status)
+      applyFeedFilterToDom({ container, filter: status })
     })
 
     const attached = attachFilterDropdownToDom(controller.element, container)
@@ -76,7 +63,7 @@ describe('user_feeds_filter integration facade', () => {
     expect(document.getElementById(FEEDS_FILTER_SELECT_ID)).toBeDefined()
 
     // Исходная статистика и фильтрация
-    const stats = applyFeedFilter(container, 'red')
+    const stats = applyFeedFilterToDom({ container, filter: 'red' })
     expect(stats.total).toBe(2)
     expect(stats.published).toBe(1)
     expect(stats.red).toBe(1)

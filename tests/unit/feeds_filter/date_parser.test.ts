@@ -2,14 +2,16 @@
 
 import { describe, expect, it } from 'vitest'
 import {
-  getEventCardDateText,
-  getEventCardDayAge,
   getLastCardWithDate,
   getLastCardWithDayAge,
   getTargetThresholdMs,
+} from '@/lib/feeds_filter/card_scanner'
+import {
+  getEventCardDateText,
+  getEventCardDayAge,
   parseEventCardDate,
-  parseEventDateString,
-} from '@/lib/user_feeds_filter'
+} from '@/lib/feeds_filter/date_parser'
+import { parseEventDateString } from '@/lib/feeds_filter/date_string_parser'
 
 describe('feeds_filter date parsing and threshold', () => {
   describe('parseEventDateString', () => {

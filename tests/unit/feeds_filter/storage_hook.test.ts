@@ -8,7 +8,7 @@ import {
   FEEDS_FILTER_ENABLED_STORAGE_KEY,
   getStoredFeedsFilterEnabled,
   setStoredFeedsFilterEnabled,
-} from '@/lib/user_feeds_filter'
+} from '@/lib/feeds_filter/storage'
 import { resetBrowserMocks } from '../../setup/browser_mock'
 
 describe('feeds_filter storage and hook', () => {

@@ -1,16 +1,15 @@
 // @vitest-environment happy-dom
 
 import { beforeEach, describe, expect, it } from 'vitest'
+import { FEEDS_FILTER_SELECT_ID } from '@/lib/feeds_filter/constants'
+import { findFeedContainer, findFeedHeader } from '@/lib/feeds_filter/container_finder'
+import { createFilterDropdownElement } from '@/lib/feeds_filter/dom_dropdown'
 import {
   attachFilterDropdownToDom,
-  createFilterDropdownElement,
-  FEEDS_FILTER_SELECT_ID,
-  findFeedContainer,
-  findFeedHeader,
   findTargetSelect,
-  isEditsModeSelected,
-  syncFilterDropdownHeight,
-} from '@/lib/user_feeds_filter'
+} from '@/lib/feeds_filter/dom_mount'
+import { syncFilterDropdownHeight } from '@/lib/feeds_filter/dropdown_theme'
+import { isEditsModeSelected } from '@/lib/feeds_filter/target_select_validator'
 
 describe('feeds_filter dom mount and positioning', () => {
   beforeEach(() => {
