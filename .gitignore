@@ -46,10 +46,14 @@ skills-lock.json
 *.njsproj
 *.sln
 *.sw?
+# Локальные инструкции агентов и постановки задач: не в репозитории.
 AGENTS.md
 .cursorignore
 GEMINI.md
 TASK.md
+# Документация (ADR, чеклисты, планы) живёт в отдельном репозитории
+# https://github.com/vibecodinguser/yamapper-docs и клонируется в docs/ рядом
+# с исходниками. Общая справка для пользователей — в docs-site/.
 docs/
 .worktrees/
 
