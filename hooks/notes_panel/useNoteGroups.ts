@@ -3,7 +3,7 @@ import { useLocale } from '@/hooks/useLocale'
 import { buildAutoGroupName } from '@/lib/notes/model/autonames'
 import { NOTE_PALETTE } from '@/lib/notes/model/palette'
 import type { NoteGroup } from '@/lib/notes/model/types'
-import { withGroup, withNoteGroup, withoutGroup } from '@/lib/notes/panel/edits'
+import { withoutGroup } from '@/lib/notes/panel/edits'
 import type { GroupDeleteMode } from '@/lib/notes/panel/state'
 import {
   NOTES_DELETE_GROUP_ACTION,

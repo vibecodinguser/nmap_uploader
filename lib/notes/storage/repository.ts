@@ -6,7 +6,7 @@ import {
   setShardGeometry,
   shardIdForDate,
 } from '../model/shards'
-import type { Note, NoteGeometry, NoteGroup } from '../model/types'
+import type { Note, NoteGeometry } from '../model/types'
 import type { NotesData, NotesPatch } from '../protocol'
 import { enqueueNotesWrite } from './write_queue'
 import { type NotesPorts, readShard, withTombstone, writeManifest, writeShard } from './writes'

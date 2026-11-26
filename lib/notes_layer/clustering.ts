@@ -105,7 +105,7 @@ export const clusterPoints = ({
   const assigned = new Set<number>()
   const clusters: NoteCluster[] = []
 
-  for (const [index, entry] of pixelPoints.entries()) {
+  for (const index of pixelPoints.keys()) {
     if (assigned.has(index)) continue
 
     assigned.add(index)

@@ -8,8 +8,7 @@
  * списка кнопок столько же, сколько заметок, поэтому к id добавляется
  * идентификатор заметки, а сам он есть в атрибуте `data-note-id`.
  */
-import { cleanup, render, screen } from '@testing-library/react'
-import type { ComponentProps } from 'react'
+import { cleanup, render } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { NoteList as NoteListBase, noteRowIds } from '@/components/notes_panel/NoteList'
 import { NoteProperties } from '@/components/notes_panel/NoteProperties'

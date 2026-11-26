@@ -1,4 +1,3 @@
-import { browser } from 'wxt/browser'
 import { defineContentScript } from 'wxt/utils/define-content-script'
 import { installCsrfTokenListener } from '@/lib/object_tracker/csrf_token'
 import { ObjectTrackerController } from '@/lib/object_tracker/tracker_controller'

@@ -6,15 +6,12 @@ import {
   showGoToMenu,
 } from '@/lib/go_to/menu_controller'
 import { GO_TO_REFRESH_ACTION } from '@/lib/go_to_notify'
-import { GO_TO_MENU_ENABLED_STORAGE_KEY, getStoredGoToMenuEnabled } from '@/lib/go_to_settings'
-import {
-  GO_TO_SPLIT_BUTTON_ENABLED_STORAGE_KEY,
-  getStoredSplitButtonEnabled,
-} from '@/lib/go_to_split_button'
+import { GO_TO_MENU_ENABLED_STORAGE_KEY } from '@/lib/go_to_settings'
+import { GO_TO_SPLIT_BUTTON_ENABLED_STORAGE_KEY } from '@/lib/go_to_split_button'
 import { ensureGoToStyles, removeGoToStyles } from '@/lib/go_to_styles'
 import { observeGoToTheme } from '@/lib/go_to_theme'
 import { observeNativeLocale } from '@/lib/i18n'
-import { getStoredNotesButtonEnabled, NOTES_BUTTON_ENABLED_STORAGE_KEY } from '@/lib/notes_button'
+import { NOTES_BUTTON_ENABLED_STORAGE_KEY } from '@/lib/notes_button'
 import { NSPD_BUTTON_ENABLED_STORAGE_KEY } from '@/lib/nspd/nspd_button'
 import { type GoToLifecycleOptions, hasGoToRefreshStorageChange } from './lifecycle_contracts'
 import { attachPageVisibilityListeners } from './page_visibility_listeners'

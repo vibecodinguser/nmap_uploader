@@ -1,4 +1,3 @@
-import { normalizeGeometry } from '@/lib/notes/model/manifest'
 import type { Note, NoteGeometry, NoteGroup } from '@/lib/notes/model/types'
 
 /**

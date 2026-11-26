@@ -6,7 +6,7 @@
  * Квадрат и круг задаются двумя точками, поэтому рисуются не кликами, а
  * протяжкой: нажали, потянули, отпустили.
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { PointPickerOverlay } from '@/lib/nmaps'
 import { NMAPS_POINT_PICKED_EVENT } from '@/lib/nmaps_pick_point_notify'
 

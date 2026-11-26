@@ -1,4 +1,4 @@
-import type { Note, NoteGroup } from './types'
+import type { NoteGroup } from './types'
 
 /**
  * Группировка заметок.

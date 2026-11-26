@@ -7,12 +7,7 @@
  */
 
 import { buildBuiltinIconHref, findBuiltinIcon } from '@/lib/notes/icons'
-import {
-  circleRing,
-  geometryAnchor,
-  geometryCoordinates,
-  squareFromCorners,
-} from '@/lib/notes/model/geometry'
+import { circleRing, geometryAnchor, squareFromCorners } from '@/lib/notes/model/geometry'
 import { HATCH_LINE_WIDTH } from '@/lib/notes/model/palette'
 import {
   type ResolvedNoteStyle,

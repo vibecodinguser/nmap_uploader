@@ -8,7 +8,7 @@
  * На карте это выглядит мерцанием всех объектов, а на тысяче заметок ещё и
  * заметно по времени.
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { Note } from '@/lib/notes/model/types'
 import { NotesLayer } from '@/lib/notes_layer'
 

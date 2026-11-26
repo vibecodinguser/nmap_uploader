@@ -8,13 +8,9 @@ import { replaceNote, withNote, withoutNote } from '@/lib/notes/panel/edits'
 import { EMPTY_NOTES_SNAPSHOT } from '@/lib/notes/panel/empty'
 import { kindLabelKey } from '@/lib/notes/panel/labels'
 import { selectGeometries } from '@/lib/notes/panel/selectors'
-import {
-  type DrawableNoteKind,
-  NOTES_DELETE_NOTE_ACTION,
-  NOTES_SAVE_NOTE_ACTION,
-} from '@/lib/notes/protocol'
+import { type DrawableNoteKind, NOTES_SAVE_NOTE_ACTION } from '@/lib/notes/protocol'
 import type { NotesPanelStore } from './useNotesPanelState'
-import { type NotesWrites, UNDO_TIMEOUT_MS } from './useNotesWrites'
+import type { NotesWrites } from './useNotesWrites'
 
 /**
  * Создание, правка и удаление заметки.
@@ -25,7 +21,7 @@ import { type NotesWrites, UNDO_TIMEOUT_MS } from './useNotesWrites'
  */
 export const useNotesMutations = (
   { state, dispatch }: NotesPanelStore,
-  { enqueueSaveMessage, scheduleSave, cancelPending, postPreview }: NotesWrites,
+  { enqueueSaveMessage, scheduleSave, postPreview }: NotesWrites,
 ) => {
   const { t } = useLocale()
   const geometries = useMemo(() => selectGeometries(state), [state])
