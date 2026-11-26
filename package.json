@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "wxt -b firefox",
     "dev:chrome": "wxt",
+    "dev:stop": "bash scripts/stop-dev-server.sh",
     "build": "wxt build",
     "build:firefox": "wxt build -b firefox",
     "zip": "wxt zip",
