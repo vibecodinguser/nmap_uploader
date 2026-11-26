@@ -135,6 +135,12 @@ describe('feeds_filter daily_loader and scroll_scanner', () => {
     })
 
     it('позволяет остановить активную загрузку через stopLoading', async () => {
+      // Опорное время — середина дня: «5 минут назад» в первые минуты после
+      // полуночи уезжает во вчера, загрузка завершается сразу, и остановка
+      // уже нечего проверять.
+      const now = Date.now()
+      vi.setSystemTime(new Date('2026-10-26T20:00:00.000'))
+
       const container = document.createElement('div')
       container.className = 'nk-user-feeds-view'
       const card = document.createElement('div')
@@ -157,6 +163,7 @@ describe('feeds_filter daily_loader and scroll_scanner', () => {
 
       expect(loader.isLoading()).toBe(false)
       loader.teardown()
+      vi.setSystemTime(now)
     })
 
     it('не увеличивает период загрузки при скролле контейнера пользователем', async () => {
