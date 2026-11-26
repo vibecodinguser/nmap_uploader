@@ -292,7 +292,7 @@ describe('object_tracker: renderPanel', () => {
 
     renderPanel(container, baseView, callbacks)
 
-    expect(container.textContent).toContain('Отслеживаемые объекты (1)')
+    expect(container.textContent).toContain('Наблюдаемые объекты (1)')
     expect(container.textContent).toContain('Лента событий')
     expect(container.querySelectorAll('.nmap-ot-commit')).toHaveLength(1)
   })
@@ -428,7 +428,83 @@ describe('object_tracker: renderPanel', () => {
 
     renderPanel(container, { ...baseView, objects: [], commitsByObject: {} }, callbacks)
 
-    expect(container.textContent).toContain('Добавьте объекты для отслеживания')
+    expect(container.textContent).toContain('Добавьте объекты для наблюдения')
+  })
+
+  it('ставит обновление нативной иконкой в строку добавления', () => {
+    const container = document.createElement('div')
+
+    renderPanel(container, baseView, callbacks)
+
+    const addRow = container.querySelector('.nmap-ot-add__row')
+    const refresh = addRow?.querySelector('.nmap-ot-refresh')
+
+    expect(refresh).not.toBeNull()
+    // Текстовая кнопка nk-button заменена нативным nk-icon: подписи нет,
+    // действие объясняют title и aria-label.
+    expect(refresh?.classList.contains('nk-icon')).toBe(true)
+    expect(refresh?.classList.contains('nk-icon_id_reload')).toBe(true)
+    expect(refresh?.classList.contains('nk-button')).toBe(false)
+    expect(refresh?.textContent).toBe('')
+    expect(refresh?.getAttribute('aria-label')).toBe('Обновить список')
+    expect(refresh?.querySelector('svg')).not.toBeNull()
+  })
+
+  it('не выносит обновление в строку заголовка', () => {
+    const container = document.createElement('div')
+
+    renderPanel(container, baseView, callbacks)
+
+    expect(container.querySelector('.nmap-ot-title-row .nmap-ot-refresh')).toBeNull()
+  })
+
+  it('передаёт клик по обновлению в обработчик', () => {
+    const container = document.createElement('div')
+    const onRefresh = vi.fn()
+
+    renderPanel(container, baseView, { ...callbacks, onRefresh })
+    container.querySelector<HTMLElement>('.nmap-ot-refresh')?.click()
+
+    expect(onRefresh).toHaveBeenCalledOnce()
+  })
+
+  it('блокирует обновление и крутит иконку, пока идёт загрузка', () => {
+    const container = document.createElement('div')
+
+    renderPanel(container, { ...baseView, isLoading: true }, callbacks)
+
+    const refresh = container.querySelector<HTMLButtonElement>('.nmap-ot-refresh')
+    expect(refresh?.disabled).toBe(true)
+    expect(refresh?.getAttribute('aria-busy')).toBe('true')
+    expect(refresh?.getAttribute('aria-label')).toBe('Загрузка…')
+    expect(refresh?.classList.contains('nmap-ot-refresh_loading')).toBe(true)
+  })
+
+  it('берёт глиф из набора иконок редактора, а не рисует свой', () => {
+    const container = document.createElement('div')
+
+    renderPanel(container, baseView, callbacks)
+
+    // Разметка — ровно та, что редактор подставляет для id `reload`
+    // (app-bundle, модуль 54612). Своя стрелка выглядела иначе.
+    const path = container.querySelector('.nmap-ot-refresh svg path')?.getAttribute('d') ?? ''
+    expect(path).toContain('M17.646 13.646')
+    expect(path).toContain('M4.353 7.354')
+  })
+
+  it('оставляет поле без видимой подписи, но с доступным именем', () => {
+    const container = document.createElement('div')
+
+    renderPanel(container, { ...baseView, objects: [] }, callbacks)
+
+    const form = container.querySelector('.nmap-ot-add')
+    const input = container.querySelector<HTMLInputElement>('.nmap-ot-add__field input')
+
+    expect(container.querySelector('.nmap-ot-add__label')).toBeNull()
+    expect(form?.querySelector('label')).toBeNull()
+    // Подпись убрали, поэтому имя поля задаёт aria-label: placeholder
+    // доступным именем не считается.
+    expect(input?.getAttribute('aria-label')).toBe('id объекта')
   })
 
   it('валидирует id в форме добавления', () => {

@@ -56,7 +56,6 @@
     .nmap-ot-title-row {
       display: flex;
       align-items: center;
-      justify-content: space-between;
       gap: 12px;
       min-height: 28px;
     }
@@ -79,10 +78,6 @@
       display: flex;
       flex-direction: column;
       gap: 6px;
-    }
-    .nmap-ot-add__label {
-      color: var(--nmap-text-muted);
-      font-size: 12px;
     }
     .nmap-ot-add__row {
       display: flex;
@@ -124,6 +119,58 @@
     }
     .nmap-ot-add__submit {
       flex: 0 0 auto;
+    }
+
+    /*
+     * Обновление — нативная иконка редактора рядом с полем и «Добавить».
+     * Размер и глиф дают классы nk-icon и nk-icon_id_reload, здесь только место
+     * в строке, сброс кнопочной рамки и приглушённый цвет, как у иконок панели.
+     *
+     * `margin: 0` и нулевые отступы у svg обязательны: у `.nk-icon` в редакторе
+     * `margin-bottom: -8px`, а `nk-icon_align_auto` вешает на svg отступы
+     * `-5.15em/-5em` под выравнивание по базовой линии текста. В строке из
+     * flex-элементов они сдвигают иконку вниз и делают её положение
+     * непредсказуемым, поэтому здесь они обнуляются.
+     */
+    .nmap-ot-refresh.nk-icon {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: var(--nmap-text-muted);
+      cursor: pointer;
+      transition: color 0.15s ease;
+    }
+    .nmap-ot-refresh.nk-icon > svg {
+      display: block;
+      margin: 0;
+    }
+    .nmap-ot-refresh.nk-icon:hover:not(:disabled),
+    .nmap-ot-refresh.nk-icon:focus-visible {
+      color: inherit;
+    }
+    .nmap-ot-refresh.nk-icon:disabled {
+      cursor: default;
+      opacity: 0.5;
+    }
+    .nmap-ot-refresh_loading.nk-icon svg {
+      animation: nmap-ot-spin 1s linear infinite;
+    }
+
+    @keyframes nmap-ot-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .nmap-ot-refresh_loading.nk-icon svg {
+        animation: none;
+      }
     }
     .nmap-ot-add__error {
       min-height: 16px;
@@ -330,8 +377,7 @@
     }
 
     /* Тёмная тема: редактор помечает её классом на .nk-page. */
-    .nk-page_color-scheme_dark .nmap-ot-empty,
-    .nk-page_color-scheme_dark .nmap-ot-add__label {
+    .nk-page_color-scheme_dark .nmap-ot-empty {
       color: var(--nmap-text-muted);
     }
     .nk-page_color-scheme_dark .nmap-ot-object .nk-event-view__title a,
@@ -367,8 +413,24 @@
       }
     }
 
-/* Пункт «Отслеживать» в нативном меню объекта: вид дают классы nk-menu-item,
-   здесь только неактивное состояние. */
+/*
+ * Пункт «Наблюдать» в нативном меню объекта.
+ *
+ * Вид дают классы nk-menu-item, но подсветку и курсор редактор включает своим
+ * пунктам классом `nk-menu-item_hovered`, а наш узел вставлен в меню вручную и
+ * этого класса никогда не получает: строка оставалась без подсветки, и курсор
+ * над ней не превращался в pointer. Поэтому :hover повторяем сами тем же
+ * цветом темы, что и нативные пункты.
+ */
+.nmap-ot-menu-item {
+  cursor: pointer;
+}
+
+.nmap-ot-menu-item:hover,
+.nmap-ot-menu-item:focus-visible {
+  background-color: var(--menu-item_theme_islands_hovered--bg-color, #ffeb99);
+}
+
 .nmap-ot-menu-item_disabled {
   opacity: 0.5;
   cursor: default;

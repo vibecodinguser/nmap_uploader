@@ -340,7 +340,7 @@ describe('object_tracker: контроллер', () => {
     expect(await controller.removeObjectFromMenu('1')).toEqual({ ok: true })
     expect((await getTrackerSettings()).objects).toEqual([])
 
-    // Повторное нажатие «Не отслеживать» уже нечего убирать.
+    // Повторное нажатие «Не наблюдать» уже нечего убирать.
     expect(await controller.removeObjectFromMenu('1')).toEqual({ ok: false, error: 'NOT_FOUND' })
     controller.stop()
   })
@@ -383,8 +383,11 @@ describe('object_tracker: контроллер', () => {
     const refresh = panel?.querySelector('.nmap-ot-refresh')
     const submit = panel?.querySelector('.nmap-ot-add__submit')
     const input = panel?.querySelector('.nmap-ot-add__field')
+    const addRow = panel?.querySelector('.nmap-ot-add__row')
 
-    expect(refresh?.classList.contains('nk-button_theme_islands')).toBe(true)
+    expect(refresh?.classList.contains('nk-icon_id_reload')).toBe(true)
+    expect(refresh?.classList.contains('nk-button')).toBe(false)
+    expect(refresh?.parentElement).toBe(addRow)
     expect(submit?.classList.contains('nk-button_view_action')).toBe(true)
     expect(input?.classList.contains('nk-text-input_theme_islands')).toBe(true)
     controller.stop()

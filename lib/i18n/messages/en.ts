@@ -220,9 +220,9 @@ export const enMessages = {
     notTarget: 'Cutting is available only for a vegetation or water line',
   },
   objectTracker: {
-    menuTrack: 'Track',
-    menuUntrack: 'Stop tracking',
-    menuLimit: 'Tracking limit reached',
+    menuTrack: 'Watch',
+    menuUntrack: 'Stop watching',
+    menuLimit: 'Watching limit reached',
     errorDuplicate: 'The object is already in “My objects”',
     errorLimit: 'Tracking limit reached: no more than 30 objects',
     errorInvalidId: 'Could not determine the object id',

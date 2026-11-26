@@ -44,6 +44,21 @@ describe('object_tracker: стили панели', () => {
     expect(TRACKER_STYLES).toContain('.nmap-ot-add__field:focus-within')
   })
 
+  it('рисует обновление нативной иконкой, а не текстовой кнопкой', () => {
+    // Иконка стоит в строке добавления; собственных размеров и цвета не
+    // задаём — их дают nk-icon и nk-icon_id_reload.
+    expect(TRACKER_STYLES).toContain('.nmap-ot-refresh.nk-icon')
+    expect(TRACKER_STYLES).not.toContain('.nmap-ot-refresh.nk-button')
+  })
+
+  it('подсвечивает пункт меню и меняет курсор без класса редактора', () => {
+    // `nk-menu-item_hovered` редактор вешает только на свои пункты: наш узел
+    // вставлен вручную, поэтому hover и cursor заданы своими правилами.
+    expect(TRACKER_STYLES).toContain('.nmap-ot-menu-item {\n  cursor: pointer;')
+    expect(TRACKER_STYLES).toContain('.nmap-ot-menu-item:hover')
+    expect(TRACKER_STYLES).toContain('--menu-item_theme_islands_hovered--bg-color')
+  })
+
   it('не переопределяет размеры и отступы нативного поля', () => {
     // Поле должно полностью повторять nk-text-input: свои height и padding
     // ломали совпадение control с рамкой ::before.

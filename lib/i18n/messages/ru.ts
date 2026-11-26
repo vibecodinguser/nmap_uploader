@@ -219,8 +219,8 @@ export const ruMessages = {
     notTarget: 'Разрез доступен только для линии растительности или водоёма',
   },
   objectTracker: {
-    menuTrack: 'Отслеживать',
-    menuUntrack: 'Не отслеживать',
+    menuTrack: 'Наблюдать',
+    menuUntrack: 'Не наблюдать',
     menuLimit: 'Достигнут лимит наблюдения',
     errorDuplicate: 'Объект уже добавлен в «Мои объекты»',
     errorLimit: 'Достигнут лимит наблюдения: не больше 30 объектов',

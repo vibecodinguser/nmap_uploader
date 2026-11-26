@@ -87,7 +87,7 @@ const flushPromises = async (): Promise<void> => {
   await Promise.resolve()
 }
 
-describe('object_tracker: пункт «Отслеживать» в нативном меню', () => {
+describe('object_tracker: пункт «Наблюдать» в нативном меню', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     window.location.hash = `#!/objects/${OBJECT_ID}?z=14&ll=39.18%2C44.96`
@@ -201,7 +201,7 @@ describe('object_tracker: пункт «Отслеживать» в нативн�
     menu.stop()
   })
 
-  it('показывает активный пункт «Не отслеживать», если объект уже наблюдается', () => {
+  it('показывает активный пункт «Не наблюдать», если объект уже наблюдается', () => {
     const { menu } = createMenu({ isTracked: () => true })
     menu.start()
 
@@ -273,7 +273,7 @@ describe('object_tracker: пункт «Отслеживать» в нативн�
     menu.stop()
   })
 
-  it('убирает объект из наблюдения пунктом «Не отслеживать»', async () => {
+  it('убирает объект из наблюдения пунктом «Не наблюдать»', async () => {
     const { menu, onAdd, onRemove, tracked } = createMenu()
     menu.start()
 
