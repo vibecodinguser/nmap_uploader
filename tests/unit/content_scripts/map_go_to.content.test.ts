@@ -292,4 +292,61 @@ describe('map-go-to.content', () => {
     outsideElement.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
     expect(menu?.classList.contains(GO_TO_POPUP_VISIBLE_CLASS)).toBe(false)
   })
+
+  it('сохраняет порядок пунктов меню после перетаскивания', async () => {
+    await browser.storage.local.set({
+      [GO_TO_MENU_ENABLED_STORAGE_KEY]: true,
+      [GO_TO_ITEMS_STORAGE_KEY]: [
+        { name: 'Google', active: true },
+        { name: 'Bing', active: true },
+        { name: 'Nakarte', active: true },
+      ],
+    })
+
+    mountNmapsToolbarAnchor()
+    mapGoToScript.main?.(ctx)
+
+    await vi.waitFor(() => expect(document.getElementById(GO_TO_SERVICE_BUTTON_ID)).not.toBeNull())
+    document.getElementById(GO_TO_SERVICE_BUTTON_ID)?.click()
+
+    await vi.waitFor(() => {
+      expect(document.querySelectorAll(`#${MENU_ITEMS_ID} > *`)).toHaveLength(3)
+    })
+
+    const menuItems = document.getElementById(MENU_ITEMS_ID) as HTMLElement
+    const rows = Array.from(menuItems.children) as HTMLElement[]
+    rows.forEach((row, index) => {
+      row.getBoundingClientRect = () =>
+        ({
+          top: index * 40,
+          bottom: index * 40 + 40,
+          height: 40,
+          left: 0,
+          right: 200,
+          width: 200,
+          x: 0,
+          y: index * 40,
+          toJSON: () => ({}),
+        }) as DOMRect
+    })
+
+    rows[0]
+      .querySelector<HTMLElement>('.yamapper-menu__grip')
+      ?.dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, button: 0, clientX: 5, clientY: 10 }),
+      )
+    document.dispatchEvent(
+      new PointerEvent('pointermove', { bubbles: true, clientX: 5, clientY: 100 }),
+    )
+    document.dispatchEvent(
+      new PointerEvent('pointerup', { bubbles: true, clientX: 5, clientY: 100 }),
+    )
+
+    await vi.waitFor(async () => {
+      const stored = (await browser.storage.local.get(GO_TO_ITEMS_STORAGE_KEY))[
+        GO_TO_ITEMS_STORAGE_KEY
+      ] as { name: string }[]
+      expect(stored.slice(0, 3).map((item) => item.name)).toEqual(['Bing', 'Nakarte', 'Google'])
+    })
+  })
 })

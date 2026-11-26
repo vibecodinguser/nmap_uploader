@@ -1,12 +1,15 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { browser } from 'wxt/browser'
 import {
+  applyGoToVisibleOrder,
   GO_TO_ITEMS_STORAGE_KEY,
   GO_TO_MENU_ENABLED_STORAGE_KEY,
   getActiveGoToItems,
   getDefaultGoToItems,
   getStoredGoToItems,
   getStoredGoToMenuEnabled,
+  moveGoToItemBy,
+  moveGoToItemTo,
   normalizeGoToItems,
   setStoredGoToItems,
   setStoredGoToMenuEnabled,
@@ -66,6 +69,77 @@ describe('getDefaultGoToItems', () => {
       'Etomesto',
       'Strava',
     ])
+  })
+})
+
+describe('moveGoToItemTo', () => {
+  const items = [
+    { name: 'A', active: true },
+    { name: 'B', active: true },
+    { name: 'C', active: true },
+  ]
+
+  it('ставит пункт на место цели при движении вниз', () => {
+    expect(moveGoToItemTo(items, 'A', 'C').map((item) => item.name)).toEqual(['B', 'C', 'A'])
+  })
+
+  it('ставит пункт на место цели при движении вверх', () => {
+    expect(moveGoToItemTo(items, 'C', 'A').map((item) => item.name)).toEqual(['C', 'A', 'B'])
+  })
+
+  it('возвращает исходный массив, когда переставлять нечего', () => {
+    expect(moveGoToItemTo(items, 'B', 'B')).toBe(items)
+    expect(moveGoToItemTo(items, 'A', 'нет такого')).toBe(items)
+    expect(moveGoToItemTo(items, 'нет такого', 'A')).toBe(items)
+  })
+})
+
+describe('moveGoToItemBy', () => {
+  const items = [
+    { name: 'A', active: true },
+    { name: 'B', active: false },
+    { name: 'C', active: true },
+  ]
+
+  it('сдвигает пункт вверх и вниз', () => {
+    expect(moveGoToItemBy(items, 'C', -1).map((item) => item.name)).toEqual(['A', 'C', 'B'])
+    expect(moveGoToItemBy(items, 'A', 1).map((item) => item.name)).toEqual(['B', 'A', 'C'])
+  })
+
+  it('сдвигает и через выключенные пункты: в настройках видны все строки', () => {
+    expect(moveGoToItemBy(items, 'A', 2).map((item) => item.name)).toEqual(['B', 'C', 'A'])
+  })
+
+  it('возвращает исходный массив на границе и для неизвестного пункта', () => {
+    expect(moveGoToItemBy(items, 'A', -1)).toBe(items)
+    expect(moveGoToItemBy(items, 'C', 1)).toBe(items)
+    expect(moveGoToItemBy(items, 'нет такого', 1)).toBe(items)
+  })
+})
+
+describe('applyGoToVisibleOrder', () => {
+  const items = [
+    { name: 'A', active: true },
+    { name: 'B', active: false },
+    { name: 'C', active: true },
+    { name: 'D', active: false },
+    { name: 'E', active: true },
+  ]
+
+  it('переставляет только активные, неактивные остаются на местах', () => {
+    const next = applyGoToVisibleOrder(items, ['E', 'A', 'C'])
+    expect(next.map((item) => item.name)).toEqual(['E', 'B', 'A', 'D', 'C'])
+    expect(next.map((item) => item.active)).toEqual([true, false, true, false, true])
+  })
+
+  it('возвращает исходный массив, если порядок не изменился', () => {
+    expect(applyGoToVisibleOrder(items, ['A', 'C', 'E'])).toBe(items)
+  })
+
+  it('не трогает список, если видимые имена не совпадают с активными', () => {
+    expect(applyGoToVisibleOrder(items, ['A', 'C'])).toBe(items)
+    expect(applyGoToVisibleOrder(items, ['A', 'A', 'C'])).toBe(items)
+    expect(applyGoToVisibleOrder(items, ['A', 'C', 'нет такого'])).toBe(items)
   })
 })
 

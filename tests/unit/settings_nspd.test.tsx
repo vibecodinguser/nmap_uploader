@@ -39,8 +39,8 @@ const buildProps = (permissionDenied: NspdPermissionDeniedReason) => ({
     items: [],
     setIsMenuEnabled: noop,
     setItemActive: noop,
-    moveItemUp: noop,
-    moveItemDown: noop,
+    moveItemBy: noop,
+    reorderItems: noop,
   },
 })
 

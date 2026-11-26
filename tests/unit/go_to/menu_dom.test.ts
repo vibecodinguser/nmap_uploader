@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   createGoToMenuElement,
   createMenuItemElement,
+  GO_TO_MENU_ITEM_GRIP_CLASS,
   GO_TO_MENU_ITEM_ID_PREFIX,
   getGoToSourceNameFromMenuItemId,
   isGoToMenuItemTarget,
@@ -28,12 +29,15 @@ describe('go_to/menu_dom', () => {
     expect(isNmapOwned(el)).toBe(true)
   })
 
-  it('createMenuItemElement создает пункт меню с иконкой и локализованным названием', () => {
+  it('createMenuItemElement создает пункт меню с ручкой, иконкой и локализованным названием', () => {
     const item = { name: 'OpenStreetMap', active: true }
     const el = createMenuItemElement(item, 'data:image/svg+xml;utf8,<svg></svg>', 'ru')
     expect(el.id).toBe(`${GO_TO_MENU_ITEM_ID_PREFIX}OpenStreetMap`)
     expect(el.textContent).toBe('OpenStreetMap')
-    expect(el.style.backgroundImage).toContain('data:image/svg+xml')
+    expect(el.querySelector(`.${GO_TO_MENU_ITEM_GRIP_CLASS}`)).not.toBeNull()
+    expect(el.querySelector('.yamapper-menu__icon')?.getAttribute('style')).toContain(
+      'data:image/svg+xml',
+    )
   })
 
   it('getGoToSourceNameFromMenuItemId извлекает имя источника из ID', () => {

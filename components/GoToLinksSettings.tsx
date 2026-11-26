@@ -1,8 +1,9 @@
 import { ChevronRight } from 'lucide-react'
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, type RefObject, useState } from 'react'
 import { GoToLinksSettingsItem } from '@/components/GoToLinksSettingsItem'
 import { SettingsToggleRow } from '@/components/SettingsToggleRow'
 import type { useGoToLinks } from '@/hooks/useGoToLinks'
+import { type GoToItemsDrag, useGoToListDrag } from '@/hooks/useGoToListDrag'
 import { useTranslate } from '@/hooks/useLocale'
 import type { GoToItem } from '@/lib/go_to_settings'
 
@@ -31,26 +32,26 @@ type GoToLinksSettingsProps = Pick<
   | 'isLoaded'
   | 'setIsMenuEnabled'
   | 'setItemActive'
-  | 'moveItemUp'
-  | 'moveItemDown'
+  | 'moveItemBy'
+  | 'reorderItems'
 > & {
   /** `card` — самостоятельная карточка настроек, `plain` — строка внутри общей секции. */
   variant?: 'card' | 'plain'
 }
 
 type GoToLinksListRenderContext = {
-  totalItems: number
   isLoaded: boolean
+  draggingName: string | null
   setItemActive: GoToLinksSettingsProps['setItemActive']
-  moveItemUp: GoToLinksSettingsProps['moveItemUp']
-  moveItemDown: GoToLinksSettingsProps['moveItemDown']
+  moveItemBy: GoToLinksSettingsProps['moveItemBy']
+  onHandlePointerDown: GoToItemsDrag['handlePointerDown']
 }
 
 type ExpandedGoToListProps = {
   isListExpanded: boolean
   items: GoToItem[]
   listContext: GoToLinksListRenderContext
-  listHint: string
+  listRef: RefObject<HTMLUListElement | null>
   listAriaLabel: string
 }
 
@@ -59,18 +60,16 @@ function buildGoToLinksListItems(
   context: GoToLinksListRenderContext,
 ): ReactNode[] {
   const renderedItems: ReactNode[] = []
-  for (let index = 0; index < items.length; index += 1) {
-    const item = items[index]
+  for (const item of items) {
     renderedItems.push(
       <GoToLinksSettingsItem
         key={item.name}
         item={item}
-        index={index}
-        totalItems={context.totalItems}
         isLoaded={context.isLoaded}
+        isDragging={context.draggingName === item.name}
         setItemActive={context.setItemActive}
-        moveItemUp={context.moveItemUp}
-        moveItemDown={context.moveItemDown}
+        moveItemBy={context.moveItemBy}
+        onHandlePointerDown={context.onHandlePointerDown}
       />,
     )
   }
@@ -83,9 +82,7 @@ function renderExpandedGoToList(props: ExpandedGoToListProps) {
     const listItems = buildGoToLinksListItems(props.items, props.listContext)
     panel = (
       <div id="settings-go-to-list" className="settings-go-to-panel">
-        <p className="settings-go-to-hint">{props.listHint}</p>
-
-        <ul className="settings-go-to-list" aria-label={props.listAriaLabel}>
+        <ul className="settings-go-to-list" ref={props.listRef} aria-label={props.listAriaLabel}>
           {listItems}
         </ul>
       </div>
@@ -100,24 +97,25 @@ export const GoToLinksSettings = ({
   isLoaded,
   setIsMenuEnabled,
   setItemActive,
-  moveItemUp,
-  moveItemDown,
+  moveItemBy,
+  reorderItems,
   variant = 'card',
 }: GoToLinksSettingsProps) => {
   const t = useTranslate()
   const [isListExpanded, setIsListExpanded] = useState(false)
-  const activeCount = items.filter(isActiveGoToItem).length
+  const drag = useGoToListDrag({ items, reorderItems })
+  const activeCount = drag.displayedItems.filter(isActiveGoToItem).length
 
   const handleToggleList = () => {
     setIsListExpanded(getToggledListExpanded)
   }
 
   const listContext: GoToLinksListRenderContext = {
-    totalItems: items.length,
     isLoaded,
+    draggingName: drag.draggingName,
     setItemActive,
-    moveItemUp,
-    moveItemDown,
+    moveItemBy,
+    onHandlePointerDown: drag.handlePointerDown,
   }
 
   return (
@@ -145,15 +143,15 @@ export const GoToLinksSettings = ({
         />
         <span className="settings-go-to-toggle-label">{t('common.list')}</span>
         <span className="settings-go-to-toggle-meta">
-          {t('settings.activeCount', { active: activeCount, total: items.length })}
+          {t('settings.activeCount', { active: activeCount, total: drag.displayedItems.length })}
         </span>
       </button>
 
       {renderExpandedGoToList({
         isListExpanded,
-        items,
+        items: drag.displayedItems,
         listContext,
-        listHint: t('settings.goToHint'),
+        listRef: drag.listRef,
         listAriaLabel: t('settings.goToListAria'),
       })}
     </SettingsToggleRow>

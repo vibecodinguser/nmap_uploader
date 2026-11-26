@@ -1,19 +1,25 @@
 import { browser } from 'wxt/browser'
 import {
+  applyGoToVisibleOrder,
   GO_TO_ITEMS_STORAGE_KEY,
   GO_TO_MENU_ENABLED_STORAGE_KEY,
   type GoToItem,
   getActiveGoToItems,
   getDefaultGoToItems,
+  moveGoToItemBy,
+  moveGoToItemTo,
   normalizeGoToItems,
 } from '@/lib/go_to'
 
 export type { GoToItem }
 export {
+  applyGoToVisibleOrder,
   GO_TO_ITEMS_STORAGE_KEY,
   GO_TO_MENU_ENABLED_STORAGE_KEY,
   getActiveGoToItems,
   getDefaultGoToItems,
+  moveGoToItemBy,
+  moveGoToItemTo,
   normalizeGoToItems,
 }
 

@@ -2,6 +2,7 @@
  * Пакет функционала Go To (Перейти на внешние геосервисы и панель инструментов).
  */
 
+export * from '@/lib/go_to/drag_sort'
 export * from '@/lib/go_to/lifecycle'
 export * from '@/lib/go_to/links'
 export * from '@/lib/go_to/menu_controller'

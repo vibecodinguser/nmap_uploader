@@ -27,8 +27,8 @@ type GoToLinksSettingsState = Pick<
   | 'isLoaded'
   | 'setIsMenuEnabled'
   | 'setItemActive'
-  | 'moveItemUp'
-  | 'moveItemDown'
+  | 'moveItemBy'
+  | 'reorderItems'
 >
 
 type SplitViewButtonSettings = Pick<

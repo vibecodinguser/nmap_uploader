@@ -1,52 +1,76 @@
-import { ChevronDown, ChevronUp } from 'lucide-react'
-import { type ChangeEvent, memo } from 'react'
+import { GripVertical } from 'lucide-react'
+import { type ChangeEvent, type KeyboardEvent, memo, type PointerEvent } from 'react'
 import type { useGoToLinks } from '@/hooks/useGoToLinks'
 import { useLocale, useTranslate } from '@/hooks/useLocale'
 import type { GoToItem } from '@/lib/go_to_settings'
 import { getGoToSourceDisplayName, getGoToSourceIconUrl } from '@/lib/go_to_sources'
 
-const GO_TO_CHEVRON_ICON_SIZE = 16
+const GO_TO_HANDLE_ICON_SIZE = 16
 
 type GoToLinksSettingsItemProps = Readonly<{
   item: GoToItem
-  index: number
-  totalItems: number
   isLoaded: boolean
+  /** Строку сейчас перетаскивают. */
+  isDragging: boolean
   setItemActive: ReturnType<typeof useGoToLinks>['setItemActive']
-  moveItemUp: ReturnType<typeof useGoToLinks>['moveItemUp']
-  moveItemDown: ReturnType<typeof useGoToLinks>['moveItemDown']
+  /** Сдвигает пункт на один шаг: `-1` вверх, `1` вниз. */
+  moveItemBy: (name: string, offset: number) => void
+  onHandlePointerDown: (event: PointerEvent<HTMLElement>, name: string) => void
 }>
+
+/** Стрелки на ручке двигают пункт; на краю списка сдвиг ничего не делает. */
+const getKeyboardOffset = (key: string): number | null => {
+  if (key === 'ArrowUp') return -1
+  if (key === 'ArrowDown') return 1
+  return null
+}
 
 const GoToLinksSettingsItemBase = ({
   item,
-  index,
-  totalItems,
   isLoaded,
+  isDragging,
   setItemActive,
-  moveItemUp,
-  moveItemDown,
+  moveItemBy,
+  onHandlePointerDown,
 }: GoToLinksSettingsItemProps) => {
   const t = useTranslate()
   const { locale } = useLocale()
   const displayName = getGoToSourceDisplayName(item.name, locale)
   const iconUrl = getGoToSourceIconUrl(item.name)
-  const isMoveUpEnabled = isLoaded && index > 0
-  const isMoveDownEnabled = isLoaded && index < totalItems - 1
 
   const handleActiveChange = (event: ChangeEvent<HTMLInputElement>) => {
     setItemActive(item.name, event.target.checked)
   }
 
-  const handleMoveUpClick = () => {
-    moveItemUp(item.name)
+  const handleDragPointerDown = (event: PointerEvent<HTMLElement>) => {
+    onHandlePointerDown(event, item.name)
   }
 
-  const handleMoveDownClick = () => {
-    moveItemDown(item.name)
+  const handleHandleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    const offset = getKeyboardOffset(event.key)
+    if (offset === null) return
+    event.preventDefault()
+    moveItemBy(item.name, offset)
   }
 
   return (
-    <li className="settings-go-to-item">
+    <li
+      className="settings-go-to-item"
+      data-go-to-name={item.name}
+      data-dragging={isDragging ? 'true' : undefined}
+    >
+      {/* Ручка — не только мышь: стрелки на ней переставляют пункт, поэтому
+          клавиатурный путь живёт здесь, а не в отдельных кнопках ↑/↓. */}
+      <button
+        type="button"
+        className="settings-go-to-drag-handle"
+        aria-label={t('settings.reorderAria', { name: displayName })}
+        onPointerDown={handleDragPointerDown}
+        onKeyDown={handleHandleKeyDown}
+      >
+        <GripVertical size={GO_TO_HANDLE_ICON_SIZE} aria-hidden />
+      </button>
+
       <div className="settings-go-to-item-label">
         <span
           className="settings-go-to-item-icon"
@@ -72,27 +96,6 @@ const GoToLinksSettingsItemBase = ({
           <span className="settings-toggle-thumb" />
         </span>
       </label>
-
-      <div className="settings-go-to-item-actions">
-        <button
-          type="button"
-          className="settings-go-to-move-btn"
-          disabled={!isMoveUpEnabled}
-          aria-label={t('settings.moveUpAria', { name: displayName })}
-          onClick={handleMoveUpClick}
-        >
-          <ChevronUp size={GO_TO_CHEVRON_ICON_SIZE} aria-hidden />
-        </button>
-        <button
-          type="button"
-          className="settings-go-to-move-btn"
-          disabled={!isMoveDownEnabled}
-          aria-label={t('settings.moveDownAria', { name: displayName })}
-          onClick={handleMoveDownClick}
-        >
-          <ChevronDown size={GO_TO_CHEVRON_ICON_SIZE} aria-hidden />
-        </button>
-      </div>
     </li>
   )
 }

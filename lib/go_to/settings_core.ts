@@ -74,3 +74,78 @@ export const normalizeGoToItems = (stored: unknown): GoToItem[] => {
  */
 export const getActiveGoToItems = (items: GoToItem[]): GoToItem[] =>
   items.filter((item) => item.active && GO_TO_SOURCES[item.name])
+
+/**
+ * Переставляет пункт на место `targetName`: при движении вниз он встаёт после
+ * цели, при движении вверх — перед ней. Если переставлять нечего, возвращает
+ * исходный массив — вызывающая сторона отличает это по ссылке.
+ */
+export const moveGoToItemTo = (
+  items: GoToItem[],
+  movedName: string,
+  targetName: string,
+): GoToItem[] => {
+  const movedIndex = items.findIndex((item) => item.name === movedName)
+  const targetIndex = items.findIndex((item) => item.name === targetName)
+  if (movedIndex < 0 || targetIndex < 0 || movedIndex === targetIndex) return items
+
+  const next = [...items]
+  const [moved] = next.splice(movedIndex, 1)
+  next.splice(targetIndex, 0, moved)
+  return next
+}
+
+/**
+ * Сдвигает пункт на `offset` позиций (`-1` вверх, `1` вниз). На границе списка
+ * возвращает исходный массив — вызывающая сторона отличает это по ссылке.
+ */
+export const moveGoToItemBy = (items: GoToItem[], name: string, offset: number): GoToItem[] => {
+  const index = items.findIndex((item) => item.name === name)
+  const targetIndex = index + offset
+  const isValid = index >= 0 && targetIndex >= 0 && targetIndex < items.length
+  if (!isValid) return items
+
+  const next = [...items]
+  const [moved] = next.splice(index, 1)
+  next.splice(targetIndex, 0, moved)
+  return next
+}
+
+/**
+ * Применяет видимый порядок пунктов меню к полному списку: позиции активных
+ * пунктов переставляются, неактивные остаются на своих местах. Так
+ * перетаскивание в попапе, где неактивных не видно, не тасует список в
+ * настройках.
+ */
+export const applyGoToVisibleOrder = (
+  items: GoToItem[],
+  visibleNames: readonly string[],
+): GoToItem[] => {
+  const activeNames = items.filter((item) => item.active).map((item) => item.name)
+  const isComplete =
+    activeNames.length === visibleNames.length &&
+    new Set(visibleNames).size === visibleNames.length &&
+    activeNames.every((name) => visibleNames.includes(name))
+  if (!isComplete) return items
+
+  const byName = new Map(items.map((item) => [item.name, item]))
+  const visibleItems: GoToItem[] = []
+  for (const name of visibleNames) {
+    const item = byName.get(name)
+    if (item) visibleItems.push(item)
+  }
+
+  const next: GoToItem[] = []
+  let visibleIndex = 0
+  for (const item of items) {
+    if (item.active) {
+      next.push(visibleItems[visibleIndex])
+      visibleIndex += 1
+    } else {
+      next.push(item)
+    }
+  }
+
+  const changed = next.some((item, index) => item !== items[index])
+  return changed ? next : items
+}

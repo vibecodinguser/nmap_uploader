@@ -70,8 +70,14 @@ to{opacity:1;}
 .yamapper-popup--tooltip{position:fixed;z-index:111001;padding:0;box-sizing:border-box;border-radius:var(--nmap-radius-sm);background:rgba(0,0,0,0.8);color:#fff;font:400 12px/15px var(--nmap-font-stack);box-shadow:rgba(0,0,0,0.1) 0 0 0 1px,rgba(0,0,0,0.4) 0 10px 20px -5px;pointer-events:none;animation:nmapTooltipFadeIn 0.1s ease-out forwards;}
 .yamapper-popup--tooltip .yamapper-popup__content,.yamapper-popup--tooltip .nk-popup__content{padding:6px 8px 8px;margin:0;font-size:12px;line-height:15px;color:#fff;white-space:nowrap;}
 .yamapper-menu{margin:0;padding:0;list-style:none;min-width:180px;}
-.yamapper-menu__item{display:block;padding:8px 12px 8px 36px;font:13px/16px "Yandex Sans Text","YS Text",Arial,Helvetica,sans-serif;color:inherit;cursor:pointer;background-repeat:no-repeat;background-position:10px center;background-size:16px 16px;}
+.yamapper-menu__item{display:flex;align-items:center;gap:8px;padding:6px 12px 6px 6px;font:13px/16px "Yandex Sans Text","YS Text",Arial,Helvetica,sans-serif;color:inherit;cursor:pointer;user-select:none;}
+.yamapper-menu__grip{display:inline-flex;flex-shrink:0;align-items:center;justify-content:center;width:16px;height:16px;opacity:0.4;cursor:grab;touch-action:none;}
+.yamapper-menu__item:hover .yamapper-menu__grip{opacity:0.7;}
+.yamapper-menu__item[data-dragging='true'] .yamapper-menu__grip{opacity:1;cursor:grabbing;}
+.yamapper-menu__icon{flex-shrink:0;width:16px;height:16px;background-repeat:no-repeat;background-position:center;background-size:16px 16px;pointer-events:none;}
+.yamapper-menu__label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .yamapper-menu__item--hovered{background-color:var(--yamapper-menu-item-hover-bg,#f2f2f2);}
+.yamapper-menu__item[data-dragging='true']{position:relative;z-index:1;background-color:var(--yamapper-menu-item-hover-bg,#f2f2f2);box-shadow:0 6px 16px rgba(0,0,0,0.25);opacity:0.85;}
 .yamapper-polygon-popup.yamapper-popup{z-index:11000;display:block;box-sizing:border-box;width:min(425px,calc(100vw - 24px));overflow:hidden;border-radius:var(--nmap-radius-sm);background:var(--yamapper-popup-bg,#fff);box-shadow:0 0 0 1px rgba(0,0,0,0.1),0 10px 20px -5px rgba(0,0,0,0.4);}
 .yamapper-polygon-popup__content{width:100%;height:min(580px,calc(100vh - 80px));max-height:inherit;overflow:hidden;}
 .yamapper-polygon-popup__iframe{display:block;width:100%;height:100%;border:0;}

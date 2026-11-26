@@ -7,6 +7,7 @@ import {
   type GoToItem,
   getStoredGoToItems,
   getStoredGoToMenuEnabled,
+  moveGoToItemBy,
   setStoredGoToItems,
   setStoredGoToMenuEnabled,
 } from '@/lib/go_to_settings'
@@ -49,23 +50,6 @@ type StorageChangeContext = {
 type StorageChanges = Record<string, { newValue?: unknown }>
 
 type StorageChangeListener = (changes: StorageChanges, area: string) => void
-
-function isValidMoveIndex(items: GoToItem[], fromIndex: number, toIndex: number): boolean {
-  const fromInRange = fromIndex >= 0 && fromIndex < items.length
-  const toInRange = toIndex >= 0 && toIndex < items.length
-  return fromInRange && toInRange
-}
-
-function moveItem(items: GoToItem[], fromIndex: number, toIndex: number): GoToItem[] {
-  let result = items
-  if (isValidMoveIndex(items, fromIndex, toIndex)) {
-    const next = [...items]
-    const [moved] = next.splice(fromIndex, 1)
-    next.splice(toIndex, 0, moved)
-    result = next
-  }
-  return result
-}
 
 async function loadStoredGoToState(): Promise<StoredGoToState> {
   const enabled = await getStoredGoToMenuEnabled()
@@ -163,35 +147,6 @@ function updateItemActive(items: GoToItem[], name: string, active: boolean): GoT
       updated = { ...item, active }
     }
     result.push(updated)
-  }
-  return result
-}
-
-function getItemIndex(items: GoToItem[], name: string): number {
-  let index = -1
-  for (let i = 0; i < items.length && index < 0; i += 1) {
-    if (items[i].name === name) {
-      index = i
-    }
-  }
-  return index
-}
-
-function getItemsMovedUp(items: GoToItem[], name: string): GoToItem[] | null {
-  const index = getItemIndex(items, name)
-  let result: GoToItem[] | null = null
-  if (index > 0) {
-    result = moveItem(items, index, index - 1)
-  }
-  return result
-}
-
-function getItemsMovedDown(items: GoToItem[], name: string): GoToItem[] | null {
-  const index = getItemIndex(items, name)
-  const lastIndex = items.length - 1
-  let result: GoToItem[] | null = null
-  if (index >= 0 && index < lastIndex) {
-    result = moveItem(items, index, index + 1)
   }
   return result
 }
@@ -312,24 +267,22 @@ export function useGoToLinks() {
     [items, persistItems],
   )
 
-  const moveItemUp = useCallback(
-    function moveItemUp(name: string): void {
-      const nextItems = getItemsMovedUp(items, name)
-      if (nextItems !== null) {
+  const moveItemBy = useCallback(
+    function moveItemBy(name: string, offset: number): void {
+      const nextItems = moveGoToItemBy(items, name, offset)
+      if (nextItems !== items) {
         persistItems(nextItems)
       }
     },
     [items, persistItems],
   )
 
-  const moveItemDown = useCallback(
-    function moveItemDown(name: string): void {
-      const nextItems = getItemsMovedDown(items, name)
-      if (nextItems !== null) {
-        persistItems(nextItems)
-      }
+  /** Заменяет порядок целиком: точка входа для перетаскивания в списке. */
+  const reorderItems = useCallback(
+    function reorderItems(nextItems: GoToItem[]): void {
+      persistItems(nextItems)
     },
-    [items, persistItems],
+    [persistItems],
   )
 
   return {
@@ -338,7 +291,7 @@ export function useGoToLinks() {
     isLoaded,
     setIsMenuEnabled,
     setItemActive,
-    moveItemUp,
-    moveItemDown,
+    moveItemBy,
+    reorderItems,
   }
 }

@@ -75,11 +75,9 @@ export type Messages = {
     goToButton: string
     showButtonAria: string
     activeCount: string
-    goToHint: string
     goToListAria: string
     showInMenuAria: string
-    moveUpAria: string
-    moveDownAria: string
+    reorderAria: string
     reloadAfterUpload: string
     reloadAfterUploadAria: string
     strokeColor: string
