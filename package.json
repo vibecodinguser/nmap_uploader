@@ -7,7 +7,7 @@
   "packageManager": "pnpm@12.23.0",
   "scripts": {
     "dev": "wxt -b firefox",
-    "dev:chrome": "wxt",
+    "dev:chrome": "WXT_NO_BROWSER=1 wxt",
     "dev:stop": "bash scripts/stop-dev-server.sh",
     "build": "wxt build",
     "build:firefox": "wxt build -b firefox",

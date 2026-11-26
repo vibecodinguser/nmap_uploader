@@ -165,6 +165,18 @@ export default defineConfig({
     },
   },
   webExt: {
+    /*
+     * Chrome 137+ и Яндекс.Браузер игнорируют `--load-extension`, поэтому
+     * web-ext ставит dev-сборку CDP-командой `Extensions.loadUnpacked`. Такое
+     * расширение навсегда выключается после `browser.runtime.reload()`, а WXT
+     * вызывает его на каждую правку background, манифеста и общих модулей:
+     * расширение «исчезало» из браузера, и помогала только перезагрузка
+     * `pnpm dev`. Поэтому `pnpm dev:chrome` поднимает только сервер и просит
+     * загрузить `.output/chrome-mv3-dev` вручную через `chrome://extensions`:
+     * обычная unpacked-установка перезагружается штатно. Firefox (`pnpm dev`)
+     * запускается как раньше — там перезагрузка расширения работает.
+     */
+    disabled: process.env.WXT_NO_BROWSER === '1',
     startUrls: [MAPS_START_URL],
     /*
      * Local Network Access: без этого панель не грузится в Firefox.
