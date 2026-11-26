@@ -6,14 +6,18 @@
 
 ## Скриншоты
 
-<img src="https://github.com/user-attachments/assets/3e85a3a9-ceef-4c74-9189-562252d21ee7" alt="Боковая панель Nmap Uploader: загрузка геоданных" align="center" width="260"/>
-<img src="https://github.com/user-attachments/assets/a1aa7322-6feb-406d-ab00-d2ab4a275247" alt="Боковая панель Nmap Uploader: настройки и авторизация" align="center" width="260"/>
-<img src="https://github.com/user-attachments/assets/859866f3-eb7e-418a-929e-a06f63284df9" alt="Боковая панель Nmap Uploader: результат загрузки в Блокнот" align="center" width="260"/>
+Скриншоты сняты до 3.0.0, когда настройки открывались боковой панелью браузера;
+сейчас они открываются попапом в шапке редактора.
+
+<img src="https://github.com/user-attachments/assets/3e85a3a9-ceef-4c74-9189-562252d21ee7" alt="Nmap Uploader: загрузка геоданных" align="center" width="260"/>
+<img src="https://github.com/user-attachments/assets/a1aa7322-6feb-406d-ab00-d2ab4a275247" alt="Nmap Uploader: настройки и авторизация" align="center" width="260"/>
+<img src="https://github.com/user-attachments/assets/859866f3-eb7e-418a-929e-a06f63284df9" alt="Nmap Uploader: результат загрузки в Блокнот" align="center" width="260"/>
 
 ## Возможности
 
 - **Конвертация** — конвертирует Shapefile, GeoJSON, GPX, KML, KMZ, TopoJSON, WKT в формат Блокнота;
 - **Загрузка** — автоматически загружает сконвертированные данные в Блокнот (Яндекс.Диск);
+- **Настройки** — попап в шапке редактора среди нативных кнопок: оформление, заметки, НСПД, лента правок, счётчик вершин, наблюдение за объектами и внешние геосервисы;
 - **Трассировка** — выбранный полигон из Блокнота поддерживает штатную функцию «Трассировка» в редакторе;
 - **Загрузка АТД** — Загрузка различных типов АТД из Национальной системы пространственных данных;
 - **Геометрии** — поддержка Point, MultiPoint, LineString, MultiLineString, Polygon, MultiPolygon, GeometryCollection.
