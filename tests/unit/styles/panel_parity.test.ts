@@ -125,6 +125,24 @@ describe('паритет панели с редактором', () => {
   })
 
   /*
+   * У нативного заголовка все типографические свойства — браузерные по
+   * умолчанию: `-webkit-font-smoothing: auto`, `text-rendering: auto`. На macOS
+   * `antialiased` отключает субпиксельное сглаживание и делает штрихи тоньше,
+   * поэтому один и тот же шрифт выглядит легче нативного. Тест держит панель на
+   * умолчаниях: сглаживание не переопределяем.
+   */
+  it('не переопределяет сглаживание шрифта', () => {
+    const offenders = Object.entries(PANEL_SHEETS)
+      .filter(([, css]) =>
+        /(-webkit-font-smoothing|-moz-osx-font-smoothing|text-rendering)\s*:/.test(
+          withoutComments(css),
+        ),
+      )
+      .map(([name]) => name)
+    expect(offenders).toEqual([])
+  })
+
+  /*
    * Панель живёт в iframe страницы расширения, поэтому `@font-face` редактора
    * в неё не переезжает: `--font-family` начинается с «Yandex Sans Text», и без
    * собственных правил этот первый вариант молча превращается в Arial. Тест
