@@ -6,8 +6,8 @@
 
 ## Скриншоты
 
-Скриншоты сняты до 3.0.0, когда настройки открывались боковой панелью браузера;
-сейчас они открываются попапом в шапке редактора.
+Скриншоты сняты до 3.0.0: боковой панели браузера больше нет, настройки
+открываются попапом в шапке редактора.
 
 <img src="https://github.com/user-attachments/assets/3e85a3a9-ceef-4c74-9189-562252d21ee7" alt="Nmap Uploader: загрузка геоданных" align="center" width="260"/>
 <img src="https://github.com/user-attachments/assets/a1aa7322-6feb-406d-ab00-d2ab4a275247" alt="Nmap Uploader: настройки и авторизация" align="center" width="260"/>
