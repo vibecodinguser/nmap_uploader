@@ -14,6 +14,7 @@ import {
   FEED_SELECT_BUTTON_STYLES,
 } from '@/lib/feeds_filter/dropdown_styles'
 import { GO_TO_SPLIT_STYLES, GO_TO_STYLES } from '@/lib/go_to/styles_css'
+import { NAKARTE_HIDE_CONTROLS_STYLES } from '@/lib/go_to_split_view/nakarte_embed_styles'
 import { INJECTED_TOKENS_CSS } from '@/lib/injected_styles'
 import { NOTES_PANEL_STYLES } from '@/lib/notes_panel/styles'
 import { TRACKER_STYLES } from '@/lib/object_tracker/ui/styles'
@@ -37,6 +38,7 @@ const SHEETS = {
   'feeds-card-hidden': FEED_CARD_HIDDEN_STYLES,
   'go-to': GO_TO_STYLES,
   'go-to-split': GO_TO_SPLIT_STYLES,
+  'nakarte-embed': NAKARTE_HIDE_CONTROLS_STYLES,
   'notes-panel': NOTES_PANEL_STYLES,
   'banner-suppressor': HIDER_CSS,
   'stroke-recolor': buildRecolorStyleSheet('#00ff00'),
@@ -56,6 +58,7 @@ const IMPORTANT_BUDGET: Record<keyof typeof SHEETS, number> = {
   'feeds-card-hidden': 1,
   'go-to': 15,
   'go-to-split': 6,
+  'nakarte-embed': 1,
   'notes-panel': 0,
   'banner-suppressor': 1,
   'stroke-recolor': 1,
@@ -160,6 +163,16 @@ describe('инжектируемые стили', () => {
 
   it('go-to включает стили раздельного вида', () => {
     expect(GO_TO_STYLES).toContain('.yamapper-split {')
+  })
+
+  it('баннер раздельного вида стоит в одной строке с поиском', () => {
+    // Поле поиска — блочный элемент, поэтому без flex соседний узел уезжает
+    // на вторую строку. Правило поднято под класс сплита: в обычном режиме
+    // шапка остаётся нетронутой.
+    expect(GO_TO_SPLIT_STYLES).toContain(':has(> .yamapper-split-banner)')
+    expect(GO_TO_SPLIT_STYLES).toMatch(
+      /:has\(> \.yamapper-split-banner\)[^{]*\{[^}]*display: flex;/,
+    )
   })
 
   it('скрытие карточек использует общий класс ленты', () => {

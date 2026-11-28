@@ -11,9 +11,10 @@ import {
   type PanelDimensions,
   type PixelPosition,
   type ResizedElementStyle,
+  SPLIT_BANNER_ANCHOR_SELECTORS,
+  SPLIT_BANNER_FLOATING_CLASS,
   SPLIT_BANNER_ID,
   SPLIT_BANNER_WARNING_CLASS,
-  SPLIT_HEADER_SELECTORS,
   SPLIT_MAX_RECOMMENDED_ZOOM,
   SPLIT_RESIZED_ATTR,
   SPLIT_ROOT_ID,
@@ -303,23 +304,52 @@ export const mountSplitDomElements = (
   }
 }
 
-const findHeaderContainer = (): HTMLElement | null => {
-  for (const selector of SPLIT_HEADER_SELECTORS) {
+/**
+ * Поле поиска в шапке — якорь баннера. Второй селектор нужен, если разметка
+ * поиска изменится, а контейнер останется.
+ */
+const findBannerAnchor = (): HTMLElement | null => {
+  for (const selector of SPLIT_BANNER_ANCHOR_SELECTORS) {
     const el = document.querySelector<HTMLElement>(selector)
     if (el) return el
   }
   return null
 }
 
-export const updateSplitNoticeBannerZoom = (zoom: number): void => {
-  const banner = getOwnedElementById(SPLIT_BANNER_ID)
-  if (!banner) return
-  banner.classList.toggle(SPLIT_BANNER_WARNING_CLASS, zoom > SPLIT_MAX_RECOMMENDED_ZOOM)
+/**
+ * Ставит баннер сразу после поля поиска; без поиска — плавающим поверх карты.
+ *
+ * Позиция после поля, а не в конце шапки: шапка — flex-строка, её ширину уже
+ * занимают поиск и панель с кнопками, и любая плашка в хвосте сжимается в
+ * ноль и пропадает с экрана.
+ */
+const attachBanner = (banner: HTMLElement): void => {
+  const anchor = findBannerAnchor()
+  if (anchor) {
+    banner.classList.remove(SPLIT_BANNER_FLOATING_CLASS)
+    anchor.after(banner)
+    return
+  }
+
+  banner.classList.add(SPLIT_BANNER_FLOATING_CLASS)
+  document.body.appendChild(banner)
 }
 
-export const mountSplitNoticeBanner = (text: string, initialZoom?: number): HTMLElement => {
-  unmountSplitNoticeBanner()
+/** Стоит ли баннер там, куда его ставит `attachBanner`. */
+const isBannerPlaced = (banner: HTMLElement): boolean => {
+  const anchor = findBannerAnchor()
+  if (anchor) {
+    return anchor.nextElementSibling === banner
+  }
+  return (
+    banner.parentElement === document.body && banner.classList.contains(SPLIT_BANNER_FLOATING_CLASS)
+  )
+}
 
+/** Текст и зум последнего баннера: нужны, чтобы восстановить его после перерисовки шапки. */
+let bannerState: { text: string; zoom?: number } | null = null
+
+const createBannerElement = (text: string, initialZoom?: number): HTMLElement => {
   const banner = document.createElement('div')
   banner.id = SPLIT_BANNER_ID
   banner.className = 'yamapper-split-banner'
@@ -330,20 +360,47 @@ export const mountSplitNoticeBanner = (text: string, initialZoom?: number): HTML
   banner.textContent = text
   banner.setAttribute('role', 'status')
   banner.setAttribute('aria-live', 'polite')
+  return banner
+}
 
-  const header = findHeaderContainer()
-  if (header) {
-    const rect = header.getBoundingClientRect()
-    if (rect.width > 0 && rect.height > 0) {
-      banner.style.top = `${rect.top + rect.height / 2}px`
-      banner.style.left = `${rect.left + rect.width / 2}px`
-    }
+/**
+ * Возвращает баннер на место, если React-дерево редактора его выбросило или
+ * перенесло. Шапка перерисовывается при смене раскладки, а баннер живёт в её
+ * DOM как чужой узел.
+ */
+const restoreSplitNoticeBanner = (): void => {
+  if (!bannerState) return
+  attachBanner(createBannerElement(bannerState.text, bannerState.zoom))
+}
+
+export const updateSplitNoticeBannerZoom = (zoom: number): void => {
+  if (bannerState) bannerState.zoom = zoom
+
+  const banner = getOwnedElementById(SPLIT_BANNER_ID)
+  if (!banner) {
+    restoreSplitNoticeBanner()
+    return
   }
 
-  document.body.appendChild(banner)
+  banner.classList.toggle(SPLIT_BANNER_WARNING_CLASS, zoom > SPLIT_MAX_RECOMMENDED_ZOOM)
+
+  // Синк-менеджер зовёт нас на каждом тике опроса: здесь же баннер
+  // возвращается на место, если React выбросил узел при перерисовке шапки.
+  if (!isBannerPlaced(banner)) {
+    attachBanner(banner)
+  }
+}
+
+export const mountSplitNoticeBanner = (text: string, initialZoom?: number): HTMLElement => {
+  unmountSplitNoticeBanner()
+
+  bannerState = { text, zoom: initialZoom }
+  const banner = createBannerElement(text, initialZoom)
+  attachBanner(banner)
   return banner
 }
 
 export const unmountSplitNoticeBanner = (): void => {
+  bannerState = null
   getOwnedElementById(SPLIT_BANNER_ID)?.remove()
 }

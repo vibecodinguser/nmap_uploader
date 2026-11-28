@@ -92,7 +92,10 @@ html.yamapper-split-active .nk-app-view,html.yamapper-split-active .nk-layout-vi
 .yamapper-split__left-cursor-overlay{width:50vw;height:100vh;}
 .yamapper-split__cursor-marker{position:absolute;top:0;left:0;width:6px;height:6px;border:none;border-radius:50%;background:#ff3b30;box-shadow:0 0 0 2px #fff,0 0 0 4px #ff3b30;opacity:0;visibility:hidden;transform:translate(-50%,-50%);pointer-events:none;}
 .yamapper-split__cursor-marker--visible{opacity:1;visibility:visible;}
-.yamapper-split-banner{display:inline-flex;align-items:center;justify-content:center;position:fixed;top:22px;left:25vw;transform:translate(-50%,-50%);height:38px;line-height:38px;padding:0 16px;background-color:rgba(0,0,0,0.5);color:#fff;font-family:var(--nmap-font-stack);font-size:13px;font-weight:400;border-radius:19px;box-shadow:0 3px 0 0 rgba(0,0,0,0.05);pointer-events:none;z-index:2147483647 !important;user-select:none;white-space:nowrap;box-sizing:border-box;transition:background-color 0.2s ease,box-shadow 0.2s ease;}
+html.yamapper-split-active .nk-search-view:has(> .yamapper-split-banner),html.yamapper-split-active .nk-search-view:has(> .yamapper-split-banner){display:flex;align-items:center;gap:8px;min-width:0;}
+html.yamapper-split-active .nk-search-view__suggest:has(+ .yamapper-split-banner){flex:0 100 400px;width:auto;min-width:120px;}
+.yamapper-split-banner{display:block;flex:0 1 auto;width:max-content;min-width:0;max-width:100%;overflow:hidden;height:38px;line-height:38px;padding:0 16px;background-color:rgba(0,0,0,0.5);color:#fff;font-family:var(--nmap-font-stack);font-size:13px;font-weight:400;border-radius:19px;box-shadow:0 3px 0 0 rgba(0,0,0,0.05);pointer-events:none;user-select:none;white-space:nowrap;text-overflow:ellipsis;box-sizing:border-box;transition:background-color 0.2s ease,box-shadow 0.2s ease;}
+.yamapper-split-banner--floating{position:fixed;top:22px;left:12px;z-index:2147483647 !important;}
 .yamapper-split-banner--warning{background-color:rgba(220,38,38,0.85);box-shadow:0 3px 0 0 rgba(220,38,38,0.2);}"
 `;
 
@@ -108,9 +111,14 @@ html.yamapper-split-active .nk-app-view,html.yamapper-split-active .nk-layout-vi
 .yamapper-split__left-cursor-overlay{width:50vw;height:100vh;}
 .yamapper-split__cursor-marker{position:absolute;top:0;left:0;width:6px;height:6px;border:none;border-radius:50%;background:#ff3b30;box-shadow:0 0 0 2px #fff,0 0 0 4px #ff3b30;opacity:0;visibility:hidden;transform:translate(-50%,-50%);pointer-events:none;}
 .yamapper-split__cursor-marker--visible{opacity:1;visibility:visible;}
-.yamapper-split-banner{display:inline-flex;align-items:center;justify-content:center;position:fixed;top:22px;left:25vw;transform:translate(-50%,-50%);height:38px;line-height:38px;padding:0 16px;background-color:rgba(0,0,0,0.5);color:#fff;font-family:var(--nmap-font-stack);font-size:13px;font-weight:400;border-radius:19px;box-shadow:0 3px 0 0 rgba(0,0,0,0.05);pointer-events:none;z-index:2147483647 !important;user-select:none;white-space:nowrap;box-sizing:border-box;transition:background-color 0.2s ease,box-shadow 0.2s ease;}
+html.yamapper-split-active .nk-search-view:has(> .yamapper-split-banner),html.yamapper-split-active .nk-search-view:has(> .yamapper-split-banner){display:flex;align-items:center;gap:8px;min-width:0;}
+html.yamapper-split-active .nk-search-view__suggest:has(+ .yamapper-split-banner){flex:0 100 400px;width:auto;min-width:120px;}
+.yamapper-split-banner{display:block;flex:0 1 auto;width:max-content;min-width:0;max-width:100%;overflow:hidden;height:38px;line-height:38px;padding:0 16px;background-color:rgba(0,0,0,0.5);color:#fff;font-family:var(--nmap-font-stack);font-size:13px;font-weight:400;border-radius:19px;box-shadow:0 3px 0 0 rgba(0,0,0,0.05);pointer-events:none;user-select:none;white-space:nowrap;text-overflow:ellipsis;box-sizing:border-box;transition:background-color 0.2s ease,box-shadow 0.2s ease;}
+.yamapper-split-banner--floating{position:fixed;top:22px;left:12px;z-index:2147483647 !important;}
 .yamapper-split-banner--warning{background-color:rgba(220,38,38,0.85);box-shadow:0 3px 0 0 rgba(220,38,38,0.2);}"
 `;
+
+exports[`инжектируемые стили > nakarte-embed: текст не менялся 1`] = `"html.yamapper-nakarte-embed .leaflet-bottom.leaflet-left,html.yamapper-nakarte-embed .leaflet-bottom.leaflet-right,html.yamapper-nakarte-embed .leaflet-control-caption,html.yamapper-nakarte-embed .leaflet-control-scale,html.yamapper-nakarte-embed .leaflet-search-container,html.yamapper-nakarte-embed .leaflet-contol-panoramas,html.yamapper-nakarte-embed .leaflet-contol-coordinates,html.yamapper-nakarte-embed .leaflet-control-azimuth,html.yamapper-nakarte-embed .leaflet-control-single-button{display:none !important;}"`;
 
 exports[`инжектируемые стили > notes-panel: текст не менялся 1`] = `
 "#yamapper-notes-panel{position:fixed;right:0;bottom:0;left:0;z-index:2147483000;display:none;flex-direction:column;min-height:140px;background:var(--nmap-surface,#ffffff);border-top:1px solid var(--nmap-border-subtle,#e6e6e6);box-shadow:0 -6px 24px rgb(0 0 0 / 18%);}

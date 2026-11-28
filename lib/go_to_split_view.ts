@@ -94,7 +94,7 @@ const mountSplitView = async (): Promise<boolean> => {
 
     // Показываем сообщение по центру хедера Народной карты
     mountSplitNoticeBanner(
-      'Режим корректно работает в режиме зума от 0 до 18 (Ограничение сервиса Nakarte)',
+      'Корректно работает с зумом от 0 до 18 (ограничение Nakarte)',
       location.zoom,
     )
 

@@ -6,6 +6,16 @@ import type { MapLocation } from '@/lib/go_to_link'
 export const SPLIT_ROOT_ID = 'nmapUploaderSplit'
 export const SPLIT_BANNER_ID = 'nmapUploaderSplitBanner'
 export const SPLIT_BANNER_WARNING_CLASS = 'yamapper-split-banner--warning'
+
+/**
+ * Класс плавающего баннера — только для случая, когда шапки и поиска нет.
+ *
+ * Обычно баннер стоит сразу после поля поиска в шапке. Если ни поиска, ни
+ * шапки на странице нет (чужая раскладка, нет прав записи), баннер
+ * фиксируется поверх карты.
+ */
+export const SPLIT_BANNER_FLOATING_CLASS = 'yamapper-split-banner--floating'
+
 export const SPLIT_MAX_RECOMMENDED_ZOOM = 18
 export const LEFT_CURSOR_OVERLAY_CLASS = 'yamapper-split__left-cursor-overlay'
 export const RIGHT_CURSOR_OVERLAY_CLASS = 'yamapper-split__cursor-overlay'
@@ -13,9 +23,17 @@ export const CURSOR_MARKER_CLASS = 'yamapper-split__cursor-marker'
 export const CURSOR_MARKER_VISIBLE_CLASS = 'yamapper-split__cursor-marker--visible'
 export const CURSOR_MARKER_REMOTE_CLASS = 'yamapper-split__cursor-marker--remote'
 
-export const SPLIT_HEADER_SELECTORS = [
-  '.nk-header-view.nk-header-view_shading',
-  '.nk-header-view',
+/**
+ * Куда встаёт баннер: сразу после поля поиска в шапке.
+ *
+ * Разметка шапки (из бандла редактора): `div.nk-search-view` → поле
+ * `div.nk-suggest.nk-search-view__suggest`. Баннер — следующий элемент после
+ * поля, поэтому он читается как продолжение поиска и не попадает в конец
+ * flex-строки шапки, где места уже нет и плашка сжимается в ноль.
+ */
+export const SPLIT_BANNER_ANCHOR_SELECTORS = [
+  '.nk-search-view__suggest',
+  '.nk-search-view',
 ] as const
 
 export const SYNC_DEBOUNCE_MS = 40

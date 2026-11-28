@@ -26,7 +26,23 @@ export const ensureInjectedTokens = (): void => {
   ensureInjectedStyle(INJECTED_TOKENS_ID, tokensCss)
 }
 
-export const ensureInjectedStyle = (id: string, css: string): void => {
+export type EnsureInjectedStyleOptions = {
+  /**
+   * Подключать ли общий слой токенов `--nmap-*`.
+   *
+   * Выключается для листов, которые живут не в Народной карте и токенов не
+   * читают (nakarte во встроенном режиме): иначе на чужой странице остаётся
+   * `<style>` без владельца, а снимать его нечем — teardown знает только id
+   * своего листа.
+   */
+  withTokens?: boolean
+}
+
+export const ensureInjectedStyle = (
+  id: string,
+  css: string,
+  { withTokens = true }: EnsureInjectedStyleOptions = {},
+): void => {
   if (typeof document === 'undefined') {
     return
   }
@@ -41,8 +57,9 @@ export const ensureInjectedStyle = (id: string, css: string): void => {
   }
 
   // Токены нужны любому листу, поэтому подключаются здесь, а не в каждом
-  // вызывающем модуле: забыть их невозможно.
-  if (id !== INJECTED_TOKENS_ID) {
+  // вызывающем модуле: забыть их невозможно. Исключение — листы вне хоста,
+  // которым токены не нужны и которые снимаются вместе со своим `<style>`.
+  if (withTokens && id !== INJECTED_TOKENS_ID) {
     ensureInjectedTokens()
   }
 

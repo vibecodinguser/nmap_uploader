@@ -1,0 +1,30 @@
+/*
+ * Скрытие контролов Nakarte в режиме раздельного экрана.
+ *
+ * Nakarte живёт в кросс-доменном iframe, поэтому стили приходят не из
+ * родительской страницы, а из content script `nakarte-hide-controls`: он
+ * ставит маркер `yamapper-nakarte-embed` на корневой `html` и вставляет этот
+ * лист. Маркер — не украшение: без него правила не применяются, а nakarte,
+ * открытый отдельной вкладкой, остаётся нетронутым.
+ *
+ * Классы `leaflet-contol-*` — опечатки самого nakarte (`contol`, а не
+ * `control`). Повторяем их как есть: переименовать их мы не можем.
+ *
+ * Скрываются оба нижних угла целиком: слева attribution, PrintPages и JNX,
+ * справа — панель треков. `.leaflet-control-single-button` — общий класс
+ * кнопок-контролов nakarte, поэтому под него попадают ещё ExternalMaps и
+ * Ruler, а также locate (отдельное правило ему не нужно). Класс
+ * `leafletControl` рядом с ним не упоминается намеренно: он camelCase и не
+ * проходит проверку имён, а набор элементов от него не меняется.
+ */
+html.yamapper-nakarte-embed .leaflet-bottom.leaflet-left,
+html.yamapper-nakarte-embed .leaflet-bottom.leaflet-right,
+html.yamapper-nakarte-embed .leaflet-control-caption,
+html.yamapper-nakarte-embed .leaflet-control-scale,
+html.yamapper-nakarte-embed .leaflet-search-container,
+html.yamapper-nakarte-embed .leaflet-contol-panoramas,
+html.yamapper-nakarte-embed .leaflet-contol-coordinates,
+html.yamapper-nakarte-embed .leaflet-control-azimuth,
+html.yamapper-nakarte-embed .leaflet-control-single-button {
+  display: none !important;
+}

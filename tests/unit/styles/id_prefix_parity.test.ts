@@ -5,6 +5,7 @@ import {
   FEED_SELECT_BUTTON_STYLES,
 } from '@/lib/feeds_filter/dropdown_styles'
 import { GO_TO_STYLES } from '@/lib/go_to/styles_css'
+import { NAKARTE_HIDE_CONTROLS_STYLES } from '@/lib/go_to_split_view/nakarte_embed_styles'
 import { NOTES_EDIT_BUTTON_ID, NOTES_EDIT_BUTTON_WRAPPER_ID } from '@/lib/notes_panel/edit_button'
 import {
   NOTES_PANEL_FRAME_ID,
@@ -53,6 +54,7 @@ describe('переименование доведено до конца', () => 
     'feeds-popup': FEED_POPUP_MENU_STYLES,
     'feeds-select': FEED_SELECT_BUTTON_STYLES,
     'go-to': GO_TO_STYLES,
+    'nakarte-embed': NAKARTE_HIDE_CONTROLS_STYLES,
     'object-tracker': TRACKER_STYLES,
   }
 

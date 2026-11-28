@@ -60,6 +60,14 @@ describe('injected_styles', () => {
     expect(document.querySelectorAll(`#${INJECTED_TOKENS_ID}`)).toHaveLength(1)
   })
 
+  it('лист может отказаться от слоя токенов', () => {
+    // Для листов вне хоста: токены не читаются, а снять чужой `<style>` нечем.
+    ensureInjectedStyle('nmap-nakarte', '.a { display: none; }', { withTokens: false })
+
+    expect(styleById('nmap-nakarte')?.textContent).toBe('.a { display: none; }')
+    expect(styleById(INJECTED_TOKENS_ID)).toBeNull()
+  })
+
   it('не падает, когда у документа ещё нет head', () => {
     // Старт content script: head может появиться позже, и ронять main() на
     // этом нельзя — стиль просто доедет следующей синхронизацией.

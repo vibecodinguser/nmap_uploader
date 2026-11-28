@@ -91,14 +91,59 @@ html.yamapper-split-active .ymaps-2-1-map {
   visibility: visible;
 }
 
-.yamapper-split-banner {
-  display: inline-flex;
+/*
+ * Баннер стоит в одной строке с поиском.
+ *
+ * Поле поиска — блочный элемент внутри обёртки, поэтому соседний узел всегда
+ * переносился на вторую строку. Flex ставится на того родителя, который
+ * непосредственно содержит плашку: в текущей разметке это обёртка поля, но
+ * если поле окажется прямым ребёнком `.nk-search-view`, правило тоже сработает.
+ */
+html.yamapper-split-active .nk-search-view:has(> .yamapper-split-banner),
+html.yamapper-split-active .nk-search-view :has(> .yamapper-split-banner) {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  position: fixed;
-  top: 22px;
-  left: 25vw;
-  transform: translate(-50%, -50%);
+  gap: 8px;
+
+  /*
+   * `.nk-search-view` — flex-элемент шапки, а у flex-элемента `min-width: auto`:
+   * без этого он не сжимается ниже ширины содержимого и вместе с плашкой
+   * вылезает за половину экрана в раздельном режиме.
+   */
+  min-width: 0;
+}
+
+/*
+ * Поиск остаётся первым и занимает свою обычную ширину (до 400px), но
+ * сжимается первым — сообщение важнее. `width: auto` обязателен: хост задаёт
+ * полю `width: 100%`, и в flex-строке оно вытеснило бы плашку.
+ */
+html.yamapper-split-active .nk-search-view__suggest:has(+ .yamapper-split-banner) {
+  flex: 0 100 400px;
+  width: auto;
+
+  /* Поиск ужимается первым, но не исчезает совсем. */
+  min-width: 120px;
+}
+
+.yamapper-split-banner {
+  /*
+   * Второй элемент flex-строки поиска. `display: block` обязателен:
+   * `text-overflow` работает только у блочного контейнера с собственным
+   * текстом, а не у flex/inline-flex, где текст становится анонимным
+   * flex-элементом.
+   *
+   * `flex: 0 1 auto` — плашка ужимается последней: поле поиска отдаёт место
+   * первым (`flex-shrink: 100`), поэтому текст сообщения остаётся видимым
+   * дольше. `max-width: 100%` ограничивает её шириной строки, а многоточие
+   * показывает, что текст обрезан, вместо вылезания за край.
+   */
+  display: block;
+  flex: 0 1 auto;
+  width: max-content;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   height: 38px;
   line-height: 38px;
   padding: 0 16px;
@@ -110,11 +155,19 @@ html.yamapper-split-active .ymaps-2-1-map {
   border-radius: 19px;
   box-shadow: 0 3px 0 0 rgba(0, 0, 0, 0.05);
   pointer-events: none;
-  z-index: 2147483647 !important;
   user-select: none;
   white-space: nowrap;
+  text-overflow: ellipsis;
   box-sizing: border-box;
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Шапки нет: баннер висит поверх карты, как раньше. */
+.yamapper-split-banner--floating {
+  position: fixed;
+  top: 22px;
+  left: 12px;
+  z-index: 2147483647 !important;
 }
 
 .yamapper-split-banner--warning {
