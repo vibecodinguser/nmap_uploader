@@ -25,6 +25,12 @@ export const NOTES_PANEL_CLOSE_MESSAGE = 'NOTES_PANEL_CLOSE'
 /** Сообщения хост → iframe. */
 export const NOTES_PANEL_STATE_MESSAGE = 'NOTES_PANEL_STATE'
 export const NOTES_PANEL_SHOW_NOTE_MESSAGE = 'NOTES_PANEL_SHOW_NOTE'
+/**
+ * Панель открылась: iframe живёт постоянно, поэтому сам он смену видимости не
+ * замечает. По этому сообщению панель перечитывает снимок и один раз за
+ * открытие пробует молча восстановить вход или сразу войти в Яндекс.
+ */
+export const NOTES_PANEL_OPENED_MESSAGE = 'NOTES_PANEL_OPENED'
 /** iframe → хост: показать снимок сразу, не дожидаясь ответа Диска. */
 export const NOTES_PANEL_PREVIEW_MESSAGE = 'NOTES_PANEL_PREVIEW'
 /**
@@ -102,6 +108,43 @@ export const createNotesPanelHost = ({
 
   const postShowNote = (noteId: string): void => {
     frame?.contentWindow?.postMessage({ action: NOTES_PANEL_SHOW_NOTE_MESSAGE, noteId }, '*')
+  }
+
+  const postOpened = (): void => {
+    frame?.contentWindow?.postMessage({ action: NOTES_PANEL_OPENED_MESSAGE }, '*')
+  }
+
+  /**
+   * Адрес страницы панели.
+   *
+   * `getURL` бросает, если контекст расширения инвалидирован (расширение
+   * перезагрузили при открытой карте). Падать из-за этого нельзя: без адреса
+   * панель просто не откроется, а страница карты продолжит работать.
+   */
+  const resolveFrameUrl = (): string | null => {
+    try {
+      return browser.runtime.getURL('/notes-panel.html')
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * Панель собрана и живёт в документе.
+   *
+   * Проверка на `isConnected` — не формальность: перезагрузка расширения или
+   * перерисовка страницы может вынести iframe из DOM, оставив контейнер с
+   * ручкой. Без этой проверки панель открывалась бы пустой белой полосой, а
+   * `build` отказывался бы что-либо пересоздавать.
+   */
+  const isBuilt = (): boolean => container?.isConnected === true && frame?.isConnected === true
+
+  /** Убирает DOM панели, не трогая подписки на события окна. */
+  const clearPanelDom = (): void => {
+    frame?.remove()
+    container?.remove()
+    frame = null
+    container = null
   }
 
   /**
@@ -235,8 +278,15 @@ export const createNotesPanelHost = ({
     }
   }
 
-  const build = (): void => {
-    if (container) return
+  const build = (): boolean => {
+    if (isBuilt()) return true
+    // Контейнер мог остаться без iframe: перезагрузка расширения выбивает
+    // страницу панели из документа, а ручка и сам контейнер остаются. Такую
+    // полуразобранную панель нужно убрать, иначе `build` навсегда решит, что
+    // строить нечего, и панель будет открываться пустой.
+    clearPanelDom()
+    const frameUrl = resolveFrameUrl()
+    if (!frameUrl) return false
 
     container = document.createElement('div')
     container.id = NOTES_PANEL_HOST_ID
@@ -252,11 +302,14 @@ export const createNotesPanelHost = ({
     frame.id = NOTES_PANEL_FRAME_ID
     frame.title = 'Заметки'
     frame.src = withNativeLocaleParam(
-      withNativeThemeParam(browser.runtime.getURL('/notes-panel.html'), readNativeTheme()),
+      withNativeThemeParam(frameUrl, readNativeTheme()),
       readNativeLocale(),
     )
     frame.addEventListener('load', () => {
       postState()
+      // Панель могли открыть до загрузки документа: сообщение об открытии
+      // тогда потерялось, а без него не запустится восстановление входа.
+      if (container?.dataset.open === 'true') postOpened()
       // Просьба показать заметку могла прийти до загрузки документа — тогда
       // сообщение потерялось, и повторяем его сейчас.
       if (pendingNoteId) {
@@ -267,22 +320,18 @@ export const createNotesPanelHost = ({
 
     container.append(handle, frame)
     document.body.appendChild(container)
-
-    window.addEventListener('pointermove', handlePointerMove)
-    window.addEventListener('pointerup', handlePointerUp)
-    window.addEventListener('pointercancel', handlePointerUp)
-    window.addEventListener('message', handleWindowMessage)
+    return true
   }
 
   const open = (): void => {
-    build()
-    if (!container) return
+    if (!build() || !container) return
     // Панель, открытая кнопкой в тулбаре, показывает список: просьба из
     // прошлого сеанса к новой карточке не относится.
     pendingNoteId = null
     applyHeight()
     container.dataset.open = 'true'
     postState()
+    postOpened()
     onVisibilityChange?.(true)
   }
 
@@ -301,9 +350,7 @@ export const createNotesPanelHost = ({
     window.removeEventListener('pointerup', handlePointerUp)
     window.removeEventListener('pointercancel', handlePointerUp)
     window.removeEventListener('message', handleWindowMessage)
-    container?.remove()
-    container = null
-    frame = null
+    clearPanelDom()
     removeNotesPanelStyles()
   }
 
@@ -322,14 +369,26 @@ export const createNotesPanelHost = ({
 
   readStoredHeight().catch(() => {})
 
+  // Подписки на окно ставятся один раз на весь срок жизни хоста, а не в
+  // `build`: панель теперь может пересобраться (её iframe выбивает перезагрузка
+  // расширения), и повторная установка слушателей удваивала бы обработку
+  // протяжки.
+  window.addEventListener('pointermove', handlePointerMove)
+  window.addEventListener('pointerup', handlePointerUp)
+  window.addEventListener('pointercancel', handlePointerUp)
+  window.addEventListener('message', handleWindowMessage)
+
+  /** Панель открыта и действительно собрана: полуразобранная — не открыта. */
+  const isOpen = (): boolean => isBuilt() && container?.dataset.open === 'true'
+
   return {
     open,
     close,
     toggle: () => {
-      if (container?.dataset.open === 'true') close()
+      if (isOpen()) close()
       else open()
     },
-    isOpen: () => container?.dataset.open === 'true',
+    isOpen,
     showNote: (noteId: string) => {
       open()
       // iframe мог только что создаться: сообщение до `load` не дойдёт,

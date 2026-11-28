@@ -13,7 +13,8 @@ import {
   type NotesSnapshot,
 } from '@/lib/notes/protocol'
 import { PERMISSION_REQUIRED } from '@/lib/notes/storage/errors'
-import { NOTES_PANEL_SHOW_NOTE_MESSAGE } from '@/lib/notes_panel/host'
+import { NOTES_PANEL_OPENED_MESSAGE, NOTES_PANEL_SHOW_NOTE_MESSAGE } from '@/lib/notes_panel/host'
+import { YANDEX_PERMISSIONS_CHANGED_ACTION } from '@/lib/notes_permission/protocol'
 import { requestYandexAccess } from '@/lib/yandex/disk_settings'
 import { useNotesAutoReload } from './useNotesAutoReload'
 import type { NotesPanelStore } from './useNotesPanelState'
@@ -48,6 +49,26 @@ export const useNotesSync = (
   const drawingKindRef = useRef(store.state.drawingKind)
   drawingKindRef.current = store.state.drawingKind
 
+  /**
+   * Разрешён ли автоматический вход.
+   *
+   * Панель открылась — намерение увидеть заметки явное, поэтому окно входа
+   * показывается сразу, без промежуточной кнопки «Войти». Но ровно один раз за
+   * открытие: иначе отменённый вход всплывал бы снова при каждом возврате
+   * вкладки в фокус, а явный выход из аккаунта — при следующем перечитывании.
+   */
+  const autoLoginArmedRef = useRef(true)
+  const loginRef = useRef<() => void>(() => {})
+  /**
+   * Была ли хоть одна загрузка с момента монтирования.
+   *
+   * Панель создаётся при первом открытии и сразу грузит снимок, поэтому
+   * первое `NOTES_PANEL_OPENED` не должно запускать вторую загрузку — иначе
+   * два ответа `AUTH_REQUIRED` пришли бы одновременно и второй успел бы
+   * показать «Войти» поверх уже открытого окна входа.
+   */
+  const hasLoadedOnceRef = useRef(false)
+
   // Загрузка: при монтировании, после входа и по кнопке «Повторить».
   const loadNotes = useCallback(
     (options: { silent?: boolean } = {}) => {
@@ -56,22 +77,33 @@ export const useNotesSync = (
       browser.runtime
         .sendMessage({ action: NOTES_LOAD_ACTION })
         .then((response: unknown) => {
+          hasLoadedOnceRef.current = true
           const payload = response as NotesLoadResponse | undefined
           if (payload?.ok) {
+            autoLoginArmedRef.current = false
             dispatch({ type: 'loaded', snapshot: payload.snapshot })
             return
           }
-          dispatch({
-            type: 'statusChanged',
-            status:
-              payload?.error === 'AUTH_REQUIRED'
-                ? 'auth'
-                : payload?.error === PERMISSION_REQUIRED
-                  ? 'permission'
-                  : 'error',
-          })
+
+          const status =
+            payload?.error === 'AUTH_REQUIRED'
+              ? 'auth'
+              : payload?.error === PERMISSION_REQUIRED
+                ? 'permission'
+                : 'error'
+          const shouldAutoLogin = status === 'auth' && autoLoginArmedRef.current
+          autoLoginArmedRef.current = false
+          if (shouldAutoLogin) {
+            loginRef.current()
+            return
+          }
+          dispatch({ type: 'statusChanged', status })
         })
-        .catch(() => dispatch({ type: 'statusChanged', status: 'error' }))
+        .catch(() => {
+          hasLoadedOnceRef.current = true
+          autoLoginArmedRef.current = false
+          dispatch({ type: 'statusChanged', status: 'error' })
+        })
     },
     [dispatch],
   )
@@ -91,6 +123,10 @@ export const useNotesSync = (
       .catch(() => dispatch({ type: 'statusChanged', status: 'auth' }))
   }, [dispatch, loadNotes])
 
+  useEffect(() => {
+    loginRef.current = login
+  }, [login])
+
   /**
    * Разрешения браузера на Яндекс: спрашиваем их под клик, затем загружаем.
    *
@@ -100,16 +136,21 @@ export const useNotesSync = (
    * предлагает попробовать снова.
    */
   const grantPermission = useCallback(() => {
+    // Разрешения выдали ради заметок: если токена нет, вход запускается сам,
+    // как и после ответа на диалог с кнопки в тулбаре.
+    autoLoginArmedRef.current = true
     dispatch({ type: 'statusChanged', status: 'loading' })
     void (async () => {
       try {
         const granted = await requestYandexAccess()
         if (!granted) {
+          autoLoginArmedRef.current = false
           dispatch({ type: 'statusChanged', status: 'permission' })
           return
         }
         loadNotes({ silent: true })
       } catch {
+        autoLoginArmedRef.current = false
         dispatch({ type: 'statusChanged', status: 'permission' })
       }
     })()
@@ -144,6 +185,16 @@ export const useNotesSync = (
           }
           break
         }
+        case YANDEX_PERMISSIONS_CHANGED_ACTION: {
+          // Доступ выдали в настройках или из оверлея над кнопкой, пока панель
+          // стояла в «Разрешить доступ»: перечитываем и, если токена нет,
+          // сразу входим — как после ответа на диалог с самой кнопки.
+          if (message.granted === true && store.state.status === 'permission') {
+            autoLoginArmedRef.current = true
+            loadNotes({ silent: true })
+          }
+          break
+        }
         default:
           break
       }
@@ -153,6 +204,21 @@ export const useNotesSync = (
       const data = event.data as { action?: string; noteId?: string } | null
       if (data?.action === NOTES_PANEL_SHOW_NOTE_MESSAGE && typeof data.noteId === 'string') {
         dispatch({ type: 'noteSelected', noteId: data.noteId })
+        return
+      }
+      if (data?.action === NOTES_PANEL_OPENED_MESSAGE) {
+        // Панель открыли: это новое явное намерение увидеть заметки, значит
+        // автоматическому входу снова можно сработать один раз.
+        autoLoginArmedRef.current = true
+        /*
+         * Кнопка заметок открывает список, а не последнюю карточку (ADR 0008).
+         * Без сброса панель могла остаться в свойствах заметки, которой уже
+         * нет в снимке, и тогда не рисуется ни список, ни карточка.
+         * «Редактировать» присылает выбор сразу следом, и он побеждает.
+         */
+        dispatch({ type: 'noteSelected', noteId: null })
+        // Первая загрузка уже идёт с монтирования панели — вторая не нужна.
+        if (hasLoadedOnceRef.current) loadNotes({ silent: true })
       }
     }
 
@@ -162,7 +228,7 @@ export const useNotesSync = (
       browser.runtime.onMessage.removeListener(handleMessage)
       window.removeEventListener('message', handleWindowMessage)
     }
-  }, [dispatch])
+  }, [dispatch, loadNotes])
 
   return { loadNotes, login, grantPermission }
 }

@@ -17,7 +17,8 @@ import { toggleSplitView } from '@/lib/go_to_split_view'
 import { GO_TO_BUTTON_HOVERED_CLASS } from '@/lib/go_to_styles'
 import type { TranslateFn } from '@/lib/i18n'
 import { createNotesButton } from '@/lib/notes_button'
-import { notifyToggleNotesPanel } from '@/lib/notes_panel/events'
+import { notifyOpenNotesPanel, notifyToggleNotesPanel } from '@/lib/notes_panel/events'
+import { syncNotesPermissionOverlay } from '@/lib/notes_permission/overlay'
 import { buildNspdMapUrl, createNspdButton } from '@/lib/nspd/nspd_button'
 import { openNspdTarget } from '@/lib/nspd/open_target'
 import { createPolygonUploadButton } from '@/lib/polygon_upload_button'
@@ -156,6 +157,21 @@ export const mountNotesButtonView = ({ getTranslator, onHideMenu }: ToolbarActio
       }
     })
   }
+
+  /*
+   * Пока разрешений Яндекса нет, поверх кнопки лежит прозрачная страница
+   * расширения: клик по ней — единственный способ получить жест для
+   * `permissions.request` (в контент-скрипте API нет). После ответа на диалог
+   * панель открывается тем же кликом.
+   */
+  syncNotesPermissionOverlay(getNotesButton(), {
+    getLabel: () => getTranslator()('map.notes'),
+    onResolved: () => {
+      onHideMenu()
+      closePolygonUploadPopup()
+      notifyOpenNotesPanel()
+    },
+  })
 }
 
 export const mountNspdButtonView = ({ getTranslator, onHideMenu }: ToolbarActionContext): void => {

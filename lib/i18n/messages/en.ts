@@ -119,7 +119,7 @@ export const enMessages = {
     loading: 'Loading notes…',
     authRequired: 'Sign in to Yandex to see your own notes',
     permissionRequired:
-      'Working with Yandex Disk needs a browser permission. It is requested once when you enable Notebook or NSPD.',
+      'Working with Yandex Disk needs a browser permission. Click "Allow access" — or enable Notebook in the extension settings.',
     grantPermission: 'Allow access',
     login: 'Sign in',
     retry: 'Retry',

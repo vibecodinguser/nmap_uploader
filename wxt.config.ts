@@ -60,7 +60,14 @@ const baseManifest = {
   ],
   web_accessible_resources: [
     {
-      resources: ['panel.html', 'polygon-upload.html', 'notes-panel.html', 'chunks/*', 'assets/*'],
+      resources: [
+        'panel.html',
+        'polygon-upload.html',
+        'notes-panel.html',
+        'notes-permission.html',
+        'chunks/*',
+        'assets/*',
+      ],
       matches: [
         manifestHostPattern('n.maps.yandex.ru/*'),
         manifestHostPattern('nspd.gov.ru/*'),

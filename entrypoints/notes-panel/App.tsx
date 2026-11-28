@@ -47,6 +47,14 @@ export const NotesPanelApp = () => {
   }, [])
 
   const selectedId = panel.selectedNote?.id ?? ''
+  /**
+   * Карточка свойств рисуется только для существующей заметки.
+   *
+   * Если выбранной заметки в снимке уже нет (удалили на другом устройстве,
+   * сменился аккаунт), показываем список: иначе не рисуется ни карточка, ни
+   * список, и панель выглядит пустой.
+   */
+  const showsProperties = panel.mode === 'properties' && panel.selectedNote !== null
 
   // Карточка свойств выше списка: панель подстраивает высоту, чтобы блоки
   // оформления не прятались под прокруткой.
@@ -86,7 +94,7 @@ export const NotesPanelApp = () => {
           onRetry={() => panel.loadNotes()}
         />
 
-        {panel.status === 'ready' && panel.mode === 'list' && (
+        {panel.status === 'ready' && !showsProperties && (
           <ListToolbar
             create={{
               drawing: Boolean(panel.drawingKind),
@@ -138,7 +146,7 @@ export const NotesPanelApp = () => {
           </div>
         )}
 
-        {panel.status === 'ready' && panel.mode === 'properties' && panel.selectedNote && (
+        {panel.status === 'ready' && showsProperties && panel.selectedNote && (
           <NoteProperties
             key={panel.selectedNote.id}
             note={panel.selectedNote}
@@ -151,7 +159,7 @@ export const NotesPanelApp = () => {
         )}
 
         {panel.status === 'ready' &&
-          panel.mode === 'list' &&
+          !showsProperties &&
           (panel.notes.length === 0 ? (
             <div className="notes-panel__empty">
               {panel.hasNarrowing ? t('notesPanel.emptySearch') : t('notesPanel.empty')}

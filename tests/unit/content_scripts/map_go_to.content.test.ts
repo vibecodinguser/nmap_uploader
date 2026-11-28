@@ -31,11 +31,11 @@ const mountNmapsToolbarAnchor = (): HTMLElement => {
 
 describe('map-go-to.content', () => {
   let ctx: ReturnType<typeof createContentScriptContext>
-  let runtimeListener: ((message: { action?: string }) => void) | undefined
+  let runtimeListeners: ((message: { action?: string }) => void)[]
 
   beforeEach(async () => {
     ctx = createContentScriptContext()
-    runtimeListener = undefined
+    runtimeListeners = []
 
     await browser.storage.local.set({
       [GO_TO_MENU_ENABLED_STORAGE_KEY]: true,
@@ -43,8 +43,9 @@ describe('map-go-to.content', () => {
       [GO_TO_ITEMS_STORAGE_KEY]: [{ name: 'Nakarte', active: true }],
     })
 
+    // Слушателей несколько: тулбар и оверлей разрешений над кнопкой заметок.
     vi.spyOn(browser.runtime.onMessage, 'addListener').mockImplementation((listener) => {
-      runtimeListener = listener as (message: { action?: string }) => void
+      runtimeListeners.push(listener as (message: { action?: string }) => void)
     })
   })
 
@@ -85,7 +86,7 @@ describe('map-go-to.content', () => {
 
     document.getElementById(GO_TO_SERVICE_BUTTON_ID)?.remove()
 
-    runtimeListener?.({ action: GO_TO_REFRESH_ACTION })
+    for (const listener of runtimeListeners) listener({ action: GO_TO_REFRESH_ACTION })
 
     await vi.waitFor(() => {
       expect(document.getElementById(GO_TO_SERVICE_BUTTON_ID)).not.toBeNull()
@@ -162,8 +163,10 @@ describe('map-go-to.content', () => {
         expect.objectContaining({ action: OPEN_NSPD_TARGET_ACTION }),
       ),
     )
-    const message = sendMessageSpy.mock.calls[0]?.[0] as { url?: string }
-    expect(message.url).toContain('nspd.gov.ru')
+    const message = sendMessageSpy.mock.calls
+      .map(([payload]) => payload as { action?: string; url?: string })
+      .find((payload) => payload.action === OPEN_NSPD_TARGET_ACTION)
+    expect(message?.url).toContain('nspd.gov.ru')
   })
 
   it('ставит кнопку заметок справа от загрузки и сигналит панели о переключении', async () => {

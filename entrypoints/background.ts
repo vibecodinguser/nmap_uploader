@@ -10,6 +10,7 @@ import {
   handleCloseCurrentTab,
   handleEnsureAuth,
   handleGetAuth,
+  handleGetYandexPermissions,
   handleGoToRefresh,
   handleListOccupiedDates,
   handleLogin,
@@ -34,6 +35,7 @@ import {
   handleStartPointPicking,
   handleUpload,
   handleUploadNspdGeoJson,
+  initYandexPermissionsBroadcast,
   type MessageHandler,
   migrateLegacyNotesFolderOnStartup,
   OPEN_NSPD_TARGET_ACTION,
@@ -60,6 +62,7 @@ import {
   NOTES_START_DRAW_ACTION,
   NOTES_UPLOAD_ICON_ACTION,
 } from '@/lib/notes/protocol'
+import { GET_YANDEX_PERMISSIONS_ACTION } from '@/lib/notes_permission/protocol'
 import {
   initNspdContentScriptSync,
   syncNspdContentScriptsFromStorage,
@@ -90,6 +93,7 @@ const messageHandlers: Record<string, MessageHandler> = {
   ensureAuth: handleEnsureAuth,
   login: handleLogin,
   logout: handleLogout,
+  [GET_YANDEX_PERMISSIONS_ACTION]: handleGetYandexPermissions,
   listOccupiedDates: handleListOccupiedDates,
   uploadProcessedFiles: handleUpload,
   [NOTES_LOAD_ACTION]: handleNotesLoad,
@@ -141,6 +145,7 @@ const initBackground = (): void => {
   runBackgroundTask(migrateLegacyNotesFolderOnStartup(), 'notes migration')
 
   initNspdContentScriptSync()
+  initYandexPermissionsBroadcast()
 
   const toolbarAction = getToolbarActionApi()
   if (toolbarAction) {

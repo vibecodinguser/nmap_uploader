@@ -145,6 +145,38 @@ describe('хост панели заметок', () => {
     )
   })
 
+  /*
+   * Перезагрузка расширения выбивает страницу панели из документа, а контейнер
+   * с ручкой остаётся. Раньше хост считал панель собранной и открывал пустую
+   * белую полосу: ни списка, ни шапки.
+   */
+  it('пересобирает панель, если iframe выбит из документа', () => {
+    const host = createNotesPanelHost()
+    host.open()
+
+    const frame = document.getElementById(NOTES_PANEL_FRAME_ID)
+    if (!frame) throw new Error('iframe не найден')
+    frame.remove()
+
+    host.close()
+    host.open()
+
+    expect(document.getElementById(NOTES_PANEL_FRAME_ID)).not.toBeNull()
+    expect(document.getElementById(NOTES_PANEL_HOST_ID)?.childElementCount).toBe(2)
+  })
+
+  it('считает полуразобранную панель закрытой', () => {
+    const host = createNotesPanelHost()
+    host.open()
+
+    document.getElementById(NOTES_PANEL_FRAME_ID)?.remove()
+
+    expect(host.isOpen()).toBe(false)
+
+    host.toggle()
+    expect(host.isOpen()).toBe(true)
+  })
+
   it('протяжка ручки оставляет текущую высоту карточки', () => {
     const host = createNotesPanelHost()
     host.open()

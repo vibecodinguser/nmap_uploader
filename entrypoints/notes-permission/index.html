@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Заметки</title>
+    <style>
+      /*
+       * Страница не должна ничего рисовать: снаружи это невидимый приёмник
+       * клика над кнопкой заметок. Прозрачный фон и полное отсутствие
+       * оформления у кнопки — страховка на случай, если iframe всё-таки
+       * отрисуется (например, до того как контент-скрипт его спрячет).
+       */
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: transparent;
+      }
+
+      #notes-permission-target {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        border: 0;
+        outline: none;
+        box-shadow: none;
+        color: transparent;
+        font-size: 0;
+        line-height: 0;
+        appearance: none;
+        -webkit-appearance: none;
+        cursor: pointer;
+      }
+
+      #notes-permission-target:focus,
+      #notes-permission-target:focus-visible {
+        outline: none;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

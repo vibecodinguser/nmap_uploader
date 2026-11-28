@@ -25,6 +25,10 @@ import { GO_TO_BUTTON_HOVERED_CLASS } from '@/lib/go_to_styles'
 import { removeAllGoToToolbarButtons, shouldRemountGoToToolbar } from '@/lib/go_to_toolbar'
 import type { TranslateFn } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n/locale.types'
+import {
+  destroyNotesPermissionOverlay,
+  syncNotesPermissionOverlay,
+} from '@/lib/notes_permission/overlay'
 import { closePolygonUploadPopup, teardownPolygonUploadPopup } from '@/lib/polygon_upload_popup'
 import {
   mountNotesButtonView,
@@ -68,6 +72,7 @@ export class GoToToolbarController {
   }
 
   public removeNotesButton(): void {
+    syncNotesPermissionOverlay(null)
     getNotesButton()?.remove()
   }
 
@@ -81,6 +86,7 @@ export class GoToToolbarController {
     teardownSplitView()
     teardownPolygonUploadPopup()
     removeAllGoToToolbarButtons()
+    destroyNotesPermissionOverlay()
   }
 
   public hideGoToMenuOnly(): void {

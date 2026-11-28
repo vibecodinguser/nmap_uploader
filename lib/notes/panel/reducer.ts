@@ -81,13 +81,38 @@ const withPatch = (snapshot: NotesSnapshot, patch: NotesPatch): NotesSnapshot =>
   shards: { ...snapshot.shards, ...patch.shards },
 })
 
+/**
+ * Снимает выбор, если заметки больше нет в снимке.
+ *
+ * Панель может остаться в режиме свойств с id, которого нет в манифесте:
+ * заметку удалили на другом устройстве или сменился аккаунт. Тогда ни список,
+ * ни карточка не рисуются, и панель выглядит пустой.
+ */
+const pruneSelection = (
+  snapshot: NotesSnapshot,
+  selectedId: string | null,
+): Pick<NotesPanelState, 'selectedId' | 'mode'> => {
+  if (selectedId === null) return { selectedId: null, mode: 'list' }
+  const exists = snapshot.manifest.notes.some((note) => note.id === selectedId)
+  return exists ? { selectedId, mode: 'properties' } : { selectedId: null, mode: 'list' }
+}
+
 export const notesPanelReducer = (
   state: NotesPanelState,
   action: NotesPanelAction,
 ): NotesPanelState => {
   switch (action.type) {
     case 'loaded':
-      return { ...state, snapshot: action.snapshot, status: 'ready', error: null }
+      return {
+        ...state,
+        snapshot: action.snapshot,
+        status: 'ready',
+        error: null,
+        // Заметку могли удалить на другом устройстве: выбранный id тогда
+        // указывает в пустоту, и карточка свойств не рисуется — панель
+        // выглядит пустой. Свежий снимок — единственный источник правды.
+        ...pruneSelection(action.snapshot, state.selectedId),
+      }
 
     case 'merged':
       return {

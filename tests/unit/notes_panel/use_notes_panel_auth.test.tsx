@@ -6,8 +6,8 @@
  * iframe панели живёт постоянно, поэтому вход в Яндекс происходит уже после
  * монтирования: единственный сигнал об этом — изменение `storage.local`.
  */
-import { act, renderHook, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { browser } from 'wxt/browser'
 import { LocaleProvider } from '@/hooks/useLocale'
 import { useNotesPanel } from '@/hooks/useNotesPanel'
@@ -36,6 +36,15 @@ describe('useNotesPanel: авторизация', () => {
     await resetBrowserMocks()
   })
 
+  afterEach(() => {
+    // Панель живёт постоянно: без явной очистки хуки прошлых тестов
+    // продолжают отвечать на сообщения и портят счётчики вызовов.
+    cleanup()
+    // `vi.spyOn` поверх уже подменённого метода возвращает тот же мок, поэтому
+    // без восстановления вызовы прошлых тестов попадают в счётчик текущего.
+    vi.restoreAllMocks()
+  })
+
   it('показывает приглашение войти, если токена нет', async () => {
     vi.spyOn(browser.runtime, 'sendMessage').mockResolvedValue({
       ok: false,
@@ -48,15 +57,22 @@ describe('useNotesPanel: авторизация', () => {
   })
 
   it('перезагружает заметки, когда токен появился в storage', async () => {
+    let tokenSaved = false
     const sendMessage = vi
       .spyOn(browser.runtime, 'sendMessage')
-      .mockResolvedValueOnce({ ok: false, error: 'AUTH_REQUIRED' } as never)
-      .mockResolvedValue({ ok: true, snapshot: emptySnapshot } as never)
+      .mockImplementation(async (message: unknown) => {
+        const action = (message as { action?: string }).action
+        if (action === 'login') return { ok: true } as never
+        return (
+          tokenSaved ? { ok: true, snapshot: emptySnapshot } : { ok: false, error: 'AUTH_REQUIRED' }
+        ) as never
+      })
 
     const { result } = renderPanel()
     await waitFor(() => expect(result.current.status).toBe('auth'))
     const beforeLogin = sendMessage.mock.calls.length
 
+    tokenSaved = true
     await act(async () => {
       await browser.storage.local.set({
         [STORAGE_TOKEN_KEY]: 'token',
@@ -85,11 +101,23 @@ describe('useNotesPanel: авторизация', () => {
   })
 
   it('после входа из панели перезапрашивает данные', async () => {
+    let loginDone = false
+    let loginAttempts = 0
     const sendMessage = vi
       .spyOn(browser.runtime, 'sendMessage')
-      .mockResolvedValueOnce({ ok: false, error: 'AUTH_REQUIRED' } as never)
-      .mockResolvedValueOnce({ ok: true } as never)
-      .mockResolvedValue({ ok: true, snapshot: emptySnapshot } as never)
+      .mockImplementation(async (message: unknown) => {
+        const action = (message as { action?: string }).action
+        if (action === 'login') {
+          loginAttempts += 1
+          // Первая попытка — автоматическая при открытии: она «отменена».
+          // Вторая — кнопка «Войти», и только после неё появляются данные.
+          if (loginAttempts > 1) loginDone = true
+          return { ok: true } as never
+        }
+        return (
+          loginDone ? { ok: true, snapshot: emptySnapshot } : { ok: false, error: 'AUTH_REQUIRED' }
+        ) as never
+      })
 
     const { result } = renderPanel()
     await waitFor(() => expect(result.current.status).toBe('auth'))
@@ -100,5 +128,44 @@ describe('useNotesPanel: авторизация', () => {
 
     await waitFor(() => expect(result.current.status).toBe('ready'))
     expect(sendMessage).toHaveBeenCalledWith({ action: 'login' })
+  })
+
+  it('сразу запускает вход при открытии панели без токена', async () => {
+    const sendMessage = vi
+      .spyOn(browser.runtime, 'sendMessage')
+      .mockImplementation(async (message: unknown) => {
+        const action = (message as { action?: string }).action
+        return (action === 'login' ? { ok: true } : { ok: false, error: 'AUTH_REQUIRED' }) as never
+      })
+
+    renderPanel()
+
+    await waitFor(() => expect(sendMessage).toHaveBeenCalledWith({ action: 'login' }))
+  })
+
+  it('не повторяет вход после отмены, пока панель не откроют заново', async () => {
+    const sendMessage = vi
+      .spyOn(browser.runtime, 'sendMessage')
+      .mockImplementation(async (message: unknown) => {
+        const action = (message as { action?: string }).action
+        return (action === 'login' ? { ok: true } : { ok: false, error: 'AUTH_REQUIRED' }) as never
+      })
+
+    const { result } = renderPanel()
+    await waitFor(() => expect(result.current.status).toBe('auth'))
+
+    const loginCalls = (): number =>
+      sendMessage.mock.calls.filter(
+        ([message]) => (message as { action?: string }).action === 'login',
+      ).length
+    expect(loginCalls()).toBe(1)
+
+    const callsBeforeReload = sendMessage.mock.calls.length
+    await act(async () => {
+      await browser.storage.local.set({ [STORAGE_TOKEN_KEY]: 'token' })
+    })
+    await waitFor(() => expect(sendMessage.mock.calls.length).toBeGreaterThan(callsBeforeReload))
+
+    expect(loginCalls()).toBe(1)
   })
 })

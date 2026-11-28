@@ -158,7 +158,12 @@ export default defineContentScript({
     }
     window.addEventListener('message', handlePanelPreview)
 
-    const handleTogglePanel = (): void => {
+    const handleTogglePanel = (event: Event): void => {
+      const detail = (event as CustomEvent<{ open?: boolean }>).detail
+      if (detail?.open) {
+        host.open()
+        return
+      }
       host.toggle()
     }
     document.addEventListener(NMAPS_TOGGLE_NOTES_PANEL_EVENT, handleTogglePanel)

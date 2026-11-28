@@ -157,6 +157,40 @@ describe('редьюсер панели: снимок', () => {
     expect(state.mode).toBe('list')
   })
 
+  /*
+   * Заметку могли удалить на другом устройстве, пока панель стояла в её
+   * свойствах. Выбранный id тогда указывает в пустоту: карточка не рисуется,
+   * список тоже — панель выглядит пустой.
+   */
+  it('свежий снимок снимает выбор заметки, которой в нём нет', () => {
+    const state = notesPanelReducer(
+      { ...ready(snapshot()), selectedId: 'n1', mode: 'properties' },
+      { type: 'loaded', snapshot: snapshot() },
+    )
+
+    expect(state.selectedId).toBeNull()
+    expect(state.mode).toBe('list')
+  })
+
+  it('свежий снимок сохраняет выбор существующей заметки', () => {
+    const withNote = snapshot({
+      manifest: {
+        version: 1,
+        updatedAt: '2026-11-14T10:00:00.000Z',
+        groups: [],
+        deletedNotes: [],
+        notes: [sampleNote({ id: 'n1' })],
+      },
+    })
+    const state = notesPanelReducer(
+      { ...ready(withNote), selectedId: 'n1', mode: 'properties' },
+      { type: 'loaded', snapshot: withNote },
+    )
+
+    expect(state.selectedId).toBe('n1')
+    expect(state.mode).toBe('properties')
+  })
+
   it('патч заменяет манифест и только затронутый шард', () => {
     const state = notesPanelReducer(
       ready(
